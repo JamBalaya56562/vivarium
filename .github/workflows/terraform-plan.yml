@@ -26,7 +26,7 @@ jobs:
   plan:
     # Pinned by commit SHA (org enforces sha_pinning_required). Update
     # this ref when the reusable workflow meaningfully changes.
-    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@f52a2381bc55e7303659a10711747c0a51cf475a # main
+    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@9329751b712bc7493df59c390c26957d89324f72 # main
     with:
       working_directory: infra/github
     secrets: inherit
