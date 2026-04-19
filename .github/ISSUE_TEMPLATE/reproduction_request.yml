@@ -1,0 +1,57 @@
+name: Reproduction request
+description: Ask the platform to reproduce a specific bug — Vivarium's core primitive.
+title: "repro: "
+type: Task
+labels:
+  - "status: triage"
+  - "status: needs-reproduction"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is the direct user-facing path into Vivarium. You are
+        saying "I have a bug, please reproduce it so I (and the maintainer)
+        can verify it is real." This may feel light on engineering detail;
+        that is intentional — Vivarium's job is to make reproduction cheap.
+
+  - type: input
+    id: source_issue
+    attributes:
+      label: Source Issue / PR
+      description: |
+        URL of the upstream Issue or PR whose bug you want reproduced.
+      placeholder: "https://github.com/<owner>/<repo>/issues/<n>"
+    validations:
+      required: true
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: Claim to verify
+      description: |
+        In one sentence, what does the upstream claim? Keep it bug-shaped,
+        not opinion-shaped.
+      placeholder: |
+        `pandas.read_csv` crashes on a file with a BOM when `engine='c'`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: runtime
+    attributes:
+      label: Runtime and versions
+      description: |
+        Language, library, and version information. If unknown, say so — we
+        will guess defaults.
+      placeholder: |
+        Python 3.12, pandas 2.3.0
+
+  - type: textarea
+    id: minimal
+    attributes:
+      label: Minimal reproducer (if available)
+      description: |
+        Paste the smallest self-contained snippet that triggers the claim.
+        Optional — Vivarium will attempt to construct one from the source
+        Issue if you leave this blank.
+      render: python
