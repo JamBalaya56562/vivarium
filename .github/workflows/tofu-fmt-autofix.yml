@@ -1,0 +1,34 @@
+name: Tofu fmt autofix
+
+# Thin caller for the org-wide reusable workflow at
+# aletheia-works/.github/.github/workflows/terraform-autofix.yml.
+# All the autofix logic — setup-opentofu, `tofu fmt -recursive`,
+# same-repo PR guard, commit-back to the PR head — lives there.
+#
+# This complements the fmt-check that the Terraform Plan workflow
+# already performs via its own reusable; the check still fails on
+# formatting drift, but the drift gets healed automatically here
+# instead of requiring the contributor to re-run `tofu fmt` locally.
+#
+# Lint (`tofu validate`) is not duplicated here — it already runs
+# inside Terraform Plan.
+
+on:
+  pull_request:
+    paths:
+      - 'infra/github/**'
+      - '.github/workflows/tofu-fmt-autofix.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  autofix:
+    # Pinned by commit SHA (org enforces sha_pinning_required). Update
+    # this ref when the reusable workflow meaningfully changes.
+    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@fafae94f3c7691a02e05746c53aa833b0489efab # main
+    with:
+      working_directory: infra/github
+      commit_message: 'style(infra): tofu fmt -recursive'
+    secrets: inherit
