@@ -55,7 +55,7 @@ jobs:
     steps:
       - name: Resolve PR number
         id: pr
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const n = context.payload.pull_request?.number ?? context.payload.issue?.number;
@@ -67,7 +67,7 @@ jobs:
 
       - name: Check authorisation (owner-or-approval gate)
         id: auth
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const OWNER = 'JamBalaya56562';
@@ -100,7 +100,7 @@ jobs:
       - name: Count Claude iterations on this PR (cap 5)
         if: steps.auth.outputs.allowed == 'true'
         id: cap
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const prNumber = Number('${{ steps.pr.outputs.number }}');
@@ -133,7 +133,7 @@ jobs:
       - name: Fetch PR head branch
         if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
         id: meta
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const { data: pr } = await github.rest.pulls.get({
@@ -146,14 +146,14 @@ jobs:
 
       - name: Checkout PR branch
         if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           ref: ${{ steps.meta.outputs.head_ref }}
 
       - name: Let Claude address CodeRabbit feedback
         if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
