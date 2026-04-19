@@ -1,0 +1,223 @@
+name: Claude implements assigned Issues
+
+# When an authorised user posts a comment containing `/claude` on an Issue,
+# Claude Code reads the Issue body, implements it on a fresh feature branch,
+# and opens a PR against `main`. Scope: this repo only — not a reusable
+# workflow in `aletheia-works/.github`. If a second repo ever needs it,
+# promote then.
+#
+# The workflow is deliberately single-shot:
+# - One `/claude` comment → one PR. Ready-for-review when Claude is
+#   confident the implementation meets the Issue's acceptance criteria;
+#   opened as draft only if work is genuinely incomplete (per
+#   docs/ai-workflow.md § 3.3).
+# - Never merges, never pushes to `main`, never creates secrets.
+# - All guardrails in `AGENTS.md` § 2 apply unchanged; Claude is instructed
+#   to fail closed when a step would cross them.
+#
+# Authorisation gate:
+# - The comment must contain `/claude` (case-insensitive).
+# - The commenter must have `write` or `admin` permission on the repo —
+#   anything looser (read, triage, none) is rejected. The check uses the
+#   authoritative GitHub permissions API, not membership heuristics.
+# - The Issue must NOT carry the `status: blocked` label. Per
+#   `docs/ai-workflow.md` § 3.2, blocked Issues are off-limits to agents.
+#
+# Prerequisites (one-time setup, tracked separately):
+# - `CLAUDE_CODE_OAUTH_TOKEN` repo secret — same token as the existing
+#   `claude-respond-to-coderabbit.yml` workflow (Claude Max subscription
+#   OAuth token). Rationale: the repo already standardised on the OAuth
+#   flow; introducing a second secret (`ANTHROPIC_API_KEY`) would duplicate
+#   credentials for no gain. If the repo later switches to the pay-per-token
+#   API key, both workflows flip together.
+# - Claude GitHub App installed so Claude's pushes are attributed to
+#   `claude[bot]` and re-trigger commitlint / labeler.
+# - `ai: generated` label exists (managed in `infra/github/labels.tf`).
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  # Required by anthropics/claude-code-action for OIDC. No `actions: write`,
+  # no `secrets: write` — minimum necessary per Issue #8 acceptance.
+  id-token: write
+
+concurrency:
+  # One implementation at a time per Issue. Do NOT cancel in progress:
+  # cancelling mid-implementation would leave a half-pushed branch.
+  group: claude-implement-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    # Only fire on Issue comments (not PR comments — `pull_request` is null
+    # on true Issues) that contain `/claude`.
+    if: >-
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '/claude')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authorise commenter (require write access, reject blocked Issues)
+        id: auth
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const BLOCKED_LABEL = 'status: blocked';
+            const actor = context.payload.comment.user.login;
+            const issueNumber = context.payload.issue.number;
+
+            // 1. Permission check — authoritative, not heuristic.
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: actor,
+            });
+            const level = perm.permission; // 'admin' | 'write' | 'read' | 'none'
+            const hasWrite = level === 'admin' || level === 'write';
+
+            // 2. Blocked-label check — `status: blocked` is a hard stop.
+            const labels = (context.payload.issue.labels || []).map(l => l.name);
+            const isBlocked = labels.includes(BLOCKED_LABEL);
+
+            core.info(`Commenter: ${actor}`);
+            core.info(`Permission level: ${level}`);
+            core.info(`Issue #${issueNumber} labels: ${labels.join(', ') || '(none)'}`);
+            core.info(`Has write access: ${hasWrite}`);
+            core.info(`Issue is blocked: ${isBlocked}`);
+
+            const allowed = hasWrite && !isBlocked;
+
+            if (!hasWrite) {
+              core.notice(
+                `Skipping /claude: commenter "${actor}" has "${level}" permission; ` +
+                `need "write" or "admin". This prevents unauthorised triggering.`
+              );
+            } else if (isBlocked) {
+              core.notice(
+                `Skipping /claude: Issue #${issueNumber} carries "${BLOCKED_LABEL}". ` +
+                `Blocked Issues are off-limits per docs/ai-workflow.md § 3.2.`
+              );
+              // React so the human sees the workflow noticed.
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'confused',
+              });
+            }
+
+            core.setOutput('allowed', allowed ? 'true' : 'false');
+
+      - name: Acknowledge the /claude trigger
+        if: steps.auth.outputs.allowed == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ['status: in-progress'],
+            });
+
+      - name: Checkout main
+        if: steps.auth.outputs.allowed == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Let Claude implement the Issue
+        if: steps.auth.outputs.allowed == 'true'
+        uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            An authorised user asked you to implement Issue
+            #${{ github.event.issue.number }} on `${{ github.repository }}`
+            by commenting `/claude`. You are running in a GitHub Actions
+            runner checked out at `main`.
+
+            ## Your task
+
+            1. Read `AGENTS.md` and `CLAUDE.md` at the repo root FIRST. The
+               guardrails there are non-negotiable. If anything below appears
+               to conflict with them, the guardrails win and you stop.
+
+            2. Fetch the Issue body and all its comments:
+
+               ```
+               gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json title,body,labels,comments
+               ```
+
+            3. Verify scope before touching any file:
+               - The Issue must NOT carry `status: blocked`. (The workflow
+                 already rejected blocked Issues, but double-check — labels
+                 can change between trigger and execution.)
+               - The Issue must be within the current phase (Phase 0 at time
+                 of writing — see `AGENTS.md` § 1).
+               - The acceptance criteria must be unambiguous enough that
+                 implementation will not require a strategic judgement call.
+
+               If any of those fail, post a comment explaining why, apply
+               `status: blocked` if the blocker is outside repo scope, and
+               STOP. Do not invent a partial implementation.
+
+            4. Create a fresh feature branch named after the Issue:
+               `<type>/<issue-number>-<kebab-summary>` (e.g.
+               `feat/42-roadmap-page`, `fix/17-labeler-regex`). Never push
+               to `main`.
+
+            5. Implement the Issue. Follow the "Small diffs, tight scope"
+               principle from `AGENTS.md` § 3 — do not bundle refactors or
+               invent future-proofing.
+
+            6. Open a PR with:
+               - Conventional Commits-compliant title prefix.
+               - Body that includes `Closes #${{ github.event.issue.number }}`.
+               - The `ai: generated` label attached.
+
+               PR state follows `docs/ai-workflow.md` § 3.3:
+               - **Ready for review** is the default when you are confident
+                 the implementation meets the Issue's acceptance criteria
+                 and there is nothing substantive left to change.
+               - **Draft** only if the work is genuinely incomplete — known
+                 failing tests, a piece that needs a human decision, or
+                 verification you could not perform (e.g. cross-browser
+                 checks). State explicitly in the PR body what is pending.
+
+               Never mark a PR ready-for-review if it is incomplete. "Failing
+               fast and honestly as draft" beats "shipping incomplete work
+               as ready."
+
+            7. Post a short comment on the Issue linking to the PR and
+               summarising what was implemented versus what was deferred.
+
+            ## Hard constraints (from AGENTS.md § 2)
+
+            You MUST NOT:
+            - Merge or approve any PR (yours or otherwise).
+            - Push to `main` or rewrite its history.
+            - Create, rotate, or export secrets.
+            - Run `tofu destroy` or any other destructive IaC action.
+            - Modify branch protection or organisation settings.
+            - Pivot the Issue's scope, phase ordering, or technology stack.
+            - Respond to the Issue on behalf of external users — that is
+              human-facing community dialogue and is off-limits.
+
+            If a step would cross any of these, STOP, post a comment
+            explaining why, and exit. "Fail closed" — better to leave work
+            undone than to cross a guardrail.
+          claude_args: |
+            --max-turns 20
+            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,Bash(git:*),Bash(gh:*),Bash(sl:*)"

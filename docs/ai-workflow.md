@@ -211,6 +211,11 @@ stop and hand off.
 Tracked elsewhere, not here:
 
 - Install Dosu.
-- Add the `/claude`-triggered implementation workflow (complement to the
-  CodeRabbit-response workflow already in place).
 - Continue seeding the Phase 0 Issue backlog.
+
+The `/claude`-triggered implementation workflow is now in place at
+[`.github/workflows/claude-implement.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/claude-implement.yml),
+complementing the CodeRabbit-response workflow already in production. An
+authorised commenter (write or admin permission) posting `/claude` on a
+non-blocked Issue triggers Claude Code to open a draft PR against a
+fresh branch; guardrails in `AGENTS.md` § 2 apply unchanged.
