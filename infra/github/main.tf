@@ -43,46 +43,22 @@ resource "github_repository" "this" {
   # Prevent accidental archival.
   archived = false
 
-  # ─── GitHub Pages ────────────────────────────────────────────
-  # Source = GitHub Actions. The actual build/deploy is wired up in
-  # `.github/workflows/deploy-docs.yml` via actions/configure-pages and
-  # actions/deploy-pages. Declaring it here keeps the Pages enablement
-  # itself under IaC so drift (e.g. someone disabling Pages in the UI)
-  # is detected.
-  pages {
-    build_type = "workflow"
-  }
-
   lifecycle {
     # Guard against accidental deletion.
     prevent_destroy = true
-    # Known provider bug: integrations/github v6.x always sends
-    # web_commit_signoff_required=false in the repository PATCH body. The
-    # aletheia-works org enforces commit signoff, so that PATCH 422s.
-    # Ignoring the attribute here is not enough — the provider still
-    # includes it in the PATCH — so we also skip the full list of repo
-    # attributes it would otherwise try to reconcile. Pages is exempted:
-    # the provider manages it via a separate `/pages` API call, so it
-    # is reachable independent of the broken PATCH.
+    # Do not manage repository attributes via TF — use `gh api` or the GitHub UI.
+    # Rationale: integrations/github provider (as of 6.x) always sends
+    # web_commit_signoff_required=false in the PATCH body. When the org enforces
+    # signoff, this triggers a 422 "Commit signoff is enforced by the organization
+    # and cannot be disabled" error, unavoidable even when the attribute is set to true.
+    # This resource is kept in state purely so that other resources (labels,
+    # branch_protection) can reference it; its attributes are not reconciled.
     #
-    # Migrate back to `ignore_changes = [web_commit_signoff_required]`
-    # once provider v6.12+ ships (PR integrations/terraform-provider-github#3166).
-    ignore_changes = [
-      description,
-      visibility,
-      topics,
-      has_issues,
-      has_discussions,
-      has_projects,
-      has_wiki,
-      allow_merge_commit,
-      allow_squash_merge,
-      allow_rebase_merge,
-      allow_auto_merge,
-      delete_branch_on_merge,
-      vulnerability_alerts,
-      web_commit_signoff_required,
-      archived,
-    ]
+    # NOTE: We tried using the nested `pages` block with a narrow
+    # `ignore_changes` list in PR #29, but the provider still issues a
+    # full repo PATCH whenever anything about the resource changes
+    # (including a pages-only diff), so the signoff 422 still fires.
+    # Pages is now managed via `pages.tf` using gh CLI instead.
+    ignore_changes = all
   }
 }

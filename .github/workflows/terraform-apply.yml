@@ -25,7 +25,7 @@ permissions:
 jobs:
   apply:
     # Pinned by commit SHA (org enforces sha_pinning_required).
-    uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@9329751b712bc7493df59c390c26957d89324f72 # main
+    uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@db8aaaef0c0c8dc00152bfb37f1eee15f019a087 # main
     with:
       working_directory: infra/github
     secrets: inherit
