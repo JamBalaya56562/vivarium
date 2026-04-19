@@ -45,7 +45,7 @@ We don't lock ourselves into a single technology. We combine:
 The goal is not to be "a WASM service" — the goal is to **reproduce bugs**.
 The technology is chosen by the problem, not the other way around.
 
-*Full vision document: [`docs/VISION.md`](docs/VISION.md) (coming soon)*
+*Full vision document: [`docs/VISION.md`](docs/VISION.md)*
 
 ## Development Philosophy
 
