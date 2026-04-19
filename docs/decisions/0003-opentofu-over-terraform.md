@@ -59,5 +59,5 @@ continues to publish to both OpenTofu and Terraform registries.
 ## References
 
 - [OpenTofu project](https://opentofu.org)
-- `infra/github/versions.tf`
-- `AGENTS.md` § 3 — "Modern defaults, no legacy fallbacks"
+- [infra/github/versions.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/versions.tf)
+- [AGENTS.md § 3 — "Modern defaults, no legacy fallbacks"](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md)

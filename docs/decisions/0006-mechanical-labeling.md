@@ -41,6 +41,8 @@ Labels on this project come **only** from mechanical sources:
 - `ai: generated` — AI-authored PRs self-tag at creation time.
 - `ai: verified` — a human applies this after reviewing the
   AI-authored change.
+- `ai: approved` / `ai: escalated` — applied by the repository owner
+  or the CodeRabbit-response workflow respectively; never inferred.
 
 AI agents do **not** infer labels from content analysis. If a label
 cannot be derived from one of the mechanical sources above, it
@@ -62,7 +64,8 @@ stays unset.
   apply.
 - Mechanical rules — particularly `.github/labeler.yml` and the
   Conventional-Commit parser — must be kept in sync with the label
-  taxonomy in `infra/github/labels.tf`.
+  taxonomy in
+  [infra/github/labels.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/labels.tf).
 
 ## Alternatives considered
 
@@ -73,7 +76,7 @@ stays unset.
 
 ## References
 
-- `.github/labeler.yml` — path-based rules.
-- `infra/github/labels.tf` — label taxonomy.
-- `AGENTS.md` § 4.6 — label conventions.
-- `docs/AI_WORKFLOW.md` § 4 — label lifecycle.
+- [.github/labeler.yml](https://github.com/aletheia-works/vivarium/blob/main/.github/labeler.yml) — path-based rules.
+- [infra/github/labels.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/labels.tf) — label taxonomy.
+- [AGENTS.md § 4.6](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md) — label conventions.
+- [AI workflow § 4](../ai-workflow.md) — label lifecycle.

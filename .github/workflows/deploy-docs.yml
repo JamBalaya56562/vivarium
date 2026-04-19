@@ -1,0 +1,70 @@
+name: deploy-docs
+
+# Builds the rspress docs site and deploys to GitHub Pages.
+#
+# Prerequisites (one-time setup):
+# - Repo Settings → Pages → Source: "GitHub Actions".
+# - `.mise.toml` pins Node and Bun versions.
+# - `bun.lock` committed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'rspress.config.ts'
+      - 'package.json'
+      - 'bun.lock'
+      - '.mise.toml'
+      - '.github/workflows/deploy-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialise deploys to Pages — never cancel an in-flight deploy; queue.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for `lastUpdated` timestamps
+
+      - name: Install Node and Bun via mise
+        uses: jdx/mise-action@v2
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        # First-run note: `bun.lock` does not exist yet on the initial deploy.
+        # We install without `--frozen-lockfile` so the first run can generate
+        # a lockfile. Commit the generated `bun.lock` and switch this to
+        # `bun install --frozen-lockfile` once the lockfile is in version
+        # control. Tracked: see deployment-ordering note in the PR.
+        run: bun install
+
+      - name: Build docs
+        run: bun run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc_build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

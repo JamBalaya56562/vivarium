@@ -100,7 +100,7 @@ should; a reproduction that needs Layer 2 gets it; a reproduction that
 needs something the industry has not yet built is a research goal for
 Layer 3.
 
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the technical design *(coming soon)*.
+The technical design for the layers is *coming soon*.
 
 ## Why this moment
 
@@ -152,9 +152,9 @@ there the project widens deliberately — more languages in Layer 1, then
 Layer 2, then Layer 3 — with no pressure to skip stages in search of a
 product launch.
 
-See [`ROADMAP.md`](ROADMAP.md) for the phased plan, and
-[`NON_GOALS.md`](NON_GOALS.md) for what this project deliberately will
-not become.
+A phased roadmap is *coming soon*. See
+[Non-goals](./non-goals.md) for what this project deliberately will not
+become.
 
 ---
 

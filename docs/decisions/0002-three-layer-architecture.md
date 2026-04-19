@@ -6,13 +6,14 @@ Accepted
 
 ## Context
 
-Building on the problem-centred framing in ADR-0001, no single
-technology covers the full reproduction problem space. Algorithmic
-bugs in pure-Python code are best reproduced in-browser via
-WebAssembly (milliseconds to start, no server cost). Network-dependent
-bugs require real filesystems and real sockets, which only
-containerised or VM-level environments provide. Deterministic replay
-requires techniques neither WASM nor Docker can offer.
+Building on the problem-centred framing in
+[ADR-0001](./0001-problem-centred-framing.md), no single technology
+covers the full reproduction problem space. Algorithmic bugs in
+pure-Python code are best reproduced in-browser via WebAssembly
+(milliseconds to start, no server cost). Network-dependent bugs
+require real filesystems and real sockets, which only containerised
+or VM-level environments provide. Deterministic replay requires
+techniques neither WASM nor Docker can offer.
 
 Committing to a single layer would permanently exclude the bugs that
 layer cannot reach — reintroducing the tech-anchor problem ADR-0001
@@ -62,6 +63,6 @@ the problem. Users do not pick a layer.
 
 ## References
 
-- ADR-0001 — Adopt problem-centred framing (parent decision).
-- `docs/VISION.md` — public-facing layer description.
-- `docs/ARCHITECTURE.md` — technical design (when written).
+- [ADR-0001 — Adopt problem-centred framing](./0001-problem-centred-framing.md) (parent decision).
+- [Vision](../vision.md) — public-facing layer description.
+- Technical design is *coming soon*.

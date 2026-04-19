@@ -83,10 +83,10 @@ refuses that anchoring.
 
 ## We are not a three-year MVP
 
-Phase 0 through Phase 5 in [`ROADMAP.md`](ROADMAP.md) span years, not
-quarters. The project is built on the assumption that lifelong scope
-requires lifelong patience: no shipping-to-launch pressure, no
-feature quota to justify a round of funding, no completion deadline.
+Phase 0 through Phase 5 in the roadmap span years, not quarters. The
+project is built on the assumption that lifelong scope requires
+lifelong patience: no shipping-to-launch pressure, no feature quota
+to justify a round of funding, no completion deadline.
 
 **Why:** The techniques we respect — record-replay research,
 deterministic simulation, mature WASM runtimes — took decades to
@@ -96,5 +96,5 @@ mature. Reproduction-as-a-primitive deserves the same timescale.
 
 ## See also
 
-- [`VISION.md`](VISION.md) — what we *are* building.
-- [`ROADMAP.md`](ROADMAP.md) — the phased plan from Phase 0 to Phase 5.
+- [Vision](./vision.md) — what we *are* building.
+- A phased roadmap is *coming soon*.

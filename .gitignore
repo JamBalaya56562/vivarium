@@ -63,6 +63,10 @@ dist/
 .turbo/
 .parcel-cache/
 
+# ─── rspress ─────────────────────────────────
+doc_build/
+.rspress/
+
 # ─── WASM build artifacts ────────────────────
 *.wasm
 !**/test/**/*.wasm

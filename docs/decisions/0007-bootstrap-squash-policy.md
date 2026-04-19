@@ -19,10 +19,11 @@ auditability, `git blame` / `sl blame`, bisect, and cherry-pick all
 rely on meaningful boundaries. The bootstrap-era policy must end
 the moment the repo has a real reviewer.
 
-Sapling (ADR-0004) introduces an additional wrinkle: once a commit
-is pushed, Sapling marks it public and blocks `amend` / `fold` /
-`uncommit` / `debugstrip`. A **nuclear-reset** workaround is
-required for continued folding during bootstrap.
+Sapling ([ADR-0004](./0004-sapling-over-git.md)) introduces an
+additional wrinkle: once a commit is pushed, Sapling marks it public
+and blocks `amend` / `fold` / `uncommit` / `debugstrip`. A
+**nuclear-reset** workaround is required for continued folding
+during bootstrap.
 
 ## Decision
 
@@ -56,8 +57,8 @@ After that point:
 
 - Normal per-commit granularity applies.
 - Force-push to `main` is forbidden.
-- `infra/github/branch_protection.tf` should be updated to set
-  `allows_force_pushes = false`.
+- [infra/github/branch_protection.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/branch_protection.tf)
+  should be updated to set `allows_force_pushes = false`.
 
 ## Consequences
 
@@ -86,8 +87,8 @@ After that point:
 
 ## References
 
-- ADR-0004 — Sapling as local SCM (source of the public-commit
-  lockout constraint).
-- `AGENTS.md` § 4.5 — early-stage commit policy.
-- `docs/AI_WORKFLOW.md` § 3.3 — how this interacts with the PR
-  cycle.
+- [ADR-0004 — Sapling as local SCM](./0004-sapling-over-git.md)
+  (source of the public-commit lockout constraint).
+- [AGENTS.md § 4.5](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md) — early-stage commit policy.
+- [AI workflow § 3.3](../ai-workflow.md) — how this interacts with
+  the PR cycle.

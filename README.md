@@ -45,7 +45,11 @@ We don't lock ourselves into a single technology. We combine:
 The goal is not to be "a WASM service" — the goal is to **reproduce bugs**.
 The technology is chosen by the problem, not the other way around.
 
-*Full vision document: [`docs/VISION.md`](docs/VISION.md)*
+## Documentation
+
+**[aletheia-works.github.io/vivarium](https://aletheia-works.github.io/vivarium)** — vision, roadmap, architecture, ADRs.
+
+The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`.
 
 ## Development Philosophy
 

@@ -44,7 +44,7 @@ a command, it assumes `sl`; contributors using Git may translate.
   fall back to Git on their own machine.
 - Some workflows — particularly rewriting already-pushed commits —
   hit Sapling's public-commit lockout and require documented
-  workarounds (see ADR-0007).
+  workarounds (see [ADR-0007](./0007-bootstrap-squash-policy.md)).
 
 ## Alternatives considered
 
@@ -57,6 +57,5 @@ a command, it assumes `sl`; contributors using Git may translate.
 ## References
 
 - [Sapling](https://sapling-scm.com)
-- `CLAUDE.md` § 2 — Sapling-specific agent instructions
-- ADR-0007 — Bootstrap squash policy (references the public-commit
-  lockout workaround)
+- [CLAUDE.md § 2 — Sapling-specific agent instructions](https://github.com/aletheia-works/vivarium/blob/main/CLAUDE.md)
+- [ADR-0007 — Bootstrap squash policy](./0007-bootstrap-squash-policy.md) (references the public-commit lockout workaround)

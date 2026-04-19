@@ -1,0 +1,51 @@
+name: Test docs build
+
+# Verifies that the rspress docs site still builds on every PR that
+# touches docs/ or related configuration. Prevents broken-build PRs from
+# ever reaching main, where `deploy-docs.yml` would otherwise fail the
+# Pages deployment.
+#
+# This workflow does NOT deploy — it only runs `bun run build` and
+# discards the output. Actual deployment happens from `deploy-docs.yml`
+# on pushes to main.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'rspress.config.ts'
+      - 'package.json'
+      - 'bun.lock'
+      - '.mise.toml'
+      - '.github/workflows/test-docs-build.yml'
+
+permissions:
+  contents: read
+
+# Only keep the most recent build per PR. If a new commit supersedes an
+# earlier one, cancel the stale run to save Actions minutes.
+concurrency:
+  group: test-docs-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Bun via mise
+        uses: jdx/mise-action@v2
+
+      - name: Install dependencies
+        # First-run note: `bun.lock` does not yet exist in version control.
+        # Switch to `bun install --frozen-lockfile` once the lockfile has
+        # been committed (same TODO as in `deploy-docs.yml`).
+        run: bun install
+
+      - name: Build docs
+        run: bun run build

@@ -28,11 +28,13 @@ work cleanly today and are stable.
 
 - The **Project v2 board** is click-ops — created and configured
   through the GitHub UI. Its URL and initial configuration are
-  documented in `docs/AI_WORKFLOW.md` § 1.
-- **Milestones** are managed as IaC via `infra/github/milestones.tf`.
-- **Labels** are managed as IaC via `infra/github/labels.tf`.
+  documented in [AI workflow § 1](../ai-workflow.md).
+- **Milestones** are managed as IaC via
+  [infra/github/milestones.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/milestones.tf).
+- **Labels** are managed as IaC via
+  [infra/github/labels.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/labels.tf).
 - **Branch protection** is managed as IaC via
-  `infra/github/branch_protection.tf`.
+  [infra/github/branch_protection.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/branch_protection.tf).
 
 Revisit this decision when the provider ships a
 `github_project_v2_*` resource.
@@ -64,7 +66,7 @@ Revisit this decision when the provider ships a
 
 ## References
 
-- `infra/github/milestones.tf`, `labels.tf`, `branch_protection.tf`
+- [infra/github/milestones.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/milestones.tf), [labels.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/labels.tf), [branch_protection.tf](https://github.com/aletheia-works/vivarium/blob/main/infra/github/branch_protection.tf)
 - Provider tracking issue:
   [integrations/terraform-provider-github#2916](https://github.com/integrations/terraform-provider-github/issues/2916)
-- `docs/AI_WORKFLOW.md` § 1
+- [AI workflow § 1](../ai-workflow.md)

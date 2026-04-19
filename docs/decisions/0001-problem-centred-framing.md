@@ -47,7 +47,8 @@ three-layer architecture (ADR-0002).
 
 - Harder elevator pitch. "Reproduce any bug" is less immediately
   grippable than "run Python in the browser".
-- Easy to drift into doing everything. Mitigated by `NON_GOALS.md`.
+- Easy to drift into doing everything. Mitigated by
+  [Non-goals](../non-goals.md).
 
 ## Alternatives considered
 
@@ -60,6 +61,5 @@ three-layer architecture (ADR-0002).
 
 ## References
 
-- `docs/VISION.md`
-- `_context/ambitious_integrated_platform_strategy.md` (local-only
-  source strategy)
+- [Vision](../vision.md)
+- Private strategy source in `_context/` (local-only, not published).

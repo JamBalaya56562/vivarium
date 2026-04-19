@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Home"
+  },
+  {
+    "type": "file",
+    "name": "vision",
+    "label": "Vision"
+  },
+  {
+    "type": "file",
+    "name": "non-goals",
+    "label": "Non-goals"
+  },
+  {
+    "type": "file",
+    "name": "ai-workflow",
+    "label": "AI workflow"
+  },
+  {
+    "type": "dir",
+    "name": "decisions",
+    "label": "Decisions (ADRs)"
+  }
+]
