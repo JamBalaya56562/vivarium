@@ -150,8 +150,17 @@ only within the `triage` ↔ `in-progress` ↔ `blocked` triangle — see § 4.
   will fail the check otherwise.
 - `scope: *` labels attach automatically via path rules; do not hand-add
   them.
-- Draft PR opened early. Iterate in the draft; mark ready for review
-  when the implementer considers the work complete.
+- **PR state mirrors implementation state.** Open the PR **ready for
+  review** when the work meets the Issue's acceptance criteria and the
+  implementer is confident there is nothing substantive left to change.
+  Use **draft** mode only while implementation is still in progress or
+  pending non-trivial rework (known failing tests, missing pieces,
+  awaiting a human decision). If CodeRabbit or human review surfaces
+  substantive rework, flip the PR back to draft until the rework is
+  done, then flip it back to ready. Flipping between the two states is
+  the implementer's signal of "not done" vs "please review" — AI
+  implementers follow the same rule as humans; a draft is not a "polite"
+  default.
 
 ### 3.4 Review
 
