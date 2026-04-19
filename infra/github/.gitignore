@@ -1,0 +1,21 @@
+# OpenTofu / Terraform
+# .terraform.lock.hcl is committed for provider version pinning.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+
+# Variable files may contain secrets.
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+
+# Plan outputs
+*.tfplan
+tfplan
+
+# OS
+.DS_Store
+Thumbs.db

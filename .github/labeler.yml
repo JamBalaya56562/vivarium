@@ -1,0 +1,70 @@
+# Path-based label rules for vivarium.
+# Consumed by .github/workflows/labeler.yml (actions/labeler).
+#
+# Rules map file-path patterns to labels defined in
+# infra/github/labels.tf. `type: *` labels are applied only where they
+# can be inferred mechanically (e.g. a purely doc change gets
+# `type: docs`); other `type: *` labels come from the conventional
+# commit prefix of the PR and are set by a separate automation.
+
+"scope: ci":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/dependabot.yml"
+          - ".github/labeler.yml"
+          - ".github/release.yml"
+
+"scope: infra":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "infra/**"
+
+"scope: python":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.py"
+          - "**/pyproject.toml"
+          - "**/requirements*.txt"
+          - "**/poetry.lock"
+          - "**/uv.lock"
+
+"scope: rust":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.rs"
+          - "**/Cargo.toml"
+          - "**/Cargo.lock"
+          - "**/rust-toolchain*"
+
+"scope: js":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.{js,jsx,ts,tsx,mjs,cjs}"
+          - "**/package.json"
+          - "**/package-lock.json"
+          - "**/pnpm-lock.yaml"
+          - "**/bun.lock"
+          - "**/tsconfig*.json"
+
+"scope: wasm":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.wasm"
+          - "**/*.wat"
+          - "**/wasm/**"
+
+"scope: docker":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/Dockerfile*"
+          - "**/docker-compose*.yml"
+          - "**/docker-compose*.yaml"
+          - "**/.dockerignore"
+
+"type: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+          - "LICENSE"

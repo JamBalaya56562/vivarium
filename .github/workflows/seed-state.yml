@@ -1,0 +1,103 @@
+name: Seed Terraform State
+
+# One-off and disaster-recovery workflow: accepts a base64-encoded state
+# file and publishes it as the `terraform-state` artifact, then points
+# LATEST_APPLY_RUN_ID at this run so the Terraform Plan/Apply workflows
+# pick it up.
+#
+# Use cases:
+#   1. Bootstrap — publish the initial state produced by a local
+#      `tofu import` / `tofu apply` before the first CI apply.
+#   2. Recovery — restore state from a local backup if the CI-side state
+#      is corrupted (for example when an early-stage apply failure
+#      uploaded an empty state artifact).
+#
+# Dispatch:
+#   cd infra/github
+#   STATE_B64=$(base64 -w0 terraform.tfstate)
+#   gh workflow run seed-state.yml \
+#     --repo <owner>/<repo> \
+#     -f state_b64="$STATE_B64"
+#
+# Security note: the state_b64 input is visible in the workflow run logs.
+# This project's state contains GitHub resource IDs and ETags but no
+# authentication material, so logging is acceptable. Do not use this
+# workflow to seed states that contain secrets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      state_b64:
+        description: 'Base64-encoded terraform.tfstate (use: base64 -w0 terraform.tfstate)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  # Required to upload the artifact.
+  actions: write
+
+# Share the concurrency group with plan/apply so seeding cannot race.
+concurrency:
+  group: terraform-state
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: Seed terraform-state artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decode state
+        run: |
+          mkdir -p ./state
+          printf '%s' "${{ inputs.state_b64 }}" | base64 -d > ./state/terraform.tfstate
+          size=$(stat -c%s ./state/terraform.tfstate)
+          echo "Decoded state size: ${size} bytes"
+          # Sanity check: the file must be valid JSON with a non-empty resources list.
+          if ! jq -e '.resources | length > 0' ./state/terraform.tfstate >/dev/null 2>&1; then
+            echo "::error::Decoded state has no resources. Refusing to seed."
+            exit 1
+          fi
+          resource_count=$(jq '.resources | length' ./state/terraform.tfstate)
+          echo "Resources in state: ${resource_count}"
+
+      - name: Upload terraform-state artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: terraform-state
+          path: ./state/terraform.tfstate
+          retention-days: 90
+          overwrite: true
+
+      # Set LATEST_APPLY_RUN_ID so plan/apply workflows download the
+      # artifact published above. Uses TF_TOKEN_GITHUB because the default
+      # GITHUB_TOKEN lacks variables:write permission.
+      - name: Point LATEST_APPLY_RUN_ID at this run
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        with:
+          github-token: ${{ secrets.TF_TOKEN_GITHUB }}
+          script: |
+            try {
+              await github.rest.actions.createRepoVariable({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'LATEST_APPLY_RUN_ID',
+                value: '${{ github.run_id }}',
+              });
+            } catch (e) {
+              await github.rest.actions.updateRepoVariable({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'LATEST_APPLY_RUN_ID',
+                value: '${{ github.run_id }}',
+              });
+            }
+
+      - name: Summary
+        run: |
+          echo "### Seed complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: \`terraform-state\` (uploaded from run \`${{ github.run_id }}\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`LATEST_APPLY_RUN_ID\` set to \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Next Terraform Plan/Apply run will download this state." >> $GITHUB_STEP_SUMMARY

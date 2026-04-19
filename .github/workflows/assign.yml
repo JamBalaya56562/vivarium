@@ -1,0 +1,40 @@
+name: Auto Assign Owner
+
+# Auto-assigns the org owner to newly opened or reopened issues and pull
+# requests. Skips if the item already has an assignee, so manual
+# reassignment is never overwritten. There is no native GitHub feature
+# (branch rules, repo settings) that does this for issues, hence the
+# workflow.
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: ${{ github.repository }}
+  OWNER: JamBalaya56562
+
+jobs:
+  assign:
+    name: Assign to owner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assign issue
+        if: github.event_name == 'issues' && toJSON(github.event.issue.assignees) == '[]'
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+        run: gh issue edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"
+
+      - name: Assign pull request
+        if: github.event_name == 'pull_request_target' && toJSON(github.event.pull_request.assignees) == '[]'
+        env:
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"

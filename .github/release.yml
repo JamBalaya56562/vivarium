@@ -1,0 +1,33 @@
+# Release notes category config for GitHub's auto-generated notes.
+# Used by `gh release create --generate-notes` from release.yml.
+#
+# Labels referenced here must exist in infra/github/labels.tf so that
+# PRs can be categorized automatically.
+
+changelog:
+  categories:
+    - title: Features
+      labels:
+        - "type: feature"
+    - title: Bug Fixes
+      labels:
+        - "type: bug"
+    - title: Performance
+      labels:
+        - "type: refactor"
+    - title: Documentation
+      labels:
+        - "type: docs"
+    - title: Tests
+      labels:
+        - "type: test"
+    - title: Infrastructure & CI
+      labels:
+        - "scope: infra"
+        - "scope: ci"
+    - title: Dependencies
+      labels:
+        - "type: chore"
+    - title: Other changes
+      labels:
+        - "*"

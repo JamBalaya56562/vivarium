@@ -1,0 +1,27 @@
+name: PR Labeler
+
+# Applies labels to PRs based on changed file paths, driven by the rules
+# in .github/labeler.yml in this repo.
+#
+# `sync-labels: true` removes labels that the action previously applied
+# when the matching rule no longer matches (e.g. after a PR push removes
+# the last docs change). Manually applied labels are untouched.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  labeler:
+    name: Apply labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Label based on changed files
+        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
+        with:
+          sync-labels: true

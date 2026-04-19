@@ -1,0 +1,159 @@
+name: Terraform State Backup
+
+# Periodically back up the state to GitHub Release Assets.
+#
+# Why:
+# - GitHub Actions artifacts expire after at most 90 days (Free plan).
+# - Artifact retention is never indefinite, even for public repositories.
+# - Losing the state means losing the source of truth for the infrastructure.
+#
+# This workflow copies the state to a Release Asset for long-term retention.
+# Release Assets are kept indefinitely.
+
+on:
+  # Weekly backup (every Monday 03:00 UTC = 12:00 JST).
+  schedule:
+    - cron: '0 3 * * 1'
+
+  # Also back up automatically after each Terraform Apply.
+  workflow_run:
+    workflows: ["Terraform Apply"]
+    types:
+      - completed
+
+  # Manual run.
+  workflow_dispatch:
+
+permissions:
+  contents: write # Required to create releases.
+  actions: read   # Required to read artifacts.
+
+concurrency:
+  group: terraform-state-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Backup State to Release
+    runs-on: ubuntu-latest
+    # When triggered via workflow_run, only run if the apply succeeded.
+    if: |
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download latest state artifact
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: terraform-state
+          path: ./state-backup/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check state exists
+        id: check
+        run: |
+          if [ -f ./state-backup/terraform.tfstate ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            # Record state file size for release notes.
+            echo "state_size=$(stat -c%s ./state-backup/terraform.tfstate)" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::warning::No state file found in artifacts. Skipping backup."
+          fi
+
+      - name: Generate timestamp
+        id: timestamp
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          echo "date=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "tag=state-backup-$(date -u +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Rename state file with timestamp
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          mv ./state-backup/terraform.tfstate \
+             ./state-backup/terraform-${{ steps.timestamp.outputs.date }}.tfstate
+
+      - name: Create Release with state backup
+        if: steps.check.outputs.exists == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.timestamp.outputs.tag }}
+          DATE: ${{ steps.timestamp.outputs.date }}
+          DATETIME: ${{ steps.timestamp.outputs.datetime }}
+          SIZE: ${{ steps.check.outputs.state_size }}
+          EVENT: ${{ github.event_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          cat > release_notes.md <<NOTES
+          Automated Terraform state backup.
+
+          - **Timestamp**: ${DATETIME}
+          - **Size**: ${SIZE} bytes
+          - **Triggered by**: ${EVENT}
+          - **Commit**: ${COMMIT}
+
+          ## Restore Instructions
+
+          \`\`\`bash
+          gh release download ${TAG} --pattern '*.tfstate'
+          mv terraform-*.tfstate infra/github/terraform.tfstate
+          cd infra/github/
+          tofu state list
+          \`\`\`
+
+          > ⚠️ This state file may contain sensitive data.
+          > Release visibility follows the repository visibility.
+          NOTES
+
+          gh release create "${TAG}" \
+            ./state-backup/*.tfstate \
+            --title "State Backup ${DATE}" \
+            --notes-file release_notes.md \
+            --prerelease
+
+      - name: Cleanup old backups (keep last 12)
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/github-script@d746ffe35508b1917358783b479e04febd2b8f71 # v9.0.0
+        with:
+          script: |
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            // Only target prereleases with the state-backup- tag prefix.
+            const backups = releases
+              .filter(r => r.tag_name.startsWith('state-backup-') && r.prerelease)
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Keep the latest 12 (about 3 months of weekly backups) and delete older ones.
+            const toDelete = backups.slice(12);
+
+            for (const release of toDelete) {
+              console.log(`Deleting old backup: ${release.tag_name}`);
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+              });
+              // Delete the associated tag as well.
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${release.tag_name}`,
+                });
+              } catch (e) {
+                console.log(`Failed to delete tag ${release.tag_name}: ${e.message}`);
+              }
+            }
+
+            console.log(`Cleanup complete. Kept ${Math.min(backups.length, 12)} backups.`);

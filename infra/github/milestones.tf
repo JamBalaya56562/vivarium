@@ -1,0 +1,49 @@
+# Milestones — phase boundaries for the lifelong roadmap.
+#
+# GitHub Projects v2 has no provider resource as of
+# integrations/terraform-provider-github v6.11.x (tracking issue #2916),
+# so the Project board itself is click-ops. Milestones, however, are a
+# stable first-class resource and belong in IaC: they are the phase
+# boundaries that humans commit to, and CI / labels / ADRs reference
+# them mechanically.
+#
+# `due_date` is deliberately omitted. Phase durations in the lifelong
+# roadmap are directional (months → years) rather than commitments. Set
+# a concrete date by adding `due_date = "YYYY-MM-DD"` under the relevant
+# entry once a phase acquires a hard target.
+#
+# Milestone titles double as the canonical phase label surfaced on
+# Issues and PRs; keep them human-readable and prefixed with the phase
+# number so the GitHub UI sorts them in order.
+
+locals {
+  milestones = {
+    "Phase 0 — Bootstrap" = {
+      description = "Infrastructure-as-Code foundations, vision and workflow documents, AI-delegation bootstrap. No product code yet."
+    }
+    "Phase 1 — Layer 1: data processing" = {
+      description = "First reproduction domain: Python + SQLite over WASM (Pyodide). Target 10–100 early users; validate the reproduction loop end-to-end."
+    }
+    "Phase 2 — Layer 1: multi-language" = {
+      description = "Extend Layer 1 to Rust (wasm32-wasi), JavaScript, Ruby.wasm, PHP.wasm. Upstream contributions to Pyodide / WASI where gaps block reproduction."
+    }
+    "Phase 3 — Layer 2: Docker" = {
+      description = "Full-fidelity reproduction for arbitrary projects, complex dependencies, and network-dependent bugs via devcontainer / Firecracker."
+    }
+    "Phase 4 — Layer 3: record-replay & deterministic" = {
+      description = "rr / Pernosco-style record-replay and Antithesis-style deterministic simulation for problems Layers 1 and 2 cannot reach."
+    }
+    "Phase 5 — Ecosystem" = {
+      description = "Platform integrations, third-party reproduction definitions, industry standardisation around the bug-reproduction primitive."
+    }
+  }
+}
+
+resource "github_repository_milestone" "phases" {
+  for_each = local.milestones
+
+  owner       = var.github_owner
+  repository  = github_repository.this.name
+  title       = each.key
+  description = each.value.description
+}

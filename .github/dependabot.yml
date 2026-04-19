@@ -1,0 +1,53 @@
+# Dependabot configuration.
+#
+# Opens PRs to keep dependencies up to date. Reviewing and merging is
+# delegated to AI-assisted review (Claude Code, CodeRabbit), keeping
+# dependencies current with minimal human intervention.
+
+version: 2
+updates:
+  # ─── GitHub Actions ──────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "type: chore"
+      - "scope: ci"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+    # Skip non-security major version updates — major bumps need targeted
+    # human/AI review rather than automated merging.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+
+  # ─── OpenTofu providers ──────────────────────
+  - package-ecosystem: "terraform"
+    directory: "/infra/github"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "type: chore"
+      - "scope: infra"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(infra)"
+      include: "scope"
+    open-pull-requests-limit: 3
+
+  # Future ecosystems to enable in Phase 1+:
+  #
+  # - package-ecosystem: "pip"      # Python deps
+  # - package-ecosystem: "cargo"    # Rust deps
+  # - package-ecosystem: "npm"      # JS deps
+  # - package-ecosystem: "docker"   # Dockerfile base images
