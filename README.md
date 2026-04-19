@@ -55,7 +55,8 @@ The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub
 This project is developed using an **AI-delegated workflow**:
 
 1. Humans define vision, direction, and make strategic decisions
-2. AI agents (Claude Code, CodeRabbit, etc.) implement, review, and iterate
+2. AI agents (Claude Code) implement and review in two distinct workflows,
+   with the human merging
 3. Automation infrastructure (GitHub Actions, Dependabot) runs continuously
 
 The project eats its own dog food:
@@ -108,7 +109,7 @@ being laid. Star the repo to follow along.
 | Docker execution | devcontainer, Firecracker (exploration) |
 | Record-replay | rr, Pernosco-style (long-term) |
 | Infrastructure | OpenTofu, GitHub Actions |
-| AI agents | Claude Code, CodeRabbit |
+| AI agents | Claude Code (implementer and reviewer) |
 
 ## License
 

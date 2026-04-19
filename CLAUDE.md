@@ -80,6 +80,7 @@ filler tasks.
 ## 6. Where the full cycle is defined
 
 The end-to-end Issue → implementation → review → merge flow — including how
-Claude Code, CodeRabbit, Dosu, Dependabot, and GitHub Actions compose — is
-documented in [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md). Defer to it for
-process questions.
+Claude Code (as both implementer and reviewer), Dosu, Dependabot, and
+GitHub Actions compose — is documented in
+[`docs/ai-workflow.md`](docs/ai-workflow.md). Defer to it for process
+questions.

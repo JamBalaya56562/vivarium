@@ -32,5 +32,6 @@ Closes #<issue-number>.
 <!-- Delete the bullets that do not apply. -->
 - AI-authored? If yes, the `ai: generated` label must be set on this PR.
 - Scope-creep check: the diff still matches the title and linked Issue.
-- CodeRabbit agrees, or you have pushed back with a specific justification
-  on each disagreement (silent capitulation corrupts the review signal).
+- Claude's automated review agrees, or you have pushed back with a specific
+  justification on each disagreement (silent capitulation corrupts the
+  review signal).

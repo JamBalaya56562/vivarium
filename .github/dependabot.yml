@@ -1,8 +1,7 @@
 # Dependabot configuration.
 #
-# Opens PRs to keep dependencies up to date. Reviewing and merging is
-# delegated to AI-assisted review (Claude Code, CodeRabbit), keeping
-# dependencies current with minimal human intervention.
+# Opens PRs to keep dependencies up to date. Reviewing is delegated to
+# Claude Code's automated review workflow; merging stays human-only.
 
 version: 2
 updates:

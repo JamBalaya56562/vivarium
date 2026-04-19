@@ -17,7 +17,7 @@
 - **Lifelong project.** Phases are measured in years, not sprints. Prefer
   durable decisions over quick wins.
 - **AI-delegated development.** Humans set direction and merge; AI agents
-  implement, review, and iterate. See [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md).
+  implement, review, and iterate. See [`docs/ai-workflow.md`](docs/ai-workflow.md).
 - **Current phase: Phase 0 — Bootstrap.** Infrastructure-as-Code foundations
   only. Product code has not started.
 

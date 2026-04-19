@@ -18,7 +18,7 @@
                                                   │
                                                   ▼
 ┌────────────────┐   ┌────────────────┐   ┌────────────────┐
-│  Human merge   │◀──│  CodeRabbit    │◀──│  PR (draft →   │
+│  Human merge   │◀──│  Claude Code   │◀──│  PR (draft →   │
 │  (decision)    │   │  reviews       │   │  ready)        │
 └───────┬────────┘   └────────────────┘   └────────────────┘
         │
@@ -55,18 +55,21 @@ the cycle.
 
 | Agent         | Role                        | Installed? |
 |---------------|-----------------------------|------------|
-| Claude Code   | Primary implementer         | yes        |
-| CodeRabbit    | Automated PR review         | yes        |
+| Claude Code   | Primary implementer + reviewer | yes     |
 | Dosu          | Issue triage & Q&A          | planned    |
 
-- **Claude Code** reads Issues, drafts PRs, iterates on review feedback,
-  and opens follow-up Issues when it discovers out-of-scope work.
-  Constrained by
+- **Claude Code** plays two roles in this repo:
+  1. **Implementer** — reads Issues, drafts PRs, opens follow-up Issues
+     when it discovers out-of-scope work.
+  2. **Reviewer** — on every non-draft PR, reads the diff against
+     `AGENTS.md` / `CLAUDE.md` / the linked Issue and posts a single
+     GitHub review (`COMMENT` or `REQUEST_CHANGES`, never `APPROVE`).
+     Runs via `.github/workflows/claude-review.yml`.
+
+  Both roles are constrained by
   [AGENTS.md § 2](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md)
   and
   [CLAUDE.md](https://github.com/aletheia-works/vivarium/blob/main/CLAUDE.md).
-- **CodeRabbit** provides line-level review on every PR. Its comments
-  are advisory — the human still merges.
 - **Dosu** (once enabled) answers repeat Issue questions and proposes
   initial triage labels, which a human confirms.
 
@@ -164,20 +167,25 @@ only within the `triage` ↔ `in-progress` ↔ `blocked` triangle — see § 4.
 
 ### 3.4 Review
 
-- **CodeRabbit** reviews automatically on PR open and on every push.
-- Claude Code addresses CodeRabbit comments in follow-up commits. The
-  `.github/workflows/claude-respond-to-coderabbit.yml` workflow automates
-  this for PRs authored by the repository owner (or PRs carrying the
-  `ai: approved` label added manually by the owner for trust).
-- Human may also review at any point.
-- If CodeRabbit and the implementer disagree on a judgement call, the
+- **Claude Code** reviews automatically on PR open, ready-for-review, and
+  every subsequent push. The `.github/workflows/claude-review.yml`
+  workflow posts exactly one GitHub review per run — `COMMENT` or
+  `REQUEST_CHANGES`, never `APPROVE`. The workflow runs unconditionally
+  for PRs authored by the repository owner; other authors require the
+  `ai: approved` label (added manually by the owner for trust).
+- Review posture is substance-over-style: unverified claims, hallucinated
+  APIs, security issues, state-safety issues, and scope-creep are in
+  scope; indentation, line length, naming, and prose style are not —
+  formatters, linters, and `tofu fmt` own those.
+- Human may review at any point alongside Claude.
+- If the review flags something the implementer disagrees with, the
   disagreement is surfaced to the human — *not* silently resolved by the
   AI.
 
 ### 3.5 Merge
 
-- **Human-only.** The human merges once CI is green, CodeRabbit is
-  satisfied, and the scope boundary from § 3.1 still holds.
+- **Human-only.** The human merges once CI is green, the Claude review
+  is satisfied, and the scope boundary from § 3.1 still holds.
 - Squash-merge is the default so the PR-level Conventional-Commit prefix
   becomes the commit on `main`.
 
@@ -202,7 +210,6 @@ only within the `triage` ↔ `in-progress` ↔ `blocked` triangle — see § 4.
 | `ai: generated`  | attached to any PR Claude opens   | yes (self-tag)         |
 | `ai: slop-risk`  | human / reviewer                  | no                     |
 | `ai: verified`   | human after review                | no                     |
-| `ai: escalated`  | the CodeRabbit-response workflow on cap trip | no           |
 
 `ai: generated` exists as a *disclosure* mechanism — every AI-authored
 change must wear it. The label definitions are in
@@ -215,9 +222,6 @@ change must wear it. The label definitions are in
   `ai: slop-risk` and rejects. Do not try to hide AI-ness.
 - **Scope creep.** If an Issue balloons mid-implementation, stop, close
   the current PR as draft, and file a new Issue for the overflow.
-- **Iteration cap.** The CodeRabbit-response workflow caps at 5
-  Claude-authored commits per PR. On cap trip, `ai: escalated` is
-  applied and the work hands off to a human reviewer.
 - **Stuck loop.** If Claude Code in `/loop` mode cannot make progress,
   it should end the loop with a short status message rather than pad
   with busywork.
@@ -248,9 +252,11 @@ Tracked elsewhere, not here:
 - Install Dosu.
 - Continue seeding the Phase 0 Issue backlog.
 
-The `/claude`-triggered implementation workflow is now in place at
+The `/claude`-triggered implementation workflow is in place at
 [`.github/workflows/claude-implement.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/claude-implement.yml),
-complementing the CodeRabbit-response workflow already in production. An
-authorised commenter (write or admin permission) posting `/claude` on a
-non-blocked Issue triggers Claude Code to open a draft PR against a
-fresh branch; guardrails in `AGENTS.md` § 2 apply unchanged.
+paired with the Claude-review workflow at
+[`.github/workflows/claude-review.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/claude-review.yml).
+An authorised commenter (write or admin permission) posting `/claude` on
+a non-blocked Issue triggers Claude Code to open a PR against a fresh
+branch; Claude then reviews the PR on every subsequent push. Guardrails
+in `AGENTS.md` § 2 apply unchanged to both.
