@@ -1,0 +1,139 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit review profile for aletheia-works/vivarium.
+#
+# Posture: strict on substance, light on style.
+# - Flag unverified claims, hallucinated APIs, invented citations, AI-slop
+#   signals, and PRs that look AI-authored without acknowledging it.
+# - Do NOT comment on indentation, line length, minor naming, prose style.
+#   Those belong in formatters/linters/tofu fmt, not review.
+#
+# Label policy: CodeRabbit must NOT apply labels automatically. Our label
+# taxonomy in infra/github/labels.tf is mechanical-only (path rules +
+# Conventional-Commit parsing + CI). See ADR-0006.
+
+language: en-US
+early_access: false
+
+tone_instructions: |
+  Prioritise substance over style. Flag unverified factual claims,
+  hallucinated APIs or function references, invented citations, generic
+  copy-paste advice, and PRs that look AI-authored without acknowledging it
+  via an `ai: generated` label. Do not comment on indentation, line length,
+  minor naming, comment formatting, or prose style — those are handled by
+  formatters and linters, not review.
+
+reviews:
+  # `chill` keeps feedback substantive; `assertive` reintroduces stylistic
+  # nitpicks that our tone_instructions explicitly suppress.
+  profile: chill
+
+  poem: false
+  in_progress_fortune: false
+  sequence_diagrams: false  # too noisy for a docs/infra repo
+
+  # OSS contributors should not be blocked by a bot review.
+  request_changes_workflow: false
+  high_level_summary: true
+  changed_files_summary: true
+  assess_linked_issues: true
+
+  # Mechanical-labelling policy (ADR-0006): never let CodeRabbit infer
+  # or apply labels. Humans or workflows set them; CodeRabbit stays out.
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+
+  # Anti-slop detection (public GitHub repos only — vivarium qualifies).
+  # The label below must exist in infra/github/labels.tf; `ai: slop-risk`
+  # is our canonical label for this state. CodeRabbit will *suggest* this
+  # state, but per auto_apply_labels=false, a human still applies it.
+  slop_detection:
+    enabled: true
+    label: "ai: slop-risk"
+
+  path_filters:
+    - "!LICENSE"
+    - "!_context/**"       # local-only strategy memos; gitignored anyway
+    - "!.mise.toml"        # pinned-by-convention, no review value
+    - "!**/*.lock"
+    - "!**/bun.lock"
+
+  path_instructions:
+    - path: "**/*.md"
+      instructions: |
+        Review for factual accuracy, broken internal links, and
+        strategic coherence with VISION.md / NON_GOALS.md / the ADRs.
+        Do NOT flag prose style, line length, or heading-case preferences.
+    - path: ".github/workflows/**"
+      instructions: |
+        Flag insecure patterns: actions pinned by floating tag, missing
+        `permissions:` blocks, potential secret leaks, overly broad
+        `GITHUB_TOKEN` scopes. Do not flag whitespace or key ordering.
+    - path: "infra/**/*.tf"
+      instructions: |
+        Flag state-safety issues, missing provider pinning, overly broad
+        IAM / permissions, resources that could cause data loss on destroy.
+        Defer formatting to `tofu fmt`.
+    - path: "docs/decisions/**"
+      instructions: |
+        ADRs are historical records. Do not request edits to accepted
+        ADRs; instead request a superseding ADR.
+
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+
+  # commitlint and the conventional-commit caller workflow already
+  # validate PR titles; CodeRabbit should not duplicate that.
+  pre_merge_checks:
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "warning"
+
+tools:
+  # Defer style linting to the project's own CI and formatters.
+  markdownlint:
+    enabled: false
+  yamllint:
+    enabled: false
+  biome:
+    enabled: false
+  eslint:
+    enabled: false
+
+  # Prose checks — keep enabled but at `default` level (not `picky`),
+  # and suppress style/redundancy categories per tone_instructions.
+  languagetool:
+    enabled: true
+    level: default
+    disabled_categories:
+      - STYLE
+      - REDUNDANCY
+      - COLLOQUIALISMS
+
+  # Security and IaC scanners — keep on.
+  gitleaks:
+    enabled: true
+  trufflehog:
+    enabled: true
+  checkov:
+    enabled: true
+  tflint:
+    enabled: true
+
+chat:
+  auto_reply: true
+  allow_non_org_members: true   # OSS repo; accept contributor questions
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true               # helps ground-check hallucinated references
+  learnings:
+    scope: local                # public repo; keep learnings repo-scoped
