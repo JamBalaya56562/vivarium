@@ -152,7 +152,7 @@ there the project widens deliberately — more languages in Layer 1, then
 Layer 2, then Layer 3 — with no pressure to skip stages in search of a
 product launch.
 
-A phased roadmap is *coming soon*. See
+See the [Roadmap](./roadmap.md) for the Phase 0 → Phase 5 plan, and
 [Non-goals](./non-goals.md) for what this project deliberately will not
 become.
 

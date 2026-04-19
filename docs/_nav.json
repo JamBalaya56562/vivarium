@@ -5,6 +5,11 @@
     "activeMatch": "/vision"
   },
   {
+    "text": "Roadmap",
+    "link": "/roadmap",
+    "activeMatch": "/roadmap"
+  },
+  {
     "text": "AI workflow",
     "link": "/ai-workflow",
     "activeMatch": "/ai-workflow"

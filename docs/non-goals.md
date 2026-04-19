@@ -97,4 +97,4 @@ mature. Reproduction-as-a-primitive deserves the same timescale.
 ## See also
 
 - [Vision](./vision.md) — what we *are* building.
-- A phased roadmap is *coming soon*.
+- [Roadmap](./roadmap.md) — the Phase 0 → Phase 5 plan.

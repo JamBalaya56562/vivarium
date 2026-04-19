@@ -12,8 +12,7 @@
 This project is in the initial setup phase. Infrastructure-as-Code foundations
 are being established. Actual product development has not started yet.
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full plan from Phase 0 to Phase 5.
-*(To be added)*
+See [`docs/roadmap.md`](docs/roadmap.md) for the full plan from Phase 0 to Phase 5.
 
 ---
 

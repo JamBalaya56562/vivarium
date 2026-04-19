@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "roadmap",
+    "label": "Roadmap"
+  },
+  {
+    "type": "file",
     "name": "ai-workflow",
     "label": "AI workflow"
   },
