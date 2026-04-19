@@ -1,0 +1,212 @@
+name: Claude responds to CodeRabbit
+
+# When CodeRabbit posts a review or review comment on a PR, Claude reads the
+# actionable items, decides whether each is correct, applies fixes (or pushes
+# back with reasoning), and posts `@coderabbitai resolve` to close the loop.
+#
+# Loop safety: caps at 5 Claude-authored commits per PR (counted by commit
+# author login prefix). On cap trip the PR is labelled `ai: escalated` and
+# handed off to a human reviewer — Claude does not run.
+#
+# Abuse guard: the workflow runs unconditionally for PRs authored by the
+# repository owner (hard-coded below). For PRs from any other author, the
+# workflow skips Claude entirely unless the PR carries the `ai: approved`
+# label — which only the owner adds after a manual trust check. This
+# prevents a third party from weaponising a CodeRabbit reply to coerce
+# Claude into editing arbitrary code on their PR.
+#
+# Prerequisites (one-time setup):
+# - `CLAUDE_CODE_OAUTH_TOKEN` repo secret — Claude Max subscription token
+#   generated via `claude setup-token` locally; Max subscription tokens are
+#   valid for ~1 year.
+# - Claude GitHub App installed on `aletheia-works/vivarium` so that Claude's
+#   pushes are attributed to `claude[bot]` and re-trigger commitlint /
+#   labeler / other workflows that otherwise ignore `GITHUB_TOKEN` pushes.
+# - `ai: approved` and `ai: escalated` labels exist — managed via
+#   `infra/github/labels.tf`, must be `tofu apply`-ed before this workflow
+#   fires for the first time.
+
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: claude-coderabbit-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  respond:
+    # Only fire when CodeRabbit is the sender and the context is a PR.
+    # `github.event.issue.pull_request != null` distinguishes PR-scoped issue
+    # comments from plain Issue comments.
+    if: >-
+      github.event.sender.login == 'coderabbitai[bot]' &&
+      (github.event.issue.pull_request != null || github.event.pull_request != null)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const n = context.payload.pull_request?.number ?? context.payload.issue?.number;
+            if (!n) {
+              core.setFailed('Could not resolve PR number from event payload.');
+              return;
+            }
+            core.setOutput('number', n);
+
+      - name: Check authorisation (owner-or-approval gate)
+        id: auth
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const OWNER = 'JamBalaya56562';
+            const APPROVED_LABEL = 'ai: approved';
+
+            const pr = context.payload.pull_request ?? context.payload.issue;
+            const authorLogin = pr?.user?.login ?? '';
+            const labels = (pr?.labels || []).map(l => l.name);
+
+            const isOwner = authorLogin === OWNER;
+            const isApproved = labels.includes(APPROVED_LABEL);
+            const allowed = isOwner || isApproved;
+
+            core.info(`PR author: ${authorLogin}`);
+            core.info(`PR labels: ${labels.join(', ') || '(none)'}`);
+            core.info(`Is owner: ${isOwner}`);
+            core.info(`Has "${APPROVED_LABEL}" label: ${isApproved}`);
+            core.info(`Proceed with Claude response: ${allowed}`);
+
+            if (!allowed) {
+              core.notice(
+                `Skipping Claude response: PR author "${authorLogin}" is not the repository owner ` +
+                `and the "${APPROVED_LABEL}" label is not present. ` +
+                `The owner must add the label to authorise automated processing.`
+              );
+            }
+
+            core.setOutput('allowed', allowed ? 'true' : 'false');
+
+      - name: Count Claude iterations on this PR (cap 5)
+        if: steps.auth.outputs.allowed == 'true'
+        id: cap
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.pr.outputs.number }}');
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+            const claudeCommits = commits.filter(c => {
+              const login = (c.author?.login || c.committer?.login || '').toLowerCase();
+              return login.startsWith('claude');
+            }).length;
+            core.info(`Claude iterations so far on PR #${prNumber}: ${claudeCommits}/5`);
+            core.setOutput('iterations', claudeCommits);
+            core.setOutput('stop', claudeCommits >= 5 ? 'true' : 'false');
+
+      - name: Escalate to human when cap is reached
+        if: steps.cap.outputs.stop == 'true'
+        run: |
+          gh pr edit ${{ steps.pr.outputs.number }} \
+            --repo ${{ github.repository }} \
+            --add-label "ai: escalated"
+          gh pr comment ${{ steps.pr.outputs.number }} \
+            --repo ${{ github.repository }} \
+            --body "Claude has reached the 5-iteration cap for automated CodeRabbit responses on this PR. Handing off to a human reviewer — see \`docs/AI_WORKFLOW.md\` § 5."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch PR head branch
+        if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
+        id: meta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number('${{ steps.pr.outputs.number }}'),
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('head_sha', pr.head.sha);
+
+      - name: Checkout PR branch
+        if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.meta.outputs.head_ref }}
+
+      - name: Let Claude address CodeRabbit feedback
+        if: steps.auth.outputs.allowed == 'true' && steps.cap.outputs.stop != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            CodeRabbit left review feedback on PR #${{ steps.pr.outputs.number }}
+            (iteration ${{ steps.cap.outputs.iterations }} of 5).
+
+            ## Your task
+
+            1. Read `AGENTS.md` and `CLAUDE.md` at the repo root — they carry
+               the project's guardrails and conventions. Your work must
+               conform to them.
+
+            2. Fetch every unresolved CodeRabbit comment on this PR:
+
+               ```
+               gh api repos/${{ github.repository }}/pulls/${{ steps.pr.outputs.number }}/comments --paginate
+               gh api repos/${{ github.repository }}/pulls/${{ steps.pr.outputs.number }}/reviews --paginate
+               ```
+
+            3. For each actionable point, evaluate whether CodeRabbit is
+               correct.
+               - If correct: apply the fix.
+               - If wrong: reply to the thread with a short, specific
+                 justification and do NOT apply a "fix" you disagree with.
+                 Silent capitulation corrupts the review signal over time.
+
+            4. Honour the project's conventions:
+               - Conventional Commits for commit messages.
+               - Mechanical labelling — do not add or change labels yourself.
+               - Edit existing files; never create new documents unless an
+                 Issue explicitly asks for one.
+
+            5. If fixes were applied, commit them as a single commit titled
+               `fix(review): address CodeRabbit feedback (iteration ${{ steps.cap.outputs.iterations }})`
+               and push to the PR branch.
+
+            6. Post a PR comment summarising what changed (and what you
+               pushed back on). End with `@coderabbitai resolve` **only if**
+               every actionable point is fully addressed; otherwise explain
+               what is left.
+
+            7. If you cannot make progress — CodeRabbit is fundamentally
+               wrong, the feedback is scope-creep, or the point needs human
+               judgement — post a comment tagging the issue and STOP. Do not
+               loop on the same point across iterations.
+
+            ## Constraints
+
+            The guardrails in `AGENTS.md` § 2 apply unchanged:
+            - Do not merge or approve this PR.
+            - Do not push to `main`.
+            - Do not modify secrets or branch protection.
+            - Do not pivot scope.
+          claude_args: |
+            --max-turns 10
+            --allowedTools "Edit,MultiEdit,Write,Read,Glob,Grep,Bash(git:*),Bash(gh:*)"

@@ -115,6 +115,10 @@ locals {
     }
 
     # ─── AI-related ──────────────────────────────
+    "ai: approved" = {
+      color       = "0969da"
+      description = "Repository owner has authorised AI agents to process this PR"
+    }
     "ai: generated" = {
       color       = "00d4aa"
       description = "Created or modified by AI"
@@ -126,6 +130,10 @@ locals {
     "ai: verified" = {
       color       = "28a745"
       description = "AI output verified by human"
+    }
+    "ai: escalated" = {
+      color       = "ff8c00"
+      description = "AI agent reached iteration cap; escalated to human review"
     }
 
     # ─── Community ───────────────────────────────
