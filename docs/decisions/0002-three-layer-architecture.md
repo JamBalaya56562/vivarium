@@ -65,4 +65,4 @@ the problem. Users do not pick a layer.
 
 - [ADR-0001 — Adopt problem-centred framing](./0001-problem-centred-framing.md) (parent decision).
 - [Vision](../vision.md) — public-facing layer description.
-- Technical design is *coming soon*.
+- [Architecture](../architecture.md) — technical design of the layers.

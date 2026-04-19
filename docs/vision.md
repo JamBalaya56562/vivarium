@@ -100,7 +100,8 @@ should; a reproduction that needs Layer 2 gets it; a reproduction that
 needs something the industry has not yet built is a research goal for
 Layer 3.
 
-The technical design for the layers is *coming soon*.
+See the [Architecture](./architecture.md) for the technical design of
+the layers.
 
 ## Why this moment
 

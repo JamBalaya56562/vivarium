@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "architecture",
+    "label": "Architecture"
+  },
+  {
+    "type": "file",
     "name": "ai-workflow",
     "label": "AI workflow"
   },
