@@ -108,11 +108,37 @@ Claude Code picks up an Issue when:
 
 - The Issue is unambiguous enough that scope creep is unlikely, **and**
 - The work is within the current phase (Phase 0 today), **and**
+- The Issue does **not** carry `status: blocked` (see below), **and**
 - No other agent is already assigned.
 
 On pick-up the Issue moves to `status: in-progress`. If Claude discovers
 the Issue is actually ambiguous or out of scope, it comments with the
 blocker and returns the Issue to `status: triage` rather than guessing.
+
+#### Respecting and applying `status: blocked`
+
+`status: blocked` is a hard stop signal. An Issue carrying this label is
+gated by something outside this repo — an upstream bug, an unshipped
+library feature, a human-only step (account creation, secret rotation,
+app install), or an unresolved dependency. Agents **must not** pick up a
+blocked Issue, even if the title looks tractable; the block is real.
+
+Conversely, when Claude Code picks up an Issue in good faith and hits a
+blocker that cannot be resolved within scope, it must:
+
+1. Apply the label:
+   `gh issue edit <num> --repo aletheia-works/vivarium --add-label "status: blocked"`
+2. Comment on the Issue summarising
+   - what the blocker is (upstream bug link, missing resource, human
+     action required),
+   - what signal will unblock it (version release, human task done,
+     dependency published),
+   - and any workaround shipped in the meantime.
+3. Move the Issue out of `status: in-progress` (remove the label) and
+   stop work rather than ship a partial implementation.
+
+The `status: *` family is the only status family agents may mutate, and
+only within the `triage` ↔ `in-progress` ↔ `blocked` triangle — see § 4.
 
 ### 3.3 Implementation
 

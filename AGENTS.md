@@ -64,6 +64,14 @@ If unsure whether an action crosses the line, stop and ask.
 6. **Verify before asserting.** When citing a file path, function, or flag,
    confirm it exists in the current tree. Memory and training data both go
    stale.
+7. **Respect `status: blocked`.** Issues carrying the `status: blocked`
+   label are off-limits for agent pick-up — something outside this repo
+   gates them. Conversely, if you pick up an Issue in good faith and hit a
+   blocker you cannot resolve within scope (upstream bug, unshipped
+   dependency, required human action, missing credential, etc.), apply
+   `status: blocked` with a comment summarising the blocker and the signal
+   to watch for, then stop rather than inventing a partial implementation.
+   Full lifecycle in [`docs/ai-workflow.md § 3.2`](docs/ai-workflow.md).
 
 ## 4. Repository conventions
 
