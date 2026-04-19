@@ -160,6 +160,11 @@ jobs:
         uses: anthropics/claude-code-action@38ec876110f9fbf8b950c79f534430740c3ac009 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # This workflow is *intentionally* triggered by CodeRabbit (a bot);
+          # without this allowlist the action aborts with
+          # "Workflow initiated by non-human actor: coderabbitai (type: Bot)".
+          # Allowlist only CodeRabbit — not `*` — to keep the surface narrow.
+          allowed_bots: "coderabbitai"
           prompt: |
             CodeRabbit left review feedback on PR #${{ steps.pr.outputs.number }}
             (iteration ${{ steps.cap.outputs.iterations }} of 5).
