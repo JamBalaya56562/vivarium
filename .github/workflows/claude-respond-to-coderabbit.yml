@@ -38,6 +38,10 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # Required by anthropics/claude-code-action to mint a short-lived OIDC
+  # token for the Claude GitHub App identity. Without this the action
+  # fails at startup with "Could not fetch an OIDC token".
+  id-token: write
 
 concurrency:
   group: claude-coderabbit-${{ github.event.pull_request.number || github.event.issue.number }}

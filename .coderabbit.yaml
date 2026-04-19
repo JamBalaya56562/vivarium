@@ -15,13 +15,10 @@
 language: en-US
 early_access: false
 
-tone_instructions: |
-  Prioritise substance over style. Flag unverified factual claims,
-  hallucinated APIs or function references, invented citations, generic
-  copy-paste advice, and PRs that look AI-authored without acknowledging it
-  via an `ai: generated` label. Do not comment on indentation, line length,
-  minor naming, comment formatting, or prose style — those are handled by
-  formatters and linters, not review.
+tone_instructions: >-
+  Substance over style. Flag unverified claims, hallucinated APIs, invented
+  citations, copy-paste advice, and AI-authored PRs without `ai: generated`.
+  Skip indentation, line length, naming, prose style — linters handle those.
 
 reviews:
   # `chill` keeps feedback substantive; `assertive` reintroduces stylistic
@@ -96,36 +93,39 @@ reviews:
     issue_assessment:
       mode: "warning"
 
-tools:
-  # Defer style linting to the project's own CI and formatters.
-  markdownlint:
-    enabled: false
-  yamllint:
-    enabled: false
-  biome:
-    enabled: false
-  eslint:
-    enabled: false
+  # `tools` lives under `reviews` per schema.v2.json (verified 2026-04-19).
+  # Previously this block sat at the top level and the schema rejected it
+  # with "Unrecognized key(s) in object: 'tools'".
+  tools:
+    # Defer style linting to the project's own CI and formatters.
+    markdownlint:
+      enabled: false
+    yamllint:
+      enabled: false
+    biome:
+      enabled: false
+    eslint:
+      enabled: false
 
-  # Prose checks — keep enabled but at `default` level (not `picky`),
-  # and suppress style/redundancy categories per tone_instructions.
-  languagetool:
-    enabled: true
-    level: default
-    disabled_categories:
-      - STYLE
-      - REDUNDANCY
-      - COLLOQUIALISMS
+    # Prose checks — keep enabled but at `default` level (not `picky`),
+    # and suppress style/redundancy categories per tone_instructions.
+    languagetool:
+      enabled: true
+      level: default
+      disabled_categories:
+        - STYLE
+        - REDUNDANCY
+        - COLLOQUIALISMS
 
-  # Security and IaC scanners — keep on.
-  gitleaks:
-    enabled: true
-  trufflehog:
-    enabled: true
-  checkov:
-    enabled: true
-  tflint:
-    enabled: true
+    # Security and IaC scanners — keep on.
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    checkov:
+      enabled: true
+    tflint:
+      enabled: true
 
 chat:
   auto_reply: true
