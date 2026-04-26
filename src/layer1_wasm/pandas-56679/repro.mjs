@@ -49,16 +49,16 @@ function setMeta(text) {
 }
 
 async function run() {
-  setVerdict("pending", "Loading Pyodide runtime…");
+  setVerdict("pending", "Loading Pyodide runtime and pandas…");
   setMeta(`Pyodide v${PYODIDE_VERSION} from cdn.jsdelivr.net`);
 
   const { loadPyodide } = await import(PYODIDE_URL);
+  // `packages` lets Pyodide fetch the pandas wheel in parallel with the
+  // runtime bootstrap, instead of serialising it after `loadPyodide` resolves.
   const pyodide = await loadPyodide({
     indexURL: `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`,
+    packages: ["pandas"],
   });
-
-  setVerdict("pending", "Loading pandas package…");
-  await pyodide.loadPackage("pandas");
 
   setVerdict("pending", "Running reproduction script…");
   const proxy = await pyodide.runPythonAsync(REPRO_CODE);

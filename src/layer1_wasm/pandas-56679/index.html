@@ -4,6 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Vivarium PoC — pandas-dev/pandas#56679</title>
+    <!-- Warm the TLS/HTTP3 handshake to jsDelivr in parallel with HTML parse. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Keep the version below in sync with PYODIDE_VERSION in repro.mjs. -->
+    <link
+      rel="modulepreload"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
+      crossorigin
+    />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
