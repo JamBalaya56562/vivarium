@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium _shared smoke test</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Vivarium · Layer 1 · Smoke test</p>
+        <h1>_shared/ contract-v1 smoke test</h1>
+        <p class="lede">
+          Verifies that <code>_shared/verdict.mjs</code> publishes the
+          contract-v1 surface (<code>data-verdict</code>,
+          <code>__VIVARIUM_VERDICT__</code>, <code>__VIVARIUM_RESULT__</code>)
+          correctly. No upstream bug is exercised — Pyodide is not loaded.
+        </p>
+      </header>
+
+      <section>
+        <h2>Verdict</h2>
+        <div
+          id="verdict"
+          class="verdict pending"
+          data-verdict="pending"
+          role="status"
+          aria-live="polite"
+        >
+          Initialising…
+        </div>
+        <p class="meta" id="meta"></p>
+      </section>
+
+      <section>
+        <h2>Output</h2>
+        <pre id="output">(running)</pre>
+      </section>
+
+      <footer>
+        <p class="meta">
+          Source:
+          <a
+            href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/_shared"
+            >vivarium/src/layer1_wasm/_shared</a
+          >.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module" src="./repro.mjs"></script>
+  </body>
+</html>

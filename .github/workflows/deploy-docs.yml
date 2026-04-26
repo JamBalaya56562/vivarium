@@ -19,6 +19,10 @@ name: deploy-docs
 # - `src/layer1_wasm/<slug>/` directories are static Pyodide / WASM PoCs;
 #   they are copied verbatim into `docs/doc_build/poc/<slug>/` before the
 #   Pages artefact is uploaded. No build step — they are plain HTML.
+# - Underscore-prefixed subdirectories (e.g. `src/layer1_wasm/_shared/`)
+#   hold scaffolding shared across reproductions. They are bundled under
+#   the same `poc/` prefix without requiring an `index.html`, so each
+#   reproduction can reference them via `../_shared/…`.
 
 on:
   push:
@@ -66,10 +70,16 @@ jobs:
         run: bun run build
 
       - name: Bundle Layer 1 PoCs alongside docs
-        # Each immediate subdirectory of `src/layer1_wasm/` that contains an
-        # `index.html` is published at `<pages-base>/poc/<slug>/`. README
-        # files and other tracked source live next to the PoC for review;
-        # they get copied too, which is fine — the PoC pages are static.
+        # Each immediate subdirectory of `src/layer1_wasm/` is published at
+        # `<pages-base>/poc/<slug>/`. README files and other tracked source
+        # live next to the PoC for review; they get copied too, which is
+        # fine — the PoC pages are static.
+        #
+        # Two flavours of subdirectory:
+        # 1. Reproduction pages — must contain `index.html`. Skipped if not.
+        # 2. Underscore-prefixed scaffolding (e.g. `_shared/`) — bundled
+        #    unconditionally so each reproduction can reference shared
+        #    modules via `../_shared/…` after deploy.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -81,12 +91,20 @@ jobs:
           mkdir -p "$dest"
           for poc in src/layer1_wasm/*/; do
             slug="$(basename "$poc")"
-            if [ ! -f "${poc}index.html" ]; then
-              echo "Skipping ${poc} (no index.html)"
-              continue
-            fi
-            echo "Bundling PoC: ${slug}"
-            cp -R "$poc" "$dest/"
+            case "$slug" in
+              _*)
+                echo "Bundling shared module: ${slug}"
+                cp -R "$poc" "$dest/"
+                ;;
+              *)
+                if [ ! -f "${poc}index.html" ]; then
+                  echo "Skipping ${poc} (no index.html)"
+                  continue
+                fi
+                echo "Bundling PoC: ${slug}"
+                cp -R "$poc" "$dest/"
+                ;;
+            esac
           done
           ls -la "$dest" || true
 
