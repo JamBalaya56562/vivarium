@@ -10,8 +10,9 @@ move quickly:
 - The scope-based `scope: *` label is applied automatically by
   `.github/labeler.yml` from file paths. Do not hand-add it.
 
-- Labels are mechanical only (see ADR-0006). If you are about to apply a
-  label by judgement, stop and ask.
+- Labels are mechanical only — they come from path rules, the
+  Conventional-Commit prefix, or CI, never from judgement. If you are
+  about to apply a label by judgement, stop and ask.
 -->
 
 ## Summary

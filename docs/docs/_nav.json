@@ -18,10 +18,5 @@
     "text": "AI workflow",
     "link": "/ai-workflow",
     "activeMatch": "/ai-workflow"
-  },
-  {
-    "text": "Decisions",
-    "link": "/decisions/",
-    "activeMatch": "/decisions/"
   }
 ]

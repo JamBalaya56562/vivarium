@@ -28,10 +28,5 @@
     "type": "file",
     "name": "ai-workflow",
     "label": "AI workflow"
-  },
-  {
-    "type": "dir",
-    "name": "decisions",
-    "label": "Decisions (ADRs)"
   }
 ]

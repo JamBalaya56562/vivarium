@@ -106,11 +106,14 @@ vivarium/
   `bun.lock`) sits at the top of `docs/`, and the markdown content
   itself lives one level deeper under `docs/docs/`. Every file under
   `docs/docs/` is something the project would be comfortable showing
-  an outside contributor (vision, architecture, decisions, workflow).
-- `_context/` — gitignored. Private strategy memos, chat handoffs, half-formed
-  drafts. AI agents may *read* these freely for context and *write* new
-  notes here during exploration, but must never propose moving content from
-  `_context/` into `docs/` without explicit human sign-off.
+  an outside contributor (vision, architecture, roadmap, non-goals,
+  AI workflow).
+- `_context/` — gitignored. Private strategy memos, chat handoffs,
+  half-formed drafts, and the project's Architecture Decision Records
+  (`_context/decisions/`). AI agents may *read* these freely for
+  context and *write* new notes here during exploration, but must
+  never propose moving content from `_context/` into `docs/` without
+  explicit human sign-off.
 
 ### 4.3 Source-control
 

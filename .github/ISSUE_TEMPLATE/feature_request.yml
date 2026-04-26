@@ -19,8 +19,8 @@ body:
       label: Problem
       description: |
         What user-facing reproduction scenario does this feature enable or
-        improve? Keep the framing problem-centred per
-        [ADR-0001](https://github.com/aletheia-works/vivarium/blob/main/docs/docs/decisions/0001-problem-centred-framing.md).
+        improve? Keep the framing problem-centred — describe the
+        reproduction problem, not the technology you imagine solving it.
       placeholder: |
         Users want to reproduce `X` but currently cannot because `Y`.
     validations:
@@ -49,4 +49,4 @@ body:
     id: hints
     attributes:
       label: Hints
-      description: File paths, prior art, related Issues, relevant ADRs.
+      description: File paths, prior art, related Issues.

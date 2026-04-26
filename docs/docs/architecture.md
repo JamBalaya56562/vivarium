@@ -4,11 +4,9 @@
 > Audience: contributors and AI agents who need to choose where a new
 > reproduction vertical lives.
 >
-> This page is the *technical* companion to
-> [ADR-0002: Adopt three-layer architecture](./decisions/0002-three-layer-architecture.md)
-> (the decision) and the [Vision](./vision.md) (the public framing). ADRs
-> remain the canonical record of *why* a choice was made; this page
-> describes *how* the pieces fit together in the current phase.
+> This page is the *technical* companion to the [Vision](./vision.md)
+> (the public framing): the Vision answers *what* and *why*; this page
+> answers *how* the pieces fit together in the current phase.
 
 ---
 
@@ -260,9 +258,9 @@ subdirectories with READMEs so the architectural slot is visible.
 
 This phasing is deliberate: committing to specific runtimes beyond
 Phase 0 before the Phase 0 PoC has validated the primitive end-to-end
-would be the same tech-anchor mistake
-[ADR-0001](./decisions/0001-problem-centred-framing.md) exists to
-avoid.
+would be the same tech-anchor mistake the project's
+[problem-first principle](./vision.md#core-principle-problem-first)
+exists to avoid.
 
 ## See also
 
@@ -270,6 +268,4 @@ avoid.
 - [Roadmap](./roadmap.md) — when each layer is expected to land.
 - [Non-goals](./non-goals.md) — what this architecture deliberately
   will not become.
-- [ADR-0001 — Problem-centred framing](./decisions/0001-problem-centred-framing.md).
-- [ADR-0002 — Three-layer architecture](./decisions/0002-three-layer-architecture.md).
 - [AGENTS.md § 5](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md) — short layer summary for AI agents.
