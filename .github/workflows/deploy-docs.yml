@@ -16,15 +16,20 @@ name: deploy-docs
 # - `docs/` holds the rspress site (config, lockfile, markdown content).
 # - `docs/docs/` is the rspress `root` and contains the markdown.
 # - The build artefact is written to `docs/doc_build/`.
-# - `src/layer1_wasm/<slug>/` directories are static Pyodide / WASM PoCs.
-#   Sources are TypeScript; `tsc` emits side-by-side `.js` files which
-#   are then copied verbatim into `docs/doc_build/poc/<slug>/`. The
-#   `.js` outputs are gitignored — the deploy step rebuilds them from
-#   the `.ts` sources via `src/layer1_wasm/package.json`'s `build` script.
+# - `src/layer1_wasm/<slug>/` directories are static Pyodide / WASM
+#   reproductions. Sources are TypeScript; `tsc` emits side-by-side
+#   `.js` files which are then copied verbatim into
+#   `docs/doc_build/repro/<slug>/`. The `.js` outputs are gitignored —
+#   the deploy step rebuilds them from the `.ts` sources via
+#   `src/layer1_wasm/package.json`'s `build` script.
 # - Underscore-prefixed subdirectories (e.g. `src/layer1_wasm/_shared/`)
-#   hold scaffolding shared across reproductions. They are bundled under
-#   the same `poc/` prefix without requiring an `index.html`, so each
-#   reproduction can reference them via `../_shared/…`.
+#   hold scaffolding shared across reproductions. They are bundled
+#   alongside reproductions under `repro/` without requiring an
+#   `index.html`, so each reproduction can reference them via
+#   `../_shared/…`.
+# - Legacy `/poc/<slug>/` URLs (Phase 0 noun) get HTML meta-refresh
+#   redirect pages pointing at the new `/repro/<slug>/` location, so
+#   external links from before the migration continue to work.
 
 on:
   push:
@@ -84,23 +89,27 @@ jobs:
         working-directory: ${{ github.workspace }}/src/layer1_wasm
         run: bun run build
 
-      - name: Bundle Layer 1 PoCs alongside docs
+      - name: Bundle Layer 1 reproductions alongside docs
         # Each immediate subdirectory of `src/layer1_wasm/` is published at
-        # `<pages-base>/poc/<slug>/`. README files and other tracked source
-        # live next to the PoC for review; they get copied too, which is
-        # fine — the PoC pages are static.
+        # `<pages-base>/repro/<slug>/`. README files and other tracked
+        # source live next to the reproduction for review; they get copied
+        # too, which is fine — the pages are static.
         #
         # Two flavours of subdirectory:
         # 1. Reproduction pages — must contain `index.html`. Skipped if not.
+        #    Also gets an HTML meta-refresh redirect page at
+        #    `<pages-base>/poc/<slug>/` to keep legacy URLs working.
         # 2. Underscore-prefixed scaffolding (e.g. `_shared/`) — bundled
-        #    unconditionally so each reproduction can reference shared
-        #    modules via `../_shared/…` after deploy.
+        #    unconditionally under `repro/` so each reproduction can
+        #    reference shared modules via `../_shared/…` after deploy.
+        #    No `/poc/_shared/` redirect — it was never a public URL.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          dest="docs/doc_build/poc"
+          dest="docs/doc_build/repro"
+          legacy_dest="docs/doc_build/poc"
           if [ ! -d src/layer1_wasm ]; then
-            echo "No src/layer1_wasm/ directory; skipping PoC bundling."
+            echo "No src/layer1_wasm/ directory; skipping bundling."
             exit 0
           fi
           mkdir -p "$dest"
@@ -116,12 +125,34 @@ jobs:
                   echo "Skipping ${poc} (no index.html)"
                   continue
                 fi
-                echo "Bundling PoC: ${slug}"
+                echo "Bundling reproduction: ${slug}"
                 cp -R "$poc" "$dest/"
+                # Legacy `/poc/<slug>/` redirect — HTML meta-refresh is
+                # the simplest mechanism that works on GitHub Pages
+                # (which has no native server-side 301 support).
+                mkdir -p "$legacy_dest/$slug"
+                cat > "$legacy_dest/$slug/index.html" <<HTML
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Vivarium · moved to /repro/${slug}/</title>
+              <meta http-equiv="refresh" content="0; url=../../repro/${slug}/" />
+              <link rel="canonical" href="../../repro/${slug}/" />
+              <meta name="robots" content="noindex" />
+            </head>
+            <body>
+              <p>This reproduction has moved to
+                <a href="../../repro/${slug}/">/repro/${slug}/</a>.
+                Updating in a moment…</p>
+            </body>
+          </html>
+          HTML
                 ;;
             esac
           done
           ls -la "$dest" || true
+          ls -la "$legacy_dest" || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

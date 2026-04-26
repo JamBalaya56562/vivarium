@@ -18,5 +18,10 @@
     "text": "AI workflow",
     "link": "/ai-workflow",
     "activeMatch": "/ai-workflow"
+  },
+  {
+    "text": "Reproductions",
+    "link": "/repro/",
+    "activeMatch": "/repro/"
   }
 ]

@@ -28,5 +28,10 @@
     "type": "file",
     "name": "ai-workflow",
     "label": "AI workflow"
+  },
+  {
+    "type": "dir",
+    "name": "repro",
+    "label": "Reproductions"
   }
 ]

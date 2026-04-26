@@ -77,14 +77,15 @@ Pyodide does **not** require COOP/COEP headers for this page (no
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/poc/pandas-56679/` by the
-`deploy-docs` workflow. The workflow runs `bun install` + `bun run build`
-in `src/layer1_wasm/` first so the compiled `repro.js` exists when the
-bundling step copies the directory into the Pages artefact.
+`https://aletheia-works.github.io/vivarium/repro/pandas-56679/` by the
+`deploy-docs` workflow. The workflow runs `bun install` + `bun run
+build` in `src/layer1_wasm/` first so the compiled `repro.js` exists
+when the bundling step copies the directory into the Pages artefact.
 
-The URL prefix migrates from `/poc/` to `/repro/` in the same PR that
-adds the second reproduction (per ADR-0008 § Migration). Until that PR
-lands, `/poc/pandas-56679/` is the canonical URL.
+Legacy URL `https://aletheia-works.github.io/vivarium/poc/pandas-56679/`
+is preserved by an HTML meta-refresh redirect generated at deploy
+time, so external links from before the URL migration continue to
+work.
 
 ## Verification status
 
