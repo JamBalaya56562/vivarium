@@ -24,12 +24,10 @@ name: Claude implements assigned Issues
 #   `docs/ai-workflow.md` § 3.2, blocked Issues are off-limits to agents.
 #
 # Prerequisites (one-time setup, tracked separately):
-# - `CLAUDE_CODE_OAUTH_TOKEN` repo secret — same token as the existing
-#   `claude-review.yml` workflow (Claude Max subscription OAuth token).
-#   Rationale: the repo already standardised on the OAuth flow; introducing
-#   a second secret (`ANTHROPIC_API_KEY`) would duplicate credentials for
-#   no gain. If the repo later switches to the pay-per-token API key, both
-#   workflows flip together.
+# - `CLAUDE_CODE_OAUTH_TOKEN` repo secret (Claude Max subscription OAuth
+#   token). Rationale: the repo standardised on the OAuth flow; if it later
+#   switches to the pay-per-token API key (`ANTHROPIC_API_KEY`), this
+#   workflow flips with it.
 # - Claude GitHub App installed so Claude's pushes are attributed to
 #   `claude[bot]` and re-trigger commitlint / labeler.
 # - `ai: generated` label exists (managed in `infra/github/labels.tf`).
