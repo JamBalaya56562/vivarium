@@ -1,0 +1,102 @@
+name: repro-regression
+
+# Regression test for the Layer 1 reproduction gallery.
+#
+# Runs the Playwright suite under `src/layer1_wasm/tests/` against a
+# locally-served copy of the gallery, asserting that each reproduction
+# page reaches its documented verdict and exposes the vivarium contract
+# v1 surface (DOM `#verdict[data-verdict]`, `__VIVARIUM_VERDICT__`,
+# `__VIVARIUM_RESULT__`, `<meta name="vivarium-contract">`).
+#
+# A `pass` verdict means the upstream bug still reproduces on the
+# bundled Pyodide build; a `fail` verdict means either the upstream
+# project shipped a fix that Pyodide picked up, or the runtime
+# regressed. Either case is signal — the workflow turns it into a
+# loud red CI failure so a human can decide what to do (retire the
+# page, file an upstream-fix-detection Issue, etc.).
+#
+# Triggers:
+# - `push` to `main` touching Layer 1 sources / this workflow / the
+#   deploy workflow — fast feedback when contributors break things.
+# - `pull_request` touching the same paths — reviewers see the result
+#   on the PR.
+# - Weekly schedule — catches Pyodide-bundle drift even when the repo
+#   itself is quiet, so an upstream fix that lands a month after our
+#   last commit still surfaces within ~7 days.
+# - `workflow_dispatch` — manual trigger from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/layer1_wasm/**'
+      - '.github/workflows/repro-regression.yml'
+      - '.github/workflows/deploy-docs.yml'
+  pull_request:
+    paths:
+      - 'src/layer1_wasm/**'
+      - '.github/workflows/repro-regression.yml'
+      - '.github/workflows/deploy-docs.yml'
+  schedule:
+    # Mondays at 00:00 UTC.
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repro-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/layer1_wasm
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install Layer 1 dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type-check (sources + tests)
+        # Catches any TypeScript-level regression before we boot a
+        # browser. Cheap (~1 s) and produces a clear diagnostic on
+        # failure.
+        run: bun run typecheck
+
+      - name: Build Layer 1 TypeScript sources
+        # Emits side-by-side `.js` files; the static server serves
+        # them at runtime.
+        run: bun run build
+
+      - name: Install Playwright browsers
+        # `--with-deps` brings in the system libraries Chromium needs
+        # (libnss3, libatk-bridge, etc.). The runner is fresh so the
+        # apt step is unavoidable; total step time is ~30 s.
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run Playwright regression suite
+        # `playwright.config.ts` auto-starts `python -m http.server`
+        # on the layer1 root, so the test cases can hit
+        # `/_shared/_test/`, `/pandas-56679/`, `/numpy-28287/`.
+        # Python 3 is preinstalled on `ubuntu-latest` runners.
+        run: bun run test
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: src/layer1_wasm/playwright-report/
+          retention-days: 14

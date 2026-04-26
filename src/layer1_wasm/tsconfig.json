@@ -25,5 +25,11 @@
     "verbatimModuleSyntax": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "**/*.mjs", "**/*.js"]
+  "exclude": [
+    "node_modules",
+    "**/*.mjs",
+    "**/*.js",
+    "tests/**",
+    "playwright.config.ts"
+  ]
 }
