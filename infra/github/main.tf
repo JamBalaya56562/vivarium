@@ -25,12 +25,8 @@ resource "github_repository" "this" {
   delete_branch_on_merge = true
 
   # Security
-  # NOTE: `vulnerability_alerts` is marked deprecated in provider v6.11.x,
-  # pointing to the replacement resource `github_repository_vulnerability_alerts`.
-  # That resource was merged to provider `main` on 2026-04-16 (PR #3166) but
-  # has not yet shipped in a tagged release. Keep this attribute until the
-  # provider ships ≥ v6.12.0, then migrate.
-  vulnerability_alerts        = true
+  # Vulnerability alerts are managed by the dedicated
+  # `github_repository_vulnerability_alerts` resource below (provider ≥ v6.12.0).
   web_commit_signoff_required = true # Enforced at the org level (kept out of TF by lifecycle.ignore_changes=all).
 
   # Initial branch:
@@ -61,4 +57,11 @@ resource "github_repository" "this" {
     # Pages is now managed via `pages.tf` using gh CLI instead.
     ignore_changes = all
   }
+}
+
+# Vulnerability alerts are now managed via a dedicated resource
+# (provider v6.12.0+). The old `github_repository.vulnerability_alerts`
+# attribute has been removed; see Issue #2.
+resource "github_repository_vulnerability_alerts" "this" {
+  repository = github_repository.this.name
 }
