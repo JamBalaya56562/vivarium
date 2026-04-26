@@ -27,7 +27,7 @@ resource "github_repository" "this" {
   # Security
   # Vulnerability alerts are managed by the dedicated
   # `github_repository_vulnerability_alerts` resource below (provider ≥ v6.12.0).
-  web_commit_signoff_required = true # Enforced at the org level (kept out of TF by lifecycle.ignore_changes=all).
+  web_commit_signoff_required = true
 
   # Initial branch:
   # For imported repositories, leave auto-init off and match the existing branch.
@@ -42,20 +42,12 @@ resource "github_repository" "this" {
   lifecycle {
     # Guard against accidental deletion.
     prevent_destroy = true
-    # Do not manage repository attributes via TF — use `gh api` or the GitHub UI.
-    # Rationale: integrations/github provider (as of 6.x) always sends
-    # web_commit_signoff_required=false in the PATCH body. When the org enforces
-    # signoff, this triggers a 422 "Commit signoff is enforced by the organization
-    # and cannot be disabled" error, unavoidable even when the attribute is set to true.
-    # This resource is kept in state purely so that other resources (labels,
-    # branch_protection) can reference it; its attributes are not reconciled.
-    #
-    # NOTE: We tried using the nested `pages` block with a narrow
-    # `ignore_changes` list in PR #29, but the provider still issues a
-    # full repo PATCH whenever anything about the resource changes
-    # (including a pages-only diff), so the signoff 422 still fires.
-    # Pages is now managed via `pages.tf` using gh CLI instead.
-    ignore_changes = all
+    # Pages is managed out-of-band by `pages.tf` via the gh CLI. Ignore
+    # the nested block so OpenTofu does not try to delete the live Pages
+    # configuration when reconciling the repository resource. Removing
+    # `pages.tf` and folding Pages back into a nested `pages {}` block
+    # is tracked as a follow-up to the v6.12 provider upgrade.
+    ignore_changes = [pages]
   }
 }
 
