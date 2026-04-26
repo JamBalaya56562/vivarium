@@ -73,7 +73,7 @@ const cases: ReproCase[] = [
     expectedVerdict: "pass",
     expectedBugProject: "cpython",
     expectedBugIssue: 137205,
-    loadsPyodide: true,
+    expectedRuntimeName: "pyodide",
   },
 ];
 
