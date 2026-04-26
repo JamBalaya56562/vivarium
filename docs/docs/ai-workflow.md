@@ -41,6 +41,28 @@ workflow. The board — not this document — is the operational surface for
 "what is in flight right now." This document only describes the shape of
 the cycle.
 
+The roadmap view is grouped by **milestone** (the Phase 0–5 swimlanes
+defined in `infra/github/milestones.tf`) and uses two PR-level **Date**
+fields as the timeline axis:
+
+- **Started At** — set when the PR is opened.
+- **Merged At** — set when the PR is closed *and* merged. Closed-without-
+  merge PRs leave this empty.
+
+Both fields are written by `.github/workflows/project-fields.yml`. The
+default `GITHUB_TOKEN` cannot mutate org-scoped Projects v2, so the
+workflow reads a **fine-grained PAT** from the `PROJECTS_TOKEN` repo
+secret. To rotate or reissue:
+
+1. Create a fine-grained PAT at
+   <https://github.com/settings/personal-access-tokens/new> with
+   *Resource owner* = `aletheia-works`, *Repository access* = `vivarium`
+   only, and *Organization permissions → Projects: Read and write*.
+2. Store it as the `PROJECTS_TOKEN` Actions secret on this repo.
+3. Milestones stay under OpenTofu; the Project board itself remains
+   click-ops until `terraform-provider-github` ships Projects v2
+   resources (`infra/github/milestones.tf` for context).
+
 ## 2. Actors and responsibilities
 
 ### 2.1 Human
