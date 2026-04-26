@@ -36,7 +36,7 @@
 | CRIU                                            | Process snapshot & restore      |
 | Firecracker snapshots                           | microVM-level time travel       |
 
-Concrete choices land as ADRs in [`docs/`](../../docs/), not here.
+Concrete choices land as ADRs in [`docs/docs/`](../../docs/docs/), not here.
 
 ## Phase 0 scope
 

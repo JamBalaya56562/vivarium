@@ -11,7 +11,7 @@ body:
       value: |
         Thanks for proposing a feature. This form asks for the structured
         information needed to evaluate fit with the project's phased roadmap
-        and [non-goals](https://github.com/aletheia-works/vivarium/blob/main/docs/non-goals.md).
+        and [non-goals](https://github.com/aletheia-works/vivarium/blob/main/docs/docs/non-goals.md).
 
   - type: textarea
     id: problem
@@ -20,7 +20,7 @@ body:
       description: |
         What user-facing reproduction scenario does this feature enable or
         improve? Keep the framing problem-centred per
-        [ADR-0001](https://github.com/aletheia-works/vivarium/blob/main/docs/decisions/0001-problem-centred-framing.md).
+        [ADR-0001](https://github.com/aletheia-works/vivarium/blob/main/docs/docs/decisions/0001-problem-centred-framing.md).
       placeholder: |
         Users want to reproduce `X` but currently cannot because `Y`.
     validations:

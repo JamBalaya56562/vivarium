@@ -12,7 +12,7 @@
 This project is in the initial setup phase. Infrastructure-as-Code foundations
 are being established. Actual product development has not started yet.
 
-See [`docs/roadmap.md`](docs/roadmap.md) for the full plan from Phase 0 to Phase 5.
+See [`docs/docs/roadmap.md`](docs/docs/roadmap.md) for the full plan from Phase 0 to Phase 5.
 
 ---
 
@@ -48,7 +48,7 @@ The technology is chosen by the problem, not the other way around.
 
 **[aletheia-works.github.io/vivarium](https://aletheia-works.github.io/vivarium)** — vision, roadmap, architecture, ADRs.
 
-The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`.
+The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`. The rspress configuration and lockfile live in `docs/`; the markdown content lives in `docs/docs/`.
 
 ## Development Philosophy
 
@@ -83,8 +83,12 @@ vivarium/
 │       ├── branch_protection.tf
 │       ├── labels.tf
 │       └── README.md
-├── docs/                     # Vision, architecture, decisions
-│   └── ...                   # (to be added)
+├── docs/                     # rspress docs site (config + content)
+│   ├── package.json          # rspress + bun deps
+│   ├── rspress.config.ts
+│   ├── tsconfig.json
+│   ├── bun.lock
+│   └── docs/                 # markdown content (vision, architecture, ADRs)
 └── src/                      # Source code
     └── ...                   # (to be added)
 ```

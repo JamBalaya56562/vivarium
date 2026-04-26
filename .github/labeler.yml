@@ -66,5 +66,5 @@
   - changed-files:
       - any-glob-to-any-file:
           - "**/*.md"
-          - "docs/**"
+          - "docs/docs/**"
           - "LICENSE"

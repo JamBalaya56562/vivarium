@@ -82,5 +82,5 @@ filler tasks.
 The end-to-end Issue → implementation → review → merge flow — including how
 Claude Code (as both implementer and reviewer), Dosu, Dependabot, and
 GitHub Actions compose — is documented in
-[`docs/ai-workflow.md`](docs/ai-workflow.md). Defer to it for process
+[`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md). Defer to it for process
 questions.

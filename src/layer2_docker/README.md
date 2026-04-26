@@ -32,7 +32,7 @@
 | [Firecracker](https://firecracker-microvm.github.io) microVM | Faster boot, stronger isolation (exploration) |
 | [Kata Containers](https://katacontainers.io)   | OCI-compat microVM (exploration) |
 
-Concrete choices land as ADRs in [`docs/`](../../docs/), not here.
+Concrete choices land as ADRs in [`docs/docs/`](../../docs/docs/), not here.
 
 ## Phase 0 scope
 

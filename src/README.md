@@ -19,7 +19,7 @@ reproduction problems have fundamentally different requirements:
 Picking one layer as "the answer" would force square pegs into round
 holes. The three-layer split exists so each problem class can be solved
 on its own terms — see [`AGENTS.md § 5`](../AGENTS.md) and the eventual
-[`docs/ARCHITECTURE.md`](../docs/) for the longer-form argument.
+[`docs/docs/ARCHITECTURE.md`](../docs/docs/) for the longer-form argument.
 
 ## Layout
 
@@ -38,7 +38,7 @@ speculative scaffolding.
 ## What does **not** live here
 
 - **Infrastructure-as-Code** — lives in [`infra/`](../infra/).
-- **Docs site** — lives in [`docs/`](../docs/).
+- **Docs site** — lives in [`docs/`](../docs/) (markdown content under `docs/docs/`).
 - **Tooling and build configuration** — project root.
 
 ## Current phase

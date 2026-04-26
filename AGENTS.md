@@ -17,7 +17,7 @@
 - **Lifelong project.** Phases are measured in years, not sprints. Prefer
   durable decisions over quick wins.
 - **AI-delegated development.** Humans set direction and merge; AI agents
-  implement, review, and iterate. See [`docs/ai-workflow.md`](docs/ai-workflow.md).
+  implement, review, and iterate. See [`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md).
 - **Current phase: Phase 0 — Bootstrap.** Infrastructure-as-Code foundations
   only. Product code has not started.
 
@@ -71,7 +71,7 @@ If unsure whether an action crosses the line, stop and ask.
    dependency, required human action, missing credential, etc.), apply
    `status: blocked` with a comment summarising the blocker and the signal
    to watch for, then stop rather than inventing a partial implementation.
-   Full lifecycle in [`docs/ai-workflow.md § 3.2`](docs/ai-workflow.md).
+   Full lifecycle in [`docs/docs/ai-workflow.md § 3.2`](docs/docs/ai-workflow.md).
 
 ## 4. Repository conventions
 
@@ -90,15 +90,23 @@ vivarium/
 │   └── release.yml
 ├── infra/
 │   └── github/            # GitHub Settings-as-Code via OpenTofu
-├── docs/                  # tracked public docs (vision, architecture, workflow)
+├── docs/                  # rspress docs site (config at top level, content in docs/docs/)
+│   ├── package.json       # rspress + bun deps
+│   ├── rspress.config.ts
+│   ├── tsconfig.json
+│   ├── bun.lock
+│   └── docs/              # tracked public docs (vision, architecture, workflow)
 └── _context/              # gitignored: private strategy memos, handoffs, drafts
 ```
 
 ### 4.2 `docs/` vs `_context/`
 
-- `docs/` — tracked. Stable, public-facing documentation (vision,
-  architecture, decisions, workflow). Every file here is something the
-  project would be comfortable showing an outside contributor.
+- `docs/` — tracked. The rspress documentation site lives here; its
+  configuration (`package.json`, `rspress.config.ts`, `tsconfig.json`,
+  `bun.lock`) sits at the top of `docs/`, and the markdown content
+  itself lives one level deeper under `docs/docs/`. Every file under
+  `docs/docs/` is something the project would be comfortable showing
+  an outside contributor (vision, architecture, decisions, workflow).
 - `_context/` — gitignored. Private strategy memos, chat handoffs, half-formed
   drafts. AI agents may *read* these freely for context and *write* new
   notes here during exploration, but must never propose moving content from

@@ -34,7 +34,7 @@
 | Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Deferred |
 | PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Deferred |
 
-Concrete runtime choices land in [`docs/`](../../docs/) as ADRs, not
+Concrete runtime choices land in [`docs/docs/`](../../docs/docs/) as ADRs, not
 here.
 
 ## Phase 0 scope
