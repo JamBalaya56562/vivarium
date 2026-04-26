@@ -27,6 +27,8 @@ locals {
     }
     "Phase 1 — Layer 1: data processing" = {
       description = "First reproduction domain: Python + SQLite over WASM (Pyodide). Target 10–100 early users; validate the reproduction loop end-to-end."
+      state       = "closed"
+      due_date    = "2026-04-27"
     }
     "Phase 2 — Layer 1: multi-language" = {
       description = "Extend Layer 1 to Rust (wasm32-wasi), JavaScript, Ruby.wasm, PHP.wasm. Upstream contributions to Pyodide / WASI where gaps block reproduction."
