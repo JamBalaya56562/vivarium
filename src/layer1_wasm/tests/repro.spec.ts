@@ -28,10 +28,10 @@ interface ReproCase {
   expectedBugIssue: number;
   /**
    * Envelope `runtime.name`. `"browser"` for the smoke test (no WASM
-   * runtime loaded), `"pyodide"` / `"ruby.wasm"` for reproductions
-   * that bootstrap a language runtime over WebAssembly.
+   * runtime loaded); the rest are language runtimes bootstrapped over
+   * WebAssembly.
    */
-  expectedRuntimeName: "browser" | "pyodide" | "ruby.wasm";
+  expectedRuntimeName: "browser" | "pyodide" | "ruby.wasm" | "php-wasm";
 }
 
 const cases: ReproCase[] = [
@@ -74,6 +74,14 @@ const cases: ReproCase[] = [
     expectedBugProject: "cpython",
     expectedBugIssue: 137205,
     expectedRuntimeName: "pyodide",
+  },
+  {
+    name: "php-12167 reproduction",
+    path: "/php-12167/",
+    expectedVerdict: "pass",
+    expectedBugProject: "php",
+    expectedBugIssue: 12167,
+    expectedRuntimeName: "php-wasm",
   },
 ];
 

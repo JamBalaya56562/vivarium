@@ -3,3 +3,12 @@ bun = "latest"
 opentofu = "latest"
 python = "3.13"
 uv = "latest"
+# Native runtimes pinned to the same major.minor.patch the WASM gallery
+# pages run, so contributors can re-verify each Layer 1 reproduction
+# against a real interpreter (`mise exec ruby -- ruby <slug>/repro.rb`,
+# `mise exec php -- php <slug>/repro.php`). See
+# `src/layer1_wasm/<slug>/README.md` for per-page native repro
+# instructions. Building these on Windows requires WSL or an
+# equivalent Unix-y toolchain; CI installs them on Linux runners.
+php = "8.2.11"
+ruby = "3.3.3"

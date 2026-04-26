@@ -51,6 +51,36 @@ The upstream issue is currently Open with a draft patch in flight;
 when a fix lands and is picked up by Ruby.wasm the verdict will flip
 to `fail`.
 
+## Layer 1 — php-wasm (PHP)
+
+| Project | Issue | Verdict | |
+| --- | --- | --- | --- |
+| php | [#12167](https://github.com/php/php-src/issues/12167) — `SimpleXMLElement::xpath('//processing-instruction()')` finds the PI node, but casting it to string yields an empty value | `pass` (bug reproduces) | [Open ↗](https://aletheia-works.github.io/vivarium/repro/php-12167/) |
+
+The Verdict column reflects what the page reports on `php-wasm@0.0.8`
+(PHP 8.2.11, Linux, 32-bit, Zend 4.2.11) at the time of writing. The
+bug was fixed upstream in PHP 8.2.12, so when php-wasm bumps to a
+build that ships ≥ 8.2.12 the verdict will flip to `fail` and the
+page becomes a fix-detection signal.
+
+## Native re-verification
+
+Each gallery page has a companion CLI variant — `repro.py`,
+`repro.rb`, or `repro.php` — that runs the *same* logic against a
+real native interpreter, with no WASM layer involved. The
+`.mise.toml` at the repo root pins each interpreter to the same
+major.minor.patch the WASM runtime bundles, so:
+
+```bash
+mise install                                      # one-time per machine
+mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
+mise exec php  -- php  src/layer1_wasm/php-12167/repro.php
+```
+
+`mise install` requires a Unix-y toolchain to build PHP / Ruby from
+source — Linux and macOS work directly, on Windows use WSL or an
+equivalent layer.
+
 ## Adding a reproduction
 
 A new reproduction page lives under
@@ -60,11 +90,15 @@ and ships:
 - `index.html` declaring the contract version, with a `#verdict` band
   and `<script src="./repro.js">`.
 - `repro.ts` that imports the runtime loader (`loadVivariumPyodide`
-  for Python via Pyodide, `loadVivariumRuby` for Ruby via Ruby.wasm)
-  plus `setVerdict` and `setResult` from
+  for Python via Pyodide, `loadVivariumRuby` for Ruby via Ruby.wasm,
+  `loadVivariumPhp` for PHP via php-wasm) plus `setVerdict` and
+  `setResult` from
   [`../_shared/`](https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/_shared)
   and publishes a `VivariumResultV1` envelope on completion.
 - A short `README.md` explaining the bug and the verdict criterion.
+- A native CLI variant (`repro.py` / `repro.rb` / `repro.php`) with
+  identical reproduction logic, for re-verification against a real
+  interpreter via `mise exec`.
 
 The deploy workflow handles bundling and the `.ts` → `.js` build —
 contributors only edit TypeScript sources.
