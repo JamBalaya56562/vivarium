@@ -40,5 +40,19 @@ here.
 ## Phase 0 scope
 
 First vertical is **Pyodide + a hand-picked pandas bug** ([Issue
-#13](https://github.com/aletheia-works/vivarium/issues/13)). This
-directory will gain its first real files when that Issue lands.
+#13](https://github.com/aletheia-works/vivarium/issues/13)).
+
+### What is here
+
+- [`pandas-56679/`](./pandas-56679/) — the Phase 0 PoC.
+  Reproduces [`pandas-dev/pandas#56679`](https://github.com/pandas-dev/pandas/issues/56679)
+  end-to-end in Pyodide. Static HTML; deployed under
+  `/vivarium/poc/pandas-56679/` by the `deploy-docs` workflow.
+
+### Conventions for new PoCs
+
+Each new Layer 1 PoC is its own immediate subdirectory of this folder
+(e.g. `numpy-12345/`, `pandas-56679/`). The directory is required to
+contain an `index.html`; the deploy workflow publishes any directory
+matching this shape under `/vivarium/poc/<slug>/`. Companion files
+(`repro.mjs`, `style.css`, `README.md`, fixtures) live alongside.

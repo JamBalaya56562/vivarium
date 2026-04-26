@@ -1,6 +1,7 @@
 name: deploy-docs
 
-# Builds the rspress docs site and deploys to GitHub Pages.
+# Builds the rspress docs site and deploys to GitHub Pages, alongside any
+# Layer 1 (browser-native) PoC pages.
 #
 # Prerequisites (one-time setup):
 # - Repo Settings → Pages → Source: "GitHub Actions".
@@ -15,12 +16,16 @@ name: deploy-docs
 # - `docs/` holds the rspress site (config, lockfile, markdown content).
 # - `docs/docs/` is the rspress `root` and contains the markdown.
 # - The build artefact is written to `docs/doc_build/`.
+# - `src/layer1_wasm/<slug>/` directories are static Pyodide / WASM PoCs;
+#   they are copied verbatim into `docs/doc_build/poc/<slug>/` before the
+#   Pages artefact is uploaded. No build step — they are plain HTML.
 
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'src/layer1_wasm/**'
       - '.mise.toml'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
@@ -59,6 +64,31 @@ jobs:
 
       - name: Build docs
         run: bun run build
+
+      - name: Bundle Layer 1 PoCs alongside docs
+        # Each immediate subdirectory of `src/layer1_wasm/` that contains an
+        # `index.html` is published at `<pages-base>/poc/<slug>/`. README
+        # files and other tracked source live next to the PoC for review;
+        # they get copied too, which is fine — the PoC pages are static.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          dest="docs/doc_build/poc"
+          if [ ! -d src/layer1_wasm ]; then
+            echo "No src/layer1_wasm/ directory; skipping PoC bundling."
+            exit 0
+          fi
+          mkdir -p "$dest"
+          for poc in src/layer1_wasm/*/; do
+            slug="$(basename "$poc")"
+            if [ ! -f "${poc}index.html" ]; then
+              echo "Skipping ${poc} (no index.html)"
+              continue
+            fi
+            echo "Bundling PoC: ${slug}"
+            cp -R "$poc" "$dest/"
+          done
+          ls -la "$dest" || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

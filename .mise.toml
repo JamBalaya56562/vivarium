@@ -1,3 +1,5 @@
 [tools]
 bun = "latest"
 opentofu = "latest"
+python = "3.13"
+uv = "latest"

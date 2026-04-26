@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vivarium PoC — pandas-dev/pandas#56679</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Vivarium · Layer 1 · Pyodide</p>
+        <h1>Reproducing <a href="https://github.com/pandas-dev/pandas/issues/56679">pandas-dev/pandas#56679</a></h1>
+        <p class="lede">
+          <code>pd.Series([])</code> returns dtype <code>object</code>,
+          but <code>pd.DataFrame({'a': []})['a']</code> returns dtype
+          <code>float64</code>. The two constructors should produce a
+          consistent dtype for an empty input.
+        </p>
+      </header>
+
+      <section>
+        <h2>Verdict</h2>
+        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          Loading Pyodide runtime…
+        </div>
+        <p class="meta" id="meta"></p>
+      </section>
+
+      <section>
+        <h2>Reproduction script</h2>
+        <pre><code id="repro-code"></code></pre>
+      </section>
+
+      <section>
+        <h2>Output</h2>
+        <pre id="output">(running)</pre>
+      </section>
+
+      <footer>
+        <p class="meta">
+          Runtime:
+          <a href="https://pyodide.org/">Pyodide</a>
+          loaded from
+          <a href="https://www.jsdelivr.com/package/npm/pyodide">cdn.jsdelivr.net</a>.
+          Source:
+          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679">vivarium/src/layer1_wasm/pandas-56679</a>.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module" src="./repro.mjs"></script>
+  </body>
+</html>
