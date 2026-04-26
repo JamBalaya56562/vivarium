@@ -13,6 +13,11 @@ export default defineConfig({
   base: '/vivarium/',
   title: 'Vivarium',
   description: 'Universal bug reproduction — any language, any environment, any scale.',
+  markdown: {
+    link: {
+      checkDeadLinks: true,
+    },
+  },
   themeConfig: {
     socialLinks: [
       {
