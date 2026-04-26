@@ -1,8 +1,9 @@
-# Phase 0 PoC — pandas-dev/pandas#56679
+# Reproduction — pandas-dev/pandas#56679
 
-> **Status**: vivarium's first end-to-end "one bug, fully reproduced in the
-> browser" milestone. Hand-coded, single-file PoC. Generalisation lives in
-> Phase 1, not here.
+> **Status**: Phase 1 reproduction page. Originally Vivarium's Phase 0
+> hand-coded PoC; retrofitted onto the [`_shared/`](../_shared/) helpers
+> and TypeScript toolchain so it consumes the canonical `vivarium-contract: v1`
+> surface like every other Phase 1 page.
 
 ## The bug
 
@@ -13,86 +14,97 @@ constructors should produce a consistent dtype for an empty input.
 
 ## Why this bug
 
-Selection criterion: "easiest to debug at a glance" (per Issue #13
-unblocking).
+Originally selected as Phase 0's "easiest to debug at a glance" PoC:
 
 - Three-line reproduction, zero non-pandas dependencies.
-- Verdict is a `dtype` comparison — a single boolean — so the page can
-  emit a mechanically-distinguishable `succeeded` / `failed` string.
-- Reported against pandas 2.1.4; verified locally on pandas 2.3.3, which
-  is the version Pyodide v0.29.3 ships. So this PoC is expected to
-  reproduce on the same Pyodide build that the page loads.
+- Verdict is a `dtype` comparison — a single boolean — so the page emits
+  a mechanically-distinguishable `pass` / `fail` value.
+- Reported against pandas 2.1.4; verified on pandas 2.3.3, which is the
+  version Pyodide v0.29.3 ships. The bug is expected to reproduce on the
+  same Pyodide build the page loads.
 - Pure pandas core — no I/O, no Arrow, no plotting, no thread-scheduler
   dependence. Nothing in the repro path touches a browser-restricted
   surface.
 
 ## Files
 
-| File         | Role                                                |
-| ------------ | --------------------------------------------------- |
-| `index.html` | Static page; the only thing GitHub Pages serves.    |
-| `repro.mjs`  | ES module that loads Pyodide, runs the repro, sets the verdict. |
-| `style.css`  | Light/dark presentation.                            |
+| File         | Role                                                              |
+| ------------ | ----------------------------------------------------------------- |
+| `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
+| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 
-## Verdict contract
+Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css);
+this directory no longer carries its own copy.
 
-For automated harnesses (Playwright, Preview MCP, etc.) the page exposes:
+## Verdict contract — `vivarium-contract: v1`
 
+The page conforms to the contract canonicalised in
+[`../_shared/verdict.ts`](../_shared/verdict.ts):
+
+- `<meta name="vivarium-contract" content="v1">` declared in `<head>`.
 - `document.querySelector('#verdict').dataset.verdict` ∈
   `{"pending", "pass", "fail"}`.
-- `globalThis.__VIVARIUM_VERDICT__` — same value, available off the
-  global object.
-- `globalThis.__VIVARIUM_RESULT__` — the parsed Python result dict
-  (`pandas_version`, `series_dtype`, `df_dtype`, `mismatch`) once the
-  run finishes.
-- The verdict element's text starts with `reproduction succeeded` or
-  `reproduction failed`, matching Issue #13's acceptance criterion.
+- `globalThis.__VIVARIUM_VERDICT__` — mirror of the DOM verdict.
+- `globalThis.__VIVARIUM_RESULT__` — a `VivariumResultV1` envelope:
+  `{ contract: "v1", bug: { project: "pandas", issue: 56679, upstream_url },
+  runtime: { name: "pyodide", version, extras: { python, pandas } },
+  result: { series_dtype, df_dtype, mismatch }, timing }`.
+- Visible verdict text starts with `reproduction succeeded` or
+  `reproduction failed`.
 
-A `pass` means **the bug reproduced** (i.e. the Pyodide-bundled pandas
-still exhibits the inconsistency). A `fail` means either the bug was
-fixed in the version Pyodide currently ships, or the runtime itself
-errored before producing a result.
+A `pass` means **the bug reproduced** (the Pyodide-bundled pandas still
+exhibits the inconsistency). A `fail` means either the bug was fixed in
+the version Pyodide currently ships, or the runtime itself errored
+before producing a result.
 
 ## Running locally
 
-The page is a static asset — any HTTP server works. From the repo root:
-
 ```bash
-python -m http.server -d src/layer1_wasm/pandas-56679 8000
-# then open http://localhost:8000/
+# 1. From src/layer1_wasm/, build the TypeScript sources once.
+cd src/layer1_wasm
+bun install        # one-time per machine / lockfile change
+bun run build      # emits repro.js next to repro.ts (gitignored)
+
+# 2. Serve this directory.
+python -m http.server -d pandas-56679 8765
+# then open http://localhost:8765/
 ```
 
-Pyodide does **not** require COOP/COEP headers for this PoC (no
+Pyodide does **not** require COOP/COEP headers for this page (no
 `SharedArrayBuffer`, no threading), so a plain server is enough.
 
 ## Deployment
 
 Published to GitHub Pages at
 `https://aletheia-works.github.io/vivarium/poc/pandas-56679/` by the
-`deploy-docs` workflow, which copies this directory into the rspress
-build artifact before upload.
+`deploy-docs` workflow. The workflow runs `bun install` + `bun run build`
+in `src/layer1_wasm/` first so the compiled `repro.js` exists when the
+bundling step copies the directory into the Pages artefact.
+
+The URL prefix migrates from `/poc/` to `/repro/` in the same PR that
+adds the second reproduction (per ADR-0008 § Migration). Until that PR
+lands, `/poc/pandas-56679/` is the canonical URL.
 
 ## Verification status
 
 ### Machine-verified (Claude Preview MCP, Chromium-based engine)
 
-- The page parses, loads `https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs`,
-  and successfully `loadPackage("pandas")`.
-- Result dict on the page: `{pandas_version: "2.3.3", python_version:
-  "3.13.2", series_dtype: "object", df_dtype: "float64", mismatch: true}`.
-- Verdict element resolves to `data-verdict="pass"` and the visible text
-  starts with `reproduction succeeded`.
-- `globalThis.__VIVARIUM_VERDICT__ === "pass"` and
-  `globalThis.__VIVARIUM_RESULT__` is populated.
-- Wall-clock first-load time, served from `localhost`: ~20 s on the
-  measurement run. The pandas wheel + Pyodide runtime dominate; this
-  page is plain HTML/JS. A warm reload was a similar ~20 s — the
-  browser used in measurement does not aggressively cache the Pyodide
-  CDN responses.
+- The page parses, loads
+  `https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs`, and
+  successfully preloads pandas.
+- `__VIVARIUM_RESULT__` envelope on the page (post-retrofit):
+  `{ contract: "v1", bug: { project: "pandas", issue: 56679, ... },
+  runtime: { name: "pyodide", version: "0.29.3", extras: { python: "3.13.2",
+  pandas: "2.3.3" } }, result: { series_dtype: "object", df_dtype: "float64",
+  mismatch: true }, ... }`.
+- `data-verdict="pass"`, visible text `reproduction succeeded — Series
+  dtype ≠ DataFrame dtype.`, `__VIVARIUM_VERDICT__ === "pass"`.
+- No console errors.
 
 ### Needs a human check
 
-Issue #13's acceptance criteria still require:
+Carried over from the Phase 0 PoC, still applicable post-retrofit:
 
 1. **Cross-browser** — confirmation in current Firefox and Safari, in
    addition to the Chromium engine that Preview MCP drives. Pyodide
@@ -100,10 +112,10 @@ Issue #13's acceptance criteria still require:
    `SharedArrayBuffer` / COOP-COEP defaults; this PoC does not use
    threading so it should be unaffected, but only a real run on each
    engine can prove it.
-2. **First-visit load on typical broadband** — the localhost-served
-   measurement above is not representative of CDN latency to a real
-   visitor. A run from a residential connection (no proxy / dev tools
-   throttling disabled) is what the issue calls for.
+2. **First-visit load on typical broadband** — local measurement is not
+   representative of CDN latency to a real visitor. A run from a
+   residential connection (no proxy / dev tools throttling disabled) is
+   what is needed.
 
-The page is wired so a human's confirmation can be quick: open it,
-wait, and read the verdict band. No console interaction needed.
+The page is wired so a human's confirmation can be quick: open it, wait,
+and read the verdict band. No console interaction needed.
