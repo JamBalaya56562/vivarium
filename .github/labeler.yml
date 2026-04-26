@@ -53,6 +53,7 @@
           - "**/*.wasm"
           - "**/*.wat"
           - "**/wasm/**"
+          - "**/*_wasm/**"
 
 "scope: docker":
   - changed-files:
