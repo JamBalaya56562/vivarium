@@ -62,10 +62,18 @@ resource "github_repository_vulnerability_alerts" "this" {
 # Site is published at https://aletheia-works.github.io/vivarium/.
 #
 # Migrated from the deprecated nested `github_repository.pages` block.
-# The first apply requires an import so OpenTofu adopts the live config
-# rather than re-creating it:
-#   tofu import github_repository_pages.this vivarium
+# The accompanying `import` block below adopts the live Pages config on
+# the first apply so the resource is not re-created (which would fail
+# because Pages is already enabled on the repository).
 resource "github_repository_pages" "this" {
   repository = github_repository.this.name
   build_type = "workflow"
+}
+
+# Declarative import (OpenTofu 1.6+) for the live Pages configuration.
+# Idempotent once state contains the resource; can be removed in a
+# follow-up cleanup PR after the first successful apply.
+import {
+  to = github_repository_pages.this
+  id = var.repository_name
 }
