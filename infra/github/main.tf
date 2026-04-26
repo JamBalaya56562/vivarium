@@ -39,15 +39,15 @@ resource "github_repository" "this" {
   # Prevent accidental archival.
   archived = false
 
-  # GitHub Pages — Actions workflow source.
-  # Site is published at https://aletheia-works.github.io/vivarium/.
-  pages {
-    build_type = "workflow"
-  }
-
   lifecycle {
     # Guard against accidental deletion.
     prevent_destroy = true
+    # Pages is now managed by the dedicated `github_repository_pages`
+    # resource below. The nested `pages` block on this resource is
+    # deprecated upstream and will be removed in a future provider
+    # version. Ignore drift on the nested attribute so the dedicated
+    # resource is the sole owner.
+    ignore_changes = [pages]
   }
 }
 
@@ -56,4 +56,16 @@ resource "github_repository" "this" {
 # attribute has been removed; see Issue #2.
 resource "github_repository_vulnerability_alerts" "this" {
   repository = github_repository.this.name
+}
+
+# GitHub Pages — Actions workflow source.
+# Site is published at https://aletheia-works.github.io/vivarium/.
+#
+# Migrated from the deprecated nested `github_repository.pages` block.
+# The first apply requires an import so OpenTofu adopts the live config
+# rather than re-creating it:
+#   tofu import github_repository_pages.this vivarium
+resource "github_repository_pages" "this" {
+  repository = github_repository.this.name
+  build_type = "workflow"
 }
