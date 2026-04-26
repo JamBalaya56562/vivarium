@@ -59,6 +59,14 @@ const cases: ReproCase[] = [
     expectedBugIssue: 28287,
     loadsPyodide: true,
   },
+  {
+    name: "cpython-137205 reproduction",
+    path: "/cpython-137205/",
+    expectedVerdict: "pass",
+    expectedBugProject: "cpython",
+    expectedBugIssue: 137205,
+    loadsPyodide: true,
+  },
 ];
 
 interface VivariumPageState {

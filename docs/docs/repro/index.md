@@ -30,12 +30,14 @@ reproduces.
 | --- | --- | --- | --- |
 | pandas | [#56679](https://github.com/pandas-dev/pandas/issues/56679) — empty `Series` / `DataFrame` dtype mismatch | `pass` (bug reproduces) | [Open ↗](https://aletheia-works.github.io/vivarium/repro/pandas-56679/) |
 | numpy | [#28287](https://github.com/numpy/numpy/issues/28287) — `timedelta64` ordering is non-transitive across generic units | `pass` (bug reproduces) | [Open ↗](https://aletheia-works.github.io/vivarium/repro/numpy-28287/) |
+| cpython | [#137205](https://github.com/python/cpython/issues/137205) — `sqlite3` silently drops `PRAGMA foreign_keys = ON` under `autocommit=False` | `pass` (bug reproduces) | [Open ↗](https://aletheia-works.github.io/vivarium/repro/cpython-137205/) |
 
 The Verdict column reflects what the page reports on the runtime
-Vivarium currently loads (Pyodide v0.29.3 with pandas 2.3.3 and numpy
-2.2.5 at the time of writing). The linked page is authoritative —
-visit it to confirm the live verdict, since an upstream fix landing in
-a future Pyodide release will flip the verdict to `fail`.
+Vivarium currently loads (Pyodide v0.29.3 with Python 3.13.2, pandas
+2.3.3, numpy 2.2.5, and SQLite 3.39.0 from the `sqlite3` Pyodide
+package at the time of writing). The linked page is authoritative —
+visit it to confirm the live verdict, since an upstream fix landing
+in a future Pyodide release will flip the verdict to `fail`.
 
 ## Adding a reproduction
 
