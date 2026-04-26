@@ -1,9 +1,9 @@
 # Reproductions
 
 Each card below is a real bug from a real upstream project, reproduced
-in your browser via Pyodide. Click "Open" to load the page; the verdict
-appears at the top once the runtime finishes loading and the
-reproduction script has run.
+in your browser via a WebAssembly language runtime. Click "Open" to
+load the page; the verdict appears at the top once the runtime
+finishes loading and the reproduction script has run.
 
 ## Vivarium contract
 
@@ -24,7 +24,7 @@ producing a result. The semantics are counterintuitive in isolation
 but match the project's domain noun: a *reproduction* succeeds when it
 reproduces.
 
-## Layer 1 — Pyodide
+## Layer 1 — Pyodide (Python)
 
 | Project | Issue | Verdict | |
 | --- | --- | --- | --- |
@@ -39,6 +39,18 @@ package at the time of writing). The linked page is authoritative —
 visit it to confirm the live verdict, since an upstream fix landing
 in a future Pyodide release will flip the verdict to `fail`.
 
+## Layer 1 — Ruby.wasm (Ruby)
+
+| Project | Issue | Verdict | |
+| --- | --- | --- | --- |
+| ruby | [#21709](https://bugs.ruby-lang.org/issues/21709) — Regexp interpolation rejects mixed encodings while String interpolation silently upgrades to UTF-8 | `pass` (bug reproduces) | [Open ↗](https://aletheia-works.github.io/vivarium/repro/ruby-21709/) |
+
+The Verdict column reflects what the page reports on
+`@ruby/3.3-wasm-wasi` (Ruby 3.3.3 over WASI) at the time of writing.
+The upstream issue is currently Open with a draft patch in flight;
+when a fix lands and is picked up by Ruby.wasm the verdict will flip
+to `fail`.
+
 ## Adding a reproduction
 
 A new reproduction page lives under
@@ -47,8 +59,9 @@ and ships:
 
 - `index.html` declaring the contract version, with a `#verdict` band
   and `<script src="./repro.js">`.
-- `repro.ts` that imports `loadVivariumPyodide`, `setVerdict`,
-  `setResult` from
+- `repro.ts` that imports the runtime loader (`loadVivariumPyodide`
+  for Python via Pyodide, `loadVivariumRuby` for Ruby via Ruby.wasm)
+  plus `setVerdict` and `setResult` from
   [`../_shared/`](https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/_shared)
   and publishes a `VivariumResultV1` envelope on completion.
 - A short `README.md` explaining the bug and the verdict criterion.

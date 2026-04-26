@@ -27,11 +27,11 @@ interface ReproCase {
   /** Envelope `bug.issue` field. */
   expectedBugIssue: number;
   /**
-   * `true` for pages that load Pyodide; the verdict can take 30+ s.
-   * `false` for the smoke test, which validates plumbing only and
-   * resolves in well under a second.
+   * Envelope `runtime.name`. `"browser"` for the smoke test (no WASM
+   * runtime loaded), `"pyodide"` / `"ruby.wasm"` for reproductions
+   * that bootstrap a language runtime over WebAssembly.
    */
-  loadsPyodide: boolean;
+  expectedRuntimeName: "browser" | "pyodide" | "ruby.wasm";
 }
 
 const cases: ReproCase[] = [
@@ -41,7 +41,7 @@ const cases: ReproCase[] = [
     expectedVerdict: "pass",
     expectedBugProject: "vivarium",
     expectedBugIssue: 0,
-    loadsPyodide: false,
+    expectedRuntimeName: "browser",
   },
   {
     name: "pandas-56679 reproduction",
@@ -49,7 +49,7 @@ const cases: ReproCase[] = [
     expectedVerdict: "pass",
     expectedBugProject: "pandas",
     expectedBugIssue: 56679,
-    loadsPyodide: true,
+    expectedRuntimeName: "pyodide",
   },
   {
     name: "numpy-28287 reproduction",
@@ -57,7 +57,15 @@ const cases: ReproCase[] = [
     expectedVerdict: "pass",
     expectedBugProject: "numpy",
     expectedBugIssue: 28287,
-    loadsPyodide: true,
+    expectedRuntimeName: "pyodide",
+  },
+  {
+    name: "ruby-21709 reproduction",
+    path: "/ruby-21709/",
+    expectedVerdict: "pass",
+    expectedBugProject: "ruby",
+    expectedBugIssue: 21709,
+    expectedRuntimeName: "ruby.wasm",
   },
   {
     name: "cpython-137205 reproduction",
@@ -104,7 +112,9 @@ for (const c of cases) {
 
     // Wait for the verdict to settle. Pages start at `pending` and
     // transition to `pass` or `fail` once the reproduction (or the
-    // smoke-test plumbing) completes.
+    // smoke-test plumbing) completes. The smoke test resolves under a
+    // second; WASM-runtime pages need to fetch the runtime over the
+    // network and instantiate it.
     await page.waitForFunction(
       () => {
         const v = (
@@ -113,7 +123,7 @@ for (const c of cases) {
         return v === "pass" || v === "fail";
       },
       undefined,
-      { timeout: c.loadsPyodide ? 75_000 : 10_000 },
+      { timeout: c.expectedRuntimeName === "browser" ? 10_000 : 75_000 },
     );
 
     const state = await readVivariumState(page);
@@ -141,16 +151,8 @@ for (const c of cases) {
       .getAttribute("content");
     expect.soft(contractMeta, "<meta vivarium-contract>").toBe("v1");
 
-    // Pyodide-loading pages should report a pyodide runtime; the smoke
-    // test should not (it explicitly skips the runtime).
-    if (c.loadsPyodide) {
-      expect
-        .soft(state.runtimeName, "envelope runtime.name")
-        .toBe("pyodide");
-    } else {
-      expect
-        .soft(state.runtimeName, "envelope runtime.name (smoke)")
-        .not.toBe("pyodide");
-    }
+    expect
+      .soft(state.runtimeName, "envelope runtime.name")
+      .toBe(c.expectedRuntimeName);
   });
 }
