@@ -84,7 +84,7 @@ jobs:
           # 2. Pull the full PR list with the metadata we need. `--state all`
           # covers open + closed (merged or not).
           prs=$(gh pr list --repo "$REPO" --state all --limit 2000 \
-            --json number,id,createdAt,mergedAt,merged)
+            --json number,id,createdAt,mergedAt,state)
 
           count=$(echo "$prs" | jq 'length')
           echo "Backfilling $count PRs."
@@ -96,7 +96,7 @@ jobs:
             number=$(echo "$pr" | jq -r '.number')
             content_id=$(echo "$pr" | jq -r '.id')
             created_date=$(echo "$pr" | jq -r '.createdAt' | cut -d'T' -f1)
-            merged=$(echo "$pr" | jq -r '.merged')
+            state=$(echo "$pr" | jq -r '.state')
             merged_at=$(echo "$pr" | jq -r '.mergedAt')
 
             add_result=$(gh api graphql \
@@ -127,7 +127,7 @@ jobs:
                   }
                 }' >/dev/null
 
-            if [[ "$merged" == "true" && -n "$merged_at" && "$merged_at" != "null" ]]; then
+            if [[ "$state" == "MERGED" ]]; then
               merged_date=$(echo "$merged_at" | cut -d'T' -f1)
               gh api graphql \
                 -f projectId="$PROJECT_ID" \
