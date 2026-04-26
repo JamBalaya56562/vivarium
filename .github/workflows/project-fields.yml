@@ -1,26 +1,36 @@
 name: Project field updates
 
-# Updates two date fields on the org-level Projects v2 board
-# (`aletheia-works/projects/1`, "vivarium roadmap") for every PR on this
-# repo:
+# Updates per-item date fields on the org-level Projects v2 board
+# (`aletheia-works/projects/1`, "vivarium roadmap"). The board hosts both
+# pull requests and issues, with a separate field pair per content type
+# so each Roadmap view can use vocabulary that fits the lifecycle:
 #
-#   • Started At — set when the PR is opened. Marks the start of work
-#     on the implementation.
-#   • Merged At  — set when the PR is closed *and* merged. Closed-without-
-#     merge is skipped (no value written); the PR simply has no Merged At.
+#   Pull requests
+#     • Started At — set on `pull_request_target: opened`.
+#     • Merged At  — set on `pull_request_target: closed` *and* merged.
+#                    Closed-without-merge is skipped (no value written).
 #
-# The Roadmap view groups by milestone (the swimlane axis, defined in
-# `infra/github/milestones.tf`) and uses Started At / Merged At as the
-# date axis. Milestones are deliberately *not* updated per PR; phase
+#   Issues
+#     • Opened At — set on `issues: opened`.
+#     • Closed At — set on `issues: closed` *and* `state_reason ==
+#                   "completed"`. `not_planned` is skipped (no value
+#                   written), mirroring the PR closed-without-merge rule.
+#
+# The two Roadmap views (one filtered to `is:pr`, one to `is:issue`) use
+# their respective field pair as the date axis, while sharing the
+# milestone swimlanes defined in `infra/github/milestones.tf`.
+# Milestones themselves are deliberately *not* updated per item; phase
 # boundaries stay directional.
 #
-# The default GITHUB_TOKEN cannot write to org-scoped Projects v2, so a
+# The default GITHUB_TOKEN cannot mutate org-scoped Projects v2, so a
 # fine-grained PAT scoped to `aletheia-works` (Organization permissions
 # → Projects: Read and write) is read from the PROJECTS_TOKEN secret.
 # See docs/ai-workflow.md for the setup walkthrough.
 
 on:
   pull_request_target:
+    types: [opened, closed]
+  issues:
     types: [opened, closed]
 
 permissions: {}
@@ -29,8 +39,10 @@ env:
   GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
   PROJECT_OWNER: aletheia-works
   PROJECT_NUMBER: "1"
-  STARTED_FIELD_NAME: Started At
-  MERGED_FIELD_NAME: Merged At
+  PR_STARTED_FIELD_NAME: Started At
+  PR_MERGED_FIELD_NAME: Merged At
+  ISSUE_OPENED_FIELD_NAME: Opened At
+  ISSUE_CLOSED_FIELD_NAME: Closed At
 
 jobs:
   update-fields:
@@ -38,22 +50,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Write Started At / Merged At
+      - name: Write date field
         env:
+          EVENT_NAME: ${{ github.event_name }}
           ACTION: ${{ github.event.action }}
           PR_NODE_ID: ${{ github.event.pull_request.node_id }}
           PR_OPENED_AT: ${{ github.event.pull_request.created_at }}
           PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          ISSUE_OPENED_AT: ${{ github.event.issue.created_at }}
+          ISSUE_CLOSED_AT: ${{ github.event.issue.closed_at }}
+          ISSUE_STATE_REASON: ${{ github.event.issue.state_reason }}
         run: |
           set -euo pipefail
 
-          if [[ "$ACTION" == "closed" && "$PR_MERGED" != "true" ]]; then
-            echo "PR closed without merging; nothing to update."
-            exit 0
-          fi
+          # 1. Decide what to write based on the triggering event/action.
+          # CONTENT_ID, FIELD_NAME, DATE_VALUE are the three pieces the
+          # downstream GraphQL flow needs.
+          case "$EVENT_NAME" in
+            pull_request_target)
+              CONTENT_ID="$PR_NODE_ID"
+              case "$ACTION" in
+                opened)
+                  FIELD_NAME="$PR_STARTED_FIELD_NAME"
+                  DATE_VALUE="${PR_OPENED_AT%%T*}"
+                  ;;
+                closed)
+                  if [[ "$PR_MERGED" != "true" ]]; then
+                    echo "PR closed without merging; nothing to update."
+                    exit 0
+                  fi
+                  FIELD_NAME="$PR_MERGED_FIELD_NAME"
+                  DATE_VALUE="${PR_MERGED_AT%%T*}"
+                  ;;
+                *)
+                  echo "Unhandled PR action: $ACTION" >&2
+                  exit 0
+                  ;;
+              esac
+              ;;
+            issues)
+              CONTENT_ID="$ISSUE_NODE_ID"
+              case "$ACTION" in
+                opened)
+                  FIELD_NAME="$ISSUE_OPENED_FIELD_NAME"
+                  DATE_VALUE="${ISSUE_OPENED_AT%%T*}"
+                  ;;
+                closed)
+                  # `state_reason` is lowercase in the issues webhook
+                  # payload (completed | not_planned | reopened | null).
+                  if [[ "$ISSUE_STATE_REASON" != "completed" ]]; then
+                    echo "Issue closed as '${ISSUE_STATE_REASON:-null}' (not completed); nothing to update."
+                    exit 0
+                  fi
+                  FIELD_NAME="$ISSUE_CLOSED_FIELD_NAME"
+                  DATE_VALUE="${ISSUE_CLOSED_AT%%T*}"
+                  ;;
+                *)
+                  echo "Unhandled issue action: $ACTION" >&2
+                  exit 0
+                  ;;
+              esac
+              ;;
+            *)
+              echo "Unhandled event: $EVENT_NAME" >&2
+              exit 0
+              ;;
+          esac
 
-          # 1. Resolve project ID and the two date field IDs by name.
+          # 2. Resolve project ID and the target field ID.
           project_data=$(gh api graphql \
             -f owner="$PROJECT_OWNER" \
             -F number="$PROJECT_NUMBER" \
@@ -76,28 +142,25 @@ jobs:
               }')
 
           PROJECT_ID=$(echo "$project_data" | jq -r '.data.organization.projectV2.id')
-          STARTED_FIELD_ID=$(echo "$project_data" \
-            | jq -r --arg n "$STARTED_FIELD_NAME" \
-                '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
-          MERGED_FIELD_ID=$(echo "$project_data" \
-            | jq -r --arg n "$MERGED_FIELD_NAME" \
+          FIELD_ID=$(echo "$project_data" \
+            | jq -r --arg n "$FIELD_NAME" \
                 '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
 
           if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "null" ]]; then
             echo "Could not resolve $PROJECT_OWNER/projects/$PROJECT_NUMBER (token scope?)." >&2
             exit 1
           fi
-          if [[ -z "$STARTED_FIELD_ID" || -z "$MERGED_FIELD_ID" ]]; then
-            echo "Date fields '$STARTED_FIELD_NAME' / '$MERGED_FIELD_NAME' not found on project." >&2
+          if [[ -z "$FIELD_ID" ]]; then
+            echo "Date field '$FIELD_NAME' not found on project." >&2
             exit 1
           fi
 
-          # 2. Add the PR to the board. addProjectV2ItemById is idempotent
-          # and returns the existing item if Auto-add already inserted it,
-          # so this race is harmless.
+          # 3. Add the item to the board. addProjectV2ItemById is
+          # idempotent and returns the existing item if Auto-add already
+          # inserted it, so this race is harmless.
           add_result=$(gh api graphql \
             -f projectId="$PROJECT_ID" \
-            -f contentId="$PR_NODE_ID" \
+            -f contentId="$CONTENT_ID" \
             -f query='
               mutation($projectId: ID!, $contentId: ID!) {
                 addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
@@ -105,22 +168,6 @@ jobs:
                 }
               }')
           ITEM_ID=$(echo "$add_result" | jq -r '.data.addProjectV2ItemById.item.id')
-
-          # 3. Pick the field + date based on the triggering action.
-          case "$ACTION" in
-            opened)
-              FIELD_ID="$STARTED_FIELD_ID"
-              DATE_VALUE="${PR_OPENED_AT%%T*}"
-              ;;
-            closed)
-              FIELD_ID="$MERGED_FIELD_ID"
-              DATE_VALUE="${PR_MERGED_AT%%T*}"
-              ;;
-            *)
-              echo "Unhandled action: $ACTION" >&2
-              exit 0
-              ;;
-          esac
 
           # 4. Write the field value.
           gh api graphql \
@@ -140,4 +187,4 @@ jobs:
                 }
               }' >/dev/null
 
-          echo "Set '$ACTION' field on item $ITEM_ID to $DATE_VALUE."
+          echo "Set '$FIELD_NAME' on item $ITEM_ID to $DATE_VALUE."

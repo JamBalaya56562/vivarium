@@ -41,18 +41,25 @@ workflow. The board — not this document — is the operational surface for
 "what is in flight right now." This document only describes the shape of
 the cycle.
 
-The roadmap view is grouped by **milestone** (the Phase 0–5 swimlanes
-defined in `infra/github/milestones.tf`) and uses two PR-level **Date**
-fields as the timeline axis:
+The board hosts both PRs and issues, with **two parallel Roadmap views**
+filtered to `is:pr` and `is:issue` respectively. Both views share the
+**milestone** swimlanes (Phase 0–5, defined in
+`infra/github/milestones.tf`) but use their own pair of **Date** fields
+on the timeline axis, so each lifecycle keeps its native vocabulary:
 
-- **Started At** — set when the PR is opened.
-- **Merged At** — set when the PR is closed *and* merged. Closed-without-
-  merge PRs leave this empty.
+- **PRs** — `Started At` (set on `opened`) and `Merged At` (set on
+  `closed && merged`). Closed-without-merge PRs leave `Merged At` empty.
+- **Issues** — `Opened At` (set on `opened`) and `Closed At` (set on
+  `closed && state_reason == "completed"`). Issues closed as
+  `not_planned` leave `Closed At` empty, mirroring the PR rule.
 
-Both fields are written by `.github/workflows/project-fields.yml`. The
-default `GITHUB_TOKEN` cannot mutate org-scoped Projects v2, so the
-workflow reads a **fine-grained PAT** from the `PROJECTS_TOKEN` repo
-secret. To rotate or reissue:
+All four fields are written by `.github/workflows/project-fields.yml` on
+the corresponding `pull_request_target` / `issues` events, and can be
+backfilled across the full history via the manually triggered
+`.github/workflows/project-fields-backfill.yml`. The default
+`GITHUB_TOKEN` cannot mutate org-scoped Projects v2, so both workflows
+read a **fine-grained PAT** from the `PROJECTS_TOKEN` repo secret. To
+rotate or reissue:
 
 1. Create a fine-grained PAT at
    <https://github.com/settings/personal-access-tokens/new> with

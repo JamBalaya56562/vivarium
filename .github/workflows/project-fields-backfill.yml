@@ -1,9 +1,15 @@
 name: Project fields backfill
 
-# One-shot (re-runnable) backfill of Started At / Merged At date fields
-# on the org-level vivarium roadmap board for every PR that already
-# exists in this repo. Mirrors `.github/workflows/project-fields.yml`,
-# but iterates all historical PRs instead of reacting to a single event.
+# One-shot (re-runnable) backfill of date fields on the org-level
+# vivarium roadmap board for every PR *and* issue that already exists in
+# this repo. Mirrors `.github/workflows/project-fields.yml`, but
+# iterates the full historical list instead of reacting to single events.
+#
+# Field mapping matches the live workflow:
+#
+#   PRs    : Started At ← createdAt;  Merged At ← mergedAt (state == MERGED)
+#   Issues : Opened At  ← createdAt;  Closed At ← closedAt (state == CLOSED
+#                                     and stateReason == COMPLETED)
 #
 # Trigger: Actions tab → "Project fields backfill" → Run workflow →
 # type "yes" in the confirm input → Run workflow.
@@ -16,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "yes" to confirm. Rewrites Started At / Merged At for every PR in the repo.'
+        description: 'Type "yes" to confirm. Rewrites date fields for every PR and issue in the repo.'
         required: true
         default: 'no'
 
@@ -26,23 +32,25 @@ env:
   GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
   PROJECT_OWNER: aletheia-works
   PROJECT_NUMBER: "1"
-  STARTED_FIELD_NAME: Started At
-  MERGED_FIELD_NAME: Merged At
+  PR_STARTED_FIELD_NAME: Started At
+  PR_MERGED_FIELD_NAME: Merged At
+  ISSUE_OPENED_FIELD_NAME: Opened At
+  ISSUE_CLOSED_FIELD_NAME: Closed At
 
 jobs:
   backfill:
     if: inputs.confirm == 'yes'
-    name: Backfill date fields for all PRs
+    name: Backfill date fields for all PRs and issues
     runs-on: ubuntu-latest
 
     steps:
-      - name: Resolve project + field IDs and rewrite per-PR dates
+      - name: Resolve project + field IDs and rewrite per-item dates
         env:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          # 1. Resolve project ID and the two date field IDs by name.
+          # 1. Resolve project ID and the four date field IDs by name.
           project_data=$(gh api graphql \
             -f owner="$PROJECT_OWNER" \
             -F number="$PROJECT_NUMBER" \
@@ -65,41 +73,37 @@ jobs:
               }')
 
           PROJECT_ID=$(echo "$project_data" | jq -r '.data.organization.projectV2.id')
-          STARTED_FIELD_ID=$(echo "$project_data" \
-            | jq -r --arg n "$STARTED_FIELD_NAME" \
-                '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
-          MERGED_FIELD_ID=$(echo "$project_data" \
-            | jq -r --arg n "$MERGED_FIELD_NAME" \
-                '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
+          resolve_field_id() {
+            echo "$project_data" \
+              | jq -r --arg n "$1" \
+                  '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id'
+          }
+          PR_STARTED_FIELD_ID=$(resolve_field_id "$PR_STARTED_FIELD_NAME")
+          PR_MERGED_FIELD_ID=$(resolve_field_id "$PR_MERGED_FIELD_NAME")
+          ISSUE_OPENED_FIELD_ID=$(resolve_field_id "$ISSUE_OPENED_FIELD_NAME")
+          ISSUE_CLOSED_FIELD_ID=$(resolve_field_id "$ISSUE_CLOSED_FIELD_NAME")
 
           if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "null" ]]; then
             echo "Could not resolve $PROJECT_OWNER/projects/$PROJECT_NUMBER (token scope?)." >&2
             exit 1
           fi
-          if [[ -z "$STARTED_FIELD_ID" || -z "$MERGED_FIELD_ID" ]]; then
-            echo "Date fields '$STARTED_FIELD_NAME' / '$MERGED_FIELD_NAME' not found on project." >&2
-            exit 1
-          fi
+          for pair in \
+            "$PR_STARTED_FIELD_NAME=$PR_STARTED_FIELD_ID" \
+            "$PR_MERGED_FIELD_NAME=$PR_MERGED_FIELD_ID" \
+            "$ISSUE_OPENED_FIELD_NAME=$ISSUE_OPENED_FIELD_ID" \
+            "$ISSUE_CLOSED_FIELD_NAME=$ISSUE_CLOSED_FIELD_ID"; do
+            name="${pair%=*}"
+            id="${pair#*=}"
+            if [[ -z "$id" ]]; then
+              echo "Date field '$name' not found on project." >&2
+              exit 1
+            fi
+          done
 
-          # 2. Pull the full PR list with the metadata we need. `--state all`
-          # covers open + closed (merged or not).
-          prs=$(gh pr list --repo "$REPO" --state all --limit 2000 \
-            --json number,id,createdAt,mergedAt,state)
-
-          count=$(echo "$prs" | jq 'length')
-          echo "Backfilling $count PRs."
-
-          # 3. For each PR: ensure on board, then write Started At and
-          # (if merged) Merged At. Process substitution keeps the loop in
-          # the parent shell so `set -e` can halt on any per-PR failure.
-          while IFS= read -r pr; do
-            number=$(echo "$pr" | jq -r '.number')
-            content_id=$(echo "$pr" | jq -r '.id')
-            created_date=$(echo "$pr" | jq -r '.createdAt' | cut -d'T' -f1)
-            state=$(echo "$pr" | jq -r '.state')
-            merged_at=$(echo "$pr" | jq -r '.mergedAt')
-
-            add_result=$(gh api graphql \
+          # Helpers shared between the PR and issue loops below.
+          add_to_project() {
+            local content_id="$1"
+            gh api graphql \
               -f projectId="$PROJECT_ID" \
               -f contentId="$content_id" \
               -f query='
@@ -107,14 +111,16 @@ jobs:
                   addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
                     item { id }
                   }
-                }')
-            item_id=$(echo "$add_result" | jq -r '.data.addProjectV2ItemById.item.id')
-
+                }' \
+              | jq -r '.data.addProjectV2ItemById.item.id'
+          }
+          set_date_field() {
+            local item_id="$1" field_id="$2" date_value="$3"
             gh api graphql \
               -f projectId="$PROJECT_ID" \
               -f itemId="$item_id" \
-              -f fieldId="$STARTED_FIELD_ID" \
-              -f date="$created_date" \
+              -f fieldId="$field_id" \
+              -f date="$date_value" \
               -f query='
                 mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
                   updateProjectV2ItemFieldValue(input: {
@@ -126,29 +132,63 @@ jobs:
                     projectV2Item { id }
                   }
                 }' >/dev/null
+          }
+
+          # 2. Pull all PRs.
+          prs=$(gh pr list --repo "$REPO" --state all --limit 2000 \
+            --json number,id,createdAt,mergedAt,state)
+          pr_count=$(echo "$prs" | jq 'length')
+          echo "Backfilling $pr_count PRs."
+
+          # Process substitution keeps the loop in the parent shell so
+          # `set -e` halts the whole job on any per-item failure.
+          while IFS= read -r pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            content_id=$(echo "$pr" | jq -r '.id')
+            created_date=$(echo "$pr" | jq -r '.createdAt' | cut -d'T' -f1)
+            state=$(echo "$pr" | jq -r '.state')
+            merged_at=$(echo "$pr" | jq -r '.mergedAt')
+
+            item_id=$(add_to_project "$content_id")
+            set_date_field "$item_id" "$PR_STARTED_FIELD_ID" "$created_date"
 
             if [[ "$state" == "MERGED" ]]; then
               merged_date=$(echo "$merged_at" | cut -d'T' -f1)
-              gh api graphql \
-                -f projectId="$PROJECT_ID" \
-                -f itemId="$item_id" \
-                -f fieldId="$MERGED_FIELD_ID" \
-                -f date="$merged_date" \
-                -f query='
-                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
-                    updateProjectV2ItemFieldValue(input: {
-                      projectId: $projectId
-                      itemId: $itemId
-                      fieldId: $fieldId
-                      value: { date: $date }
-                    }) {
-                      projectV2Item { id }
-                    }
-                  }' >/dev/null
+              set_date_field "$item_id" "$PR_MERGED_FIELD_ID" "$merged_date"
               echo "PR #$number: Started=$created_date, Merged=$merged_date"
             else
-              echo "PR #$number: Started=$created_date (open / unmerged)"
+              echo "PR #$number: Started=$created_date (state=$state)"
             fi
           done < <(echo "$prs" | jq -c '.[]')
+
+          # 3. Pull all issues. `gh issue list` already excludes PRs.
+          issues=$(gh issue list --repo "$REPO" --state all --limit 2000 \
+            --json number,id,createdAt,closedAt,state,stateReason)
+          issue_count=$(echo "$issues" | jq 'length')
+          echo "Backfilling $issue_count issues."
+
+          while IFS= read -r issue; do
+            number=$(echo "$issue" | jq -r '.number')
+            content_id=$(echo "$issue" | jq -r '.id')
+            created_date=$(echo "$issue" | jq -r '.createdAt' | cut -d'T' -f1)
+            state=$(echo "$issue" | jq -r '.state')
+            state_reason=$(echo "$issue" | jq -r '.stateReason')
+            closed_at=$(echo "$issue" | jq -r '.closedAt')
+
+            item_id=$(add_to_project "$content_id")
+            set_date_field "$item_id" "$ISSUE_OPENED_FIELD_ID" "$created_date"
+
+            # gh's GraphQL output capitalises enum values: state ∈
+            # {OPEN, CLOSED}, stateReason ∈ {COMPLETED, NOT_PLANNED,
+            # REOPENED, null}. Webhook payload uses the lowercase form
+            # (handled in project-fields.yml).
+            if [[ "$state" == "CLOSED" && "$state_reason" == "COMPLETED" ]]; then
+              closed_date=$(echo "$closed_at" | cut -d'T' -f1)
+              set_date_field "$item_id" "$ISSUE_CLOSED_FIELD_ID" "$closed_date"
+              echo "Issue #$number: Opened=$created_date, Closed=$closed_date"
+            else
+              echo "Issue #$number: Opened=$created_date (state=$state, reason=${state_reason:-null})"
+            fi
+          done < <(echo "$issues" | jq -c '.[]')
 
           echo "Backfill complete."
