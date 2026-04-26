@@ -1,0 +1,154 @@
+name: Project fields backfill
+
+# One-shot (re-runnable) backfill of Started At / Merged At date fields
+# on the org-level vivarium roadmap board for every PR that already
+# exists in this repo. Mirrors `.github/workflows/project-fields.yml`,
+# but iterates all historical PRs instead of reacting to a single event.
+#
+# Trigger: Actions tab → "Project fields backfill" → Run workflow →
+# type "yes" in the confirm input → Run workflow.
+#
+# Reuses the PROJECTS_TOKEN secret (the default GITHUB_TOKEN cannot
+# mutate org-scoped Projects v2). Every mutation is idempotent, so a
+# partial run can simply be re-triggered.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm. Rewrites Started At / Merged At for every PR in the repo.'
+        required: true
+        default: 'no'
+
+permissions: {}
+
+env:
+  GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+  PROJECT_OWNER: aletheia-works
+  PROJECT_NUMBER: "1"
+  STARTED_FIELD_NAME: Started At
+  MERGED_FIELD_NAME: Merged At
+
+jobs:
+  backfill:
+    if: inputs.confirm == 'yes'
+    name: Backfill date fields for all PRs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve project + field IDs and rewrite per-PR dates
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # 1. Resolve project ID and the two date field IDs by name.
+          project_data=$(gh api graphql \
+            -f owner="$PROJECT_OWNER" \
+            -F number="$PROJECT_NUMBER" \
+            -f query='
+              query($owner: String!, $number: Int!) {
+                organization(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 50) {
+                      nodes {
+                        ... on ProjectV2Field {
+                          id
+                          name
+                          dataType
+                        }
+                      }
+                    }
+                  }
+                }
+              }')
+
+          PROJECT_ID=$(echo "$project_data" | jq -r '.data.organization.projectV2.id')
+          STARTED_FIELD_ID=$(echo "$project_data" \
+            | jq -r --arg n "$STARTED_FIELD_NAME" \
+                '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
+          MERGED_FIELD_ID=$(echo "$project_data" \
+            | jq -r --arg n "$MERGED_FIELD_NAME" \
+                '.data.organization.projectV2.fields.nodes[] | select(.name == $n and .dataType == "DATE") | .id')
+
+          if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "null" ]]; then
+            echo "Could not resolve $PROJECT_OWNER/projects/$PROJECT_NUMBER (token scope?)." >&2
+            exit 1
+          fi
+          if [[ -z "$STARTED_FIELD_ID" || -z "$MERGED_FIELD_ID" ]]; then
+            echo "Date fields '$STARTED_FIELD_NAME' / '$MERGED_FIELD_NAME' not found on project." >&2
+            exit 1
+          fi
+
+          # 2. Pull the full PR list with the metadata we need. `--state all`
+          # covers open + closed (merged or not).
+          prs=$(gh pr list --repo "$REPO" --state all --limit 2000 \
+            --json number,id,createdAt,mergedAt,merged)
+
+          count=$(echo "$prs" | jq 'length')
+          echo "Backfilling $count PRs."
+
+          # 3. For each PR: ensure on board, then write Started At and
+          # (if merged) Merged At. Process substitution keeps the loop in
+          # the parent shell so `set -e` can halt on any per-PR failure.
+          while IFS= read -r pr; do
+            number=$(echo "$pr" | jq -r '.number')
+            content_id=$(echo "$pr" | jq -r '.id')
+            created_date=$(echo "$pr" | jq -r '.createdAt' | cut -d'T' -f1)
+            merged=$(echo "$pr" | jq -r '.merged')
+            merged_at=$(echo "$pr" | jq -r '.mergedAt')
+
+            add_result=$(gh api graphql \
+              -f projectId="$PROJECT_ID" \
+              -f contentId="$content_id" \
+              -f query='
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                    item { id }
+                  }
+                }')
+            item_id=$(echo "$add_result" | jq -r '.data.addProjectV2ItemById.item.id')
+
+            gh api graphql \
+              -f projectId="$PROJECT_ID" \
+              -f itemId="$item_id" \
+              -f fieldId="$STARTED_FIELD_ID" \
+              -f date="$created_date" \
+              -f query='
+                mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { date: $date }
+                  }) {
+                    projectV2Item { id }
+                  }
+                }' >/dev/null
+
+            if [[ "$merged" == "true" && -n "$merged_at" && "$merged_at" != "null" ]]; then
+              merged_date=$(echo "$merged_at" | cut -d'T' -f1)
+              gh api graphql \
+                -f projectId="$PROJECT_ID" \
+                -f itemId="$item_id" \
+                -f fieldId="$MERGED_FIELD_ID" \
+                -f date="$merged_date" \
+                -f query='
+                  mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
+                    updateProjectV2ItemFieldValue(input: {
+                      projectId: $projectId
+                      itemId: $itemId
+                      fieldId: $fieldId
+                      value: { date: $date }
+                    }) {
+                      projectV2Item { id }
+                    }
+                  }' >/dev/null
+              echo "PR #$number: Started=$created_date, Merged=$merged_date"
+            else
+              echo "PR #$number: Started=$created_date (open / unmerged)"
+            fi
+          done < <(echo "$prs" | jq -c '.[]')
+
+          echo "Backfill complete."
