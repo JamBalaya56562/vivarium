@@ -7,10 +7,12 @@
 # boundaries that humans commit to, and CI / labels / ADRs reference
 # them mechanically.
 #
-# `due_date` is deliberately omitted. Phase durations in the lifelong
-# roadmap are directional (months → years) rather than commitments. Set
-# a concrete date by adding `due_date = "YYYY-MM-DD"` under the relevant
-# entry once a phase acquires a hard target.
+# `due_date` is deliberately omitted by default. Phase durations in the
+# lifelong roadmap are directional (months → years) rather than
+# commitments. Set a concrete date by adding `due_date = "YYYY-MM-DD"`
+# under the relevant entry once a phase either acquires a hard target
+# or has actually closed — for closed phases, `due_date` doubles as the
+# closing marker, paired with `state = "closed"`.
 #
 # Milestone titles double as the canonical phase label surfaced on
 # Issues and PRs; keep them human-readable and prefixed with the phase
@@ -20,6 +22,8 @@ locals {
   milestones = {
     "Phase 0 — Bootstrap" = {
       description = "Infrastructure-as-Code foundations, vision and workflow documents, AI-delegation bootstrap. No product code yet."
+      state       = "closed"
+      due_date    = "2026-04-26"
     }
     "Phase 1 — Layer 1: data processing" = {
       description = "First reproduction domain: Python + SQLite over WASM (Pyodide). Target 10–100 early users; validate the reproduction loop end-to-end."
@@ -46,4 +50,6 @@ resource "github_repository_milestone" "phases" {
   repository  = github_repository.this.name
   title       = each.key
   description = each.value.description
+  state       = lookup(each.value, "state", "open")
+  due_date    = lookup(each.value, "due_date", null)
 }
