@@ -1,0 +1,15 @@
+{
+  "name": "@aletheia-works/vivarium-layer1",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Layer 1 (browser-native WASM) reproduction sources for Vivarium. TypeScript sources transpile 1:1 to side-by-side .js files served as ES modules.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

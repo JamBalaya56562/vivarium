@@ -63,6 +63,15 @@ dist/
 .turbo/
 .parcel-cache/
 
+# Layer 1 sources are .ts; tsc emits .js / .js.map alongside the source.
+# Only the .ts source belongs in version control.
+# (`.mjs` files such as pandas-56679/repro.mjs are NOT matched here — that
+# PoC is still pre-retrofit and remains tracked.)
+src/layer1_wasm/**/*.js
+src/layer1_wasm/**/*.js.map
+src/layer1_wasm/**/*.d.ts
+src/layer1_wasm/**/*.d.ts.map
+
 # ─── rspress ─────────────────────────────────
 doc_build/
 .rspress/

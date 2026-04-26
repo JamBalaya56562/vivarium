@@ -13,45 +13,60 @@
 // runtime ships a fixed version, or the runtime errored before producing a
 // result. `pending` means the run has not yet produced a verdict.
 
-/**
- * @typedef {Object} VivariumResultV1Bug
- * @property {string} project       Upstream project short name (e.g. "pandas").
- * @property {number} issue         Upstream issue number, no `#` prefix.
- * @property {string} upstream_url  URL to the upstream issue or PR.
- */
+export type VerdictState = "pending" | "pass" | "fail";
 
-/**
- * @typedef {Object} VivariumResultV1Runtime
- * @property {string} name                       Runtime name (e.g. "pyodide").
- * @property {string} version                    Runtime version (e.g. "0.29.3").
- * @property {Record<string, string>} extras     Free-form extras (python, pandas versions, etc.).
- */
+export interface VivariumResultV1Bug {
+  /** Upstream project short name (e.g. "pandas"). */
+  project: string;
+  /** Upstream issue number, no `#` prefix. */
+  issue: number;
+  /** URL to the upstream issue or PR. */
+  upstream_url: string;
+}
 
-/**
- * @typedef {Object} VivariumResultV1Timing
- * @property {string} started_at   ISO-8601 timestamp.
- * @property {string} finished_at  ISO-8601 timestamp.
- * @property {number} duration_ms  Wall-clock duration in milliseconds.
- */
+export interface VivariumResultV1Runtime {
+  /** Runtime name (e.g. "pyodide"). */
+  name: string;
+  /** Runtime version (e.g. "0.29.3"). */
+  version: string;
+  /** Free-form extras (python, pandas versions, etc.). */
+  extras: Record<string, string>;
+}
 
-/**
- * @typedef {Object} VivariumResultV1
- * @property {"v1"} contract
- * @property {VivariumResultV1Bug} bug
- * @property {VivariumResultV1Runtime} runtime
- * @property {Record<string, unknown>} result    Page-specific structured output.
- * @property {VivariumResultV1Timing} timing
- */
+export interface VivariumResultV1Timing {
+  /** ISO-8601 timestamp. */
+  started_at: string;
+  /** ISO-8601 timestamp. */
+  finished_at: string;
+  /** Wall-clock duration in milliseconds. */
+  duration_ms: number;
+}
+
+export interface VivariumResultV1 {
+  contract: "v1";
+  bug: VivariumResultV1Bug;
+  runtime: VivariumResultV1Runtime;
+  /** Page-specific structured output. */
+  result: Record<string, unknown>;
+  timing: VivariumResultV1Timing;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __VIVARIUM_VERDICT__: VerdictState | undefined;
+  // eslint-disable-next-line no-var
+  var __VIVARIUM_RESULT__: VivariumResultV1 | undefined;
+}
 
 /**
  * Update the verdict element + the `__VIVARIUM_VERDICT__` global atomically.
  *
- * @param {"pending" | "pass" | "fail"} state
- * @param {string} text Human-readable verdict. Should start with
+ * @param state Verdict state.
+ * @param text  Human-readable verdict. Should start with
  *   "reproduction succeeded", "reproduction failed", or a page-specific
  *   pending message — see ADR-0008.
  */
-export function setVerdict(state, text) {
+export function setVerdict(state: VerdictState, text: string): void {
   const el = document.getElementById("verdict");
   if (!el) {
     throw new Error(
@@ -60,17 +75,15 @@ export function setVerdict(state, text) {
   }
   el.classList.remove("pass", "fail", "pending");
   el.classList.add(state);
-  el.dataset.verdict = state;
+  el.dataset["verdict"] = state;
   el.textContent = text;
   globalThis.__VIVARIUM_VERDICT__ = state;
 }
 
 /**
  * Publish the structured result envelope on `__VIVARIUM_RESULT__`.
- *
- * @param {VivariumResultV1} envelope
  */
-export function setResult(envelope) {
+export function setResult(envelope: VivariumResultV1): void {
   if (!envelope || envelope.contract !== "v1") {
     throw new Error(
       `vivarium contract v1: setResult expected contract="v1", got ${

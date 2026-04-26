@@ -1,4 +1,4 @@
-// Smoke test for `_shared/verdict.mjs`.
+// Smoke test for `_shared/verdict.ts`.
 //
 // Validates that the helpers wire up the contract-v1 surface:
 // - DOM `#verdict[data-verdict]`
@@ -9,18 +9,27 @@
 // helper plumbing in isolation. Reproduction-level smoke tests live in
 // each per-bug page.
 
-import { setResult, setVerdict } from "../verdict.mjs";
+import {
+  setResult,
+  setVerdict,
+  type VivariumResultV1,
+} from "../verdict.js";
 
 const startedAt = new Date();
 const outputEl = document.getElementById("output");
 const metaEl = document.getElementById("meta");
 
+if (!outputEl || !metaEl) {
+  throw new Error(
+    "smoke test: missing required elements (#output, #meta) in HTML.",
+  );
+}
+
 try {
   setVerdict("pass", "reproduction succeeded — _shared helpers wired up.");
 
   const finishedAt = new Date();
-  /** @type {import('../verdict.mjs').VivariumResultV1} */
-  const envelope = {
+  const envelope: VivariumResultV1 = {
     contract: "v1",
     bug: {
       project: "vivarium",
@@ -45,9 +54,13 @@ try {
   metaEl.textContent =
     "Smoke test ran without loading Pyodide — only the helper plumbing is exercised.";
   outputEl.textContent = JSON.stringify(envelope, null, 2);
-} catch (err) {
+} catch (err: unknown) {
   console.error(err);
+  const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
-    (err && (err.stack || err.message)) || String(err);
-  setVerdict("fail", `smoke test failed: ${err.message ?? err}`);
+    (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
+  setVerdict(
+    "fail",
+    `smoke test failed: ${errAny?.message ?? String(err)}`,
+  );
 }
