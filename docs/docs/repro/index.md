@@ -83,13 +83,21 @@ to the last 1.8.x line; bumping past 1.9 will flip the verdict to
 ## Native re-verification
 
 Each gallery page has a companion CLI variant — `repro.py`,
-`repro.rb`, or `repro.php` — that runs the *same* logic against a
-real native interpreter, with no WASM layer involved. The
-`.mise.toml` at the repo root pins each interpreter to the same
-major.minor.patch the WASM runtime bundles, so:
+`repro.rb`, `repro.php`, or (for Rust) the same `Cargo.toml` +
+`src/main.rs` — that runs the *same* logic against a real native
+interpreter / compiler, with no WASM layer involved. The
+`.mise.toml` at the repo root pins each runtime to the same
+major.minor.patch (or pip dependency pin) the WASM runtime
+bundles. Python pages use [PEP 723](https://peps.python.org/pep-0723/)
+inline metadata and `uv run` so each script declares its own
+package pins (`pandas==2.3.3`, `numpy==2.2.5`, …) without a
+shared `requirements.txt`.
 
 ```bash
 mise install                                                    # one-time per machine
+mise exec uv   -- uv run src/layer1_wasm/pandas-56679/repro.py
+mise exec uv   -- uv run src/layer1_wasm/numpy-28287/repro.py
+mise exec uv   -- uv run src/layer1_wasm/cpython-137205/repro.py
 mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
 mise exec php  -- php  src/layer1_wasm/php-12167/repro.php
 mise exec rust -- cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml

@@ -60,6 +60,7 @@ the Python API surface.
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
 | `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
+| `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. The bug is in the CPython binding layer, so no third-party deps are needed (PEP 723 `dependencies = []`). See "Native verification" below. |
 
 ## Verdict contract — `vivarium-contract: v1`
 
@@ -73,7 +74,7 @@ on the PRAGMA value). A `fail` means either the runtime ships a fix
 (both connections agree), or the runtime errored before producing a
 result.
 
-## Running locally
+## Running locally — in-browser
 
 ```bash
 cd src/layer1_wasm
@@ -81,6 +82,19 @@ bun install
 bun run build
 python -m http.server -d . 8767
 # open http://localhost:8767/cpython-137205/
+```
+
+## Native verification — same reproduction under a real CPython
+
+The companion `repro.py` script reproduces the bug without any
+WASM layer. The bug lives in the CPython `sqlite3` binding layer,
+not in libsqlite3 itself, so no third-party packages are needed.
+The `.mise.toml` at the repo root pins Python to 3.13:
+
+```bash
+mise install
+mise exec uv -- uv run src/layer1_wasm/cpython-137205/repro.py
+# verdict=pass — autocommit=False silently drops PRAGMA foreign_keys
 ```
 
 ## Deployment

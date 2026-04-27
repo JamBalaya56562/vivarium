@@ -40,6 +40,7 @@ contradicts itself is a clear violation.
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
 | `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
+| `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css).
 
@@ -64,7 +65,7 @@ non-transitive ordering). A `fail` means either the bug was fixed in the
 version Pyodide currently ships, or the runtime itself errored before
 producing a result.
 
-## Running locally
+## Running locally — in-browser
 
 ```bash
 # 1. From src/layer1_wasm/, build the TypeScript sources once.
@@ -79,6 +80,19 @@ python -m http.server -d . 8767
 
 Pyodide does not require COOP/COEP headers (no `SharedArrayBuffer`, no
 threading), so a plain server is enough.
+
+## Native verification — same reproduction under a real CPython + NumPy
+
+The companion `repro.py` script reproduces the bug without any
+WASM layer. PEP 723 inline metadata pins **`numpy==2.2.5`** — the
+exact version Pyodide v0.29.3 bundles — and the `.mise.toml` at the
+repo root pins Python to 3.13:
+
+```bash
+mise install
+mise exec uv -- uv run src/layer1_wasm/numpy-28287/repro.py
+# verdict=pass — timedelta64 ordering is non-transitive
+```
 
 ## Deployment
 

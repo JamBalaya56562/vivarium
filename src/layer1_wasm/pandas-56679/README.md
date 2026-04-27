@@ -33,6 +33,7 @@ Originally selected as Phase 0's "easiest to debug at a glance" PoC:
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
 | `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
+| `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css);
 this directory no longer carries its own copy.
@@ -58,7 +59,7 @@ exhibits the inconsistency). A `fail` means either the bug was fixed in
 the version Pyodide currently ships, or the runtime itself errored
 before producing a result.
 
-## Running locally
+## Running locally — in-browser
 
 ```bash
 # 1. From src/layer1_wasm/, build the TypeScript sources once.
@@ -73,6 +74,35 @@ python -m http.server -d pandas-56679 8765
 
 Pyodide does **not** require COOP/COEP headers for this page (no
 `SharedArrayBuffer`, no threading), so a plain server is enough.
+
+## Native verification — same reproduction under a real CPython + pandas
+
+The companion `repro.py` script reproduces the bug without any
+WASM layer, so a contributor can confirm the gallery page is
+catching a *real* upstream behaviour rather than a Pyodide quirk.
+PEP 723 inline metadata pins **`pandas==2.3.3`** — the exact
+version Pyodide v0.29.3 bundles — and the `.mise.toml` at the repo
+root pins Python to 3.13:
+
+```bash
+# One-time per machine / .mise.toml change.
+mise install
+
+# Reproduces the bug; exits 0 on `pass`. uv reads the inline
+# metadata, builds an ephemeral venv, and runs the script.
+mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
+
+# Expected output (pandas 2.3.3):
+# {
+#   "pandas_version": "2.3.3",
+#   "python_version": "3.13.x",
+#   "series_dtype": "object",
+#   "df_dtype": "float64",
+#   "mismatch": true,
+#   "reproduced": true
+# }
+# verdict=pass — Series and DataFrame disagree on empty-input dtype
+```
 
 ## Deployment
 
