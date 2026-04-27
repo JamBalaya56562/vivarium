@@ -209,10 +209,12 @@ chosen as the universally-available, zero-recurring-cost path).
 
 ## How a reproduction request is routed
 
-Routing is a first-class concern, not a side effect. In Phase 0 there
-is no routing logic yet — the PoC is hand-coded to Layer 1. The design
-below is what routing looks like once it exists; it is included here so
-new verticals know what shape they need to declare.
+Routing is a first-class concern, not a side effect. No mechanical
+router exists yet — the Layer 1 and Layer 2 catalogues live as
+directory-level slots, and every existing recipe was hand-routed to
+its layer at recipe-creation time. The design below is what routing
+looks like once it exists; it is included here so new verticals know
+what shape they need to declare.
 
 ```
 ┌────────────────────┐
@@ -277,29 +279,45 @@ reproduction runs in a browser tab or a Firecracker microVM:
   specific reason; the router's default decision is expected to be
   right.
 
-The concrete schema is deliberately not defined in Phase 0. It will
-emerge from implementing the first several verticals and observing
-what they actually need, rather than from up-front design.
+The concrete schema is deliberately still undefined. The first batch
+of verticals (six in Layer 1, four in Layer 2) declared themselves
+ad-hoc per recipe; the shared shape is expected to emerge from those
+observations rather than from up-front design.
 
-## Phase 0 scope
+## Current scope
 
-Phase 0 focuses exclusively on **Layer 1 with Pyodide + SQLite** as the
-first concrete reproduction domain, implemented as a single
-hand-coded PoC — see
-[Issue #13](https://github.com/aletheia-works/vivarium/issues/13). No
-routing, no layer selection, no runtime dispatch: just one bug, fully
-reproduced in a browser tab.
+As of 2026-04-27, Phases 0–3 are closed and Phase 4 is active. The
+architectural slots above have filled in unevenly — by design, since
+each layer waits for a concrete Issue before a vertical lands.
 
-Layer 2 and Layer 3 are **expected but unscheduled**. They will gain
-real files in `src/layer2_docker/` and `src/layer3_thirdway/` only
-when a concrete Issue proposes a vertical; they exist now as empty
-subdirectories with READMEs so the architectural slot is visible.
+**Layer 1.** Six verticals live under `src/layer1_wasm/`:
+`cpython-137205`, `numpy-28287`, `pandas-56679`, `regex-779` (Python
+via Pyodide), `ruby-21709` (Ruby.wasm), and `php-12167` (php-wasm).
+The gallery shape that Phase 1 prototyped is the established UX for
+Layer 1 verticals; the Pyodide × `sqlite-wasm` pairing originally
+named as the Phase 1 target has not yet acquired a recipe and remains
+a future addition rather than a closed slot.
 
-This phasing is deliberate: committing to specific runtimes beyond
-Phase 0 before the Phase 0 PoC has validated the primitive end-to-end
-would be the same tech-anchor mistake the project's
+**Layer 2.** Four recipes live under `src/layer2_docker/`:
+`postgres-lost-update`, `find-xargs-whitespace`, `flock-is-advisory`,
+`bash-local-shadows-exit`. Each ships the catalogue model in full —
+pinned `Dockerfile`, `repro.sh`, GHCR-published image, copy-pasteable
+`docker run` invocation, CI verdict snapshot. No in-page Layer 2
+runtime exists; the visitor's own Docker (or Codespaces) is the
+runtime, exactly as the delivery model above requires.
+
+**Layer 3.** Phase 4 is the active milestone. The trace-shipped
+catalogue model described above is the current design; the first
+recipe is in progress, and `src/layer3_thirdway/` still holds only
+its README plus the design notes ADR-0011 (private memo) refers to.
+Until the first vertical lands, Layer 3 has no canonical recipe
+shape — only a documented intended shape.
+
+The conservative phasing — refuse to commit to runtimes beyond what
+the next concrete Issue actually needs — was the project's
 [problem-first principle](./vision.md#core-principle-problem-first)
-exists to avoid.
+applied to itself, and remains the rule for any future layer or
+runtime addition.
 
 ## See also
 
