@@ -1,0 +1,129 @@
+// Vivarium Layer 2 — verdict snapshot renderer.
+//
+// Each Layer 2 page ships a minimal `index.html` that imports
+// this module and calls `renderVerdictSnapshot({…})` once. The
+// module fetches `./verdict.json` (CI-generated, sitting next to
+// the HTML in the deployed Pages artefact) and:
+//   - flips the DOM `#verdict[data-verdict]` element to
+//     "pass" / "fail" with human-readable text;
+//   - publishes `__VIVARIUM_VERDICT__` and `__VIVARIUM_RESULT__`
+//     globals matching the contract-v1 surface Layer 1 uses, so
+//     the same Playwright suite can later assert against
+//     Layer 2 pages without bespoke wiring;
+//   - injects the captured stdout into `#output` and the
+//     image / digest / exit-code metadata into `#meta`.
+//
+// Per ADR-0010, Layer 2 verdicts are snapshots: the page reports
+// what CI saw the last time the image was built and run. The
+// visitor's local `docker run` is the live confirmation.
+
+/**
+ * @param {Object} options
+ * @param {string} options.verdictUrl  Path to verdict.json. Defaults to "./verdict.json".
+ * @param {{project: string, issue: number | string, upstream_url: string}} options.bug
+ *   Page metadata, surfaced through `__VIVARIUM_RESULT__.bug`.
+ *   `issue` may be 0 (or a string slug) for catalogue entries
+ *   that are documented behaviours rather than numbered defects.
+ */
+export async function renderVerdictSnapshot(options) {
+  const verdictUrl = options.verdictUrl ?? "./verdict.json";
+  const bug = options.bug;
+
+  const verdictEl = document.getElementById("verdict");
+  const metaEl = document.getElementById("meta");
+  const outputEl = document.getElementById("output");
+
+  if (!verdictEl) {
+    throw new Error('layer2: missing element with id="verdict".');
+  }
+
+  function setVerdict(state, text) {
+    verdictEl.classList.remove("pass", "fail", "pending");
+    verdictEl.classList.add(state);
+    verdictEl.dataset.verdict = state;
+    verdictEl.textContent = text;
+    globalThis.__VIVARIUM_VERDICT__ = state;
+  }
+
+  setVerdict("pending", "Fetching CI verdict snapshot…");
+
+  try {
+    const response = await fetch(verdictUrl, { cache: "no-cache" });
+    if (!response.ok) {
+      throw new Error(
+        `failed to fetch ${verdictUrl}: HTTP ${response.status} ${response.statusText}`,
+      );
+    }
+    const snap = await response.json();
+
+    if (snap.contract !== "v1") {
+      throw new Error(
+        `verdict.json contract mismatch: expected "v1", got ${JSON.stringify(snap.contract)}`,
+      );
+    }
+
+    const verdict = snap.verdict;
+    if (verdict !== "pass" && verdict !== "fail") {
+      throw new Error(
+        `verdict.json verdict must be "pass" or "fail"; got ${JSON.stringify(verdict)}`,
+      );
+    }
+
+    const verb = verdict === "pass" ? "succeeded" : "failed";
+    setVerdict(
+      verdict,
+      `reproduction ${verb} (CI snapshot captured ${snap.captured_at})`,
+    );
+
+    if (metaEl) {
+      const lines = [
+        `Image: ${snap.image_tag}`,
+        snap.image_digest ? `Digest: ${snap.image_digest}` : null,
+        `Exit code: ${snap.exit_code}`,
+        `Captured at: ${snap.captured_at}`,
+      ].filter(Boolean);
+      // `<br>` between lines so the meta line-breaks render visibly.
+      // textContent collapses newlines under default `<p>` styling.
+      metaEl.replaceChildren();
+      lines.forEach((line, i) => {
+        if (i > 0) metaEl.appendChild(document.createElement("br"));
+        metaEl.appendChild(document.createTextNode(line));
+      });
+    }
+
+    if (outputEl) {
+      outputEl.textContent = snap.stdout || "(no stdout captured)";
+    }
+
+    globalThis.__VIVARIUM_RESULT__ = {
+      contract: "v1",
+      bug,
+      runtime: {
+        name: "docker-snapshot",
+        version: snap.image_digest || snap.image_tag,
+        extras: {
+          image_tag: snap.image_tag,
+          captured_at: snap.captured_at,
+        },
+      },
+      result: {
+        exit_code: snap.exit_code,
+        verdict,
+        stderr_tail: snap.stderr_tail || "",
+      },
+      timing: {
+        // Layer 2 pages don't run the reproduction in-page; the
+        // timing fields below all reference the CI snapshot's
+        // capture time.
+        started_at: snap.captured_at,
+        finished_at: snap.captured_at,
+        duration_ms: 0,
+      },
+    };
+  } catch (err) {
+    console.error(err);
+    const msg = (err && (err.message || String(err))) || "unknown error";
+    setVerdict("fail", `verdict snapshot unavailable: ${msg}`);
+    if (outputEl) outputEl.textContent = String(err.stack || err.message || err);
+  }
+}

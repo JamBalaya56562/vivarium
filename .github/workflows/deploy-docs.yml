@@ -326,7 +326,14 @@ jobs:
             slug="$(basename "$entry")"
             case "$slug" in
               _*)
-                echo "Skipping Layer 2 underscore-prefixed dir: ${slug}"
+                # Underscore-prefixed dirs are shared scaffolding
+                # (e.g. `_layer2-shared/` with the verdict
+                # snapshot renderer). Bundle them under the same
+                # `<pages-base>/repro/` root so per-page
+                # `index.html` files can reference
+                # `../_layer2-shared/...`.
+                echo "Bundling Layer 2 shared module: ${slug}"
+                cp -R "$entry" "$dest/"
                 continue
                 ;;
             esac
