@@ -171,17 +171,46 @@ chosen as the universally-available, zero-recurring-cost path).
 - Post-mortem forensic analysis — stepping backwards through a
   recorded trace rather than forwards from a fresh run.
 
+### Delivery model: trace-shipped catalogue
+
+Layer 3 is a **catalogue of pre-recorded traces** packaged into
+self-contained images, not a hosted record-replay service. Each
+gallery entry ships a pinned `Dockerfile`, a `replay.sh` that emits
+the same `pass` / `fail` verdict shape Layers 1 and 2 use, and a
+pre-built image published to
+`ghcr.io/aletheia-works/vivarium-<slug>` with the recorded trace
+**baked in**. The page surfaces a copy-pasteable `docker run …`
+invocation and a CI verdict snapshot ("when CI replayed the trace
+today, the bug reproduced"); the visitor's own run is the live
+confirmation.
+
+The capture step is **offline, one-time per recipe**: the maintainer
+records the trace on a Linux/x86_64 host that exposes a usable CPU
+performance counter (PMU), uploads the trace as a tag-pinned release
+asset, and CI bakes it into the image at build time. CI itself does
+not record — GitHub Actions hosted runners do not expose the PMU
+their guest needs. `rr replay` does not need the PMU, so visitor and
+CI replays both work on commodity Linux. The reasoning is recorded
+in ADR-0011 (private memo).
+
+This is the same trade-off shape as Layer 2: Vivarium guarantees the
+recipe and the registered image; the runtime happens on the
+visitor's machine. Layer 3 differs only in *what* is baked in (a
+deterministic recorded trace, not a fresh execution to be re-run).
+
 ### Startup-time characteristics
 
-- **Capture phase** (on the reporter's side or in a controlled rig):
+- **Capture phase** (offline on the maintainer's PMU-equipped host):
   typically **2×–5× slowdown** over native execution. This is not a
-  user-facing number — it is the price the recording system pays.
+  user-facing number — it is the price the recording side pays
+  once per recipe.
 - **Replay / analysis phase** (for Vivarium visitors): interactive,
   typically **faster than the original execution** because forward
   and backward stepping replaces re-execution.
-- End-to-end "from Issue link to observed failure" latency depends on
-  whether a trace is already recorded (seconds to view) or needs to
-  be generated on demand (minutes).
+- End-to-end "from Issue link to observed failure" latency on the
+  visitor side: image pull + `docker run` + `rr replay` —
+  **seconds to tens of seconds** for a small recipe, scaling with
+  trace size and replay depth.
 
 ### Known limits
 
@@ -193,8 +222,18 @@ chosen as the universally-available, zero-recurring-cost path).
   neither covers the other. Layer 3 will feel more like a portfolio
   of specialist rigs than a single runtime for the foreseeable
   future.
-- **Storage.** Traces are large. Any hosted tier needs an explicit
-  retention policy; Phase 4 will not pretend traces are free.
+- **Recording is a maintainer responsibility, not CI's.** Adding a
+  Layer 3 recipe requires access to a Linux/x86_64 host with a
+  working PMU. This is the catalogue's defining ergonomic cost; it
+  is paid once per recipe, not per CI run.
+- **Storage.** Traces are large (tens of MB to single-digit GB per
+  recipe). They live as release assets on the public repo (free,
+  bandwidth-unmetered, 2 GB-per-file ceiling); recipes that would
+  exceed the per-file ceiling are out of scope until a follow-up
+  ADR commits to alternative storage.
+- **Visitor needs Linux/x86_64.** ARM-Mac and Windows visitors fall
+  back to Codespaces or WSL2 + Docker — the same fallback Layer 2
+  already documents.
 
 ### Candidate runtimes / approaches
 

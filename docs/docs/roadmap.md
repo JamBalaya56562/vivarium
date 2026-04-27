@@ -144,20 +144,37 @@ the project ever has the audience to justify it.
 - The third layer for bugs Layers 1 and 2 cannot reach on their own:
   **record-replay** ([rr](https://rr-project.org), Pernosco-style
   analysis) and **deterministic simulation**
-  ([Antithesis](https://antithesis.com)-style).
-- Targeted verticals: heisenbugs, memory-ordering races, long-replay
-  production traces, distributed-system interleavings.
-- Honest scope — Layer 3 is expensive per reproduction; it runs when
-  the cheaper layers cannot observe the failure at all, not by
-  default.
+  ([Antithesis](https://antithesis.com)-style). The opener vertical
+  is `rr`.
+- A **trace-shipped catalogue model**, mirroring Phase 3. Each
+  reproduction ships a `Dockerfile` + `replay.sh` + a public
+  pre-built image at `ghcr.io/aletheia-works/vivarium-<slug>` with
+  the recorded trace **baked into the image**. The visitor reproduces
+  the bug locally with one `docker run …` command — `rr replay`
+  against the pinned trace, deterministic by construction.
+- A **CI-snapshot verdict** on each gallery page — "when CI replayed
+  the trace today, the bug reproduced" — paired with the recipe and
+  the registered image. Same verdict semantics as Layers 1 and 2;
+  the live run is the visitor's local confirmation.
+- Honest scope — Layer 3 is expensive per *recipe* (the maintainer
+  records once on a Linux/x86_64 host with a usable CPU performance
+  counter); the visitor side is just `docker run`. Layer 3 lands a
+  recipe only when the cheaper layers cannot observe the failure at
+  all, not by default.
 
 **What a visitor sees:** categories of bugs that were previously
 "irreproducible" — the hardest ones — start having Vivarium entries.
-Often with a link to a recorded trace rather than a live run.
+The gallery card for a Layer 3 bug shows the upstream issue, a
+one-line `docker run` snippet against the GHCR image, the latest CI
+verdict snapshot from replaying the baked-in trace, and any "how it
+was recorded" notes from the maintainer.
 
 **Non-goals for this phase:** replacing specialist tools in their own
 domains (`rr` for single-process Linux, Antithesis for distributed
-simulation); becoming a general-purpose debugger.
+simulation); becoming a general-purpose debugger; **live recording on
+the visitor side or in CI** (the trace is recorded once by the
+maintainer and shipped — see ADR-0011 for the rationale, in
+particular why GitHub Actions hosted runners cannot record).
 
 ## Phase 5 — Ecosystem
 
