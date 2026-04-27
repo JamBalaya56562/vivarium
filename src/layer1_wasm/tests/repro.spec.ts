@@ -29,9 +29,15 @@ interface ReproCase {
   /**
    * Envelope `runtime.name`. `"browser"` for the smoke test (no WASM
    * runtime loaded); the rest are language runtimes bootstrapped over
-   * WebAssembly.
+   * WebAssembly. `"rust-wasi"` is the in-process WASI shim hosting a
+   * Rust crate compiled to `wasm32-wasip1`.
    */
-  expectedRuntimeName: "browser" | "pyodide" | "ruby.wasm" | "php-wasm";
+  expectedRuntimeName:
+    | "browser"
+    | "pyodide"
+    | "ruby.wasm"
+    | "php-wasm"
+    | "rust-wasi";
 }
 
 const cases: ReproCase[] = [
@@ -82,6 +88,14 @@ const cases: ReproCase[] = [
     expectedBugProject: "php",
     expectedBugIssue: 12167,
     expectedRuntimeName: "php-wasm",
+  },
+  {
+    name: "regex-779 reproduction",
+    path: "/regex-779/",
+    expectedVerdict: "pass",
+    expectedBugProject: "regex",
+    expectedBugIssue: 779,
+    expectedRuntimeName: "rust-wasi",
   },
 ];
 

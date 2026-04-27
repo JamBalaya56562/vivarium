@@ -89,6 +89,54 @@ jobs:
         working-directory: ${{ github.workspace }}/src/layer1_wasm
         run: bun run build
 
+      - name: Install Rust toolchain (for compiled-language reproductions)
+        # Vivarium pins Rust in `.mise.toml`; CI installs the same
+        # version via rustup directly because `jdx/mise-action` is not
+        # on the repo's allowlist. Adds the `wasm32-wasip1` target so
+        # each `<slug>/Cargo.toml` can compile to a browser-loadable
+        # artefact (the page boots it via `@bjorn3/browser_wasi_shim`).
+        # Skipped silently if no Rust crate is present.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          crates=(src/layer1_wasm/*/Cargo.toml)
+          if [ ${#crates[@]} -eq 0 ]; then
+            echo "No src/layer1_wasm/*/Cargo.toml; skipping Rust setup."
+            exit 0
+          fi
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+            sh -s -- -y --profile minimal --default-toolchain 1.84.0
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/rustup" target add wasm32-wasip1
+
+      - name: Build Layer 1 Rust artefacts (wasm32-wasip1)
+        # Compiles every `src/layer1_wasm/<slug>/Cargo.toml` for
+        # `wasm32-wasip1` and copies the resulting `.wasm` next to
+        # the page's `index.html` (`<slug>/repro.wasm`), where the
+        # subsequent bundling step copies it into the Pages artefact
+        # alongside the rest of the directory. The bin name is fixed
+        # at `repro` by convention so this step needs no per-crate
+        # hand-wiring.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+            slug_dir="$(dirname "$cargo_toml")"
+            slug="$(basename "$slug_dir")"
+            echo "Building Rust crate: ${slug}"
+            (
+              cd "$slug_dir"
+              cargo build --release --target wasm32-wasip1
+            )
+            cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" \
+              "${slug_dir}/repro.wasm"
+            # Drop the build artefacts before the bundling step copies
+            # the directory — `target/` is hundreds of MB and would
+            # bloat the Pages artefact otherwise.
+            rm -rf "${slug_dir}/target"
+          done
+
       - name: Bundle Layer 1 reproductions alongside docs
         # Each immediate subdirectory of `src/layer1_wasm/` is published at
         # `<pages-base>/repro/<slug>/`. README files and other tracked

@@ -1,0 +1,37 @@
+# Vivarium Layer 1 reproduction — rust-lang/regex#779.
+#
+# Builds to `target/wasm32-wasip1/release/repro.wasm`. The deploy-docs
+# CI workflow runs `cargo build --release --target wasm32-wasip1` from
+# this directory and copies the resulting `.wasm` next to `index.html`
+# in the Pages artefact, so the in-browser page can `fetch("./repro.wasm")`
+# and run it through `@bjorn3/browser_wasi_shim`.
+
+[package]
+name = "regex-779-repro"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "repro"
+path = "src/main.rs"
+
+[dependencies]
+# Pinned to the last 1.8.x release. The fix for upstream #779 landed
+# alongside the new NFA compiler in regex 1.9 (June 2023), so
+# 1.8.4 — released April 2023 — is the latest line that still
+# exhibits the divergence. Cargo's exact-version operator (`=`)
+# stops Cargo's resolver from silently picking up the fix from a
+# newer 1.x release.
+regex = "=1.8.4"
+serde_json = "1.0.117"
+
+# Aggressive size optimisation — the wasm artefact ships over the
+# network on every page load. Hot-path performance is irrelevant since
+# the reproduction does ~3 regex matches against a 7-byte haystack.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

@@ -78,6 +78,50 @@ jobs:
         # them at runtime.
         run: bun run build
 
+      - name: Install Rust toolchain (for compiled-language reproductions)
+        # Mirrors the equivalent step in `deploy-docs.yml`: installs
+        # rustup directly because `jdx/mise-action` is not on the
+        # repo's selected-actions allowlist, and adds the
+        # `wasm32-wasip1` target so each `<slug>/Cargo.toml` can
+        # compile to the artefact the page fetches at runtime.
+        # Skipped silently if no Rust crate is present so the
+        # regression suite stays cheap when Phase 2 has no Rust
+        # entries yet.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          crates=(src/layer1_wasm/*/Cargo.toml)
+          if [ ${#crates[@]} -eq 0 ]; then
+            echo "No src/layer1_wasm/*/Cargo.toml; skipping Rust setup."
+            exit 0
+          fi
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+            sh -s -- -y --profile minimal --default-toolchain 1.84.0
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/rustup" target add wasm32-wasip1
+
+      - name: Build Layer 1 Rust artefacts (wasm32-wasip1)
+        # Mirrors `deploy-docs.yml`. Compiles every Cargo.toml to
+        # `wasm32-wasip1` and copies the resulting `.wasm` next to
+        # the page's `index.html` (`<slug>/repro.wasm`), where the
+        # Playwright webServer serves it.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+            slug_dir="$(dirname "$cargo_toml")"
+            slug="$(basename "$slug_dir")"
+            echo "Building Rust crate: ${slug}"
+            (
+              cd "$slug_dir"
+              cargo build --release --target wasm32-wasip1
+            )
+            cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" \
+              "${slug_dir}/repro.wasm"
+          done
+
       - name: Install Playwright browsers
         # `--with-deps` brings in the system libraries Chromium needs
         # (libnss3, libatk-bridge, etc.). The runner is fresh so the

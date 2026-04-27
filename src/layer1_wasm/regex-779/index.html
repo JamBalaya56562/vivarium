@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing rust-lang/regex#779</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Keep the version below in sync with DEFAULT_WASI_SHIM_VERSION
+         in ../_shared/rust_loader.ts. -->
+    <link
+      rel="modulepreload"
+      href="https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.4.2/dist/index.js"
+      crossorigin
+    />
+    <link rel="stylesheet" href="../_shared/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Vivarium · Layer 1 · Rust (wasm32-wasip1)</p>
+        <h1>Reproducing <a href="https://github.com/rust-lang/regex/issues/779">rust-lang/regex#779</a></h1>
+        <p class="lede">
+          The Rust <code>regex</code> crate violates a basic regex
+          algebra: <code>(re)+</code> should equal
+          <code>(re)(re)*</code>, but with
+          <code>(?m)(^|a)+</code> against the haystack
+          <code>"a\naaa\n"</code> the two equivalent forms produce
+          different match-iteration outputs. RE2 and Go's regexp
+          have the same divergence; PCRE2 gets it right, so this is
+          an algebraic regex-engine bug rather than a regex-language
+          ambiguity.
+        </p>
+      </header>
+
+      <section>
+        <h2>Verdict</h2>
+        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          Loading Rust wasm32-wasip1 artefact via WASI shim…
+        </div>
+        <p class="meta" id="meta"></p>
+      </section>
+
+      <section>
+        <h2>Reproduction script (Rust)</h2>
+        <pre><code id="repro-code"></code></pre>
+      </section>
+
+      <section>
+        <h2>Output</h2>
+        <pre id="output">(running)</pre>
+      </section>
+
+      <footer>
+        <p class="meta">
+          Runtime:
+          Rust crate compiled to <code>wasm32-wasip1</code>, instantiated in-browser via
+          <a href="https://github.com/bjorn3/browser_wasi_shim">@bjorn3/browser_wasi_shim</a>
+          loaded from
+          <a href="https://www.jsdelivr.com/package/npm/@bjorn3/browser_wasi_shim">cdn.jsdelivr.net</a>.
+          Source:
+          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779">vivarium/src/layer1_wasm/regex-779</a>.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module" src="./repro.js"></script>
+  </body>
+</html>

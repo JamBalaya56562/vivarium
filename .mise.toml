@@ -12,3 +12,9 @@ uv = "latest"
 # equivalent Unix-y toolchain; CI installs them on Linux runners.
 php = "8.2.11"
 ruby = "3.3.3"
+# Rust is also used to build `wasm32-wasip1` artefacts for compiled-
+# language reproductions (see `src/layer1_wasm/regex-779/`); the
+# `wasm32-wasip1` target ships with rustup as a precompiled std, so
+# nothing extra is pinned here. CI installs the matching toolchain on
+# its Linux runner before running `cargo build`.
+rust = "1.84.0"
