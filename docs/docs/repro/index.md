@@ -92,9 +92,9 @@ for the per-page conventions.
 
 | Project | Behaviour | Image | |
 | --- | --- | --- | --- |
-| postgres | [Lost update under default `READ COMMITTED`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update) — concurrent app-side increments silently overwrite | `ghcr.io/aletheia-works/vivarium-postgres-lost-update` | [Recipe ↗](https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/) |
-| bash | [`local` shadows command-substitution exit code](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit) — `set -e` is silently bypassed when `local x=$(failing_cmd)` is used | `ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit` | [Recipe ↗](https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/) |
-| flock | [`flock(2)` is advisory only](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory) — `cat`, `cp`, and any tool that doesn't itself call `flock` ignores the lock and reads the file freely | `ghcr.io/aletheia-works/vivarium-flock-is-advisory` | [Recipe ↗](https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/) |
+| postgres | [Lost update under default `READ COMMITTED`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update) — concurrent app-side increments silently overwrite | `ghcr.io/aletheia-works/vivarium-postgres-lost-update` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/) |
+| bash | [`local` shadows command-substitution exit code](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit) — `set -e` is silently bypassed when `local x=$(failing_cmd)` is used | `ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/) |
+| flock | [`flock(2)` is advisory only](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory) — `cat`, `cp`, and any tool that doesn't itself call `flock` ignores the lock and reads the file freely | `ghcr.io/aletheia-works/vivarium-flock-is-advisory` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/) |
 
 Reproduce locally:
 
