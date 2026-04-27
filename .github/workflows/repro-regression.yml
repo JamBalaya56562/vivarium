@@ -31,12 +31,14 @@ on:
     paths:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
+      - 'src/layer3_thirdway/**'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   pull_request:
     paths:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
+      - 'src/layer3_thirdway/**'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   schedule:
@@ -188,6 +190,47 @@ jobs:
               echo "::warning::Layer 2 reproduction ${slug} exited ${exit_code}; downstream Playwright step will assert verdict expectations"
             fi
             echo "Layer 2 reproduction ${slug}: verdict=${verdict} (exit ${exit_code})"
+          done
+
+      - name: Build Layer 3 rr-replay reproductions (no run, no push)
+        # Layer 3 cannot run replay in CI — Azure Hyper-V exposes
+        # neither the PMU (record) nor CPUID faulting (cross-CPU
+        # replay) to GHA hosted runners; see
+        # `src/layer3_thirdway/README.md` and ADR-0011. CI's job is
+        # reduced to verifying the Dockerfile still builds (catches
+        # base-image / package / `ADD <trace.url>` drift) and that
+        # the committed `verdict.json` snapshot conforms to the
+        # contract. The verdict snapshot itself is generated locally
+        # by the maintainer at recording time and is the source of
+        # truth.
+        #
+        # Skipped silently when there are no Layer 3 reproductions.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for dockerfile in src/layer3_thirdway/*/Dockerfile; do
+            slug_dir="$(dirname "$dockerfile")"
+            slug="$(basename "$slug_dir")"
+            tag="vivarium-${slug}:test"
+
+            verdict_file="${slug_dir}/verdict.json"
+            if [ ! -f "$verdict_file" ]; then
+              echo "::error::Layer 3 recipe ${slug} is missing tracked verdict.json"
+              exit 1
+            fi
+            jq -e '.contract == "v1" and (.verdict == "pass" or .verdict == "fail") and (.exit_code | type == "number")' \
+              "$verdict_file" >/dev/null || {
+                echo "::error::Layer 3 recipe ${slug} has malformed verdict.json"
+                cat "$verdict_file"
+                exit 1
+              }
+            verdict=$(jq -r '.verdict' "$verdict_file")
+
+            echo "Building Layer 3 image for regression: ${slug}"
+            docker build --tag "$tag" "$slug_dir"
+
+            echo "Layer 3 reproduction ${slug}: build OK; tracked verdict=${verdict}"
           done
 
       - name: Install Playwright browsers

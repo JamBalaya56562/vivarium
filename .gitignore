@@ -94,6 +94,15 @@ doc_build/
 # reads the deployed copy instead.
 src/layer2_docker/**/verdict.json
 
+# ─── Layer 3 (rr record-replay) build artefacts ────
+# `record.sh` writes the captured trace to `<recipe>/out/<name>.tar.zst`
+# before the maintainer uploads it as a Release asset; the Release
+# asset is the canonical artefact, the local copy is scratch.
+# Note: `<recipe>/verdict.json` is INTENTIONALLY tracked for Layer 3
+# (CI cannot regenerate it — see `src/layer3_thirdway/README.md` and
+# ADR-0011) — there is no per-recipe verdict.json ignore line here.
+src/layer3_thirdway/**/out/
+
 # ─── Logs / temporary files ──────────────────
 *.log
 logs/

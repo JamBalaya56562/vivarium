@@ -1,0 +1,233 @@
+# Reproduction — pthread lost-update data race (canonical)
+
+> Phase 4 reproduction page — first **Layer 3 (record-replay)** entry
+> in Vivarium's gallery. Conforms to the
+> [catalogue conventions in `src/layer3_thirdway/README.md`](../README.md):
+> a pinned `Dockerfile` + `replay.sh` + a recorded `rr` trace pulled
+> in at build time, with the visitor reproducing the recorded race
+> deterministically via `docker run` against the baked-in trace.
+
+## The behaviour
+
+The textbook **lost-update data race**: two threads each increment
+a shared `volatile long` counter `N` times with no synchronisation.
+The expected final value is `2*N`, but on x86 with `-O2` the
+unprotected `counter++` (which compiles to a non-atomic
+load-add-store) interleaves between the threads, and a varying
+number of increments are silently lost.
+
+```
+Thread A                Thread B
+─────────────────────────────────────
+load  counter → r0
+                        load  counter → r0
+add   r0, 1
+store r0
+                        add   r0, 1
+                        store r0   ← overwrites Thread A's store
+─────────────────────────────────────
+counter is incremented once for two attempts; one increment lost.
+```
+
+This is **canonical undefined behaviour** under the C / C++ memory
+model when shared mutable state is read-modify-written without
+synchronisation. Vivarium's value here is making the failure
+**deterministically replayable**: the maintainer captures the
+race once with `rr record --chaos`, ships the trace baked into a
+Docker image, and the visitor sees the *exact* same lost-update
+schedule — including time-travel-debuggable instruction stream —
+on every `docker run`.
+
+## Why this bug routes here (Layer 3) and not Layer 1 / Layer 2
+
+- **A naive rerun does not always reproduce.** The race fires under
+  some thread interleavings and not others. `rr record --chaos`
+  injects context-switches to make the failing schedule reliable to
+  *capture*; `rr replay` then re-fires that exact schedule
+  deterministically.
+- **The interesting object is the schedule, not the program.** The
+  source code is a few dozen lines; the value is a saved execution
+  the user can step through, including stepping *backwards* under
+  `rr replay -p PID` + `gdb`. Layer 2's "run a Docker container"
+  shape cannot capture that artefact.
+- **Failure mode is silent.** Without instrumentation, the bug
+  presents as a wrong-but-plausible final number. Replay lets the
+  visitor confirm "yes, increments were lost" by inspecting the
+  recorded stderr line `lost = K` for `K > 0`.
+
+## Why `rr` and not TSan / Helgrind / sanitisers
+
+ThreadSanitizer (TSan), Helgrind, and similar dynamic race
+detectors *find* races by instrumenting memory accesses while the
+program runs — they answer the question "are there any data races
+in this code?".
+
+`rr` answers a different question: "I have a captured failure;
+let me step backwards through the *exact* execution that produced
+it." The lost-update race is already textbook-known to TSan;
+nothing new to detect there. The thing Layer 3 ships is the
+ability to **time-travel debug** a specific recorded interleaving,
+which sanitisers do not provide. The two tools are complementary,
+not substitutes.
+
+## Files
+
+| File          | Role                                                         |
+| ------------- | ------------------------------------------------------------ |
+| `repro.c`     | The two-thread reproducer. Exit 0 if the race did not fire (counter == 2*N), exit 1 if it did. |
+| `Dockerfile`  | `ubuntu:24.04` + `rr` + `build-essential`. Pulls the trace from the pinned release URL via `ADD` at build time. |
+| `replay.sh`   | The visitor-facing entrypoint. Runs `rr replay --autopilot`, parses the recorded stderr for the race marker, exits 0 on `pass` (race re-fires) / 1 on `fail`. |
+| `record.sh`   | Maintainer-only. Records a fresh trace on a Linux/x86_64 host with PMU, retrying under `--chaos` until a failing run is captured. Not invoked by CI or visitors. |
+| `trace.url`   | Pinned URL of the trace artifact (a GitHub Release asset on `aletheia-works/vivarium`). |
+| `verdict.json`| **Locally generated** verdict snapshot (see "Verdict snapshot" below). Tracked in git. |
+| `README.md`   | This file. |
+
+## Verdict snapshot
+
+Per [ADR-0011 (private memo)](../../../_context/decisions/0011-phase4-first-vertical-rr.md):
+the Layer 3 catalogue degrades the verdict pipeline to a
+**maintainer-local** snapshot, committed alongside the recipe.
+
+GitHub Actions hosted runners cannot host either side of the
+`rr` flow:
+
+- **Record** is blocked by missing CPU performance counters
+  (Azure Hyper-V does not virtualise the PMU).
+- **Replay** is blocked by missing CPUID faulting whenever the
+  record-side and replay-side CPUs differ — confirmed empirically
+  on `ubuntu-latest` against an external trace
+  ([run #24992650815](https://github.com/aletheia-works/vivarium/actions/runs/24992650815)).
+
+So `verdict.json` here is generated by the maintainer on the same
+Linux/x86_64 host that records the trace (`docker run` against the
+locally-built image, JSON-wrapped output captured), then committed.
+The CI job for Layer 3 stops at "the image builds cleanly" —
+visitor replay still works on every realistic visitor host
+(modern Intel / AMD on stock Linux + Docker, where the kernel
+enables CPUID faulting automatically).
+
+A divergence between the visitor's `docker run` exit code and the
+committed `verdict.json` is itself signal worth investigating —
+typically meaning the visitor's host CPU lacks CPUID faulting, or
+their `rr` build / kernel diverges from the recording side enough
+to break replay.
+
+## Running locally — `docker run`
+
+```bash
+docker run --rm \
+  --cap-add=SYS_PTRACE --cap-add=PERFMON \
+  --security-opt seccomp=unconfined \
+  ghcr.io/aletheia-works/vivarium-lost-update:latest
+```
+
+The three flags exist because `rr replay`:
+
+1. uses `ptrace(2)` to drive the replayed process — needs
+   `CAP_SYS_PTRACE`, not in Docker's default cap set.
+2. opens CPU performance counters via `perf_event_open(2)` to
+   instrument branch retirement, even though it does not need
+   counter *values* during replay — needs `CAP_PERFMON`.
+3. issues `perf_event_open(2)` itself, which Docker's default
+   seccomp profile blocks — needs `seccomp=unconfined` (or a
+   custom profile that allows the syscall).
+
+First-pull cost: ~140 MB (ubuntu:24.04 + rr + a 1.3 MB trace).
+Run takes ~1 second (the recorded program is short; chaos-mode
+context switches add a few hundred milliseconds at replay time).
+
+**Expected output:**
+
+```
+Replaying trace at: /trace/repro-0
+counter = 11272759, expected = 20000000, lost = 8727241
+pass: lost-update race observed in recorded trace
+```
+
+Exit code `0`: the recorded race re-fires deterministically; page
+reports `pass`. The exact `lost = N` value depends on the
+recording's captured schedule (deterministic per trace, not
+per-run on the visitor's machine — every visitor sees `lost =
+8727241` from this `lost-update-trace-v1` trace).
+
+## Stepping backwards — `rr replay` + `gdb`
+
+The catalogue ships the trace and entrypoint; the time-travel
+debug shell is one extra `docker run` away:
+
+```bash
+docker run --rm -it \
+  --cap-add=SYS_PTRACE --cap-add=PERFMON \
+  --security-opt seccomp=unconfined \
+  --entrypoint /bin/bash \
+  ghcr.io/aletheia-works/vivarium-lost-update:latest \
+  -c 'rr replay /trace/$(ls /trace | head -n1)'
+```
+
+This drops you into `rr` + `gdb`. From the `(rr)` prompt:
+
+```
+(rr) break worker
+(rr) continue
+(rr) print counter
+(rr) reverse-step              # step backwards one source line
+(rr) reverse-continue          # rewind until previous breakpoint
+```
+
+Stepping backwards through a recorded race is the substantive
+feature Layer 3 buys over Layer 2 — the visitor can investigate
+the *interleaving that lost the increment*, not just observe
+that the increment was lost.
+
+## Building locally — `docker build`
+
+```bash
+cd src/layer3_thirdway/lost-update
+docker build -t vivarium-lost-update:dev .
+docker run --rm \
+  --cap-add=SYS_PTRACE --cap-add=PERFMON \
+  --security-opt seccomp=unconfined \
+  vivarium-lost-update:dev
+```
+
+`docker build` will fetch the trace via the `ADD` line in
+`Dockerfile` from the pinned release URL — no separate trace
+download needed.
+
+## Re-recording the trace (maintainer only)
+
+Required when:
+
+- `repro.c` changes in a way that changes its instruction stream
+  (e.g. different `ITERATIONS`, different gcc flags).
+- `rr` ABI breaks across major versions in a way that invalidates
+  the existing trace.
+
+```bash
+cd src/layer3_thirdway/lost-update
+./record.sh
+# → out/lost-update-trace.tar.zst
+
+gh release create lost-update-trace-vN out/lost-update-trace.tar.zst \
+  --repo aletheia-works/vivarium \
+  --title 'lost-update recipe trace vN' \
+  --notes 'Re-recorded against repro.c rev <SHA>'
+
+# Update trace.url + the ADD URL in Dockerfile to the new vN tag,
+# rebuild the image, regenerate verdict.json, commit.
+```
+
+## Deployment
+
+Image is built and pushed to GHCR by `deploy-docs.yml` on push to
+`main` (mirroring Layer 2):
+
+```
+ghcr.io/aletheia-works/vivarium-lost-update:latest
+ghcr.io/aletheia-works/vivarium-lost-update:<git-sha>
+```
+
+The committed `verdict.json` is shipped in the GitHub Pages
+artefact at `/repro/lost-update/verdict.json` for the gallery to
+render the snapshot — no CI write step, since CI cannot run the
+replay.
