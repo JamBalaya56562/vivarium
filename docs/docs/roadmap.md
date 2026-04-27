@@ -25,9 +25,9 @@ the "what shipped" signals are the roadmap.
 
 ---
 
-## Phase 0 — Bootstrap *(current)*
+## Phase 0 — Bootstrap
 
-**Milestone:** [Phase 0 — Bootstrap](https://github.com/aletheia-works/vivarium/milestone/3)
+**Milestone:** [Phase 0 — Bootstrap](https://github.com/aletheia-works/vivarium/milestone/3) *(closed 2026-04-26)*
 
 **What lands:**
 
@@ -137,9 +137,9 @@ the project ever has the audience to justify it.
 
 ## Phase 4 — Layer 3: record-replay & deterministic
 
-**Milestone:** [Phase 4 — Layer 3: record-replay & deterministic](https://github.com/aletheia-works/vivarium/milestone/6)
+**Milestone:** [Phase 4 — Layer 3: record-replay & deterministic](https://github.com/aletheia-works/vivarium/milestone/6) *(closed 2026-04-28 with one recipe shipped; further Layer 3 entries deferred to later phases as candidates emerge)*
 
-**What lands:**
+**What landed:**
 
 - The third layer for bugs Layers 1 and 2 cannot reach on their own:
   **record-replay** ([rr](https://rr-project.org), Pernosco-style
@@ -176,7 +176,7 @@ the visitor side or in CI** (the trace is recorded once by the
 maintainer and shipped — see ADR-0011 for the rationale, in
 particular why GitHub Actions hosted runners cannot record).
 
-## Phase 5 — Ecosystem
+## Phase 5 — Ecosystem *(current)*
 
 **Milestone:** [Phase 5 — Ecosystem](https://github.com/aletheia-works/vivarium/milestone/1)
 

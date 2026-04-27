@@ -42,6 +42,8 @@ locals {
     }
     "Phase 4 — Layer 3: record-replay & deterministic" = {
       description = "rr / Pernosco-style record-replay and Antithesis-style deterministic simulation for problems Layers 1 and 2 cannot reach."
+      state       = "closed"
+      due_date    = "2026-04-28"
     }
     "Phase 5 — Ecosystem" = {
       description = "Platform integrations, third-party reproduction definitions, industry standardisation around the bug-reproduction primitive."
