@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing find | xargs whitespace splitting</title>
+    <link rel="stylesheet" href="../_layer2-shared/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Vivarium · Layer 2 · Docker (catalogue)</p>
+        <h1><code>find … | xargs cmd</code> is unsafe for whitespace in filenames</h1>
+        <p class="lede">
+          <code>xargs</code> splits its stdin on whitespace by
+          default. The pipeline
+          <code>find . -name '*.txt' | xargs grep -l 'secret'</code>
+          silently misses every file whose path contains a space,
+          a tab, or a newline, because <code>xargs</code> hands
+          each whitespace-separated token to <code>grep</code> as a
+          distinct argument. The fix —
+          <code>find … -print0 | xargs -0 …</code> — uses NUL bytes
+          as separators, which can never appear in a filename.
+        </p>
+      </header>
+
+      <section>
+        <h2>CI verdict snapshot</h2>
+        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          Loading verdict snapshot…
+        </div>
+        <p class="meta" id="meta"></p>
+      </section>
+
+      <section>
+        <h2>Reproduce yourself</h2>
+        <pre><code>docker run --rm ghcr.io/aletheia-works/vivarium-find-xargs-whitespace:latest</code></pre>
+        <p class="meta">
+          First-pull cost ~10 MB (alpine:3.19 + GNU findutils).
+          Run takes well under a second. See the
+          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/find-xargs-whitespace">
+            recipe directory</a> for the <code>Dockerfile</code> and
+          <code>repro.sh</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>CI snapshot output</h2>
+        <pre id="output">(loading…)</pre>
+      </section>
+
+      <footer>
+        <p class="meta">
+          Layer 2 pages report a CI-snapshot verdict; the visitor's
+          local <code>docker run</code> is the live confirmation.
+          See <a href="../">/repro/</a> for the gallery.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module">
+      import { renderVerdictSnapshot } from "../_layer2-shared/layer2.js";
+      renderVerdictSnapshot({
+        bug: {
+          project: "find-xargs",
+          issue: 0,
+          upstream_url: "https://mywiki.wooledge.org/BashFAQ/020",
+        },
+      });
+    </script>
+  </body>
+</html>

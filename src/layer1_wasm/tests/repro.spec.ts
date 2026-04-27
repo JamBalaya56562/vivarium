@@ -137,6 +137,14 @@ const cases: ReproCase[] = [
     expectedBugIssue: 0,
     expectedRuntimeName: "docker-snapshot",
   },
+  {
+    name: "find-xargs-whitespace Layer 2 snapshot",
+    url: `${LAYER2}/find-xargs-whitespace/`,
+    expectedVerdict: "pass",
+    expectedBugProject: "find-xargs",
+    expectedBugIssue: 0,
+    expectedRuntimeName: "docker-snapshot",
+  },
 ];
 
 interface VivariumPageState {

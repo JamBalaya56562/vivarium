@@ -95,6 +95,7 @@ for the per-page conventions.
 | postgres | [Lost update under default `READ COMMITTED`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update) — concurrent app-side increments silently overwrite | `ghcr.io/aletheia-works/vivarium-postgres-lost-update` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/) |
 | bash | [`local` shadows command-substitution exit code](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit) — `set -e` is silently bypassed when `local x=$(failing_cmd)` is used | `ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/) |
 | flock | [`flock(2)` is advisory only](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory) — `cat`, `cp`, and any tool that doesn't itself call `flock` ignores the lock and reads the file freely | `ghcr.io/aletheia-works/vivarium-flock-is-advisory` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/) |
+| find/xargs | [`find \| xargs` is unsafe for whitespace in filenames](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/find-xargs-whitespace) — `xargs` splits on whitespace by default, so a filename with a space silently disappears from the pipeline | `ghcr.io/aletheia-works/vivarium-find-xargs-whitespace` | [Open ↗](https://aletheia-works.github.io/vivarium/repro/find-xargs-whitespace/) |
 
 Reproduce locally:
 
@@ -102,6 +103,7 @@ Reproduce locally:
 docker run --rm ghcr.io/aletheia-works/vivarium-postgres-lost-update:latest
 docker run --rm ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest
 docker run --rm ghcr.io/aletheia-works/vivarium-flock-is-advisory:latest
+docker run --rm ghcr.io/aletheia-works/vivarium-find-xargs-whitespace:latest
 ```
 
 The recipe page shows CI's latest verdict snapshot
