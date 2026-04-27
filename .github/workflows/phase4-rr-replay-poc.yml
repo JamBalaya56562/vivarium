@@ -1,0 +1,96 @@
+name: Phase 4 — rr replay PoC
+
+# Stage A PoC for issue #100. Verifies that `rr replay` can run on a
+# stock `ubuntu-latest` runner against a trace recorded externally
+# (uploaded as a GitHub Release asset under this repo).
+#
+# Why manual-only: the trace itself must be recorded on a Linux/x86_64
+# host with a usable CPU performance counter — GitHub Actions hosted
+# runners do not expose one (Azure Hyper-V VMs without PMU virt).
+# `rr replay` does not need the PMU, which is exactly what this
+# workflow is here to confirm. Reasoning: ADR-0011 (private memo).
+#
+# Recording flow lives in `scripts/phase4/record-poc-trace.sh`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub Release tag holding the trace asset
+        default: phase4-poc-trace-v1
+        required: true
+      asset_name:
+        description: Asset filename within the release
+        default: phase4-poc-trace.tar.zst
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase4-rr-replay-poc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rr-replay:
+    name: rr replay on ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      ASSET_NAME: ${{ inputs.asset_name }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install rr from apt
+        run: |
+          set -euo pipefail
+          sudo add-apt-repository -y universe
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq rr zstd
+          rr --version
+
+      - name: Tune kernel.perf_event_paranoid (parity with record-side)
+        # Replay does not need perf counters; this step is here so a
+        # future record-side smoke test could share the same workflow
+        # without further plumbing. Best-effort: failure is fine on
+        # runners that disallow it.
+        run: sudo sysctl -w kernel.perf_event_paranoid=1 || true
+
+      - name: Download trace bundle from release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p trace-bundle trace
+          gh release download "$RELEASE_TAG" \
+            --pattern "$ASSET_NAME" \
+            --dir trace-bundle/
+          tar --zstd -xf "trace-bundle/$ASSET_NAME" -C trace
+          echo "Trace bundle contents (top 20 dirs):"
+          find trace -mindepth 1 -maxdepth 3 -type d | head -20
+
+      - name: rr replay
+        run: |
+          set -euo pipefail
+          # Recording side tars from inside `_RR_TRACE_DIR` with `tar
+          # -C $_RR_TRACE_DIR .`, so the per-program trace dir
+          # (e.g. `true-0/`) sits one level under `trace/`.
+          TRACE_DIR=$(find trace -mindepth 1 -maxdepth 1 -type d | head -n1)
+          if [ -z "$TRACE_DIR" ]; then
+            echo "Could not locate rr trace dir under trace/ — bundle may be malformed" >&2
+            ls -la trace/
+            exit 1
+          fi
+          echo "Replaying trace at: $TRACE_DIR"
+          rr replay --autopilot "$TRACE_DIR"
+
+      - name: Verdict
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "::notice title=Phase 4 Stage A PoC::PASS — rr replay works on ubuntu-latest. Issue #100 may proceed to Stage B."
+          else
+            echo "::warning title=Phase 4 Stage A PoC::FAIL — rr replay did not exit 0 on ubuntu-latest. ADR-0011 fallback applies: verdict snapshots move out of CI for Layer 3 recipes."
+          fi
