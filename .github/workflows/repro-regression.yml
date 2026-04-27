@@ -124,14 +124,14 @@ jobs:
               "${slug_dir}/repro.wasm"
           done
 
-      - name: Build and run Layer 2 Docker reproductions (no push)
-        # Mirrors the deploy-docs Layer 2 step but without GHCR
-        # login, image push, or `verdict.json` snapshot — those are
-        # deploy-time concerns. Here we just confirm the image
-        # builds and the reproduction's `repro.sh` exits with the
-        # expected code on the runner. A `pass`-expected page must
-        # exit 0; a `fail`-expected page (rare, sentinel pages)
-        # must exit 1. For now every Layer 2 entry is `pass`-expected.
+      - name: Build, run, and snapshot Layer 2 Docker reproductions (no push)
+        # Mirrors the deploy-docs Layer 2 build/run/verdict step but
+        # skips GHCR login + image push (those are deploy-time
+        # concerns). The `verdict.json` snapshot is written so the
+        # Playwright suite below — which loads each Layer 2 page from
+        # the auto-started Layer 2 webServer — can read CI's actual
+        # capture rather than fall through to "verdict snapshot
+        # unavailable: HTTP 404" and report `fail`.
         #
         # Skipped silently when there are no Layer 2 reproductions.
         working-directory: ${{ github.workspace }}
@@ -144,12 +144,50 @@ jobs:
             tag="vivarium-${slug}:test"
             echo "Building Layer 2 image for regression: ${slug}"
             docker build --tag "$tag" "$slug_dir"
-            echo "Running Layer 2 reproduction: ${slug}"
-            if ! docker run --rm "$tag"; then
-              echo "::error::Layer 2 reproduction ${slug} did not exit 0 (pass)" >&2
-              exit 1
+
+            stdout_file="$(mktemp)"
+            stderr_file="$(mktemp)"
+            set +e
+            docker run --rm "$tag" >"$stdout_file" 2>"$stderr_file"
+            exit_code=$?
+            set -e
+
+            if [ "$exit_code" -eq 0 ]; then
+              verdict="pass"
+            else
+              verdict="fail"
             fi
-            echo "Layer 2 reproduction ${slug} produced verdict=pass."
+
+            captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            jq -n \
+              --arg verdict "$verdict" \
+              --arg image_tag "$tag" \
+              --arg image_digest "" \
+              --arg captured_at "$captured_at" \
+              --arg stdout "$(cat "$stdout_file")" \
+              --arg stderr_tail "$(tail -c 4096 "$stderr_file")" \
+              --argjson exit_code "$exit_code" \
+              '{
+                contract: "v1",
+                verdict: $verdict,
+                exit_code: $exit_code,
+                image_tag: $image_tag,
+                image_digest: $image_digest,
+                captured_at: $captured_at,
+                stdout: $stdout,
+                stderr_tail: $stderr_tail
+              }' >"${slug_dir}/verdict.json"
+
+            rm -f "$stdout_file" "$stderr_file"
+
+            # Pass-expected for now. A future `fail`-expected sentinel
+            # page would need the Playwright spec to flag it, which we
+            # check there, not here — the regression-suite step just
+            # records the verdict honestly.
+            if [ "$exit_code" -ne 0 ]; then
+              echo "::warning::Layer 2 reproduction ${slug} exited ${exit_code}; downstream Playwright step will assert verdict expectations"
+            fi
+            echo "Layer 2 reproduction ${slug}: verdict=${verdict} (exit ${exit_code})"
           done
 
       - name: Install Playwright browsers

@@ -1,22 +1,31 @@
-// Playwright configuration for the Layer 1 reproduction-regression suite.
+// Playwright configuration for the reproduction-regression suite.
 //
-// What this suite asserts (per the maintainer-private ADR-0008 notes):
-// - Every reproduction page declares `<meta name="vivarium-contract"
-//   content="v1">`.
+// What this suite asserts (per ADR-0008 / ADR-0010 notes):
+// - Every reproduction page (Layer 1 *and* Layer 2) declares
+//   `<meta name="vivarium-contract" content="v1">`.
 // - The DOM verdict, the `__VIVARIUM_VERDICT__` global, and the
-//   `__VIVARIUM_RESULT__` envelope all reach a `pass` state on the
-//   bundled Pyodide runtime, matching what the page documents.
+//   `__VIVARIUM_RESULT__` envelope all reach the documented
+//   verdict state.
 // - The smoke test under `_shared/_test/` reaches `pass` without
-//   loading Pyodide.
+//   loading any WASM runtime.
+//
+// Two static HTTP servers are auto-started: one for Layer 1
+// (port 8767, serves `src/layer1_wasm/`) and one for Layer 2
+// (port 8768, serves `src/layer2_docker/`). Test cases address
+// pages via absolute URLs so a single suite covers both layers
+// without juggling baseURL or projects.
 //
 // The suite is intentionally serial: Pyodide instances are heavy
 // (hundreds of MB resident) and parallel runs OOM on standard CI
-// runners. With 2-3 cases the wall-clock cost is ~30-60 s, well
-// inside the workflow's 15-minute budget.
+// runners. Layer 2 pages are fast (just fetch verdict.json) but
+// run in the same worker for simplicity.
 
 import { defineConfig, devices } from "@playwright/test";
 
-const PORT = 8767;
+export const LAYER1_PORT = 8767;
+export const LAYER2_PORT = 8768;
+export const LAYER1_BASE = `http://localhost:${LAYER1_PORT}`;
+export const LAYER2_BASE = `http://localhost:${LAYER2_PORT}`;
 
 export default defineConfig({
   testDir: "./tests",
@@ -37,7 +46,8 @@ export default defineConfig({
     : [["list"]],
 
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    // No global baseURL — each case decides its own host (Layer 1 vs
+    // Layer 2) by passing an absolute URL into `page.goto`.
     actionTimeout: 60_000,
     navigationTimeout: 60_000,
     // Capture trace + screenshot only on failure; keeps successful runs
@@ -46,18 +56,29 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
 
-  // Auto-start a static HTTP server on the layer1 root so test cases
-  // can hit `/_shared/_test/`, `/pandas-56679/`, `/numpy-28287/`. The
-  // server is reused across test runs locally; CI starts a fresh one
-  // each job.
-  webServer: {
-    command: `python -m http.server ${PORT}`,
-    url: `http://localhost:${PORT}/`,
-    reuseExistingServer: !process.env["CI"],
-    timeout: 30_000,
-    stdout: "pipe",
-    stderr: "pipe",
-  },
+  // Auto-start two static servers — one per layer root. Both run from
+  // the test config's working directory (`src/layer1_wasm/` when
+  // `bun run test` is invoked there); we use `cwd` to point each
+  // server at its layer.
+  webServer: [
+    {
+      command: `python -m http.server ${LAYER1_PORT}`,
+      url: `${LAYER1_BASE}/`,
+      reuseExistingServer: !process.env["CI"],
+      timeout: 30_000,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      command: `python -m http.server ${LAYER2_PORT}`,
+      cwd: "../layer2_docker",
+      url: `${LAYER2_BASE}/`,
+      reuseExistingServer: !process.env["CI"],
+      timeout: 30_000,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  ],
 
   projects: [
     {

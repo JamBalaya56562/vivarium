@@ -1,25 +1,33 @@
-// Regression suite for the Layer 1 reproduction gallery.
+// Regression suite for the reproduction gallery (Layer 1 + Layer 2).
 //
-// Each case asserts that a page in `src/layer1_wasm/` reaches its
-// expected verdict on the bundled Pyodide runtime, and that the
-// vivarium contract v1 surface (`#verdict[data-verdict]`,
-// `__VIVARIUM_VERDICT__`, `__VIVARIUM_RESULT__`,
-// `<meta name="vivarium-contract">`) is published correctly.
+// Each case asserts that a page reaches its expected verdict on the
+// runtime it loads, and that the vivarium contract v1 surface
+// (`#verdict[data-verdict]`, `__VIVARIUM_VERDICT__`,
+// `__VIVARIUM_RESULT__`, `<meta name="vivarium-contract">`) is
+// published correctly.
 //
-// When the verdict an upstream-bug page produces flips from `pass`
-// to `fail`, that is a real signal: either the upstream project
-// merged a fix and Pyodide picked it up, or the runtime regressed.
-// Either way, this suite turns that into a CI failure so a human
-// can decide whether to update / retire the page or file an
-// upstream-fix-detection Issue.
+// Layer 1 cases hit the WASM-runtime server on port 8767 (config
+// `LAYER1_PORT`). Layer 2 cases hit the Docker-recipe-snapshot server
+// on port 8768 (config `LAYER2_PORT`); their verdict comes from
+// `verdict.json` captured by CI rather than from a live in-page run,
+// so the same envelope shape covers both layers.
+//
+// When the verdict a page produces flips from `pass` to `fail`, that
+// is a real signal: either the upstream project merged a fix and the
+// runtime picked it up, or the runtime regressed. Either way, this
+// suite turns that into a CI failure so a human can decide whether
+// to update / retire the page.
 
 import { expect, test, type Page } from "@playwright/test";
+
+const LAYER1 = "http://localhost:8767";
+const LAYER2 = "http://localhost:8768";
 
 interface ReproCase {
   /** Display name used in the test title. */
   name: string;
-  /** URL path served by Playwright's webServer (relative to baseURL). */
-  path: string;
+  /** Absolute URL — pick the Layer 1 or Layer 2 host as appropriate. */
+  url: string;
   /** Expected verdict — currently "pass" for every case (reproduces). */
   expectedVerdict: "pass" | "fail";
   /** Envelope `bug.project` field. */
@@ -28,22 +36,24 @@ interface ReproCase {
   expectedBugIssue: number;
   /**
    * Envelope `runtime.name`. `"browser"` for the smoke test (no WASM
-   * runtime loaded); the rest are language runtimes bootstrapped over
-   * WebAssembly. `"rust-wasi"` is the in-process WASI shim hosting a
-   * Rust crate compiled to `wasm32-wasip1`.
+   * runtime loaded); language runtimes bootstrapped over WebAssembly
+   * for Layer 1 pages; `"docker-snapshot"` for Layer 2 pages
+   * rendering a CI-captured verdict.
    */
   expectedRuntimeName:
     | "browser"
     | "pyodide"
     | "ruby.wasm"
     | "php-wasm"
-    | "rust-wasi";
+    | "rust-wasi"
+    | "docker-snapshot";
 }
 
 const cases: ReproCase[] = [
+  // Layer 1 — WASM in-page runtime.
   {
     name: "_shared/_test smoke test",
-    path: "/_shared/_test/",
+    url: `${LAYER1}/_shared/_test/`,
     expectedVerdict: "pass",
     expectedBugProject: "vivarium",
     expectedBugIssue: 0,
@@ -51,7 +61,7 @@ const cases: ReproCase[] = [
   },
   {
     name: "pandas-56679 reproduction",
-    path: "/pandas-56679/",
+    url: `${LAYER1}/pandas-56679/`,
     expectedVerdict: "pass",
     expectedBugProject: "pandas",
     expectedBugIssue: 56679,
@@ -59,7 +69,7 @@ const cases: ReproCase[] = [
   },
   {
     name: "numpy-28287 reproduction",
-    path: "/numpy-28287/",
+    url: `${LAYER1}/numpy-28287/`,
     expectedVerdict: "pass",
     expectedBugProject: "numpy",
     expectedBugIssue: 28287,
@@ -67,7 +77,7 @@ const cases: ReproCase[] = [
   },
   {
     name: "ruby-21709 reproduction",
-    path: "/ruby-21709/",
+    url: `${LAYER1}/ruby-21709/`,
     expectedVerdict: "pass",
     expectedBugProject: "ruby",
     expectedBugIssue: 21709,
@@ -75,7 +85,7 @@ const cases: ReproCase[] = [
   },
   {
     name: "cpython-137205 reproduction",
-    path: "/cpython-137205/",
+    url: `${LAYER1}/cpython-137205/`,
     expectedVerdict: "pass",
     expectedBugProject: "cpython",
     expectedBugIssue: 137205,
@@ -83,7 +93,7 @@ const cases: ReproCase[] = [
   },
   {
     name: "php-12167 reproduction",
-    path: "/php-12167/",
+    url: `${LAYER1}/php-12167/`,
     expectedVerdict: "pass",
     expectedBugProject: "php",
     expectedBugIssue: 12167,
@@ -91,11 +101,41 @@ const cases: ReproCase[] = [
   },
   {
     name: "regex-779 reproduction",
-    path: "/regex-779/",
+    url: `${LAYER1}/regex-779/`,
     expectedVerdict: "pass",
     expectedBugProject: "regex",
     expectedBugIssue: 779,
     expectedRuntimeName: "rust-wasi",
+  },
+  // Layer 2 — Docker catalogue, verdict snapshot fetched from
+  // `verdict.json` next to the page. CI generates `verdict.json` in
+  // both `repro-regression.yml` (build + run + write) and
+  // `deploy-docs.yml` (build + push + write); locally Playwright sees
+  // the regression-flow output. All three current entries are
+  // expected `pass` snapshots.
+  {
+    name: "postgres-lost-update Layer 2 snapshot",
+    url: `${LAYER2}/postgres-lost-update/`,
+    expectedVerdict: "pass",
+    expectedBugProject: "postgres",
+    expectedBugIssue: 0,
+    expectedRuntimeName: "docker-snapshot",
+  },
+  {
+    name: "bash-local-shadows-exit Layer 2 snapshot",
+    url: `${LAYER2}/bash-local-shadows-exit/`,
+    expectedVerdict: "pass",
+    expectedBugProject: "bash",
+    expectedBugIssue: 0,
+    expectedRuntimeName: "docker-snapshot",
+  },
+  {
+    name: "flock-is-advisory Layer 2 snapshot",
+    url: `${LAYER2}/flock-is-advisory/`,
+    expectedVerdict: "pass",
+    expectedBugProject: "flock",
+    expectedBugIssue: 0,
+    expectedRuntimeName: "docker-snapshot",
   },
 ];
 
@@ -128,15 +168,20 @@ async function readVivariumState(page: Page): Promise<VivariumPageState> {
   });
 }
 
+function timeoutForRuntime(name: ReproCase["expectedRuntimeName"]): number {
+  // Smoke test and Layer 2 verdict-snapshot fetch resolve in milliseconds;
+  // WASM-runtime pages download a multi-MB CDN bundle and instantiate it.
+  if (name === "browser" || name === "docker-snapshot") return 10_000;
+  return 75_000;
+}
+
 for (const c of cases) {
   test(`${c.name} produces ${c.expectedVerdict}`, async ({ page }) => {
-    await page.goto(c.path);
+    await page.goto(c.url);
 
     // Wait for the verdict to settle. Pages start at `pending` and
     // transition to `pass` or `fail` once the reproduction (or the
-    // smoke-test plumbing) completes. The smoke test resolves under a
-    // second; WASM-runtime pages need to fetch the runtime over the
-    // network and instantiate it.
+    // verdict-snapshot fetch) completes.
     await page.waitForFunction(
       () => {
         const v = (
@@ -145,7 +190,7 @@ for (const c of cases) {
         return v === "pass" || v === "fail";
       },
       undefined,
-      { timeout: c.expectedRuntimeName === "browser" ? 10_000 : 75_000 },
+      { timeout: timeoutForRuntime(c.expectedRuntimeName) },
     );
 
     const state = await readVivariumState(page);
