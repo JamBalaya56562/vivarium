@@ -88,27 +88,66 @@ ADRs once the bug being solved demands one.
 - Multi-process / multi-container bugs where the interaction *between*
   processes is the bug.
 
+### Delivery model: catalogue, not execution SaaS
+
+Layer 2 is a **catalogue of reproducible recipes**, not a
+hosted-sandbox service. Each gallery entry ships a pinned
+`Dockerfile`, a `repro.sh` that emits the same `pass` / `fail`
+verdict shape Layer 1 uses, and a pre-built image published to
+`ghcr.io/aletheia-works/vivarium-<slug>`. The page surfaces a
+copy-pasteable `docker run …` invocation and a CI verdict
+snapshot ("when CI ran today against this `Dockerfile`, the bug
+reproduced"); the visitor's own run is the live confirmation.
+For visitors who would rather not install Docker, an "Open in
+Codespaces" badge is offered where applicable, opening the same
+image in a one-click cloud devcontainer billed to the visitor's
+GitHub account.
+
+This is a deliberate trade-off against Layer 1's "click → run
+in the page" UX — see Phase 3's roadmap entry for the visitor-
+facing description and ADR-0010 (private memo) for the design
+rationale (paid hosted execution rejected on cost / scope
+grounds; third-party free-tier sandboxes rejected on
+sustainability grounds; local Docker + GHCR-hosted images
+chosen as the universally-available, zero-recurring-cost path).
+
 ### Startup-time characteristics
 
-- Cold image pull + boot: **seconds to tens of seconds**, depending on
-  image size and registry proximity.
-- Warm microVM boot (Firecracker): **hundreds of milliseconds** for
-  minimal images — the closest Layer 2 gets to Layer 1 latency.
-- Per-reproduction execution: **seconds to minutes**, because the whole
-  environment is real.
+- Cold image pull + `docker run` on the visitor's machine:
+  **seconds to tens of seconds**, depending on image size and
+  network. Sub-second on a warm pull.
+- Codespaces cold-start with a custom image:
+  **30–60 seconds**, faster with prebuilds.
+- Warm microVM boot (Firecracker, exploration target):
+  **hundreds of milliseconds** for minimal images — the closest
+  Layer 2 gets to Layer 1 latency. Not on the immediate roadmap
+  under the catalogue model; lands as an optional faster path
+  if the project ever stands up its own sandbox infrastructure.
+- Per-reproduction execution: **seconds to minutes**, because
+  the whole environment is real.
 
 ### Known limits
 
-- **First-load latency.** Even cached, Layer 2 will not match Layer 1's
-  sub-second feel. Reproductions that *could* run in Layer 1 always
-  should.
-- **Sandboxing trust boundary.** Arbitrary code in a real container is
-  a weaker isolation boundary than arbitrary code in a browser WASM
-  sandbox. Host-level hardening (Firecracker, gVisor) pushes the line
-  but never removes it — Layer 2 runs untrusted code in a more
-  capable jail than Layer 1, never a looser one.
-- **Cost.** Container minutes are not free. Layer 2 runs when the
-  reproduction needs it, not by default.
+- **No in-page run.** Layer 2 reproductions never execute inside
+  the gallery page — the visitor invokes them locally or in
+  Codespaces. This is the catalogue model's defining boundary;
+  reproductions that *could* run in Layer 1 always should.
+- **Visitor needs Docker (or a Codespaces account).** Visitors
+  with neither can read the recipe, the verdict snapshot, and
+  the saved output transcript, but cannot re-run the
+  reproduction interactively.
+- **Sandboxing trust boundary.** Arbitrary code in a real
+  container is a weaker isolation boundary than arbitrary code
+  in a browser WASM sandbox; host-level hardening (Firecracker,
+  gVisor) pushes the line but never removes it. Visitors run
+  Layer 2 reproductions on **their own** Docker / Codespaces,
+  so Vivarium is not the host of the untrusted code — the
+  trust boundary is the visitor's own runtime.
+- **Cost on the visitor side**, not Vivarium's. Vivarium itself
+  pays nothing recurring for Layer 2 (image storage, image
+  bandwidth, and CI minutes are all in the public-repo /
+  public-image free tiers). Visitors pay either with local
+  Docker resources or with their personal Codespaces quota.
 
 ### Candidate runtimes
 

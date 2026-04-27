@@ -102,19 +102,38 @@ compiled-language builds requiring a host toolchain.
 - The second layer: **full-fidelity container-based reproduction** for
   bugs that need a real filesystem, real processes, real networking, or
   a real toolchain.
-- Devcontainer images as the baseline, with [Firecracker](https://firecracker-microvm.github.io)
-  microVMs explored for faster boot and stronger isolation.
-- Routing: a bug that could run in Layer 1 still does; a bug that
-  needs Layer 2 gets Layer 2 automatically.
+- A **catalogue model**, not a hosted execution service. Each
+  reproduction ships a `Dockerfile` + `repro.sh` + a public
+  pre-built image at `ghcr.io/aletheia-works/vivarium-<slug>`. The
+  visitor reproduces the bug locally with one
+  `docker run …` command, optionally one-click via "Open in
+  Codespaces" if they have a GitHub account. Vivarium guarantees
+  the recipe and the image; the runtime happens on the visitor's
+  machine.
+- A **CI-snapshot verdict** on each gallery page — "when CI ran
+  today against this `Dockerfile`, the bug reproduced" — paired
+  with the recipe and the registered image. Same verdict
+  semantics as Layer 1; the live run is the visitor's local
+  confirmation.
 
-**What a visitor sees:** reproducibility stops being gated by "does
-this fit in WASM?" Multi-service, multi-process, network-dependent
-bugs become as linkable as the Layer 1 ones — with a slower first-load
-cost, honestly labelled.
+**What a visitor sees:** the gallery card for a Layer 2 bug shows
+the upstream issue, a one-line `docker run` snippet, the latest CI
+verdict snapshot, and (for some pages) an "Open in Codespaces"
+button. Clicking through yields the bug reproduction in well
+under five minutes — local Docker for the no-account path,
+Codespaces for the no-Docker path. Multi-service, multi-process,
+network-dependent bugs become as **linkable and as honest** as the
+Layer 1 ones; the trade-off is that the run happens in the
+visitor's environment rather than in the page itself.
 
 **Non-goals for this phase:** arbitrary compute-as-a-service (see
 [Non-goals](./non-goals.md#we-are-not-a-general-code-execution-playground));
-per-user persistent environments; hosted SLAs.
+per-user persistent environments; hosted SLAs; **paid sandbox
+execution** — Vivarium does not run Layer 2 containers on its
+own infrastructure or charge visitors to run them, intentionally.
+This decision is recorded in ADR-0010 (private memo) and
+forward-compatible with adding paid hosted execution later if
+the project ever has the audience to justify it.
 
 ## Phase 4 — Layer 3: record-replay & deterministic
 
