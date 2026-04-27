@@ -129,7 +129,21 @@ vivarium/
   bootstrap of vivarium`) and every squash commit thereafter.
 - Enforced by the reusable workflow at
   `aletheia-works/.github/.github/workflows/commitlint.yml`, which this repo
-  calls from `.github/workflows/commitlint.yml`.
+  calls from `.github/workflows/commitlint.yml`. The config is the unmodified
+  `@commitlint/config-conventional`.
+- **Subject case is the most common AI trip-wire.** The subject (the part
+  after `type(scope):`) must **start with a lowercase letter** —
+  `@commitlint/config-conventional` rejects sentence-case, start-case,
+  pascal-case, and upper-case via `subject-case`. So:
+  - ❌ `feat(ci): Phase 4 Stage A — rr replay PoC scaffold` (sentence-case)
+  - ✅ `feat(ci): phase 4 Stage A — rr replay PoC scaffold` (lowercase first
+    char; mixed case later in the line is fine — proper nouns and acronyms
+    only matter for the leading character)
+- Other rules worth remembering: subject must not end with `.`, header must
+  be ≤100 characters, `type` and `scope` must both be lowercase, the body
+  (if present) must be separated from the subject by a blank line, and
+  `type` must be one of the standard Conventional Commits set
+  (`feat`/`fix`/`docs`/`style`/`refactor`/`perf`/`test`/`build`/`ci`/`chore`/`revert`).
 
 ### 4.5 Early-stage commit policy
 
