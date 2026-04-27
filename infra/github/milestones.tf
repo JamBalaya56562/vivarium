@@ -37,6 +37,8 @@ locals {
     }
     "Phase 3 — Layer 2: Docker" = {
       description = "Full-fidelity reproduction for arbitrary projects, complex dependencies, and network-dependent bugs via devcontainer / Firecracker."
+      state       = "closed"
+      due_date    = "2026-04-27"
     }
     "Phase 4 — Layer 3: record-replay & deterministic" = {
       description = "rr / Pernosco-style record-replay and Antithesis-style deterministic simulation for problems Layers 1 and 2 cannot reach."
