@@ -96,6 +96,13 @@ jobs:
         # each `<slug>/Cargo.toml` can compile to a browser-loadable
         # artefact (the page boots it via `@bjorn3/browser_wasi_shim`).
         # Skipped silently if no Rust crate is present.
+        #
+        # Override the job-level `working-directory: docs` so the glob
+        # below resolves against the repo root — without this the
+        # `crates=(...)` array stays empty, the step exits early, and
+        # the next step then fails with `can't find crate for 'core'`
+        # because rustup never ran.
+        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           shopt -s nullglob
