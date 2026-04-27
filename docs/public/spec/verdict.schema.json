@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aletheia-works.github.io/vivarium/spec/verdict.schema.json",
+  "title": "Vivarium verdict snapshot (contract v1)",
+  "description": "Verdict snapshot file shipped alongside Layer 2 (Docker catalogue) and Layer 3 (record-replay catalogue) reproduction pages in the Vivarium gallery. Layer 1 (WASM in-page) reproductions do not ship this file — their verdict is published live in the page DOM and JS globals. See https://aletheia-works.github.io/vivarium/spec/contract-v1 for the full contract.",
+  "type": "object",
+  "required": [
+    "contract",
+    "verdict",
+    "exit_code",
+    "image_tag",
+    "image_digest",
+    "captured_at",
+    "stdout",
+    "stderr_tail"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "v1",
+      "description": "Version literal. Always 'v1' for files validating against this schema; future versions will be siblings (verdict-v2.schema.json) with their own const."
+    },
+    "verdict": {
+      "enum": ["pass", "fail"],
+      "description": "Snapshot verdict. 'pass' means the upstream bug reproduced when this snapshot was captured; 'fail' means it did not (either the runtime shipped a fix or the runtime regressed before producing a verdict). 'pending' is intentionally not allowed in the file form — the snapshot is written post-run."
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code of the recorded program (Layer 3) or the in-container reproducer (Layer 2) at the time of the snapshot. The contract does not constrain which value means 'pass' — that is per-recipe and is interpreted alongside the 'verdict' field above."
+    },
+    "image_tag": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Docker image tag the snapshot was captured against. Typically of the form 'ghcr.io/aletheia-works/vivarium-<slug>:<git-sha>' for CI-pushed images, or '<slug>:dev (local)' for locally-built captures (Layer 3 maintainer-side)."
+    },
+    "image_digest": {
+      "type": "string",
+      "description": "Docker image digest at capture time (typically 'sha256:…@…'). Empty string is allowed for local-build captures where no digest is available."
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Wall-clock timestamp of the snapshot capture, ISO-8601 with 'Z' suffix (e.g. '2026-04-27T03:44:39Z')."
+    },
+    "stdout": {
+      "type": "string",
+      "description": "Full stdout of the recorded run, or the page-specific JSON-encoded output the recipe writes to stdout. Length is unbounded by the schema; pages should keep this reasonable for page-load size."
+    },
+    "stderr_tail": {
+      "type": "string",
+      "description": "Last 4 KiB of stderr, truncated from the front when longer. The 4 KiB cap is a CI convention to keep the artifact small; the schema does not enforce a length bound."
+    }
+  },
+  "examples": [
+    {
+      "contract": "v1",
+      "verdict": "pass",
+      "exit_code": 0,
+      "image_tag": "ghcr.io/aletheia-works/vivarium-flock-is-advisory:abc1234",
+      "image_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "captured_at": "2026-04-27T03:44:39Z",
+      "stdout": "{\"reproduced\":true}\n",
+      "stderr_tail": "verdict=pass — flock(2) is advisory; cat(1) bypassed the exclusive lock\n"
+    }
+  ]
+}
