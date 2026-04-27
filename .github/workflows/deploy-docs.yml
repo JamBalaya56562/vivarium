@@ -37,6 +37,7 @@ on:
     paths:
       - 'docs/**'
       - 'src/layer1_wasm/**'
+      - 'src/layer2_docker/**'
       - '.mise.toml'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
@@ -45,6 +46,9 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # Required to push images to ghcr.io/aletheia-works/* using the
+  # default `GITHUB_TOKEN`. Layer 2 reproductions only.
+  packages: write
 
 # Serialise deploys to Pages — never cancel an in-flight deploy; queue.
 concurrency:
@@ -144,6 +148,95 @@ jobs:
             rm -rf "${slug_dir}/target"
           done
 
+      - name: Log in to GHCR (for Layer 2 image push)
+        # Skipped silently if no Layer 2 reproductions exist. Uses the
+        # default `GITHUB_TOKEN`; the workflow's `packages: write`
+        # permission lets us push to `ghcr.io/aletheia-works/*` without
+        # a separately-rotated PAT.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dockerfiles=(src/layer2_docker/*/Dockerfile)
+          if [ ${#dockerfiles[@]} -eq 0 ]; then
+            echo "No src/layer2_docker/*/Dockerfile; skipping GHCR login."
+            exit 0
+          fi
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+            -u "${{ github.actor }}" --password-stdin
+
+      - name: Build, push, and snapshot Layer 2 Docker reproductions
+        # Per-page convention (see src/layer2_docker/README.md and
+        # ADR-0010): each `src/layer2_docker/<slug>/` ships a
+        # `Dockerfile` whose default CMD is `repro.sh`. We build the
+        # image, push two tags to GHCR (`:latest` and `:<git-sha>`),
+        # run the container to capture the verdict, and write
+        # `<slug>/verdict.json` so the bundling step picks it up
+        # alongside the rest of the directory.
+        #
+        # Skipped silently if no Layer 2 reproductions exist.
+        working-directory: ${{ github.workspace }}
+        env:
+          IMAGE_OWNER: aletheia-works
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for dockerfile in src/layer2_docker/*/Dockerfile; do
+            slug_dir="$(dirname "$dockerfile")"
+            slug="$(basename "$slug_dir")"
+            tag_latest="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:latest"
+            tag_sha="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:${GITHUB_SHA}"
+
+            echo "Building Layer 2 image: ${slug}"
+            docker build --tag "$tag_latest" --tag "$tag_sha" "$slug_dir"
+
+            echo "Pushing ${tag_latest} and ${tag_sha} to GHCR"
+            docker push "$tag_latest"
+            docker push "$tag_sha"
+
+            # Capture the verdict by running the freshly-built image.
+            stdout_file="$(mktemp)"
+            stderr_file="$(mktemp)"
+            set +e
+            docker run --rm "$tag_latest" >"$stdout_file" 2>"$stderr_file"
+            exit_code=$?
+            set -e
+
+            if [ "$exit_code" -eq 0 ]; then
+              verdict="pass"
+            else
+              verdict="fail"
+            fi
+
+            captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            image_digest="$(docker inspect --format='{{index .RepoDigests 0}}' "$tag_sha" 2>/dev/null || echo '')"
+
+            # Compose verdict.json. `jq -Rs .` JSON-quotes raw text;
+            # we trim stderr to the last 4 KiB so a runaway log
+            # doesn't bloat the Pages artefact.
+            jq -n \
+              --arg verdict "$verdict" \
+              --arg image_tag "$tag_sha" \
+              --arg image_digest "$image_digest" \
+              --arg captured_at "$captured_at" \
+              --arg stdout "$(cat "$stdout_file")" \
+              --arg stderr_tail "$(tail -c 4096 "$stderr_file")" \
+              --argjson exit_code "$exit_code" \
+              '{
+                contract: "v1",
+                verdict: $verdict,
+                exit_code: $exit_code,
+                image_tag: $image_tag,
+                image_digest: $image_digest,
+                captured_at: $captured_at,
+                stdout: $stdout,
+                stderr_tail: $stderr_tail
+              }' >"${slug_dir}/verdict.json"
+
+            rm -f "$stdout_file" "$stderr_file"
+            echo "Captured verdict for ${slug}: ${verdict} (exit ${exit_code})"
+          done
+
       - name: Bundle Layer 1 reproductions alongside docs
         # Each immediate subdirectory of `src/layer1_wasm/` is published at
         # `<pages-base>/repro/<slug>/`. README files and other tracked
@@ -208,6 +301,43 @@ jobs:
           done
           ls -la "$dest" || true
           ls -la "$legacy_dest" || true
+
+      - name: Bundle Layer 2 reproductions alongside docs
+        # Layer 2 catalogue convention (per ADR-0010 / private memo):
+        # each `src/layer2_docker/<slug>/` ships a `Dockerfile`,
+        # `repro.sh`, `README.md`, and a CI-generated `verdict.json`.
+        # Visitors don't run anything in-page; they consume the
+        # Dockerfile + the verdict snapshot. Bundle the raw directory
+        # under `<pages-base>/repro/<slug>/` so the gallery and
+        # README links resolve directly.
+        #
+        # Skipped silently when there are no Layer 2 reproductions.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          dest="docs/doc_build/repro"
+          if [ ! -d src/layer2_docker ]; then
+            echo "No src/layer2_docker/ directory; skipping Layer 2 bundling."
+            exit 0
+          fi
+          shopt -s nullglob
+          mkdir -p "$dest"
+          for entry in src/layer2_docker/*/; do
+            slug="$(basename "$entry")"
+            case "$slug" in
+              _*)
+                echo "Skipping Layer 2 underscore-prefixed dir: ${slug}"
+                continue
+                ;;
+            esac
+            if [ ! -f "${entry}Dockerfile" ]; then
+              echo "Skipping ${entry} (no Dockerfile)"
+              continue
+            fi
+            echo "Bundling Layer 2 reproduction: ${slug}"
+            cp -R "$entry" "$dest/"
+          done
+          ls -la "$dest" || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

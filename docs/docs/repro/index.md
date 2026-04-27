@@ -80,6 +80,33 @@ together with the new NFA compiler, so this page intentionally pins
 to the last 1.8.x line; bumping past 1.9 will flip the verdict to
 `fail`, turning the page into a fix-detection sentinel.
 
+## Layer 2 — Docker (catalogue)
+
+Layer 2 entries ship as a **recipe + pre-built image** rather than
+as an in-page run. The page links to the `Dockerfile`, `repro.sh`,
+and CI's latest verdict snapshot; the visitor reproduces locally
+with one `docker run` command (or one click via Codespaces, when
+that path is wired). See [Phase 3 — Layer 2: Docker](./../roadmap.md#phase-3--layer-2-docker)
+for the why, and [`src/layer2_docker/README.md`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
+for the per-page conventions.
+
+| Project | Behaviour | Image | |
+| --- | --- | --- | --- |
+| postgres | [Lost update under default `READ COMMITTED`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update) — concurrent app-side increments silently overwrite | `ghcr.io/aletheia-works/vivarium-postgres-lost-update` | [Recipe ↗](https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/) |
+
+Reproduce locally:
+
+```bash
+docker run --rm ghcr.io/aletheia-works/vivarium-postgres-lost-update:latest
+```
+
+The recipe page shows CI's latest verdict snapshot
+(`verdict.json`); the visitor's local `docker run` is the **live
+confirmation** of the same behaviour. A divergence between the
+snapshot and the visitor's run is itself a signal — most often it
+means the runtime version inside the container drifted from the
+one CI built against.
+
 ## Native re-verification
 
 Each gallery page has a companion CLI variant — `repro.py`,

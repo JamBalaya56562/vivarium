@@ -30,11 +30,13 @@ on:
     branches: [main]
     paths:
       - 'src/layer1_wasm/**'
+      - 'src/layer2_docker/**'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   pull_request:
     paths:
       - 'src/layer1_wasm/**'
+      - 'src/layer2_docker/**'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   schedule:
@@ -120,6 +122,34 @@ jobs:
             )
             cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" \
               "${slug_dir}/repro.wasm"
+          done
+
+      - name: Build and run Layer 2 Docker reproductions (no push)
+        # Mirrors the deploy-docs Layer 2 step but without GHCR
+        # login, image push, or `verdict.json` snapshot — those are
+        # deploy-time concerns. Here we just confirm the image
+        # builds and the reproduction's `repro.sh` exits with the
+        # expected code on the runner. A `pass`-expected page must
+        # exit 0; a `fail`-expected page (rare, sentinel pages)
+        # must exit 1. For now every Layer 2 entry is `pass`-expected.
+        #
+        # Skipped silently when there are no Layer 2 reproductions.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for dockerfile in src/layer2_docker/*/Dockerfile; do
+            slug_dir="$(dirname "$dockerfile")"
+            slug="$(basename "$slug_dir")"
+            tag="vivarium-${slug}:test"
+            echo "Building Layer 2 image for regression: ${slug}"
+            docker build --tag "$tag" "$slug_dir"
+            echo "Running Layer 2 reproduction: ${slug}"
+            if ! docker run --rm "$tag"; then
+              echo "::error::Layer 2 reproduction ${slug} did not exit 0 (pass)" >&2
+              exit 1
+            fi
+            echo "Layer 2 reproduction ${slug} produced verdict=pass."
           done
 
       - name: Install Playwright browsers
