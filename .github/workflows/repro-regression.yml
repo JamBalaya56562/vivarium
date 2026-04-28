@@ -25,6 +25,14 @@ name: repro-regression
 #   last commit still surfaces within ~7 days.
 # - `workflow_dispatch` — manual trigger from the Actions tab.
 #
+# External manifest validation (every trigger):
+#
+# `src/external_examples/*/.vivarium/manifest.toml` are validated
+# against `docs/public/spec/manifest.schema.json` (Vivarium Manifest
+# v1; locked by ADR-0015). The workflow converts each TOML manifest
+# to JSON via Python's stdlib `tomllib` and runs ajv against the
+# JSON Schema. Phase 5 sub-stream C deliverable.
+#
 # Layer 2 verdict drift (schedule + workflow_dispatch only):
 #
 # A separate step at the end of the Layer 2 lane contrasts the
@@ -50,6 +58,8 @@ on:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
       - 'src/layer3_thirdway/**'
+      - 'src/external_examples/**'
+      - 'docs/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   pull_request:
@@ -57,6 +67,8 @@ on:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
       - 'src/layer3_thirdway/**'
+      - 'src/external_examples/**'
+      - 'docs/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
   schedule:
@@ -97,8 +109,60 @@ jobs:
         # CI-snapshot) and Layer 3 (maintainer-tracked) verdict files
         # share the same schema. `bun add --global` puts `ajv` on
         # PATH for subsequent steps via setup-bun's PATH wiring.
+        #
+        # The same ajv install is also reused below for the Phase 5
+        # sub-stream C manifest schema validation (manifest.schema.json
+        # against `src/external_examples/*/.vivarium/manifest.toml` after
+        # a TOML→JSON conversion via Python's stdlib `tomllib`).
         working-directory: ${{ github.workspace }}
         run: bun add --global ajv-cli@5 ajv-formats
+
+      - name: Validate external manifest examples (manifest v1)
+        # Phase 5 sub-stream C (ADR-0015, private memo). Each
+        # `src/external_examples/*/.vivarium/manifest.toml` is converted
+        # to JSON via Python stdlib `tomllib` (Python 3.11+; preinstalled
+        # on `ubuntu-latest`) and validated against
+        # `docs/public/spec/manifest.schema.json`. Schema mismatch fails
+        # the workflow loudly so the spec page and the reference
+        # examples stay in lockstep.
+        #
+        # Skipped silently when the directory is absent (early-bootstrap
+        # state) or empty.
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          manifests=(src/external_examples/*/.vivarium/manifest.toml)
+          if [ ${#manifests[@]} -eq 0 ]; then
+            echo "No src/external_examples/*/.vivarium/manifest.toml; skipping."
+            exit 0
+          fi
+          schema="docs/public/spec/manifest.schema.json"
+          if [ ! -f "$schema" ]; then
+            echo "::error::Manifest schema missing at ${schema}"
+            exit 1
+          fi
+          fail=0
+          tmp_json="$(mktemp --suffix=.json)"
+          trap 'rm -f "$tmp_json"' EXIT
+          for manifest in "${manifests[@]}"; do
+            example="$(basename "$(dirname "$(dirname "$manifest")")")"
+            echo "Validating ${example}: ${manifest}"
+            python3 -c "import json, sys, tomllib; sys.stdout.write(json.dumps(tomllib.load(open(sys.argv[1], 'rb'))))" "$manifest" > "$tmp_json"
+            if ! ajv validate \
+              --spec=draft2020 \
+              -c ajv-formats \
+              -s "$schema" \
+              -d "$tmp_json"; then
+              echo "::error::Manifest validation failed for ${example} (${manifest})"
+              fail=$((fail + 1))
+            fi
+          done
+          if [ "$fail" -gt 0 ]; then
+            echo "::error::${fail} external manifest example(s) failed schema validation."
+            exit 1
+          fi
+          echo "All ${#manifests[@]} external manifest example(s) validated against manifest v1 schema."
 
       - name: Type-check (sources + tests)
         # Catches any TypeScript-level regression before we boot a

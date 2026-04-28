@@ -1,0 +1,24 @@
+# Reference Vivarium manifest — Layer 2 (Docker catalogue).
+#
+# Demonstrates how an external repository would declare a Layer 2
+# reproduction (a Docker image whose default CMD is the
+# reproduction script). Visitors run `docker run <image>` to
+# reproduce; exit code 0 = bug reproduces (`pass`).
+#
+# See https://aletheia-works.github.io/vivarium/spec/manifest-v1
+# for the full spec.
+
+manifest = "v1"
+slug = "bash-local-shadows-exit"
+title = "bash: `local` builtin shadows command exit code"
+layer = 2
+
+[bug]
+project = "bash"
+issue = 0
+upstream_url = "https://lists.gnu.org/archive/html/bug-bash/"
+
+[layer2]
+image = "ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest"
+dockerfile = "./Dockerfile"
+expected_verdict = "pass"

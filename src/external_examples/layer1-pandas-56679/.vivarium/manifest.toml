@@ -1,0 +1,22 @@
+# Reference Vivarium manifest — Layer 1 (WASM in-browser).
+#
+# Demonstrates how an external repository would declare a Layer 1
+# reproduction (a static page running Pyodide / pandas in the
+# browser, conforming to Vivarium Contract v1's in-page surface).
+#
+# See https://aletheia-works.github.io/vivarium/spec/manifest-v1
+# for the full spec.
+
+manifest = "v1"
+slug = "pandas-56679"
+title = "pandas-56679: read_csv silently coerces int → float on `na_values`"
+layer = 1
+
+[bug]
+project = "pandas"
+issue = 56679
+upstream_url = "https://github.com/pandas-dev/pandas/issues/56679"
+
+[layer1]
+page_url = "https://aletheia-works.github.io/vivarium/repro/pandas-56679/"
+expected_verdict = "pass"

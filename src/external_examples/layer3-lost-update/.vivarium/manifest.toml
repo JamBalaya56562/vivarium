@@ -1,0 +1,27 @@
+# Reference Vivarium manifest — Layer 3 (record-replay catalogue).
+#
+# Demonstrates how an external repository would declare a Layer 3
+# reproduction (a Docker image with the recorded `rr` trace baked
+# in). Visitors run `docker run <image>` and the entrypoint
+# replays the pinned trace — deterministic by construction. Host
+# needs CPUID-faulting support when the visitor's CPU differs
+# from the recording CPU; ADR-0011 (private memo) covers the
+# constraint.
+#
+# See https://aletheia-works.github.io/vivarium/spec/manifest-v1
+# for the full spec.
+
+manifest = "v1"
+slug = "lost-update"
+title = "pthread lost-update data race (canonical)"
+layer = 3
+
+[bug]
+project = "pthread"
+issue = 0
+upstream_url = "https://github.com/aletheia-works/vivarium/blob/main/src/layer3_thirdway/lost-update/README.md"
+
+[layer3]
+image = "ghcr.io/aletheia-works/vivarium-lost-update:latest"
+dockerfile = "./Dockerfile"
+expected_verdict = "pass"

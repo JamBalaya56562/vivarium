@@ -1,0 +1,206 @@
+# Vivarium Manifest v1
+
+> A static manifest an external repository ships at
+> `.vivarium/manifest.toml` to declare a Vivarium-runnable
+> reproduction. Locked at v1 by
+> [ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md)
+> (private memo).
+
+This is the *upstream* surface — how an external project tells
+Vivarium "we host a reproduction; here is where to find it." The
+*runtime* surface (DOM verdict, `verdict.json`) is defined
+separately in [Contract v1](./contract-v1.md). The two specs
+together let a third party publish a reproduction without
+touching the `aletheia-works/vivarium` source tree.
+
+## At a glance
+
+A repo declares a Vivarium-compatible reproduction by shipping a
+single TOML file at:
+
+```
+<repo-root>/.vivarium/manifest.toml
+```
+
+```toml
+manifest = "v1"
+slug = "bash-local-shadows-exit"
+title = "bash: `local` builtin shadows command exit code"
+layer = 2
+
+[bug]
+project = "bash"
+issue = 0
+upstream_url = "https://lists.gnu.org/archive/html/bug-bash/"
+
+[layer2]
+image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
+dockerfile = "./Dockerfile"
+expected_verdict = "pass"
+```
+
+A consumer that wants to run the reproduction reads the manifest,
+dispatches on `layer`, and follows the per-layer convention
+defined below.
+
+## Why TOML
+
+TOML 1.0 (not YAML, not JSON). The format choice is locked by
+[ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md).
+Short version: manifests are handwritten by a human one time per
+recipe; TOML's flat surface (no significant whitespace, no
+anchors, no implicit type coercion) minimises handwriting risk
+better than YAML, while permitting comments and trailing commas
+where JSON does not.
+
+## Required top-level keys
+
+| Key | Type | Notes |
+|---|---|---|
+| `manifest` | string | Must equal `"v1"`. Version literal. |
+| `slug` | string | Kebab-case `^[a-z0-9]+(-[a-z0-9]+)*$`. Identifier for the recipe; matches the `aletheia-works/vivarium` directory-name convention. |
+| `layer` | integer | One of `1`, `2`, `3`. Selects which layer-specific table is required (see below). |
+| `[bug]` | table | Required. Describes the upstream bug. |
+| `[bug] project` | string | Upstream project name (e.g. `"bash"`). |
+| `[bug] issue` | integer | Issue number. Use `0` if no upstream issue tracker entry exists. |
+| `[bug] upstream_url` | string (URI) | Canonical link to the issue / mailing-list thread / PR / docs page. |
+
+## Optional top-level keys
+
+| Key | Type | Notes |
+|---|---|---|
+| `title` | string | Short human-readable title. |
+| `description` | string | Long-form description; markdown allowed but not interpreted. |
+
+## Layer-specific tables
+
+Exactly one of `[layer1]`, `[layer2]`, `[layer3]` is required —
+must match the top-level `layer` integer.
+
+### `[layer1]` — WASM in-browser
+
+```toml
+layer = 1
+
+[layer1]
+page_url = "https://example.org/repro/some-bug/"
+expected_verdict = "pass"  # default; optional
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `page_url` | ✅ | URL of the static reproduction page. The page must conform to [Contract v1](./contract-v1.md) — `<meta name="vivarium-contract" content="v1">` in `<head>`, `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__` globals, and `#verdict[data-verdict]` element. |
+| `expected_verdict` | ⏳ | `"pass"` (default) or `"fail"`. |
+
+### `[layer2]` — Docker catalogue
+
+```toml
+layer = 2
+
+[layer2]
+image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
+dockerfile = "./Dockerfile"  # optional, informational
+expected_verdict = "pass"
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `image` | ✅ | Container image reference. Visitors run `docker run <image>`. The default CMD is the recipe's reproduction script; exit code 0 = bug reproduces (`pass`). |
+| `dockerfile` | ⏳ | Repo-relative path to the source Dockerfile. Informational — Vivarium does not build from it. |
+| `expected_verdict` | ⏳ | Default `"pass"`. |
+
+### `[layer3]` — Record-replay catalogue
+
+```toml
+layer = 3
+
+[layer3]
+image = "ghcr.io/example-org/example-recipe-with-trace:latest"
+dockerfile = "./Dockerfile"
+expected_verdict = "pass"
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `image` | ✅ | Container image reference. Image is expected to **ship with the recorded `rr` trace baked in**; entrypoint runs `rr replay` against the pinned trace. |
+| `dockerfile` | ⏳ | Informational. |
+| `expected_verdict` | ⏳ | Default `"pass"`. |
+
+> ⚠️ Layer 3 replay needs a host with **CPUID-faulting support**
+> when the visitor's CPU differs from the recording CPU. GitHub
+> Actions hosted Ubuntu runners do **not** expose this
+> capability — see
+> [ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)
+> (private memo). Layer 3 manifests are therefore best consumed
+> from self-hosted runners or visitor desktops with modern Intel
+> (Ivy Bridge+) / recent AMD silicon.
+
+## Verdict semantics
+
+The `expected_verdict` value follows the same inverse-of-typical-CI
+framing locked in [Contract v1](./contract-v1.md#verdict-semantics):
+
+- `"pass"` ⇒ the upstream bug **reproduces**.
+- `"fail"` ⇒ the upstream bug **does not reproduce**.
+
+A page declaring `expected_verdict = "pass"` is the common case —
+the recipe demonstrates the failure the upstream report
+describes. A page declaring `expected_verdict = "fail"` is a
+sentinel that intentionally tracks an upstream fix; it goes red
+the moment the bug regresses back.
+
+## Versioning
+
+The version is carried in one place:
+
+- `manifest = "v1"` at the top of the document.
+
+Adding fields, removing fields, or changing semantics requires a
+v2 manifest spec page, a v2 JSON Schema sibling, and a separate
+ADR. Consumers should be free to support v1 and v2 simultaneously
+by dispatching on the `manifest` literal.
+
+There is no current v2.
+
+## Conformance
+
+A manifest conforms to Vivarium Manifest v1 when:
+
+1. It is a valid TOML 1.0 document at `.vivarium/manifest.toml`
+   in the consuming repo.
+2. It validates against
+   [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json)
+   after a TOML→JSON conversion.
+3. Exactly one of `[layer1]` / `[layer2]` / `[layer3]` is
+   present, matching the top-level `layer` integer.
+4. The pointed-at artefact (page or image) actually exists and
+   produces a Contract-v1-conformant verdict at run time.
+
+Clauses 1–3 are mechanically enforceable via schema validation;
+clause 4 is per-recipe.
+
+## Reference implementations
+
+The `aletheia-works/vivarium` repo ships three example manifests
+under
+[`src/external_examples/`](https://github.com/aletheia-works/vivarium/tree/main/src/external_examples)
+— one per layer — all pointing at vivarium's own publicly-deployed
+pages and GHCR images, so they are runnable as written rather
+than just shape-valid.
+
+CI in `repro-regression.yml` validates every
+`src/external_examples/*/.vivarium/manifest.toml` against this
+schema on every push and pull request.
+
+## See also
+
+- [Contract v1](./contract-v1.md) — the runtime verdict surface
+  this manifest's pointed-at artefact must publish.
+- [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json)
+  — JSON Schema (draft 2020-12) for the manifest after TOML→JSON
+  conversion.
+- [Consumer workflow](./consumer-workflow.md) — the reusable
+  GitHub Actions workflow consumers use to verify a manifest's
+  declared image in their own CI.
+- ADR-0014 — Contract v1 publication precedent (private memo).
+- ADR-0015 — this manifest's stabilising decision (private memo).

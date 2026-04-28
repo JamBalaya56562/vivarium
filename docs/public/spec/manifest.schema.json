@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aletheia-works.github.io/vivarium/spec/manifest.schema.json",
+  "title": "Vivarium third-party reproduction manifest (v1)",
+  "description": "Static manifest an external repository ships at `.vivarium/manifest.toml` to declare a Vivarium-runnable reproduction. Validated as JSON after a TOML→JSON conversion (the manifest itself is TOML; this schema validates the equivalent JSON object). See https://aletheia-works.github.io/vivarium/spec/manifest-v1 for the prose spec and ADR-0015 for the design rationale.",
+  "type": "object",
+  "required": ["manifest", "slug", "layer", "bug"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest": {
+      "const": "v1",
+      "description": "Manifest format version literal. Always 'v1' for files validating against this schema; future versions will be siblings (manifest-v2.schema.json) with their own const."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case identifier for the recipe (e.g. 'bash-local-shadows-exit'). Lowercase ASCII letters, digits, and single-hyphen separators only — must match the directory name convention used by aletheia-works/vivarium's own catalogue."
+    },
+    "layer": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = record-replay (image ships with the recorded trace baked in)."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional short human-readable title (e.g. 'bash: local shadows builtin's exit')."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional long-form description of the bug. Markdown content is allowed but not interpreted by Vivarium — consumers may render it or display verbatim."
+    },
+    "bug": {
+      "type": "object",
+      "required": ["project", "issue", "upstream_url"],
+      "additionalProperties": false,
+      "properties": {
+        "project": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Upstream project name (e.g. 'bash', 'pandas', 'numpy')."
+        },
+        "issue": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Upstream issue number. Use 0 if no upstream issue tracker entry exists (e.g., behaviour documented but never filed)."
+        },
+        "upstream_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical URL pointing at the upstream issue, mailing list thread, PR, or documentation page describing the bug."
+        }
+      }
+    },
+    "layer1": {
+      "type": "object",
+      "required": ["page_url"],
+      "additionalProperties": false,
+      "properties": {
+        "page_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the static reproduction page. The page must conform to Vivarium Contract v1 — i.e., publish `<meta name=\"vivarium-contract\" content=\"v1\">`, expose `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__`, and update `#verdict[data-verdict]`. See https://aletheia-works.github.io/vivarium/spec/contract-v1 for the in-page surface."
+        },
+        "expected_verdict": {
+          "enum": ["pass", "fail"],
+          "default": "pass",
+          "description": "Expected verdict at this manifest's last review. 'pass' = bug reproduces; 'fail' = bug does not reproduce (sentinel page tracking an upstream fix). Most pages declare 'pass'."
+        }
+      }
+    },
+    "layer2": {
+      "type": "object",
+      "required": ["image"],
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Container image reference (e.g. 'ghcr.io/example-org/example-recipe' or 'ghcr.io/example-org/example-recipe:1.2.3'). Visitors run `docker run <image>` to reproduce. The image's default CMD is the recipe's reproduction script; exit code 0 = bug reproduces ('pass') per the per-layer convention."
+        },
+        "dockerfile": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional repo-relative path to the Dockerfile that produces the image. Informational only — Vivarium does not build from this. Useful for visitors who want to inspect the recipe before pulling the image."
+        },
+        "expected_verdict": {
+          "enum": ["pass", "fail"],
+          "default": "pass",
+          "description": "Expected verdict at this manifest's last review. 'pass' = bug reproduces; 'fail' = bug does not reproduce (sentinel)."
+        }
+      }
+    },
+    "layer3": {
+      "type": "object",
+      "required": ["image"],
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Container image reference for an `rr replay` -based reproduction. The image is expected to ship with the recorded trace baked in; visitors run `docker run <image>` and the entrypoint replays the trace. Visitor's host needs CPUID-faulting support for cross-CPU replay — see ADR-0011."
+        },
+        "dockerfile": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional repo-relative path to the Dockerfile that produces the image. Informational only."
+        },
+        "expected_verdict": {
+          "enum": ["pass", "fail"],
+          "default": "pass",
+          "description": "Expected verdict at this manifest's last review."
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "layer": { "const": 1 } },
+      "required": ["layer1"],
+      "not": { "anyOf": [{ "required": ["layer2"] }, { "required": ["layer3"] }] }
+    },
+    {
+      "properties": { "layer": { "const": 2 } },
+      "required": ["layer2"],
+      "not": { "anyOf": [{ "required": ["layer1"] }, { "required": ["layer3"] }] }
+    },
+    {
+      "properties": { "layer": { "const": 3 } },
+      "required": ["layer3"],
+      "not": { "anyOf": [{ "required": ["layer1"] }, { "required": ["layer2"] }] }
+    }
+  ],
+  "examples": [
+    {
+      "manifest": "v1",
+      "slug": "bash-local-shadows-exit",
+      "title": "bash: `local` builtin shadows command exit code",
+      "layer": 2,
+      "bug": {
+        "project": "bash",
+        "issue": 0,
+        "upstream_url": "https://lists.gnu.org/archive/html/bug-bash/"
+      },
+      "layer2": {
+        "image": "ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest",
+        "dockerfile": "./Dockerfile",
+        "expected_verdict": "pass"
+      }
+    }
+  ]
+}

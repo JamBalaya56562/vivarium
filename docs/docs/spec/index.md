@@ -8,13 +8,26 @@ cannot run live in-page.
 
 ## Versions
 
+### Verdict surface (runtime)
+
 - [Contract v1](./contract-v1.md) — current; stable since Phase 1.
 - [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json) — JSON Schema
   (draft 2020-12) for the Layer 2 / Layer 3 verdict snapshot file
   defined by Contract v1.
 
-There is no v2 today. Future bumps will land as siblings on this
-page; v1 will remain readable for backward-compatible consumers.
+### Manifest surface (publication)
+
+- [Manifest v1](./manifest-v1.md) — current; stable since
+  Phase 5. The TOML manifest an external repo ships at
+  `.vivarium/manifest.toml` to declare a Vivarium-runnable
+  reproduction.
+- [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json) —
+  JSON Schema (draft 2020-12) for the manifest after TOML → JSON
+  conversion.
+
+There is no v2 of either surface today. Future bumps will land as
+siblings on this page; v1 will remain readable for
+backward-compatible consumers.
 
 ## Tooling
 
