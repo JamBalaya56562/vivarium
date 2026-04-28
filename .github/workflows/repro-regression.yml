@@ -71,6 +71,17 @@ jobs:
       - name: Install Layer 1 dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install ajv-cli for verdict schema validation
+        # Single-source clause 4 of the contract v1 conformance check
+        # (`docs/public/spec/verdict.schema.json`) by validating every
+        # generated / tracked `verdict.json` with ajv-cli below, instead
+        # of the historical `jq -e` predicate. Both Layer 2 (CI-built,
+        # CI-snapshot) and Layer 3 (maintainer-tracked) verdict files
+        # share the same schema. `bun add --global` puts `ajv` on
+        # PATH for subsequent steps via setup-bun's PATH wiring.
+        working-directory: ${{ github.workspace }}
+        run: bun add --global ajv-cli@5 ajv-formats
+
       - name: Type-check (sources + tests)
         # Catches any TypeScript-level regression before we boot a
         # browser. Cheap (~1 s) and produces a clear diagnostic on
@@ -180,6 +191,15 @@ jobs:
                 stderr_tail: $stderr_tail
               }' >"${slug_dir}/verdict.json"
 
+            # Validate the freshly-written verdict.json against the
+            # contract v1 schema before the Playwright suite reads it.
+            # Single-sourced with deploy-docs.yml and Layer 3 below.
+            ajv validate \
+              --spec=draft2020 \
+              -c ajv-formats \
+              -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \
+              -d "${slug_dir}/verdict.json"
+
             rm -f "$stdout_file" "$stderr_file"
 
             # Pass-expected for now. A future `fail`-expected sentinel
@@ -219,9 +239,15 @@ jobs:
               echo "::error::Layer 3 recipe ${slug} is missing tracked verdict.json"
               exit 1
             fi
-            jq -e '.contract == "v1" and (.verdict == "pass" or .verdict == "fail") and (.exit_code | type == "number")' \
-              "$verdict_file" >/dev/null || {
-                echo "::error::Layer 3 recipe ${slug} has malformed verdict.json"
+            # Schema-validate the tracked verdict.json against the
+            # contract v1 schema. Replaces the historical `jq -e`
+            # predicate; ajv reports the offending field on failure.
+            ajv validate \
+              --spec=draft2020 \
+              -c ajv-formats \
+              -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \
+              -d "$verdict_file" || {
+                echo "::error::Layer 3 recipe ${slug} has malformed verdict.json (failed schema validation)"
                 cat "$verdict_file"
                 exit 1
               }

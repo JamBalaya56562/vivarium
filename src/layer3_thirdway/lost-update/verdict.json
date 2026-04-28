@@ -3,8 +3,7 @@
   "verdict": "pass",
   "exit_code": 0,
   "image_tag": "ghcr.io/aletheia-works/vivarium-lost-update:latest",
-  "image_digest": "",
-  "local_build_id": "sha256:d9a1687b4b308c6ee2dd32ac2868f450c0c260a9e07ff3c6f077775bcc669508",
+  "image_digest": "sha256:d9a1687b4b308c6ee2dd32ac2868f450c0c260a9e07ff3c6f077775bcc669508",
   "captured_at": "2026-04-27T12:17:53Z",
   "stdout": "Replaying trace at: /trace/repro-0\ncounter = 11272759, expected = 20000000, lost = 8727241\npass: lost-update race observed in recorded trace",
   "stderr_tail": ""

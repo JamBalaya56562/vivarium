@@ -163,7 +163,7 @@ Field summary:
 | `verdict` | `"pass"` \| `"fail"` | ✅ | snapshot verdict (no `"pending"` — the snapshot is post-run) |
 | `exit_code` | integer | ✅ | recorded program / replay exit code |
 | `image_tag` | string | ✅ | docker image tag the snapshot was captured against |
-| `image_digest` | string | ✅ | docker image digest at capture time (empty string allowed when local-build) |
+| `image_digest` | string | ✅ | docker image identifier — CI-pushed captures use the registry RepoDigest, Layer 3 local-build captures use the local image ID (`docker inspect --format='{{.Id}}'`); empty string allowed when neither is available |
 | `captured_at` | ISO-8601 string | ✅ | wall-clock timestamp of the snapshot |
 | `stdout` | string | ✅ | full stdout, or page-specific JSON-encoded output |
 | `stderr_tail` | string | ✅ | last 4 KiB of stderr, truncated front-back to fit |

@@ -77,6 +77,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install ajv-cli for verdict schema validation
+        # Validates each Layer 2 verdict.json against
+        # `docs/public/spec/verdict.schema.json` (contract v1) right
+        # after CI writes it, before the bundling step copies the
+        # directory into the Pages artefact. Catches any malformed
+        # snapshot at deploy time rather than letting it ship.
+        # `bun add --global` puts `ajv` on PATH for subsequent steps.
+        working-directory: ${{ github.workspace }}
+        run: bun add --global ajv-cli@5 ajv-formats
+
       - name: Build docs
         run: bun run build
 
@@ -232,6 +242,15 @@ jobs:
                 stdout: $stdout,
                 stderr_tail: $stderr_tail
               }' >"${slug_dir}/verdict.json"
+
+            # Validate the freshly-written verdict.json against the
+            # contract v1 schema before the bundling step picks it up.
+            # Single-sourced with repro-regression.yml.
+            ajv validate \
+              --spec=draft2020 \
+              -c ajv-formats \
+              -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \
+              -d "${slug_dir}/verdict.json"
 
             rm -f "$stdout_file" "$stderr_file"
             echo "Captured verdict for ${slug}: ${verdict} (exit ${exit_code})"

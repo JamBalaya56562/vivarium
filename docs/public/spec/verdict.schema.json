@@ -35,7 +35,7 @@
     },
     "image_digest": {
       "type": "string",
-      "description": "Docker image digest at capture time (typically 'sha256:…@…'). Empty string is allowed for local-build captures where no digest is available."
+      "description": "Docker image identifier at capture time. CI-pushed captures use the registry RepoDigest ('sha256:…'). Layer 3 maintainer-side local-build captures use the local image ID ('sha256:…' from `docker inspect --format='{{.Id}}'`) since RepoDigests are unavailable for never-pushed images. Empty string is allowed when neither is available."
     },
     "captured_at": {
       "type": "string",
