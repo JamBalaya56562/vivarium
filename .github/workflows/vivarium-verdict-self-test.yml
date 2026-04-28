@@ -1,0 +1,44 @@
+name: vivarium-verdict self-test
+
+# Smoke-test the reusable verdict-capture workflow at
+# `aletheia-works/.github/.github/workflows/vivarium-verdict.yml`
+# against one of Vivarium's own Layer 2 recipes. If this fails, the
+# reusable workflow itself is broken — consumer repos pulling it
+# via `uses:` would also fail. Intentionally a thin caller, not
+# duplicating the verdict-capture logic.
+#
+# Phase 5 sub-stream D per ADR-0013 (private memo). Tracking Issue:
+# https://github.com/aletheia-works/vivarium/issues/119.
+#
+# Triggers:
+# - `workflow_dispatch` — manual smoke test from the Actions tab,
+#   the primary way to confirm the reusable workflow still works
+#   after a change to either repo.
+# - Weekly cron (Monday 03:00 UTC) — runs alongside but not
+#   coincident with the `repro-regression` Monday 00:00 UTC cron,
+#   so a hosted-runner outage window is exposed by both rather
+#   than masked by being on the same instant.
+#
+# Not triggered on `push` / `pull_request` because the reusable
+# workflow has no path filter applied here — running it on every
+# PR would burn CI minutes for no incremental signal beyond what
+# `repro-regression.yml` already provides.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  bash-local-shadows-exit:
+    # Layer 2 recipe representative for the smoke test. The
+    # recipe is deterministic (a bash builtin shadowing test) and
+    # ships from the GHCR public registry on every main deploy,
+    # so it has the lowest variance among the current Layer 2
+    # entries.
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: bash-local-shadows-exit

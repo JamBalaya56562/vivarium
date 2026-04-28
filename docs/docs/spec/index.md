@@ -16,6 +16,13 @@ cannot run live in-page.
 There is no v2 today. Future bumps will land as siblings on this
 page; v1 will remain readable for backward-compatible consumers.
 
+## Tooling
+
+- [Consumer workflow](./consumer-workflow.md) — a reusable
+  GitHub Actions workflow any repo can `uses:` to verify a
+  Vivarium-hosted reproduction in their own CI. Phase 5
+  sub-stream D.
+
 ## What this spec is for
 
 - Reproduction pages (Layer 1, Layer 2, Layer 3) under
