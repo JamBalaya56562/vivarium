@@ -64,8 +64,12 @@
           - "**/.dockerignore"
 
 "type: docs":
+  # `any-glob-to-all-files` (not `-any-file`): apply only when every
+  # changed file matches one of these doc patterns. The previous
+  # `-any-file` form over-applied `type: docs` to any mixed PR that
+  # happened to touch a single markdown file. See Issue #115.
   - changed-files:
-      - any-glob-to-any-file:
+      - any-glob-to-all-files:
           - "**/*.md"
           - "docs/docs/**"
           - "LICENSE"
