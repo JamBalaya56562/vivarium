@@ -24,6 +24,24 @@ name: repro-regression
 #   itself is quiet, so an upstream fix that lands a month after our
 #   last commit still surfaces within ~7 days.
 # - `workflow_dispatch` — manual trigger from the Actions tab.
+#
+# Layer 2 verdict drift (schedule + workflow_dispatch only):
+#
+# A separate step at the end of the Layer 2 lane contrasts the
+# freshly-captured `verdict.json` against the verdict.json currently
+# published on GitHub Pages (i.e., the last green main deploy). A
+# divergence means the recipe's environment changed without the repo
+# changing — usually an upstream package or base-image refresh — and
+# the workflow fails red so GitHub's native workflow-failure email
+# alerts the maintainer.
+#
+# The step is gated to `schedule` and `workflow_dispatch` because
+# `push` and `pull_request` are expected-drift triggers (the recipe
+# change is the point); the existing Playwright assertions cover
+# regression for those triggers. Layer 1 drift is covered by
+# Playwright as well. Layer 3 cannot capture in CI per ADR-0011, so
+# no drift step exists there — the committed snapshot is the source
+# of truth and is already shape-checked.
 
 on:
   push:
@@ -211,6 +229,88 @@ jobs:
             fi
             echo "Layer 2 reproduction ${slug}: verdict=${verdict} (exit ${exit_code})"
           done
+
+      - name: Detect Layer 2 verdict drift vs deployed Pages snapshot
+        # Phase 5 sub-stream A' (ADR-0013, private memo). Compares the
+        # `verdict.json` we just captured against the one currently
+        # published on GitHub Pages. A divergence on the weekly cron
+        # (or a manual `workflow_dispatch`) means the recipe is
+        # behaving differently than it did at last green-main deploy
+        # while no commit landed in between — i.e., upstream/runtime
+        # drift the maintainer needs to look at.
+        #
+        # `push` / `pull_request` are intentionally not covered: those
+        # are expected-drift triggers (a PR's whole point may be to
+        # change the verdict), and the Playwright step further down
+        # already turns recipe regression into a red CI failure for
+        # those triggers via the per-page expected verdict.
+        #
+        # Failure modes:
+        # - HTTP 200 + verdict differs       → `::error::` + fail.
+        # - HTTP 404 (recipe not yet on
+        #   Pages, e.g. just-added recipe)   → info, skip.
+        # - HTTP 5xx / DNS / timeout         → `::warning::`, skip
+        #                                      (transient CDN flake
+        #                                      should not raise a
+        #                                      false drift alarm).
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        working-directory: ${{ github.workspace }}
+        env:
+          PAGES_BASE: https://aletheia-works.github.io/vivarium/repro
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          drift=0
+          checked=0
+          tmp_deployed="$(mktemp)"
+          trap 'rm -f "$tmp_deployed"' EXIT
+
+          for vf in src/layer2_docker/*/verdict.json; do
+            slug="$(basename "$(dirname "$vf")")"
+            captured=$(jq -r '.verdict' "$vf")
+            url="${PAGES_BASE}/${slug}/verdict.json"
+
+            http_status=$(curl -sS \
+              --connect-timeout 5 \
+              --max-time 15 \
+              --retry 2 \
+              --retry-delay 2 \
+              -o "$tmp_deployed" \
+              -w '%{http_code}' \
+              "$url" || echo "000")
+
+            case "$http_status" in
+              200)
+                checked=$((checked + 1))
+                if ! deployed=$(jq -r '.verdict' "$tmp_deployed" 2>/dev/null); then
+                  echo "::warning::Layer 2 ${slug}: deployed snapshot at ${url} is not valid JSON — skipped"
+                  continue
+                fi
+                if [ "$captured" != "$deployed" ]; then
+                  echo "::error::Layer 2 verdict drift on ${slug}: deployed=${deployed} captured=${captured} (see ${url})"
+                  drift=$((drift + 1))
+                else
+                  echo "Layer 2 ${slug}: deployed=${deployed} captured=${captured} (no drift)"
+                fi
+                ;;
+              404)
+                echo "Layer 2 ${slug}: no deployed snapshot at ${url} (new recipe?) — skipped"
+                ;;
+              000)
+                echo "::warning::Layer 2 ${slug}: deployed snapshot fetch failed (DNS/timeout/network) — skipped"
+                ;;
+              *)
+                echo "::warning::Layer 2 ${slug}: deployed snapshot fetch returned HTTP ${http_status} — skipped (transient)"
+                ;;
+            esac
+          done
+
+          echo "Layer 2 drift check: ${checked} recipe(s) compared, ${drift} drift(s) detected."
+          if [ "$drift" -gt 0 ]; then
+            echo "::error::${drift} Layer 2 recipe(s) drifted from their deployed verdict — upstream/runtime appears to have changed since the last green main deploy. Investigate (recipe regression vs upstream-fix-detected) and either update the recipe or accept the new verdict by re-deploying."
+            exit 1
+          fi
 
       - name: Build Layer 3 rr-replay reproductions (no run, no push)
         # Layer 3 cannot run replay in CI — Azure Hyper-V exposes

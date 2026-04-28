@@ -86,6 +86,27 @@ When an upstream fix lands and CI's next snapshot flips to `fail`,
 the gallery surfaces that flip — same fix-detection story Layer 1
 already provides.
 
+## Drift detection (weekly cron)
+
+The weekly `repro-regression` cron (also `workflow_dispatch`)
+contrasts the freshly-captured `verdict.json` against the
+verdict.json currently published on GitHub Pages
+(`https://aletheia-works.github.io/vivarium/repro/<slug>/verdict.json`).
+A divergence means the recipe started behaving differently
+**without any commit landing in between** — typically a base-image
+or package update silently changed the run. The workflow fails
+red so GitHub's native workflow-failure email reaches the
+maintainer.
+
+The check runs only on `schedule` and `workflow_dispatch`; on
+`push` and `pull_request` the verdict is *expected* to drift when
+the recipe itself is being changed, and the Playwright step
+already covers regression for those triggers via the per-page
+expected verdict. New recipes that have never been deployed yet
+return HTTP 404 and are skipped without alarm.
+
+Phase 5 sub-stream A' per ADR-0013 (private memo).
+
 ## Adding a new reproduction
 
 1. Create `<project>-<issue>/` with the files above.
