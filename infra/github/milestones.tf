@@ -47,6 +47,8 @@ locals {
     }
     "Phase 5 — Ecosystem" = {
       description = "Platform integrations, third-party reproduction definitions, industry standardisation around the bug-reproduction primitive."
+      state       = "closed"
+      due_date    = "2026-04-29"
     }
   }
 }

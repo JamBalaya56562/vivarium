@@ -176,25 +176,54 @@ the visitor side or in CI** (the trace is recorded once by the
 maintainer and shipped — see ADR-0011 for the rationale, in
 particular why GitHub Actions hosted runners cannot record).
 
-## Phase 5 — Ecosystem *(current)*
+## Phase 5 — Ecosystem
 
-**Milestone:** [Phase 5 — Ecosystem](https://github.com/aletheia-works/vivarium/milestone/1)
+**Milestone:** [Phase 5 — Ecosystem](https://github.com/aletheia-works/vivarium/milestone/1) *(closed 2026-04-29 with the contract / manifest / reusable-workflow surfaces published; Issue-triage tooling deferred without adoption)*
 
-**What lands:**
+**What landed:**
 
-- Integrations with the tools on either side of the reproduction
-  primitive: AI review (CodeRabbit, Greptile, etc.), Issue triage
-  (Dosu), IDEs, CI systems.
-- Third-party reproduction definitions — projects describing their own
-  reproduction protocols in a format Vivarium runs without bespoke
-  glue.
-- Positioning the reproduction primitive as an industry-standard
-  concept, not a single project's feature.
+- **Contract v1 published as an external standard** —
+  [`docs/docs/spec/contract-v1.md`](./spec/contract-v1.md),
+  [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json),
+  and CI enforcement via `ajv-cli` against every Layer 2 and
+  Layer 3 `verdict.json` on each write.
+- **Manifest v1 published** —
+  [`docs/docs/spec/manifest-v1.md`](./spec/manifest-v1.md),
+  [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json),
+  and three reference TOML manifests under
+  [`src/external_examples/`](https://github.com/aletheia-works/vivarium/tree/main/src/external_examples).
+  An external repository can now declare a Vivarium-runnable
+  reproduction by shipping a single `.vivarium/manifest.toml`
+  file — no bespoke glue required.
+- **Reusable verdict-capture GitHub Actions workflow** —
+  [`aletheia-works/.github/.github/workflows/vivarium-verdict.yml`](https://github.com/aletheia-works/.github/blob/main/.github/workflows/vivarium-verdict.yml).
+  Any consumer repo can `uses:` this workflow to verify a
+  Vivarium-hosted reproduction in their own CI; documented at
+  [Consumer workflow](./spec/consumer-workflow.md).
+- **Verdict drift detection on the weekly cron** — the
+  `repro-regression.yml` workflow now contrasts the
+  freshly-captured Layer 2 verdict against the deployed Pages
+  snapshot; a divergence (upstream / runtime drift while the
+  repo did not change) fails the workflow and surfaces via
+  GitHub's native workflow-failure email.
 
-**What a visitor sees:** reproduction stops being a thing one project
-does and starts being a capability the ecosystem expects — the way
-"CI ran" is today. Vivarium is one implementation of the primitive, not
-the primitive itself.
+**What did not adopt:** Issue triage tooling (Dosu replacement).
+A research memo evaluated CodeRabbit Issue Enrichment, Sweep AI,
+Greptile, Cody / Sourcegraph, GitHub-native Copilot for Issues,
+and Anthropic's `claude-code-action`. The recommended primary
+(CodeRabbit Issue Enrichment) was declined based on prior
+free-tier experience on the PR-review side; the fallback's
+per-issue API token cost did not match the zero-recurring-cost
+constraint. **No Issue-triage tool is in place** as Phase 5
+closes; if external Issue volume creates pressure later, the
+research memo plus a fresh re-evaluation drives the next
+decision.
+
+**What a visitor sees:** reproduction has external surfaces —
+contract, manifest, reusable workflow — that any project can
+consume without changing how Vivarium itself is built.
+Reproduction is on its way to becoming a capability the
+ecosystem expects rather than a thing one project does.
 
 **Non-goals for this phase:** a managed service with an SLA (see
 [Non-goals](./non-goals.md#we-are-not-a-managed-service-with-an-sla));
