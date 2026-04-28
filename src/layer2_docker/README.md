@@ -62,6 +62,12 @@ Layer 2. Visitors pull from GHCR directly.
 
 ## Verdict semantics
 
+The verdict snapshot file shape is defined by
+[Vivarium Contract v1](../../docs/docs/spec/contract-v1.md); its JSON
+Schema lives at `docs/public/spec/verdict.schema.json` and the
+`deploy-docs` / `repro-regression` workflows validate every
+`verdict.json` against it on each write.
+
 A Layer 2 page reports the **last verdict CI captured** when it
 re-built and re-ran the reproduction. The page surfaces:
 

@@ -56,3 +56,15 @@ Each new Layer 1 PoC is its own immediate subdirectory of this folder
 contain an `index.html`; the deploy workflow publishes any directory
 matching this shape under `/vivarium/poc/<slug>/`. Companion files
 (`repro.mjs`, `style.css`, `README.md`, fixtures) live alongside.
+
+## Verdict surface
+
+Every Layer 1 reproduction emits its verdict via the in-page surface
+defined by [Vivarium Contract v1](../../docs/docs/spec/contract-v1.md)
+— the `<meta name="vivarium-contract">` tag, the
+`#verdict[data-verdict]` DOM element, and the
+`__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__` JavaScript globals.
+The helper in [`_shared/verdict.ts`](./_shared/verdict.ts) keeps the
+DOM and globals in sync; the Playwright suite at [`tests/repro.spec.ts`](./tests/repro.spec.ts)
+asserts conformance on every PR. Layer 1 does not ship a
+`verdict.json` — its verdict is live in-page.

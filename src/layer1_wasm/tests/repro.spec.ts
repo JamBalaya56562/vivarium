@@ -4,7 +4,9 @@
 // runtime it loads, and that the vivarium contract v1 surface
 // (`#verdict[data-verdict]`, `__VIVARIUM_VERDICT__`,
 // `__VIVARIUM_RESULT__`, `<meta name="vivarium-contract">`) is
-// published correctly.
+// published correctly. The contract is single-sourced at
+// https://aletheia-works.github.io/vivarium/spec/contract-v1
+// (markdown: `docs/docs/spec/contract-v1.md`).
 //
 // Layer 1 cases hit the WASM-runtime server on port 8767 (config
 // `LAYER1_PORT`). Layer 2 cases hit the Docker-recipe-snapshot server

@@ -48,6 +48,8 @@ The technology is chosen by the problem, not the other way around.
 
 **[aletheia-works.github.io/vivarium](https://aletheia-works.github.io/vivarium)** — vision, roadmap, architecture, ADRs.
 
+Public specification: **[Vivarium Contract v1](https://aletheia-works.github.io/vivarium/spec/contract-v1)** — the reproduction-verdict surface every gallery page emits, with a JSON Schema (`docs/public/spec/verdict.schema.json`) CI validates every Layer 2 / Layer 3 `verdict.json` against.
+
 The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`. The rspress configuration and lockfile live in `docs/`; the markdown content lives in `docs/docs/`.
 
 ## Development Philosophy

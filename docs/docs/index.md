@@ -26,4 +26,7 @@ features:
     details: Humans set direction and merge. AI agents implement, review, and iterate. Infrastructure runs continuously.
   - title: Lifelong project
     details: Measured in years, not quarters. No false urgency, no shipping-to-launch pressure, no completion deadline.
+  - title: Public spec
+    details: Vivarium Contract v1 — an open, JSON Schema-backed specification for the reproduction-verdict surface every gallery page emits. External tools and third-party reproductions can declare conformance.
+    link: /spec/
 ---

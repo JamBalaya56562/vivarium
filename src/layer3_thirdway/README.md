@@ -140,6 +140,12 @@ the three are in Docker's default profile.
 
 ## Verdict semantics
 
+The verdict snapshot file shape is defined by
+[Vivarium Contract v1](../../docs/docs/spec/contract-v1.md); its JSON
+Schema lives at `docs/public/spec/verdict.schema.json` and the
+`repro-regression` workflow validates the tracked `verdict.json`
+against it on every PR.
+
 A Layer 3 page reports the **maintainer-captured** verdict
 snapshot from the time the recipe was lifted (or last
 re-recorded). The page surfaces:
