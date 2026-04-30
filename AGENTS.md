@@ -204,33 +204,67 @@ including this one — host only thin caller workflows plus any
 `workflow_run` listeners. If a workflow here starts duplicating logic that
 would belong in the org, flag it for promotion rather than copying.
 
-### 4.9 GitHub Actions: latest versions only
+### 4.9 GitHub Actions: latest versions, pinned by SHA
 
-When **adding** a new GitHub Actions workflow or **editing** an existing
-one, use the latest published versions of every action and runtime
-referenced. This applies to:
+Two coupled rules.
 
-- Marketplace actions — pin to the most recent major tag at the time of
-  authoring (e.g. `actions/checkout@v4`, `actions/setup-node@v4`,
-  `oven-sh/setup-bun@v2`, `denoland/setup-deno@v2`). Do not copy older
-  pins from a sibling workflow that is itself out of date.
-- Runtime versions — Node.js, Deno, Bun, Python, Go, etc.: the current
-  stable release.
-- Reusable-workflow refs — call the `aletheia-works/.github` reusables at
-  their latest tag, not a stale SHA.
+**(a) Latest at authoring time.** When adding a new GitHub Actions
+workflow or editing an existing one, use the latest published version
+of every action and runtime referenced. This applies to:
 
-Do **not** ship a workflow that is already known to be one Dependabot run
-behind. Dependabot opens its bumps daily; a stale-on-arrival workflow
-just creates an immediate follow-up PR for no benefit. Catching the
-version at authoring time costs one CI roundtrip; catching it via
-Dependabot costs an extra review cycle and an extra merge — strictly
-more expensive.
+- Marketplace actions — the most recent published release at the
+  time of authoring (e.g. `actions/checkout` v6.0.2,
+  `oven-sh/setup-bun` v2.2.0). Do not copy older pins from a sibling
+  workflow that is itself out of date.
+- Runtime versions — Node.js, Deno, Bun, Python, Go, etc.: the
+  current stable release.
+- Reusable-workflow refs — call the `aletheia-works/.github`
+  reusables at the latest commit on their tracked branch (usually
+  `main`).
 
-Reasonable exception: if a newer major bumps an action's interface and
-the migration is non-trivial, pin the older major **with a one-line
-comment** (`# pinned at v3 until <link to issue>`) so the next
-maintainer sees the deliberate choice rather than guessing it is an
-oversight.
+Do **not** ship a workflow that is already known to be one Dependabot
+run behind. Dependabot opens its bumps daily; a stale-on-arrival
+workflow just creates an immediate follow-up PR for no benefit.
+Catching the version at authoring time costs one CI roundtrip;
+catching it via Dependabot costs an extra review cycle and an extra
+merge — strictly more expensive.
+
+**(b) Pin by full commit SHA, not by tag or branch.** Marketplace tags
+are mutable — `actions/checkout@v6` points at whatever commit the
+action's maintainer last decided should be `v6`. The GitHub
+security-hardening guide
+(https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
+states explicitly that *"pinning an action to a full length commit
+SHA is currently the only way to use an action as an immutable
+release."* Always pin to the full 40-char commit SHA, with the
+human-readable version (for marketplace actions) or branch name (for
+reusable workflows) as a trailing comment for review:
+
+```yaml
+# Marketplace action — tag literal in trailing comment
+uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+# Reusable workflow on main — branch name in trailing comment
+uses: aletheia-works/.github/.github/workflows/commitlint.yml@5212c0d0443cbe3ef25281d644f83d5edb0e9986 # main
+```
+
+The trailing `# vX.Y.Z` or `# main` comment is mandatory — the SHA
+alone is unreviewable. Dependabot's `github-actions` ecosystem
+rebumps the SHA on every release the same way it bumps tags, so SHA
+pinning does not freeze updates; it just makes each update a
+deliberate, reviewable change.
+
+To resolve the latest SHA for a tag or branch from the shell:
+
+```bash
+gh api repos/<owner>/<repo>/commits/<tag-or-branch> --jq '.sha'
+```
+
+**Exception clause.** If a newer major bumps an action's interface
+and the migration is non-trivial, pin the older major's latest SHA
+**with a one-line comment** (`# pinned at v3 until <link to issue>`)
+so the next maintainer sees the deliberate choice rather than
+guessing it is an oversight.
 
 ## 5. Three-layer architecture (reference)
 

@@ -39,6 +39,6 @@ jobs:
     # ships from the GHCR public registry on every main deploy,
     # so it has the lowest variance among the current Layer 2
     # entries.
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@5212c0d0443cbe3ef25281d644f83d5edb0e9986 # main
     with:
       slug: bash-local-shadows-exit
