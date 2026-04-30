@@ -1,0 +1,241 @@
+name: branch-fix verdict
+
+# Phase 6 R.2 — build & verify pipeline.
+#
+# Captures a Vivarium Contract v1 `verdict.json` for a contributor-
+# supplied "branch-fix" Docker image and bundles it alongside the
+# deployed original verdict so the Phase 6 R.3 reproduction-comparison
+# UI can render the two side-by-side. The contributor (human or AI
+# agent) is responsible for building and publishing the branch-fix
+# image to a registry the GitHub Actions runner can pull from; this
+# workflow does not build sources.
+#
+# Verdict semantics (Contract v1 § Verdict semantics):
+#   "pass" → the upstream bug REPRODUCES on the supplied image.
+#   "fail" → the bug does NOT reproduce.
+#
+# A working branch-fix is therefore expected to produce verdict
+# "fail" — the inverse of typical CI green/red framing. The
+# `expected_verdict` input defaults to "fail" for that reason; set
+# it to "pass" only if the branch-fix is meant to leave the bug
+# unaffected (e.g. an unrelated refactor on the recipe path).
+#
+# Triggers:
+# - `workflow_dispatch` only. The verdict comparison is a
+#   contributor-driven action, not something to run on every push.
+#
+# Permissions: `contents: read` is sufficient — the workflow only
+# reads the in-tree recipe to confirm the slug exists; it does not
+# write back to the repo. The artefact upload is repository-scoped
+# and does not need additional grants.
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Recipe slug under src/layer2_docker/ (e.g. bash-local-shadows-exit).'
+        type: string
+        required: true
+      branch_image:
+        description: 'Docker image ref to verify (e.g. ghcr.io/contributor/foo-fix:branch-x). Must be pullable by the runner without authentication, or pull credentials must be added by the maintainer in a follow-up.'
+        type: string
+        required: true
+      expected_verdict:
+        description: 'Verdict the contributor expects to see on the branch-fix image. "fail" (bug does NOT reproduce) is the typical "fix works" answer.'
+        type: choice
+        required: false
+        default: 'fail'
+        options:
+          - fail
+          - pass
+      original_image:
+        description: 'Optional override for the deployed-original image. Default behaviour fetches the deployed verdict.json from GitHub Pages instead of re-running an image, which is cheaper and matches the live snapshot.'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  # Keep concurrent runs of the same slug+image bounded; an in-flight
+  # run on the same inputs is wasteful, but parallel runs on
+  # different inputs are fine.
+  group: branch-fix-verdict-${{ inputs.slug }}-${{ inputs.branch_image }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PAGES_BASE: https://aletheia-works.github.io/vivarium/repro
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        # Provides `bun add --global ajv-cli` for schema validation
+        # inside the capture helper.
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install ajv-cli for verdict schema validation
+        # Same single-source clause-4 contract validator the
+        # regression workflow uses; mirrored here so the capture
+        # helper's `ajv validate` step finds it on PATH.
+        run: bun add --global ajv-cli@5 ajv-formats
+
+      - name: Confirm recipe slug exists in tree
+        # Slug is the directory name under src/layer2_docker/. Failing
+        # fast with a clear message beats a confusing docker-pull
+        # error on a typoed slug.
+        run: |
+          set -euo pipefail
+          slug="${{ inputs.slug }}"
+          if [ -z "$slug" ]; then
+            echo "::error::slug input is empty"
+            exit 1
+          fi
+          if [ ! -d "src/layer2_docker/${slug}" ]; then
+            echo "::error::No recipe at src/layer2_docker/${slug}/. Layer 2 catalogue:"
+            ls -1 src/layer2_docker/ | grep -v '^_' || true
+            exit 1
+          fi
+          echo "Recipe directory confirmed: src/layer2_docker/${slug}/"
+
+      - name: Pull branch-fix image
+        # Surfaces auth / typo failures cleanly before the capture
+        # step. `docker run` would also pull, but its error message
+        # mixes pull-failure and run-failure modes, which is harder
+        # to read in CI logs.
+        run: |
+          set -euo pipefail
+          docker pull "${{ inputs.branch_image }}"
+
+      - name: Capture branch-fix verdict
+        # Uses the shared helper — same code path as
+        # repro-regression.yml's Layer 2 capture step. Invoked via
+        # `bash` so we do not depend on the script's executable bit
+        # surviving Windows-side commits (Sapling on Windows does
+        # not preserve mode 0755). Output goes to a workflow-local
+        # path so the artefact upload below carries it without
+        # disturbing tracked files.
+        run: |
+          set -euo pipefail
+          mkdir -p verdict-bundle
+          bash scripts/capture_layer2_verdict.sh \
+            "${{ inputs.branch_image }}" \
+            "verdict-bundle/branch-fix-verdict.json" \
+            --image-tag "${{ inputs.branch_image }}"
+
+      - name: Fetch deployed original verdict
+        # Default path: pull the live `verdict.json` from GitHub
+        # Pages so what we compare against is exactly what the
+        # gallery is currently serving. If `original_image` is
+        # provided, re-capture instead — useful when the contributor
+        # wants the comparison anchored at a specific image rather
+        # than at the deployed snapshot.
+        run: |
+          set -euo pipefail
+          slug="${{ inputs.slug }}"
+          original_image="${{ inputs.original_image }}"
+          out="verdict-bundle/original-verdict.json"
+
+          if [ -n "$original_image" ]; then
+            echo "Re-capturing original verdict from supplied image: ${original_image}"
+            docker pull "$original_image"
+            bash scripts/capture_layer2_verdict.sh \
+              "$original_image" \
+              "$out" \
+              --image-tag "$original_image"
+          else
+            url="${PAGES_BASE}/${slug}/verdict.json"
+            echo "Fetching deployed original verdict: ${url}"
+            http_status=$(curl -sS \
+              --connect-timeout 5 \
+              --max-time 30 \
+              --retry 2 \
+              --retry-delay 2 \
+              -o "$out" \
+              -w '%{http_code}' \
+              "$url" || echo "000")
+            case "$http_status" in
+              200)
+                echo "Deployed original verdict fetched."
+                ajv validate \
+                  --spec=draft2020 \
+                  -c ajv-formats \
+                  -s "docs/public/spec/verdict.schema.json" \
+                  -d "$out"
+                ;;
+              404)
+                echo "::warning::No deployed verdict at ${url}. Original-side of the bundle will be omitted."
+                rm -f "$out"
+                ;;
+              *)
+                echo "::warning::Deployed verdict fetch returned HTTP ${http_status}; original-side of the bundle will be omitted."
+                rm -f "$out"
+                ;;
+            esac
+          fi
+
+      - name: Write comparison summary
+        # GitHub Actions renders `$GITHUB_STEP_SUMMARY` as Markdown
+        # on the run page. Used as a lightweight stand-in for the
+        # R.3 comparison UI until that ships.
+        run: |
+          set -euo pipefail
+          slug="${{ inputs.slug }}"
+          expected="${{ inputs.expected_verdict }}"
+          branch_verdict=$(jq -r '.verdict' verdict-bundle/branch-fix-verdict.json)
+          branch_exit=$(jq -r '.exit_code' verdict-bundle/branch-fix-verdict.json)
+
+          if [ -f verdict-bundle/original-verdict.json ]; then
+            original_verdict=$(jq -r '.verdict' verdict-bundle/original-verdict.json)
+            original_exit=$(jq -r '.exit_code // "n/a"' verdict-bundle/original-verdict.json)
+          else
+            original_verdict="(unavailable)"
+            original_exit="n/a"
+          fi
+
+          if [ "$branch_verdict" = "$expected" ]; then
+            status="✅ matches expected"
+          else
+            status="⚠️ does NOT match expected"
+          fi
+
+          {
+            echo "# Branch-fix verdict — \`${slug}\`"
+            echo
+            echo "| | original | branch-fix |"
+            echo "|---|---|---|"
+            echo "| verdict | \`${original_verdict}\` | \`${branch_verdict}\` |"
+            echo "| exit code | ${original_exit} | ${branch_exit} |"
+            echo
+            echo "**Expected** branch-fix verdict: \`${expected}\` — ${status}."
+            echo
+            echo "Bundle artefact: \`branch-fix-verdict-${slug}-${{ github.run_id }}\`."
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verdict bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: branch-fix-verdict-${{ inputs.slug }}-${{ github.run_id }}
+          path: verdict-bundle/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Assert expected verdict
+        # Final step rather than first so the artefact upload above
+        # has already preserved the bundle for inspection even when
+        # the assertion fails.
+        run: |
+          set -euo pipefail
+          expected="${{ inputs.expected_verdict }}"
+          actual=$(jq -r '.verdict' verdict-bundle/branch-fix-verdict.json)
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::Branch-fix verdict was '${actual}', expected '${expected}'. Bundle uploaded as artefact for inspection."
+            exit 1
+          fi
+          echo "Branch-fix verdict matches expected (${expected})."

@@ -44,6 +44,11 @@ backward-compatible consumers.
   GitHub Actions workflow any repo can `uses:` to verify a
   Vivarium-hosted reproduction in their own CI. Phase 5
   sub-stream D.
+- [Branch-fix verdict pipeline](./branch-fix-pipeline.md) — a
+  `workflow_dispatch` workflow that captures a verdict for a
+  contributor-supplied branch-fix Docker image and bundles it
+  alongside the deployed original for side-by-side comparison.
+  Phase 6 sub-stream R.2.
 
 ## What this spec is for
 

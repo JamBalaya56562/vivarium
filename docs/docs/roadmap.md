@@ -266,6 +266,13 @@ closing the source; vendor lock-in of any kind.
 - Contract v1 **revision 2** — evidence surface (logs / exit code /
   duration on the in-page DOM and envelope). Non-breaking; v1 consumers
   feature-detect the new field.
+- **Branch-fix verdict pipeline** — `workflow_dispatch` workflow at
+  [`.github/workflows/branch-fix-verdict.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/branch-fix-verdict.yml)
+  captures a Contract v1 verdict for a contributor-supplied
+  branch-fix Docker image and bundles it alongside the deployed
+  original for side-by-side comparison. The R.3 comparison-page UI
+  consumes this artefact directly. Spec page:
+  [Branch-fix verdict pipeline](./spec/branch-fix-pipeline.md).
 - **Recipes index v1** — `https://aletheia-works.github.io/vivarium/api/recipes.json`
   is now a live, machine-readable catalogue endpoint with its own
   [JSON Schema](https://aletheia-works.github.io/vivarium/api/recipes.schema.json)
