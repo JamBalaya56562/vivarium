@@ -24,9 +24,18 @@ permissions:
 
 jobs:
   plan:
+    # Skip on fork PRs: the reusable workflow downloads the state
+    # artifact from a prior apply run via `actions/download-artifact`,
+    # which fails on fork PRs because the cross-run-id download requires
+    # a repo-scoped token. Without state, `tofu plan` would compare
+    # against an empty state and report every existing resource as a
+    # spurious "to add" — useless for review and noisy in CI. A
+    # maintainer can re-run the plan from a same-repo branch when the
+    # fork's changes are merged through a trusted-fork branch.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     # Pinned by commit SHA (org enforces sha_pinning_required). Update
     # this ref when the reusable workflow meaningfully changes.
-    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@5212c0d0443cbe3ef25281d644f83d5edb0e9986 # main
+    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@7d0327b430d3760d7d993c426395db6776459a7e # main
     with:
       working_directory: infra/github
     secrets: inherit

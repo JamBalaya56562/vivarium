@@ -283,7 +283,7 @@ reusable workflows) as a trailing comment for review:
 uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
 # Reusable workflow on main — branch name in trailing comment
-uses: aletheia-works/.github/.github/workflows/commitlint.yml@5212c0d0443cbe3ef25281d644f83d5edb0e9986 # main
+uses: aletheia-works/.github/.github/workflows/commitlint.yml@7d0327b430d3760d7d993c426395db6776459a7e # main
 ```
 
 The trailing `# vX.Y.Z` or `# main` comment is mandatory — the SHA
