@@ -83,10 +83,10 @@ refuses that anchoring.
 
 ## We are not a three-year MVP
 
-Phase 0 through Phase 5 in the roadmap span years, not quarters. The
-project is built on the assumption that lifelong scope requires
-lifelong patience: no shipping-to-launch pressure, no feature quota
-to justify a round of funding, no completion deadline.
+The roadmap spans years, not quarters. The project is built on the
+assumption that lifelong scope requires lifelong patience: no
+shipping-to-launch pressure, no feature quota to justify a round of
+funding, no completion deadline.
 
 **Why:** The techniques we respect — record-replay research,
 deterministic simulation, mature WASM runtimes — took decades to
@@ -97,4 +97,4 @@ mature. Reproduction-as-a-primitive deserves the same timescale.
 ## See also
 
 - [Vision](./vision.md) — what we *are* building.
-- [Roadmap](./roadmap.md) — the Phase 0 → Phase 5 plan.
+- [Roadmap](./roadmap.md) — the per-phase plan.

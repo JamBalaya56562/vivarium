@@ -325,9 +325,10 @@ observations rather than from up-front design.
 
 ## Current scope
 
-As of 2026-04-27, Phases 0–3 are closed and Phase 4 is active. The
-architectural slots above have filled in unevenly — by design, since
-each layer waits for a concrete Issue before a vertical lands.
+As of 2026-05-01, Phases 0–5 are closed and Phase 6 (usability and
+visual layer) is active. The architectural slots above have filled in
+unevenly — by design, since each layer waits for a concrete Issue
+before a vertical lands.
 
 **Layer 1.** Six verticals live under `src/layer1_wasm/`:
 `cpython-137205`, `numpy-28287`, `pandas-56679`, `regex-779` (Python
@@ -345,12 +346,12 @@ pinned `Dockerfile`, `repro.sh`, GHCR-published image, copy-pasteable
 runtime exists; the visitor's own Docker (or Codespaces) is the
 runtime, exactly as the delivery model above requires.
 
-**Layer 3.** Phase 4 is the active milestone. The trace-shipped
-catalogue model described above is the current design; the first
-recipe is in progress, and `src/layer3_thirdway/` still holds only
-its README plus the design notes ADR-0011 (private memo) refers to.
-Until the first vertical lands, Layer 3 has no canonical recipe
-shape — only a documented intended shape.
+**Layer 3.** Phase 4 closed with one recipe shipped: the
+`pthread`-style canonical lost-update data race under
+`src/layer3_thirdway/lost-update/`, distributed as a GHCR image with
+the `rr` trace baked in. Further Layer 3 verticals are deferred
+until a concrete bug forces another one — Phase 4's close ADR
+(ADR-0012, private memo) accepts the partial outcome explicitly.
 
 The conservative phasing — refuse to commit to runtimes beyond what
 the next concrete Issue actually needs — was the project's

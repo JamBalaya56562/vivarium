@@ -26,7 +26,10 @@ features:
     details: Humans set direction and merge. AI agents implement, review, and iterate. Infrastructure runs continuously.
   - title: Lifelong project
     details: Measured in years, not quarters. No false urgency, no shipping-to-launch pressure, no completion deadline.
-  - title: Public spec
-    details: Vivarium Contract v1 — an open, JSON Schema-backed specification for the reproduction-verdict surface every gallery page emits. External tools and third-party reproductions can declare conformance.
+  - title: Public specs
+    details: Contract v1 (verdict surface), Manifest v1 (third-party reproductions declare themselves via .vivarium/manifest.toml), and Recipes index v1 (machine-readable catalogue). Each backed by a JSON Schema.
     link: /spec/
+  - title: Agent integration
+    details: A Model Context Protocol server (@aletheia-works/vivarium-mcp) exposes the recipe catalogue and verdict snapshots to Claude Code, Cline, Cursor, Continue, and other AI agent clients. Dual-published to JSR and npm with OIDC + Sigstore provenance.
+    link: /spec/recipes-index-v1
 ---

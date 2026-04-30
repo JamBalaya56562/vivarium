@@ -7,12 +7,16 @@
 
 ## 🚧 Status
 
-**Phase 0 — Bootstrap**
+**Phase 6 — Usability and visual layer (in flight)**
 
-This project is in the initial setup phase. Infrastructure-as-Code foundations
-are being established. Actual product development has not started yet.
+Phases 0–5 closed between 2026-04-26 and 2026-04-29. Layer 1 ships six
+WASM verticals (Python via Pyodide, Ruby.wasm, php-wasm, Rust on
+`wasm32-wasip1`); Layer 2 ships four Docker recipes published to
+`ghcr.io/aletheia-works/`; Layer 3 ships one `rr` recipe. Public specs
+(**Contract v1**, **Manifest v1**, **Recipes index v1**) and a
+**Vivarium MCP server** for AI agent clients are published.
 
-See [`docs/docs/roadmap.md`](docs/docs/roadmap.md) for the full plan from Phase 0 to Phase 5.
+See [`docs/docs/roadmap.md`](docs/docs/roadmap.md) for the per-phase plan.
 
 ---
 
@@ -46,9 +50,17 @@ The technology is chosen by the problem, not the other way around.
 
 ## Documentation
 
-**[aletheia-works.github.io/vivarium](https://aletheia-works.github.io/vivarium)** — vision, roadmap, architecture, ADRs.
+**[aletheia-works.github.io/vivarium](https://aletheia-works.github.io/vivarium)** — vision, roadmap, architecture, the public spec surface.
 
-Public specification: **[Vivarium Contract v1](https://aletheia-works.github.io/vivarium/spec/contract-v1)** — the reproduction-verdict surface every gallery page emits, with a JSON Schema (`docs/public/spec/verdict.schema.json`) CI validates every Layer 2 / Layer 3 `verdict.json` against.
+Public specs:
+
+- **[Contract v1](https://aletheia-works.github.io/vivarium/spec/contract-v1)** — the reproduction-verdict surface every gallery page emits (revision 2 adds an optional evidence surface). JSON Schema at [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json), CI-validated on every Layer 2/3 `verdict.json`.
+- **[Manifest v1](https://aletheia-works.github.io/vivarium/spec/manifest-v1)** — TOML manifest an external repo ships at `.vivarium/manifest.toml` to declare a Vivarium-runnable reproduction. JSON Schema at [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json).
+- **[Recipes index v1](https://aletheia-works.github.io/vivarium/spec/recipes-index-v1)** — machine-readable catalogue listing of every reproduction in this repo. Live endpoint: <https://aletheia-works.github.io/vivarium/api/recipes.json>.
+
+Programmatic access:
+
+- **[`@aletheia-works/vivarium-mcp`](packages/mcp-server/)** — Model Context Protocol server exposing `list_recipes` / `get_recipe` / `lookup_verdict` to AI agent clients (Claude Code, Cline, Cursor, Continue, …). Dual-published to JSR (canonical) and npm (fallback).
 
 The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`. The rspress configuration and lockfile live in `docs/`; the markdown content lives in `docs/docs/`.
 
@@ -69,30 +81,30 @@ The project eats its own dog food:
 ```
 vivarium/
 ├── README.md                 # This file
+├── AGENTS.md                 # Standing instructions for AI coding agents
+├── CLAUDE.md                 # Claude Code-specific addenda
+├── mise.toml                 # Tool versions (bun, opentofu, python, ruby, php, rust)
 ├── .gitignore
 ├── .github/
-│   ├── workflows/            # CI/CD and automation
-│   │   ├── terraform-plan.yml
-│   │   ├── terraform-apply.yml
-│   │   └── terraform-state-backup.yml
-│   └── dependabot.yml        # Automated dependency updates
+│   ├── workflows/            # CI/CD — thin callers into aletheia-works/.github reusables
+│   ├── labeler.yml           # Path-based label rules
+│   └── dependabot.yml        # Automated dependency updates (github-actions, terraform, bun)
 ├── infra/
 │   └── github/               # GitHub Settings as Code (OpenTofu)
-│       ├── versions.tf
-│       ├── providers.tf
-│       ├── variables.tf
-│       ├── main.tf
-│       ├── branch_protection.tf
-│       ├── labels.tf
+│       ├── milestones.tf, labels.tf, branch_protection.tf, …
 │       └── README.md
-├── docs/                     # rspress docs site (config + content)
-│   ├── package.json          # rspress + bun deps
-│   ├── rspress.config.ts
-│   ├── tsconfig.json
-│   ├── bun.lock
-│   └── docs/                 # markdown content (vision, architecture, ADRs)
-└── src/                      # Source code
-    └── ...                   # (to be added)
+├── docs/                     # rspress docs site
+│   ├── public/spec/          # JSON Schemas — verdict.schema.json, manifest.schema.json
+│   ├── public/api/           # recipes.json, recipes.schema.json
+│   ├── scripts/              # build-time scripts (recipes-index generator)
+│   └── docs/                 # vision, architecture, roadmap, spec/, repro/
+├── packages/
+│   └── mcp-server/           # @aletheia-works/vivarium-mcp (JSR + npm dual publish)
+└── src/
+    ├── layer1_wasm/          # 6 Layer 1 recipes (Pyodide, Ruby.wasm, php-wasm, Rust)
+    ├── layer2_docker/        # 4 Layer 2 recipes (Docker images on GHCR)
+    ├── layer3_thirdway/      # 1 Layer 3 recipe (rr replay)
+    └── external_examples/    # reference Manifest v1 fixtures, one per layer
 ```
 
 ## Getting Started
@@ -104,17 +116,28 @@ repository settings via OpenTofu.
 
 ### For Contributors
 
-The project is not yet accepting contributions — the foundations are still
-being laid. Star the repo to follow along.
+External contributions land most naturally as **Vivarium-runnable
+reproductions in your own repo**: ship a `.vivarium/manifest.toml`
+that points at a static page (Layer 1) or a published container image
+(Layer 2/3) per the [Manifest v1 spec](https://aletheia-works.github.io/vivarium/spec/manifest-v1).
+Three reference manifests live under
+[`src/external_examples/`](src/external_examples/), one per layer.
 
-## Tech Stack (Planned)
+Issue and PR contributions to this repo are also welcome; the
+AI-delegated workflow ([`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md))
+applies regardless of who opens them.
 
-| Layer | Technology |
+## Tech Stack
+
+| Area | Technology |
 |---|---|
-| WASM execution | Pyodide, sqlite-wasm, Rust (wasm32-wasi) |
-| Docker execution | devcontainer, Firecracker (exploration) |
-| Record-replay | rr, Pernosco-style (long-term) |
-| Infrastructure | OpenTofu, GitHub Actions |
+| Layer 1 (WASM) | Pyodide, Ruby.wasm, php-wasm, Rust `wasm32-wasip1` |
+| Layer 2 (Docker) | Docker images published to GHCR per recipe |
+| Layer 3 (record-replay) | `rr` replay against trace baked into a GHCR image |
+| Docs site | rspress + Bun + GitHub Pages |
+| MCP server | TypeScript on Bun, dual-published to JSR + npm with OIDC + Sigstore provenance |
+| Infrastructure | OpenTofu, GitHub Actions (SHA-pinned), aletheia-works/.github reusables |
+| Local toolchain | mise-en-place pinning bun / opentofu / python / uv / php / ruby / rust |
 | AI agents | Claude Code (implementer and reviewer) |
 
 ## License
@@ -127,5 +150,5 @@ Individual developer project.
 
 ---
 
-*This README will evolve as the project moves through phases.*
-*Current version: Phase 0 — Bootstrap.*
+*This README evolves as the project moves through phases.*
+*Current phase: Phase 6.*

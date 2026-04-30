@@ -139,7 +139,7 @@ as a *follow-up* Issue linked to an in-flight task.
 Claude Code picks up an Issue when:
 
 - The Issue is unambiguous enough that scope creep is unlikely, **and**
-- The work is within the current phase (Phase 0 today), **and**
+- The work is within the current phase (Phase 6 today), **and**
 - The Issue does **not** carry `status: blocked` (see below), **and**
 - No other agent is already assigned.
 
@@ -278,8 +278,13 @@ stop and hand off.
 
 Tracked elsewhere, not here:
 
-- Install Dosu.
-- Continue seeding the Phase 0 Issue backlog.
+- Issue-triage tooling — Phase 5 closed without adopting one
+  (CodeRabbit Issue Enrichment was declined on prior free-tier
+  experience, paid-API alternatives did not match the
+  zero-recurring-cost constraint). The research memo plus a fresh
+  re-evaluation drives the next decision if external Issue volume
+  ever creates pressure. See the
+  [Phase 5 close on the roadmap](./roadmap.md).
 
 The `/claude`-triggered implementation workflow is in place at
 [`.github/workflows/claude-implement.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/claude-implement.yml),

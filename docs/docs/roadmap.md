@@ -1,6 +1,6 @@
 # Roadmap
 
-> Phase 0 through Phase 5 — what a visitor should expect to see land, in
+> The per-phase plan — what a visitor should expect to see land, in
 > what order, framed in terms of the reproduction primitive.
 >
 > Phase titles mirror the GitHub Milestones in
@@ -228,6 +228,71 @@ ecosystem expects rather than a thing one project does.
 **Non-goals for this phase:** a managed service with an SLA (see
 [Non-goals](./non-goals.md#we-are-not-a-managed-service-with-an-sla));
 closing the source; vendor lock-in of any kind.
+
+## Phase 6 — Usability and visual layer
+
+**Milestone:** [Phase 6 — Usability and visual layer](https://github.com/aletheia-works/vivarium/milestones?state=open) *(active, opened 2026-04-29)*
+
+**What lands:**
+
+- **Visual redesign (V).** Maintainer-driven Claude Design mock for the
+  home page, recipe gallery, individual recipe page, and verdict-comparison
+  page; followed by a reusable component library (`RecipeCard`,
+  `VerdictBadge`, `EvidencePanel`, `CodeDiff`, `FacetFilter`) implemented
+  on top of rspress.
+- **Reproduction comparison (R).** Side-by-side rendering of a recipe's
+  original verdict against a contributor's branch-fix verdict, so an
+  AI-generated fix can be checked against the reproduction before the PR
+  is opened. Shipped piece-by-piece: Contract v1 revision 2 (evidence
+  surface) lands first, then the build & verify pipeline, then the
+  comparison-page UI.
+- **Search & discoverability (S).** Faceted gallery search on `language`
+  / `layer` / `symptom` / `severity`, plus a paste-an-error-message →
+  candidate-recipes matcher. Mechanical text matching only in v1.
+- **Manifest authoring UX (M).** Form-driven `manifest.toml` scaffolder
+  on the docs site that walks an external contributor through the
+  Manifest v1 fields and emits a copy-pasteable TOML block.
+- **External AI integration (X).** A Vivarium MCP server exposing the
+  recipe catalogue, recipe metadata, and cached verdict lookups to AI
+  agent clients. Layer 1 only for synchronous-execution surfaces in v1
+  (Layer 2/3 metadata still surfaced; live execution declined).
+- **Localisation (L).** Japanese ⇄ English i18n on the home and the
+  cross-cutting docs (vision, architecture, ai-workflow, roadmap, repro
+  index). Spec pages stay English-only — they target external implementers
+  and benefit from a single canonical text.
+
+**What has shipped so far (cumulative):**
+
+- Contract v1 **revision 2** — evidence surface (logs / exit code /
+  duration on the in-page DOM and envelope). Non-breaking; v1 consumers
+  feature-detect the new field.
+- **Recipes index v1** — `https://aletheia-works.github.io/vivarium/api/recipes.json`
+  is now a live, machine-readable catalogue endpoint with its own
+  [JSON Schema](https://aletheia-works.github.io/vivarium/api/recipes.schema.json)
+  and [spec page](./spec/recipes-index-v1.md).
+- **Vivarium MCP server** — `@aletheia-works/vivarium-mcp`,
+  dual-published to JSR (canonical) and npm (fallback) under
+  `packages/mcp-server/`. Three tools (`list_recipes`, `get_recipe`,
+  `lookup_verdict`) expose the catalogue to AI agent clients.
+- Manifest v1 examples gain a Taplo / Tombi `#:schema` directive so
+  TOML language servers autocomplete and validate the manifest as the
+  maintainer types.
+
+**Closure rule:** **V + R + at least one of S / M / X / L** ships.
+Same precedent as ADR-0012 / ADR-0016: partial sub-stream completion
+is acceptable when the shape is proved.
+
+**What a visitor sees:** the docs site stops feeling like a primitive
+proof and starts feeling like a coherent product. Recipes are
+searchable. Branch-fix verification is one click. AI agent clients can
+discover Vivarium recipes programmatically without scraping the docs
+site. External adopters can scaffold a manifest in the browser.
+
+**Non-goals for this phase:** Layer 2/3 metadata expansion — the
+catalogue stays at the Phase-5-close size unless a Phase 6 sub-stream
+specifically needs new recipes (e.g. R's branch-fix PoC may add a
+simple Python or Ruby recipe if the existing ones are awkward fits for
+source substitution); per-user accounts; hosted execution.
 
 ---
 
