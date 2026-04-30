@@ -3,7 +3,8 @@
 > The reproduction-verdict surface that every Vivarium-compatible
 > reproduction page emits. Stable since Phase 1, locked at v1 by
 > [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md)
-> (private memo).
+> (private memo). Currently at **revision 2** — see the
+> [revision history](#revision-history) at the foot of this page.
 
 ## At a glance
 
@@ -96,6 +97,38 @@ both.
 is set when the page produces (Layer 1) or fetches (Layer 2 / 3) its
 verdict.
 
+### DOM evidence element (optional, revision 2+)
+
+```html
+<div id="evidence" hidden>
+  <pre data-evidence="stdout">…captured stdout…</pre>
+  <pre data-evidence="stderr">…captured stderr…</pre>
+  <span data-evidence="exit-code">0</span>
+  <span data-evidence="duration-ms">123</span>
+</div>
+```
+
+The `#evidence` container is **optional**. Pages predating revision 2
+omit it; v1 consumers ignore the absence. When present, it carries
+machine-readable run evidence used by tooling such as the
+reproduction-comparison UI to render side-by-side panels.
+
+| `[data-evidence]` value | content | typical source |
+|---|---|---|
+| `stdout` | captured standard output | Layer 1: assertion-related text the reproduction emits. Layer 2 / 3: lifted from `verdict.json#stdout`. |
+| `stderr` | captured standard error (may be tail-truncated) | Layer 1: emitted by the reproduction. Layer 2 / 3: lifted from `verdict.json#stderr_tail` (renamed at the lift boundary; see [Verdict snapshot file](#verdict-snapshot-file-verdictjson) below). |
+| `exit-code` | integer exit code, or empty | Layer 2 / 3: `verdict.json#exit_code`. Layer 1: omitted (browser-side has no process exit code). |
+| `duration-ms` | wall-clock duration in milliseconds | mirrors `__VIVARIUM_RESULT__.timing.duration_ms`. |
+
+A page MAY emit a subset of these children. Consumers MUST treat a
+missing `[data-evidence="<key>"]` as `null` / absent, not as an
+error. The `hidden` attribute keeps the surface invisible in
+default rendering; presentation components style and reveal it.
+
+The `stdout` / `stderr` text MAY be truncated to bound page size; by
+convention, Layer 1 helpers cap each at 4 KiB to match the existing
+Layer 2 / 3 `verdict.json#stderr_tail` truncation rule.
+
 ## Result envelope (`VivariumResultV1`)
 
 Type, expressed in TypeScript:
@@ -118,6 +151,14 @@ interface VivariumResultV1 {
     started_at: string;    // ISO-8601
     finished_at: string;   // ISO-8601
     duration_ms: number;   // wall-clock, milliseconds
+  };
+
+  // optional, revision 2+ — see "DOM evidence element" above
+  evidence?: {
+    stdout?: string;       // may be truncated to 4 KiB
+    stderr?: string;       // may be truncated to 4 KiB
+    exit_code?: number | null;  // null on Layer 1; integer on Layer 2 / 3
+    // duration_ms is NOT duplicated here — see `timing.duration_ms`
   };
 }
 ```
@@ -142,6 +183,14 @@ per-page (e.g. pandas reproduction may put `{ wrong_value, expected_value }`,
 a regex reproduction may put `{ matched, expected_match }`). Pages
 document their own `result` shape in their README; the contract only
 guarantees the field exists.
+
+`evidence` is optional and was added in revision 2. Consumers MUST
+feature-detect it (`if (result.evidence) …`) — pages predating
+revision 2 omit the field entirely. The `evidence.stdout` and
+`evidence.stderr` strings on this envelope correspond to the DOM
+`[data-evidence="stdout"]` / `[data-evidence="stderr"]` children
+described above; tooling reading the structured envelope and tooling
+reading the DOM see the same data through two paths.
 
 ## Verdict snapshot file (`verdict.json`)
 
@@ -172,6 +221,30 @@ The schema enforces the v1 invariant: `contract === "v1"` and
 `verdict ∈ {"pass", "fail"}`. Layer 1 does **not** ship a
 `verdict.json`; its verdict is live in-page.
 
+### Lift to the in-page evidence surface (revision 2+)
+
+Layer 2 / Layer 3 pages do not duplicate the snapshot's evidence
+fields into their own DOM at write time — the snapshot is the source.
+The gallery loader lifts them into the [DOM evidence element](#dom-evidence-element-optional-revision-2)
+on page load:
+
+| `verdict.json` source | in-page surface |
+|---|---|
+| `stdout` | `evidence.stdout` envelope field + `[data-evidence="stdout"]` DOM child |
+| `stderr_tail` | `evidence.stderr` envelope field + `[data-evidence="stderr"]` DOM child |
+| `exit_code` | `evidence.exit_code` envelope field + `[data-evidence="exit-code"]` DOM child |
+
+The `stderr_tail` → `evidence.stderr` rename keeps the in-page
+contract surface uniform with Layer 1 (where the reproduction code
+emits the text it wants captured directly, with no "tail" framing).
+The 4 KiB front-back truncation rule is a property of the source
+field; the in-page surface inherits whatever bound the source applied.
+
+The schema is **not** amended for revision 2 — the source fields
+were already present at the snapshot's top level since Phase 3
+(see [ADR-0010](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0010-phase3-catalogue-model.md),
+private memo).
+
 ### Why no `"pending"` in the file
 
 The snapshot is written *after* the recorded program / replay
@@ -189,10 +262,24 @@ The version is carried in two places:
 Both must agree on every page that ships both. A page declaring
 `v1` MUST conform to this specification.
 
-New fields, removed fields, or changed semantics require a v2
-specification page, a v2 JSON Schema sibling, and a separate ADR;
-consumers should be free to support v1 and v2 simultaneously by
-dispatching on the version literal.
+The contract evolves under a two-tier policy:
+
+- **Major bump (v2)** — required for changes to existing v1 fields
+  (renamed, removed, type changed, semantics changed, optional →
+  required). A v2 ships a new spec page, a new JSON Schema sibling,
+  and a separate ADR; consumers will be expected to support v1 and
+  v2 simultaneously by dispatching on the version literal.
+- **Minor revision (within v1)** — used for **optional, additive**
+  surface that v1 consumers can ignore. The version literal stays
+  `"v1"` (no `meta` change, no `verdict.json#contract` change), the
+  same spec page is updated, and the
+  [revision history](#revision-history) below records the addition
+  with date and ADR reference. Consumers feature-detect the new
+  surface (e.g. `if (result.evidence) …`).
+
+This sharpening of the policy was added with revision 2 (see
+[ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md),
+private memo).
 
 There is no current v2.
 
@@ -219,6 +306,26 @@ will replace clause 4's `jq` validators with an `ajv-cli` schema
 validator pointed at the schema file above, keeping clause-4
 enforcement single-sourced.
 
+The optional revision-2 evidence surface deliberately has **no**
+conformance clause: gating an optional surface on CI would create
+the wrong incentive (page authors padding empty evidence elements
+to "pass"). When the gallery's first non-PoC page emits evidence,
+a follow-up Issue can decide whether to enforce shape (e.g. "if
+`#evidence` exists, it must contain at least one
+`[data-evidence]` child") at that point.
+
+## Revision history
+
+The version literal carried in `<meta name="vivarium-contract">` and
+`verdict.json#contract` is `"v1"`; the revisions below are
+non-breaking, additive evolutions of v1's surface. Pre-revision-2
+pages stay conformant unchanged.
+
+| Revision | Date | ADR | Change |
+|---|---|---|---|
+| 1 | Phase 1 (Layer 1 surface) → 2026-04-28 (locked) | [ADR-0008](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0008-phase1-gallery-structure.md) (private memo); locked at v1 by [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md) (private memo) | Initial published surface: `<meta>`, `#verdict[data-verdict]`, JS globals, `VivariumResultV1` envelope, Layer 2/3 `verdict.json` snapshot. |
+| 2 | 2026-04-30 | [ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md) (private memo) | Optional `#evidence` DOM container with `[data-evidence]` children (`stdout`, `stderr`, `exit-code`, `duration-ms`) and matching `__VIVARIUM_RESULT__.evidence` envelope field. Layer 2/3 lift renames `verdict.json#stderr_tail` → `evidence.stderr` at the lift boundary; `verdict.schema.json` is unchanged. Minor-revision policy in [Versioning](#versioning) above is also clarified by this ADR. |
+
 ## References
 
 - [`src/layer1_wasm/_shared/verdict.ts`](https://github.com/aletheia-works/vivarium/blob/main/src/layer1_wasm/_shared/verdict.ts)
@@ -234,3 +341,5 @@ enforcement single-sourced.
 - ADR-0008 — Phase 1 gallery structure (original surface
   definition; private memo).
 - ADR-0014 — this contract's stabilising decision (private memo).
+- ADR-0018 — revision 2 evidence surface and minor-revision policy
+  (private memo).
