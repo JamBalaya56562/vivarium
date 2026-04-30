@@ -1,3 +1,4 @@
+#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json
 # Reference Vivarium manifest — Layer 1 (WASM in-browser).
 #
 # Demonstrates how an external repository would declare a Layer 1

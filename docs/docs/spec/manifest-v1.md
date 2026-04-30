@@ -23,6 +23,7 @@ single TOML file at:
 ```
 
 ```toml
+#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json
 manifest = "v1"
 slug = "bash-local-shadows-exit"
 title = "bash: `local` builtin shadows command exit code"
@@ -42,6 +43,25 @@ expected_verdict = "pass"
 A consumer that wants to run the reproduction reads the manifest,
 dispatches on `layer`, and follows the per-layer convention
 defined below.
+
+## Schema directive
+
+Editors with a TOML language server — for example
+[Taplo](https://taplo.tamasfe.dev) and
+[Tombi](https://tombi-toml.github.io/tombi) — autocomplete and
+validate `manifest.toml` against the JSON Schema when the
+manifest opens with a `#:schema` line:
+
+```toml
+#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json
+manifest = "v1"
+…
+```
+
+The directive is a TOML comment, so it is invisible to plain
+parsers (`tomllib` etc.) and CI validation behaves identically
+with or without it. Cargo and pyproject manifests use the same
+pattern.
 
 ## Why TOML
 

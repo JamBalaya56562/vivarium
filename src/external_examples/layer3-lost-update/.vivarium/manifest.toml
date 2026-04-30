@@ -1,3 +1,4 @@
+#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json
 # Reference Vivarium manifest — Layer 3 (record-replay catalogue).
 #
 # Demonstrates how an external repository would declare a Layer 3
