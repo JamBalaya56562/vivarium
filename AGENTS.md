@@ -174,13 +174,63 @@ normal per-commit granularity applies and force-push to `main` is off-limits.
   from the Conventional-Commit prefix of the PR; `priority: *` and
   `status: *` are set by CI or humans, never by AI guess.
 
-### 4.7 Organisation-level reusable workflows
+### 4.7 AI authorship disclosure
+
+Every PR opened or substantively edited by an AI agent **must** carry the
+`ai: generated` label by the time the PR moves out of draft. The label is
+a self-tag — the agent applies it; humans do not need to add it. CI also
+applies it on `/claude`-triggered PRs via
+[`.github/workflows/claude-implement.yml`](.github/workflows/claude-implement.yml),
+but PRs opened through any other path (Sapling-direct submissions, web UI,
+etc.) must still set the label explicitly. One-liner from the agent's
+shell:
+
+```bash
+gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"
+```
+
+The label is a disclosure mechanism documented in
+[`docs/docs/ai-workflow.md § 4`](docs/docs/ai-workflow.md). It exists so
+reviewers and downstream readers can see at a glance which changes are
+AI-authored; missing it on an AI-authored PR is a defect, not a stylistic
+choice. If a historical PR is found without it (whether merged or open),
+backfilling is a legitimate housekeeping task.
+
+### 4.8 Organisation-level reusable workflows
 
 Shared CI logic (commitlint, release notes, etc.) lives in
 `aletheia-works/.github` as `workflow_call` reusables. Consuming repos —
 including this one — host only thin caller workflows plus any
 `workflow_run` listeners. If a workflow here starts duplicating logic that
 would belong in the org, flag it for promotion rather than copying.
+
+### 4.9 GitHub Actions: latest versions only
+
+When **adding** a new GitHub Actions workflow or **editing** an existing
+one, use the latest published versions of every action and runtime
+referenced. This applies to:
+
+- Marketplace actions — pin to the most recent major tag at the time of
+  authoring (e.g. `actions/checkout@v4`, `actions/setup-node@v4`,
+  `oven-sh/setup-bun@v2`, `denoland/setup-deno@v2`). Do not copy older
+  pins from a sibling workflow that is itself out of date.
+- Runtime versions — Node.js, Deno, Bun, Python, Go, etc.: the current
+  stable release.
+- Reusable-workflow refs — call the `aletheia-works/.github` reusables at
+  their latest tag, not a stale SHA.
+
+Do **not** ship a workflow that is already known to be one Dependabot run
+behind. Dependabot opens its bumps daily; a stale-on-arrival workflow
+just creates an immediate follow-up PR for no benefit. Catching the
+version at authoring time costs one CI roundtrip; catching it via
+Dependabot costs an extra review cycle and an extra merge — strictly
+more expensive.
+
+Reasonable exception: if a newer major bumps an action's interface and
+the migration is non-trivial, pin the older major **with a one-line
+comment** (`# pinned at v3 until <link to issue>`) so the next
+maintainer sees the deliberate choice rather than guessing it is an
+oversight.
 
 ## 5. Three-layer architecture (reference)
 
