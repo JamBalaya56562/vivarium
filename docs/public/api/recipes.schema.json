@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aletheia-works.github.io/vivarium/api/recipes.schema.json",
+  "title": "Vivarium recipes index (v1)",
+  "description": "Machine-generated index of every reproduction this repository hosts. Built at docs build time by docs/scripts/generate-recipes-index.ts and deployed to https://aletheia-works.github.io/vivarium/api/recipes.json. Consumed by the Vivarium MCP server (ADR-0019, private memo) and any other programmatic tool that wants to list, filter, or look up reproductions. The `index` literal carries the format version; minor additive revisions follow ADR-0018's two-tier policy.",
+  "type": "object",
+  "required": ["index", "contract", "recipes"],
+  "additionalProperties": false,
+  "properties": {
+    "index": {
+      "const": "v1",
+      "description": "Index format version literal. Always 'v1' for files validating against this schema. Future versions will be siblings (recipes-v2.schema.json) with their own const."
+    },
+    "contract": {
+      "const": "v1",
+      "description": "The Vivarium runtime verdict contract version that the recipes' pages publish. Always 'v1' as long as Contract v1 is the canonical surface; see https://aletheia-works.github.io/vivarium/spec/contract-v1."
+    },
+    "recipes": {
+      "type": "array",
+      "description": "All reproductions hosted in this repository, sorted by layer then by slug.",
+      "items": { "$ref": "#/$defs/recipeEntry" }
+    }
+  },
+  "$defs": {
+    "recipeEntry": {
+      "type": "object",
+      "required": [
+        "slug",
+        "layer",
+        "project",
+        "issue",
+        "title",
+        "page_url",
+        "source_url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "description": "Kebab-case identifier for the recipe; matches the recipe's directory name under src/layer{N}_*. Same convention as Manifest v1's `slug` field."
+        },
+        "layer": {
+          "type": "integer",
+          "enum": [1, 2, 3],
+          "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = record-replay (image ships with recorded `rr` trace baked in)."
+        },
+        "project": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; will be replaced by frontmatter-driven values when Phase 6 stream S.1 ships."
+        },
+        "issue": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Upstream issue number, parsed from the slug's trailing digits when the slug matches '<project>-<digits>'. Recipes with no upstream issue tracker entry use 0."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable title, extracted from the recipe README's first H1 (with the leading 'Reproduction —' prefix stripped)."
+        },
+        "page_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Live reproduction page URL on GitHub Pages. Layer 1: a WASM-in-browser page that produces a verdict client-side. Layer 2 / 3: a docker-run instructions page that loads the verdict.json snapshot."
+        },
+        "verdict_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the deployed verdict.json snapshot. Layer 2 / 3 only; Layer 1 verdicts are produced live in-page and have no static snapshot. See https://aletheia-works.github.io/vivarium/spec/contract-v1#verdict-snapshot-file-verdictjson."
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "GitHub link to the recipe directory in this repository, useful for human navigation from a programmatic catalogue lookup."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "index": "v1",
+      "contract": "v1",
+      "recipes": [
+        {
+          "slug": "pandas-56679",
+          "layer": 1,
+          "project": "pandas",
+          "issue": 56679,
+          "title": "pandas-dev/pandas#56679",
+          "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas-56679/",
+          "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"
+        },
+        {
+          "slug": "bash-local-shadows-exit",
+          "layer": 2,
+          "project": "bash",
+          "issue": 0,
+          "title": "bash `local` shadows command-substitution exit code",
+          "page_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/",
+          "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/verdict.json",
+          "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "index": "v1",
+  "contract": "v1",
+  "recipes": [
+    {
+      "slug": "cpython-137205",
+      "layer": 1,
+      "project": "cpython",
+      "issue": 137205,
+      "title": "python/cpython#137205",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/cpython-137205/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/cpython-137205"
+    },
+    {
+      "slug": "numpy-28287",
+      "layer": 1,
+      "project": "numpy",
+      "issue": 28287,
+      "title": "numpy/numpy#28287",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/numpy-28287/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/numpy-28287"
+    },
+    {
+      "slug": "pandas-56679",
+      "layer": 1,
+      "project": "pandas",
+      "issue": 56679,
+      "title": "pandas-dev/pandas#56679",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas-56679/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"
+    },
+    {
+      "slug": "php-12167",
+      "layer": 1,
+      "project": "php",
+      "issue": 12167,
+      "title": "php/php-src#12167",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/php-12167/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/php-12167"
+    },
+    {
+      "slug": "regex-779",
+      "layer": 1,
+      "project": "regex",
+      "issue": 779,
+      "title": "rust-lang/regex#779",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/regex-779/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779"
+    },
+    {
+      "slug": "ruby-21709",
+      "layer": 1,
+      "project": "ruby",
+      "issue": 21709,
+      "title": "ruby/ruby#21709",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/ruby-21709/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/ruby-21709"
+    },
+    {
+      "slug": "bash-local-shadows-exit",
+      "layer": 2,
+      "project": "bash",
+      "issue": 0,
+      "title": "bash `local` shadows command-substitution exit code",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/verdict.json"
+    },
+    {
+      "slug": "find-xargs-whitespace",
+      "layer": 2,
+      "project": "find",
+      "issue": 0,
+      "title": "`find … | xargs cmd` is unsafe for whitespace in filenames",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/find-xargs-whitespace/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/find-xargs-whitespace",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/find-xargs-whitespace/verdict.json"
+    },
+    {
+      "slug": "flock-is-advisory",
+      "layer": 2,
+      "project": "flock",
+      "issue": 0,
+      "title": "`flock(2)` is advisory only",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/verdict.json"
+    },
+    {
+      "slug": "postgres-lost-update",
+      "layer": 2,
+      "project": "postgres",
+      "issue": 0,
+      "title": "PostgreSQL lost update under READ COMMITTED",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/verdict.json"
+    },
+    {
+      "slug": "lost-update",
+      "layer": 3,
+      "project": "pthread",
+      "issue": 0,
+      "title": "pthread lost-update data race (canonical)",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/lost-update/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway/lost-update",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/lost-update/verdict.json"
+    }
+  ]
+}

@@ -5,8 +5,9 @@
   "description": "Documentation site for Vivarium, built with rspress.",
   "type": "module",
   "scripts": {
-    "dev": "rspress dev",
-    "build": "rspress build",
+    "generate-index": "bun run scripts/generate-recipes-index.ts",
+    "dev": "bun run generate-index && rspress dev",
+    "build": "bun run generate-index && rspress build",
     "preview": "rspress preview"
   },
   "devDependencies": {

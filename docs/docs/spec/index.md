@@ -25,7 +25,16 @@ cannot run live in-page.
   JSON Schema (draft 2020-12) for the manifest after TOML → JSON
   conversion.
 
-There is no v2 of either surface today. Future bumps will land as
+### Catalogue index (machine-readable)
+
+- [Recipes index v1](./recipes-index-v1.md) — current. Machine-generated
+  JSON listing of every reproduction this repository hosts. Consumed by
+  the Vivarium MCP server and other programmatic catalogue tooling.
+- [`recipes.schema.json`](https://aletheia-works.github.io/vivarium/api/recipes.schema.json) —
+  JSON Schema (draft 2020-12) for the index.
+- Live endpoint: <https://aletheia-works.github.io/vivarium/api/recipes.json>
+
+There is no v2 of any surface today. Future bumps will land as
 siblings on this page; v1 will remain readable for
 backward-compatible consumers.
 
