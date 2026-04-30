@@ -69,6 +69,10 @@ locals {
       color       = "ededed"
       description = "CI/CD pipeline"
     }
+    "scope: docs" = {
+      color       = "c2e0c6"
+      description = "Documentation site (rspress) and public spec pages under docs/"
+    }
     "scope: ux" = {
       color       = "ff69b4"
       description = "User experience"
