@@ -36,10 +36,15 @@ jobs:
   backup:
     name: Backup State to Release
     runs-on: ubuntu-latest
-    # When triggered via workflow_run, only run if the apply succeeded.
+    # Skip on forks. The schedule trigger fires in any fork that has
+    # Actions enabled, but forks have no terraform-state artifact to back
+    # up and lack the variables/permissions the upstream backup relies on.
+    # Combined with the workflow_run-success gate so a workflow_run from a
+    # failed (or non-existent) apply never produces a release.
     if: |
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.repository_owner == 'aletheia-works' &&
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.conclusion == 'success')
 
     steps:
       - name: Checkout
