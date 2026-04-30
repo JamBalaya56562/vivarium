@@ -18,8 +18,12 @@
   durable decisions over quick wins.
 - **AI-delegated development.** Humans set direction and merge; AI agents
   implement, review, and iterate. See [`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md).
-- **Current phase: Phase 0 — Bootstrap.** Infrastructure-as-Code foundations
-  only. Product code has not started.
+- **Current phase: Phase 6 — Usability and visual layer.** Phases 0–5
+  are closed (see [`docs/docs/roadmap.md`](docs/docs/roadmap.md) for
+  what shipped). Phase 6 builds the interaction layer above the
+  existing primitives: visual redesign, reproduction comparison,
+  search, manifest authoring UX, MCP server, and i18n. Closure rule
+  is V + R + at least one of S/M/X/L per ADR-0017 (private memo).
 
 Deeper strategy context is in `_context/` (local-only, gitignored). Treat those
 documents as canonical when they conflict with anything here.
@@ -83,21 +87,37 @@ vivarium/
 ├── CLAUDE.md              # Claude Code-specific addenda
 ├── README.md              # public project overview
 ├── LICENSE                # Apache-2.0
+├── mise.toml              # mise-en-place tool versions (bun, opentofu, etc.)
 ├── .github/
 │   ├── workflows/         # CI/CD — thin callers into aletheia-works/.github reusables
 │   ├── dependabot.yml
 │   ├── labeler.yml        # path-based label rules (mechanical)
 │   └── release.yml
 ├── infra/
-│   └── github/            # GitHub Settings-as-Code via OpenTofu
-├── docs/                  # rspress docs site (config at top level, content in docs/docs/)
+│   └── github/            # GitHub Settings-as-Code via OpenTofu (labels, milestones, branch protection)
+├── docs/                  # rspress docs site
 │   ├── package.json       # rspress + bun deps
 │   ├── rspress.config.ts
 │   ├── tsconfig.json
 │   ├── bun.lock
-│   └── docs/              # tracked public docs (vision, architecture, workflow)
-└── _context/              # gitignored: private strategy memos, handoffs, drafts
+│   ├── scripts/           # build-time scripts (e.g. recipes-index generator)
+│   ├── public/
+│   │   ├── api/           # machine-readable endpoints — recipes.json, recipes.schema.json
+│   │   └── spec/          # JSON Schemas — verdict.schema.json, manifest.schema.json
+│   └── docs/              # tracked markdown content (vision, architecture, spec, roadmap, …)
+├── packages/
+│   └── mcp-server/        # @aletheia-works/vivarium-mcp (JSR + npm dual publish)
+├── src/
+│   ├── layer1_wasm/       # Layer 1 reproductions (Pyodide, Ruby.wasm, php-wasm, Rust wasm32-wasip1)
+│   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
+│   ├── layer3_thirdway/   # Layer 3 reproductions (record-replay, etc.)
+│   └── external_examples/ # reference Manifest v1 fixtures, one per layer
+└── _context/              # gitignored: private strategy memos, handoffs, ADRs, drafts
 ```
+
+`src/` is reserved for reproduction recipes; runtime artefacts the
+project publishes (npm / JSR packages, future CLI, etc.) live under
+`packages/`.
 
 ### 4.2 `docs/` vs `_context/`
 
@@ -147,6 +167,12 @@ vivarium/
 
 ### 4.5 Early-stage commit policy
 
+> **Historical — kept for context.** Phase 6 is well past this gate;
+> the first PR landed during Phase 0, and per-commit granularity has
+> applied since then. Force-push to `main` is now strictly off-limits
+> per §2. The text below is preserved so future bootstrap repos in
+> the org can copy the policy.
+
 Until the first PR has been merged, treat this repo as being in bootstrap
 shape:
 
@@ -169,6 +195,18 @@ normal per-commit granularity applies and force-push to `main` is off-limits.
   Non-prefixed labels (`good-first-issue`, `help-wanted`, `discussion`) keep
   hyphenated single-word form.
 - Label definitions live in [`infra/github/labels.tf`](infra/github/labels.tf).
+  New labels are added by editing that file (and the matching path rule
+  in [`.github/labeler.yml`](.github/labeler.yml) when `scope: *` is
+  involved), never via the GitHub UI — the IaC apply propagates the
+  change. Milestones follow the same pattern via
+  [`infra/github/milestones.tf`](infra/github/milestones.tf).
+- **Issue Type field is required.** Every Issue must carry a GitHub
+  Issue Type (Bug / Feature / Task) set explicitly via the GraphQL
+  `updateIssueIssueType` mutation. The `type: *` label alone is
+  insufficient — Projects v2 swimlanes and queries dispatch on the
+  Issue Type field, not on the label. AI agents may need a PAT with
+  Issue Types: read+write to set this; if scope is missing, leave the
+  Issue created and ask the human to set the field.
 - **Mechanical labelling only.** `scope: *` comes from
   [`.github/labeler.yml`](.github/labeler.yml) path rules; `type: *` comes
   from the Conventional-Commit prefix of the PR; `priority: *` and
@@ -265,6 +303,88 @@ and the migration is non-trivial, pin the older major's latest SHA
 **with a one-line comment** (`# pinned at v3 until <link to issue>`)
 so the next maintainer sees the deliberate choice rather than
 guessing it is an oversight.
+
+### 4.10 Toolchain (mise-managed)
+
+Local development tool versions are pinned in
+[`mise.toml`](mise.toml) at the repo root. After cloning, run
+`mise install` to materialise everything declared there. Currently
+pinned: `bun` (the primary JS runtime — docs site and
+`packages/mcp-server`), `opentofu` (infrastructure-as-code), `python`
++ `uv` (Layer 1 native re-verification, Phase 5 manifest validation
+toolchain), and the Layer 1 native interpreters (`php`, `ruby`, plus
+`rust` for `wasm32-wasip1` artefacts).
+
+CI does **not** use mise — workflow steps spell out
+`oven-sh/setup-bun@…`, `actions/setup-node@…`, etc. directly so the
+runtime is auditable from the workflow YAML alone. Versions in
+`mise.toml` and CI workflows should converge but are independently
+maintained: a CI bump and a `mise.toml` bump can land in separate
+PRs.
+
+When adding a new tool to the project, pin it in `mise.toml` first;
+that establishes a single source of truth before any script or
+README mentions the tool by name.
+
+### 4.11 Spec evolution policy
+
+Public specs (Contract v1, Manifest v1, Recipes index v1, future
+spec pages) follow a two-tier evolution policy, codified by ADR-0018:
+
+| Change shape | Verdict |
+|---|---|
+| New **optional** field that v1 consumers can ignore | Same-page **revision** — append to the spec page's revision-history footer with date and ADR reference; the version literal stays at `"v1"`. |
+| Rename, remove, type change, semantics change, optional → required | **vN+1** — new spec page (`contract-v2.md`), new JSON Schema sibling (`verdict-v2.schema.json`), new ADR. Old spec page stays readable so consumers can dispatch on the version literal. |
+
+Every spec page carries its version literal in the file the consumers
+read (`<meta name="vivarium-contract">` for Contract v1,
+`manifest = "v1"` for Manifest v1, `index = "v1"` for the recipes
+index). Revisions never touch that literal; consumers feature-detect
+new optional surface.
+
+### 4.12 Package distribution
+
+Runtime artefacts the project publishes (Vivarium MCP server today,
+future CLI / SDK tomorrow) follow ADR-0019's distribution pattern:
+
+- **JSR canonical + npm fallback (dual publish).** Both registries
+  carry the same package; JSR is the canonical source for supply-chain
+  defences (no postinstall scripts in the spec, OIDC-only publish via
+  Sigstore provenance, scope ↔ GitHub-org binding, source-only
+  publish), npm carries `npx` ergonomics that AI agent clients
+  expect. Same name, same version on both registries.
+- **OIDC trusted publishing + Sigstore provenance** on both registries
+  — no long-lived registry tokens stored as repo secrets.
+- **Tag form**: `<package-name>-v<semver>` (e.g. `mcp-server-v0.1.0`),
+  matching `semantic-release-monorepo`'s default for monorepo single-
+  package tags. Each `packages/<name>/` directory has its own
+  prefixed tags; the repo never carries an unprefixed `v…` tag once
+  a second package is added.
+
+### 4.13 Architecture decision records
+
+Strategic and load-bearing decisions land as ADRs in
+`_context/decisions/NNNN-<short-slug>.md`, using
+`_context/decisions/_template.md` as the starting structure. Numbering
+is sequential and never re-used; superseded ADRs keep their original
+number with a `Status: Superseded by ADR-NNNN` note rather than being
+deleted. ADRs are gitignored — they are private working memos, not
+public docs. Reasoning that should be visitor-facing belongs in
+`docs/docs/` (vision, architecture, roadmap, non-goals, ai-workflow).
+
+Write an ADR when:
+
+- The decision has meaningful alternatives a reasonable person could
+  prefer.
+- The decision affects multiple areas of the project (architecture,
+  infrastructure, workflow).
+- The decision is hard to reverse — changing it later costs more
+  than a normal refactor.
+- The decision is load-bearing on other decisions.
+
+A trivial style choice or a day-to-day implementation pick does not
+warrant an ADR; AGENTS.md or tooling configuration is the right home
+for those.
 
 ## 5. Three-layer architecture (reference)
 
