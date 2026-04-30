@@ -1,0 +1,56 @@
+{
+  "name": "@aletheia-works/vivarium-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing the Vivarium reproduction catalogue (list_recipes, get_recipe, lookup_verdict) to AI agent clients (Claude Code, Cline, Cursor, Continue, etc.).",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/aletheia-works/vivarium/tree/main/packages/mcp-server",
+  "bugs": {
+    "url": "https://github.com/aletheia-works/vivarium/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aletheia-works/vivarium.git",
+    "directory": "packages/mcp-server"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "vivarium-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src/bundled",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=24",
+    "bun": ">=1.2.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "vivarium",
+    "bug-reproduction",
+    "catalogue",
+    "ai-tools"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

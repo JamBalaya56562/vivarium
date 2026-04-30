@@ -44,9 +44,35 @@ updates:
       include: "scope"
     open-pull-requests-limit: 3
 
+  # ─── bun — packages/mcp-server ───────────────
+  # Vivarium MCP server (@aletheia-works/vivarium-mcp). See ADR-0019
+  # (private memo) for the package's design. Uses Dependabot's `bun`
+  # ecosystem (GA 2025-02), which reads bun.lock directly rather than
+  # treating the project as npm.
+  - package-ecosystem: "bun"
+    directory: "/packages/mcp-server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "type: chore"
+      - "scope: js"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Major bumps need targeted human/AI review — covered by AGENTS.md
+    # §4.9's "latest at authoring time" rule when adding or editing
+    # workflows / packages, not by automated dependabot merges.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+
   # Future ecosystems to enable in Phase 1+:
   #
-  # - package-ecosystem: "pip"      # Python deps
-  # - package-ecosystem: "cargo"    # Rust deps
-  # - package-ecosystem: "npm"      # JS deps
-  # - package-ecosystem: "docker"   # Dockerfile base images
+  # - package-ecosystem: "pip"      # Python deps (Layer 1 Pyodide-side, etc.)
+  # - package-ecosystem: "cargo"    # Rust deps (Layer 1 wasm32-wasi)
+  # - package-ecosystem: "docker"   # Dockerfile base images (Layer 2)

@@ -1,0 +1,97 @@
+name: publish-mcp
+
+# Dual-publishes packages/mcp-server/ to JSR (canonical) and npm
+# (fallback) on `mcp-server-v*.*.*` tag push, with build provenance
+# via OIDC trusted publishing on both registries. See ADR-0019 §2 / §5
+# (private memo) for the design rationale.
+#
+# Tag convention: `mcp-server-v0.1.0` — `<package-name>-v<semver>`,
+# matching semantic-release-monorepo's default for monorepo single-
+# package tags. Future packages in this repo (e.g. a CLI) get their
+# own prefixed tags. The version literal published comes from
+# packages/mcp-server/{package.json,jsr.json} — both must be bumped
+# together; the tag is for triggering, not authority.
+#
+# Manual trigger is supported for re-publishing a specific version
+# after fixing CI plumbing (does not change the version literal).
+#
+# Toolchain: Bun end-to-end. Install / build / test all run on Bun;
+# the npm-side publish goes through `bunx npm publish --provenance`
+# because Bun does not yet support npm OIDC trusted publishing
+# directly (oven-sh/bun#15601, OPEN as of 2026-04). `bunx npm`
+# fetches and runs the npm CLI through Bun without needing a
+# separate Node install — the workflow does not call
+# `actions/setup-node`. JSR publish runs through `bunx jsr publish`,
+# which uses OIDC automatically when `id-token: write` is granted.
+
+on:
+  push:
+    tags:
+      - 'mcp-server-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag-style label, informational only (e.g. mcp-server-v0.1.0). Version is read from package.json.'
+        required: false
+
+permissions:
+  contents: read
+  id-token: write   # OIDC for both npm provenance and JSR
+
+jobs:
+  publish:
+    name: Publish to JSR + npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/mcp-server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Sync bundled recipes snapshot
+        # Copy the latest tracked recipes index into the package so the
+        # offline fallback embedded with this release is current at
+        # publish time. The Pages-hosted live version remains canonical
+        # at runtime; this snapshot only matters when the agent is
+        # offline or the Pages fetch fails.
+        run: cp ../../docs/public/api/recipes.json src/bundled/recipes.json
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Test
+        run: bun test
+
+      - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
+        run: bunx npm publish --provenance --access public
+        env:
+          # Tells the npm CLI which registry to authenticate against; in
+          # combination with `id-token: write` permissions and
+          # `publishConfig.access: public` in package.json, this is what
+          # OIDC trusted publishing requires on the consuming side.
+          NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
+
+      - name: Publish to JSR (provenance via OIDC)
+        run: bunx jsr publish
+
+      - name: Summary
+        run: |
+          {
+            echo "## Published"
+            echo ""
+            echo "* **npm**: https://www.npmjs.com/package/@aletheia-works/vivarium-mcp"
+            echo "* **JSR**: https://jsr.io/@aletheia-works/vivarium-mcp"
+            echo ""
+            echo "Provenance is recorded in the public Sigstore Rekor"
+            echo "transparency log for both registries."
+          } >> "$GITHUB_STEP_SUMMARY"
