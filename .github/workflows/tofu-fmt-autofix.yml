@@ -27,7 +27,7 @@ jobs:
   autofix:
     # Pinned by commit SHA (org enforces sha_pinning_required). Update
     # this ref when the reusable workflow meaningfully changes.
-    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@7d0327b430d3760d7d993c426395db6776459a7e # main
+    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
     with:
       working_directory: infra/github
       commit_message: 'style(infra): tofu fmt -recursive'
