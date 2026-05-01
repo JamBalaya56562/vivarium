@@ -28,5 +28,10 @@
     "text": "Reproductions",
     "link": "/repro/",
     "activeMatch": "/repro/"
+  },
+  {
+    "text": "日本語",
+    "link": "/ja/",
+    "activeMatch": "/ja/"
   }
 ]

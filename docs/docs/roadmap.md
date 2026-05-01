@@ -284,6 +284,14 @@ closing the source; vendor lock-in of any kind.
 - Manifest v1 examples gain a Taplo / Tombi `#:schema` directive so
   TOML language servers autocomplete and validate the manifest as the
   maintainer types.
+- **Japanese home (sub-stream L, first slice).** A Japanese landing
+  page lives at [`/ja/`](/ja/), reachable via the navbar's `日本語`
+  link. Existing English URLs are intentionally unchanged — the
+  initial slice adds a parallel `ja/` subtree rather than restructuring
+  into a `/en/`-`/ja/` split, so SEO and external links to existing
+  pages stay intact. Cross-cutting docs (vision, architecture,
+  ai-workflow, roadmap, repro index) are translated incrementally in
+  follow-up PRs; spec pages stay English-only by Phase 6 design.
 
 **Closure rule:** **V + R + at least one of S / M / X / L** ships.
 Same precedent as ADR-0012 / ADR-0016: partial sub-stream completion
