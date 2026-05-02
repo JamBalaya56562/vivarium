@@ -30,7 +30,7 @@ jobs:
     # would otherwise trigger a guaranteed failure run.
     if: github.repository_owner == 'aletheia-works'
     # Pinned by commit SHA (org enforces sha_pinning_required).
-    uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
+    uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github
     secrets: inherit

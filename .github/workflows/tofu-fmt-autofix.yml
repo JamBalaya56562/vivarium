@@ -14,7 +14,12 @@ name: Tofu fmt autofix
 # inside Terraform Plan.
 
 on:
-  pull_request:
+  # `pull_request_target` so fork PRs see autofix run too. GitHub Actions
+  # strips secrets and downgrades GITHUB_TOKEN to read-only on
+  # `pull_request` from a fork; the reusable workflow needs the
+  # TF_TOKEN_GITHUB PAT to push fmt fixes back to the contributor's
+  # fork. See the security note in the reusable workflow.
+  pull_request_target:
     paths:
       - 'infra/github/**'
       - '.github/workflows/tofu-fmt-autofix.yml'
@@ -25,9 +30,10 @@ permissions:
 
 jobs:
   autofix:
+    if: github.repository_owner == 'aletheia-works'
     # Pinned by commit SHA (org enforces sha_pinning_required). Update
     # this ref when the reusable workflow meaningfully changes.
-    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
+    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github
       commit_message: 'style(infra): tofu fmt -recursive'
