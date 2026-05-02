@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "match",
+    "label": "エラーからレシピを探す"
+  },
+  {
+    "type": "file",
     "name": "compare",
     "label": "ブランチ修正の比較"
   }
