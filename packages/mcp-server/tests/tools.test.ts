@@ -8,6 +8,7 @@ import { _resetCacheForTesting, INDEX_URL } from '../src/catalogue.ts';
 import { getRecipe } from '../src/tools/get_recipe.ts';
 import { listRecipes } from '../src/tools/list_recipes.ts';
 import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
+import { matchError } from '../src/tools/match_error.ts';
 
 const FIXTURE_INDEX = {
   index: 'v1',
@@ -21,6 +22,10 @@ const FIXTURE_INDEX = {
       title: 'pandas-dev/pandas#56679',
       page_url: 'https://example.invalid/repro/pandas-56679/',
       source_url: 'https://example.invalid/src/pandas-56679',
+      language: 'python',
+      symptom: 'dtype-mismatch',
+      severity: 'regression',
+      tags: ['empty-series', 'empty-dataframe', 'type-inference'],
     },
     {
       slug: 'bash-local-shadows-exit',
@@ -31,6 +36,10 @@ const FIXTURE_INDEX = {
       page_url: 'https://example.invalid/repro/bash-local-shadows-exit/',
       verdict_url: 'https://example.invalid/repro/bash-local-shadows-exit/verdict.json',
       source_url: 'https://example.invalid/src/bash-local-shadows-exit',
+      language: 'shell',
+      symptom: 'local-shadows-exit-status',
+      severity: 'footgun',
+      tags: ['command-substitution', 'exit-code'],
     },
     {
       slug: 'lost-update',
@@ -41,6 +50,10 @@ const FIXTURE_INDEX = {
       page_url: 'https://example.invalid/repro/lost-update/',
       verdict_url: 'https://example.invalid/repro/lost-update/verdict.json',
       source_url: 'https://example.invalid/src/lost-update',
+      language: 'c',
+      symptom: 'lost-update-data-race',
+      severity: 'datarace',
+      tags: ['rr-replay', 'deterministic'],
     },
   ],
 };
@@ -151,5 +164,64 @@ describe('lookup_verdict', () => {
   it('returns kind=not_found for unknown slug', async () => {
     const r = await lookupVerdict({ slug: 'does-not-exist' });
     assert.equal(r.kind, 'not_found');
+  });
+});
+
+describe('match_error', () => {
+  it('returns the highest-scoring recipe for a relevant error fragment', async () => {
+    const r = await matchError({
+      text: 'ValueError: dtype mismatch on empty Series in pandas DataFrame',
+    });
+    assert.equal('ok' in r && r.ok, true);
+    if ('ok' in r && r.ok) {
+      assert.equal(r.matches[0]!.recipe.slug, 'pandas-56679');
+      assert.ok(r.matches[0]!.score >= 5);
+    }
+  });
+
+  it('orders multiple matches by score descending', async () => {
+    const r = await matchError({
+      text: 'pandas dtype mismatch and bash local exit-code shadows',
+    });
+    if ('ok' in r && r.ok) {
+      assert.ok(r.matches.length >= 2);
+      for (let i = 1; i < r.matches.length; i++) {
+        assert.ok(
+          r.matches[i - 1]!.score >= r.matches[i]!.score,
+          'scores must be non-increasing',
+        );
+      }
+    }
+  });
+
+  it('returns empty matches for fully unrelated text', async () => {
+    const r = await matchError({ text: 'completely unrelated random words' });
+    if ('ok' in r && r.ok) {
+      assert.equal(r.matches.length, 0);
+    }
+  });
+
+  it('returns ok:false on missing text', async () => {
+    const r = await matchError({ text: '' });
+    assert.equal('ok' in r && r.ok, false);
+  });
+
+  it('respects the limit argument', async () => {
+    const r = await matchError({
+      text: 'pandas dtype mismatch bash local exit pthread race',
+      limit: 1,
+    });
+    if ('ok' in r && r.ok) {
+      assert.equal(r.matches.length, 1);
+    }
+  });
+
+  it('exposes the matched tokens per result', async () => {
+    const r = await matchError({ text: 'dtype mismatch' });
+    if ('ok' in r && r.ok && r.matches.length > 0) {
+      const top = r.matches[0]!;
+      const tokens = top.matched.map((m) => m.token);
+      assert.ok(tokens.includes('dtype') || tokens.includes('mismatch'));
+    }
   });
 });
