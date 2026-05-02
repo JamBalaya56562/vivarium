@@ -1,8 +1,13 @@
-// MCP server wiring — registers the three v1 tools (list_recipes,
-// get_recipe, lookup_verdict) and connects a stdio transport.
+// MCP server wiring — registers the v1 tools and connects a stdio
+// transport.
 //
-// See ADR-0019 §3 for the tool surface decision and §1 for the
-// stdio-transport choice.
+// Tool surface:
+//   list_recipes / get_recipe / lookup_verdict — ADR-0019 §3 (X.1, v0.1).
+//   match_error                                 — Phase 6 X.2, mirrors the
+//                                                 docs S.2 matcher
+//                                                 (ADR-0025 §Neutral).
+//
+// See ADR-0019 §1 for the stdio-transport choice.
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -21,6 +26,11 @@ import {
   LOOKUP_VERDICT_TOOL,
   lookupVerdict,
 } from './tools/lookup_verdict.js';
+import {
+  MATCH_ERROR_TOOL,
+  matchError,
+  type MatchErrorArgs,
+} from './tools/match_error.js';
 
 const SERVER_NAME = 'vivarium-mcp';
 // Keep in sync with package.json + jsr.json. Updated by the publish
@@ -35,7 +45,12 @@ export function createServer(): Server {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [LIST_RECIPES_TOOL, GET_RECIPE_TOOL, LOOKUP_VERDICT_TOOL],
+    tools: [
+      LIST_RECIPES_TOOL,
+      GET_RECIPE_TOOL,
+      LOOKUP_VERDICT_TOOL,
+      MATCH_ERROR_TOOL,
+    ],
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
@@ -53,6 +68,9 @@ export function createServer(): Server {
           break;
         case 'lookup_verdict':
           payload = await lookupVerdict(args as { slug: string });
+          break;
+        case 'match_error':
+          payload = await matchError(args as unknown as MatchErrorArgs);
           break;
         default:
           return {
