@@ -365,6 +365,10 @@ locals {
       state       = "closed"
       due_date    = "2026-05-02"
     }
+    "Phase 7 — First-30-minutes onboarding" = {
+      description = "Turn the Phase 6 surface from 'primitives are usable' into 'a stranger can pick this up cold'. UI brush-up (V′) + onboarding documentation (D) co-defined; AI-slop verification flow (B3) wires R.2 Path A + R.3 + MCP into one walkthrough; A-tail clears Phase 6 deferred items (ajv-standalone migration, match_error v2). Closes when V′ + D + B3 ship; A-tail items are optional. EN+JA same-PR is the i18n default."
+      state       = "open"
+    }
   }
 }
 

@@ -88,7 +88,9 @@ R.3 比較ページ UI はこのバンドル構造を正確に消費する。
 | exit code | （例）0 | （例）1 |
 
 続いて `expected_verdict` アサーションの「期待通り」/ 「期待と不一致」を
-1 行で記述する。このサマリーは R.3 UI がリリースされるまでの代替品であり、
+1 行で記述する。Markdown サマリーはワークフロー実行ページ上の at-a-glance
+ビューだ。サイドバイサイド比較サーフェスが必要なら、ワークフローのアーティファクト
+zip を [比較ページ](../repro/compare.mdx) に file-drop または paste で渡す。
 どちらにしてもアーティファクトが真実のソースだ。
 
 ## このパイプラインがしないこと
@@ -113,6 +115,9 @@ R.3 比較ページ UI はこのバンドル構造を正確に消費する。
 
 ## 関連情報
 
+- [比較ページ](../repro/compare.mdx) — このパイプラインのアーティファクトバンドルを
+  消費する R.3 のサイドバイサイド UI（file-drop、URL パラメータ、JSON paste の
+  3 経路）。
 - [Contract v1](./contract-v1.md) — このパイプラインが出力・消費する verdict サーフェス。
 - [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) —
   バンドルの両エントリが検証に使用するスキーマ。
