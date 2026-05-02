@@ -281,10 +281,18 @@ bunx playwright install --with-deps chromium
 bun run test
 '''
 
+[tasks."ci:mcp"]
+description = "Local equivalent of test-mcp.yml"
+dir = "packages/mcp-server"
+run = '''
+bun install --frozen-lockfile
+bun run test
+'''
+
 [tasks."ci:commitlint"]
 description = "Lint the most recent commit message against Conventional Commits"
 run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 
 [tasks."ci:all"]
-description = "Run all local CI tasks (docs + repro + commitlint)"
-depends = ["ci:docs", "ci:repro", "ci:commitlint"]
+description = "Run all local CI tasks (docs + mcp + repro + commitlint)"
+depends = ["ci:docs", "ci:mcp", "ci:repro", "ci:commitlint"]
