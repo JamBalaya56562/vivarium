@@ -362,7 +362,8 @@ locals {
     }
     "Phase 6 — Usability and visual layer" = {
       description = "Interaction layer above existing primitives: visual redesign (Claude Design mock + component library), reproduction comparison (branch-fix vs original verdict), search & discoverability, manifest authoring UX, MCP server, i18n. Closes when V + R + at least one of S/M/X/L ships."
-      state       = "open"
+      state       = "closed"
+      due_date    = "2026-05-02"
     }
   }
 }
