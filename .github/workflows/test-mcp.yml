@@ -1,0 +1,55 @@
+name: Test MCP
+
+# Verifies that the @aletheia-works/vivarium-mcp package's test suite
+# (`bun test` against `packages/mcp-server/tests/*.test.ts`) still
+# passes on every PR that touches the MCP server. Without this, MCP
+# regressions would only surface at tag-push time via
+# `publish-mcp.yml`, by which point a broken release is already
+# happening.
+#
+# Tooling: single-tool job (bun only). Uses `oven-sh/setup-bun`
+# directly rather than the local setup-mise composite — there is
+# nothing here that needs the rest of mise.toml.
+#
+# Fork-PR safe: uses `pull_request` (NOT `pull_request_target`), so
+# the workflow runs on the fork's code with the fork's GITHUB_TOKEN.
+# No secrets are needed (test runs are read-only and produce no
+# external side effects), so no permissions or credentials need to
+# be elevated.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/mcp-server/**'
+      - '.github/workflows/test-mcp.yml'
+
+permissions:
+  contents: read
+
+# Only keep the most recent test run per PR. If a new commit
+# supersedes an earlier one, cancel the stale run to save Actions
+# minutes.
+concurrency:
+  group: test-mcp-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test MCP server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/mcp-server
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install + test
+        run: |
+          bun install --frozen-lockfile
+          bun run test
