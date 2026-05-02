@@ -6,11 +6,12 @@ name: deploy-docs
 # Prerequisites (one-time setup):
 # - Repo Settings → Pages → Source: "GitHub Actions".
 #
-# Tool versions:
-# - `.mise.toml` declares `bun = "latest"` for local development.
-# - CI uses `oven-sh/setup-bun` directly (an allowlisted action) rather
-#   than `jdx/mise-action`, which is not on the repo's `selected-actions`
-#   patterns. Keep `bun-version` in sync with the intent of `.mise.toml`.
+# Tooling: multi-tool job (bun + rust) — uses the local setup-mise
+# composite action because rust is needed for `wasm32-wasip1` builds
+# alongside bun for the rspress site / Layer 1 TS, and mise reads
+# both pins from `mise.toml` so versions stay in lockstep with local
+# development. Single-tool workflows (test-docs-build, publish-mcp,
+# branch-fix-verdict) use `oven-sh/setup-bun` directly instead.
 #
 # Layout:
 # - `docs/` holds the rspress site (config, lockfile, markdown content).
@@ -66,16 +67,18 @@ jobs:
         with:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Setup mise (bun)
+        # Installs the project-wide tools listed in `[tools]` (bun,
+        # opentofu, uv). Per-task language toolchains (`rust@1.84.0`
+        # for the wasm32-wasip1 build, etc.) auto-install on first
+        # `mise run` via the task's `use = [...]` declaration in
+        # mise.toml — keeping per-recipe version flexibility.
+        uses: ./.github/actions/setup-mise
         with:
-          bun-version: latest
+          tools: bun
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
 
       - name: Install ajv-cli for verdict schema validation
         # Validates each Layer 2 verdict.json against
@@ -83,79 +86,51 @@ jobs:
         # after CI writes it, before the bundling step copies the
         # directory into the Pages artefact. Catches any malformed
         # snapshot at deploy time rather than letting it ship.
-        # `bun add --global` puts `ajv` on PATH for subsequent steps.
-        working-directory: ${{ github.workspace }}
-        run: bun add --global ajv-cli@5 ajv-formats
-
-      - name: Build docs
-        run: bun run build
-
-      - name: Install Layer 1 dependencies
-        # `src/layer1_wasm/` has its own bun lockfile (TypeScript devDep).
-        # Keep this step ordered after `bun install` for the docs site so
-        # the steps' caches are independent.
-        working-directory: ${{ github.workspace }}/src/layer1_wasm
-        run: bun install --frozen-lockfile
-
-      - name: Build Layer 1 TypeScript sources
-        # Emits side-by-side `.js` files for every `.ts` source — these
-        # are what the bundling step below copies into the Pages artefact.
-        working-directory: ${{ github.workspace }}/src/layer1_wasm
-        run: bun run build
-
-      - name: Install Rust toolchain (for compiled-language reproductions)
-        # Vivarium pins Rust in `.mise.toml`; CI installs the same
-        # version via rustup directly because `jdx/mise-action` is not
-        # on the repo's allowlist. Adds the `wasm32-wasip1` target so
-        # each `<slug>/Cargo.toml` can compile to a browser-loadable
-        # artefact (the page boots it via `@bjorn3/browser_wasi_shim`).
-        # Skipped silently if no Rust crate is present.
         #
-        # Override the job-level `working-directory: docs` so the glob
-        # below resolves against the repo root — without this the
-        # `crates=(...)` array stays empty, the step exits early, and
-        # the next step then fails with `can't find crate for 'core'`
-        # because rustup never ran.
-        working-directory: ${{ github.workspace }}
+        # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
+        # ajv-cli + ajv-formats co-resolve without depending on bun's
+        # global bin being on PATH (`oven-sh/setup-bun` adds it,
+        # `setup-mise`'s bun does not), and without leaking ajv into
+        # any tracked package.json.
         run: |
-          set -euo pipefail
-          shopt -s nullglob
-          crates=(src/layer1_wasm/*/Cargo.toml)
-          if [ ${#crates[@]} -eq 0 ]; then
-            echo "No src/layer1_wasm/*/Cargo.toml; skipping Rust setup."
-            exit 0
-          fi
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
-            sh -s -- -y --profile minimal --default-toolchain 1.84.0
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          "$HOME/.cargo/bin/rustup" target add wasm32-wasip1
+          cd "$RUNNER_TEMP"
+          bun init -y >/dev/null
+          bun add ajv-cli@5 ajv-formats
+          # Both forms — `$AJV_BIN` for explicit yaml callers, and the
+          # bin dir on `$GITHUB_PATH` so shell scripts (e.g.
+          # `scripts/capture_layer2_verdict.sh`) can call `ajv` directly
+          # without knowing about this install location.
+          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
 
-      - name: Build Layer 1 Rust artefacts (wasm32-wasip1)
-        # Compiles every `src/layer1_wasm/<slug>/Cargo.toml` for
-        # `wasm32-wasip1` and copies the resulting `.wasm` next to
-        # the page's `index.html` (`<slug>/repro.wasm`), where the
-        # subsequent bundling step copies it into the Pages artefact
-        # alongside the rest of the directory. The bin name is fixed
-        # at `repro` by convention so this step needs no per-crate
-        # hand-wiring.
+      - name: Build docs (mise run docs:build)
+        # Same command a contributor runs locally — wraps
+        # `bun install --frozen-lockfile` + `bun run build` for the
+        # rspress site under docs/. See [tasks."docs:build"] in
+        # mise.toml.
+        working-directory: ${{ github.workspace }}
+        run: mise run docs:build
+
+      - name: Build Layer 1 reproductions (mise run repro:build)
+        # Wraps `bun install --frozen-lockfile`, `bun run build`
+        # (TypeScript -> .js next to each repro), and `cargo build`
+        # for every `src/layer1_wasm/*/Cargo.toml` (with
+        # `rustup target add wasm32-wasip1` ensured). See
+        # [tasks."repro:build"] in mise.toml.
+        working-directory: ${{ github.workspace }}
+        run: mise run repro:build
+
+      - name: Drop Rust build artefacts before bundling
+        # `target/` is hundreds of MB and would bloat the Pages
+        # artefact. The mise task copies repro.wasm into place; the
+        # build cache itself is not needed once the artefact is in
+        # the recipe directory.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           shopt -s nullglob
-          for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
-            slug_dir="$(dirname "$cargo_toml")"
-            slug="$(basename "$slug_dir")"
-            echo "Building Rust crate: ${slug}"
-            (
-              cd "$slug_dir"
-              cargo build --release --target wasm32-wasip1
-            )
-            cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" \
-              "${slug_dir}/repro.wasm"
-            # Drop the build artefacts before the bundling step copies
-            # the directory — `target/` is hundreds of MB and would
-            # bloat the Pages artefact otherwise.
-            rm -rf "${slug_dir}/target"
+          for target in src/layer1_wasm/*/target; do
+            rm -rf "$target"
           done
 
       - name: Log in to GHCR (for Layer 2 image push)
@@ -246,7 +221,7 @@ jobs:
             # Validate the freshly-written verdict.json against the
             # contract v1 schema before the bundling step picks it up.
             # Single-sourced with repro-regression.yml.
-            ajv validate \
+            "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
               -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \

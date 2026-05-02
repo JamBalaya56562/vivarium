@@ -59,18 +59,21 @@ jobs:
         run: cp ../../docs/public/api/recipes.json src/bundled/recipes.json
 
       - name: Setup Bun
+        # Single-tool job (bun only) — uses `oven-sh/setup-bun` directly
+        # rather than the local setup-mise composite.
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build
-        run: bun run build
-
-      - name: Test
-        run: bun test
+      - name: Install + build + test
+        # Same commands a contributor runs locally via the mcp:* tasks
+        # in mise.toml. The publish steps below stay inline because they
+        # call `bunx npm publish --provenance` and `bunx jsr publish`
+        # against OIDC, which is a CI-only concern.
+        run: |
+          bun install
+          bun run build
+          bun run test
 
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
         run: bunx npm publish --provenance --access public

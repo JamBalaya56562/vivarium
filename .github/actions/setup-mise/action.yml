@@ -1,0 +1,50 @@
+name: Setup mise
+description: |
+  Install mise (https://mise.jdx.dev) on the runner via the official
+  `jdx/mise-action` and trust this repo's .mise.toml so the rest of
+  the workflow can run `mise run <task>` directly.
+
+  Allowlist note: `jdx/mise-action@*` is allowed by the org-level
+  GitHub Actions policy at
+  `aletheia-works/.github/infra/github-org/variables.tf`
+  (`var.allowed_action_patterns`). The org also enforces commit-SHA
+  pinning (`sha_pinning_required = true`), so the `uses:` line below
+  pins to v4.0.1's commit SHA — bump the SHA and the comment together
+  when upgrading.
+
+inputs:
+  tools:
+    description: |
+      Optional `install_args` filter — space-separated list of tool
+      aliases (e.g. "bun rust") to restrict the install to. Defaults
+      to "" which installs everything declared in .mise.toml. Useful
+      for fast-path workflows that only need a subset of the toolchain
+      (e.g. just `bun` for the docs build).
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Install mise + tools
+      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        # `experimental: true` lets mise read the .mise.toml without
+        # prompting for trust (the in-repo config is already
+        # source-controlled, so reviewing it here is the right
+        # security model). It also unlocks any experimental features
+        # the project leans on locally.
+        experimental: true
+        # Cache mise's tool downloads across runs. Cache key is
+        # derived from .mise.toml hash automatically.
+        cache: true
+        # Run `mise install` against .mise.toml. Set
+        # install_args=<tool>+ to filter; empty installs everything.
+        install: true
+        install_args: ${{ inputs.tools }}
+
+    - name: Verify mise is wired up
+      shell: bash
+      run: |
+        mise --version
+        mise current

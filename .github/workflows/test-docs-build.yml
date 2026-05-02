@@ -5,19 +5,19 @@ name: Test docs build
 # ever reaching main, where `deploy-docs.yml` would otherwise fail the
 # Pages deployment.
 #
-# This workflow does NOT deploy — it only runs `bun run build` and
+# This workflow does NOT deploy — it only runs the docs build and
 # discards the output. Actual deployment happens from `deploy-docs.yml`
 # on pushes to main.
 #
-# Tool versions: CI uses `oven-sh/setup-bun` (allowlisted) with
-# `bun-version: latest`, matching the intent of `.mise.toml` locally.
+# Tooling: single-tool job (bun only). Uses `oven-sh/setup-bun`
+# directly rather than the local setup-mise composite — there is
+# nothing here that needs the rest of mise.toml.
 
 on:
   pull_request:
     branches: [main]
     paths:
       - 'docs/**'
-      - '.mise.toml'
       - '.github/workflows/test-docs-build.yml'
 
 permissions:
@@ -46,8 +46,7 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build docs
-        run: bun run build
+      - name: Install + build docs
+        run: |
+          bun install --frozen-lockfile
+          bun run build

@@ -74,8 +74,9 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Bun
-        # Provides `bun add --global ajv-cli` for schema validation
-        # inside the capture helper.
+        # Single-tool job (bun only) — uses `oven-sh/setup-bun` directly
+        # rather than the local setup-mise composite. The bun-version
+        # tracks the `bun = "latest"` pin in mise.toml in spirit.
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest

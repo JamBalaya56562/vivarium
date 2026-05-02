@@ -1,20 +1,269 @@
 [tools]
 bun = "latest"
 opentofu = "latest"
-python = "3.13"
 uv = "latest"
-# Native runtimes pinned to the same major.minor.patch the WASM gallery
-# pages run, so contributors can re-verify each Layer 1 reproduction
-# against a real interpreter (`mise exec ruby -- ruby <slug>/repro.rb`,
-# `mise exec php -- php <slug>/repro.php`). See
-# `src/layer1_wasm/<slug>/README.md` for per-page native repro
-# instructions. Building these on Windows requires WSL or an
-# equivalent Unix-y toolchain; CI installs them on Linux runners.
-php = "8.2.11"
-ruby = "3.3.3"
-# Rust is also used to build `wasm32-wasip1` artefacts for compiled-
-# language reproductions (see `src/layer1_wasm/regex-779/`); the
-# `wasm32-wasip1` target ships with rustup as a precompiled std, so
-# nothing extra is pinned here. CI installs the matching toolchain on
-# its Linux runner before running `cargo build`.
-rust = "1.84.0"
+# Per-language interpreters (Python, Ruby, Rust, PHP) are intentionally
+# NOT pinned at this top level. Each task / command declares the version
+# it needs next to where it is invoked, so different recipes can use
+# different versions without churning this file:
+#   - Python: `mise exec uv -- uv run --python 3.13 …`
+#     (UV is a superset tool — version manager + pip + venv + scripts —
+#     so it owns Python on its own; mise just installs UV.)
+#   - Ruby / Rust / conda:php: per-task `tools = { ruby = "3.3.3" }` etc., or
+#     ad-hoc `mise exec ruby@3.3.3 -- ruby …`. mise auto-downloads the
+#     requested version on first call, the same way UV does for Python.
+# PHP keeps the `conda:` backend prefix because vfox (mise's default PHP
+# backend) has download issues that surfaced during Phase 2.
+
+[settings]
+experimental = true
+
+[deps.bun-docs]
+sources = ["docs/package.json", "docs/bun.lock"]
+run = "bun install"
+dir = "docs"
+
+[deps.bun-mcp]
+sources = ["packages/mcp-server/package.json", "packages/mcp-server/bun.lock"]
+run = "bun install"
+dir = "packages/mcp-server"
+
+[deps.bun-wasm]
+sources = ["src/layer1_wasm/package.json", "src/layer1_wasm/bun.lock"]
+run = "bun install"
+dir = "src/layer1_wasm"
+
+[deps.tofu]
+sources = ["infra/github/versions.tf", "infra/github/providers.tf"]
+outputs = ["infra/github/.terraform.lock.hcl"]
+run = "tofu init"
+dir = "infra/github"
+
+[hooks]
+enter = ["mise upgrade -q", "mise deps -q"]
+
+# ─────────────────────────────────────────────────────────────────────────
+# Tasks — reproducing locally what CI does, and what humans need to ship.
+# Run `mise tasks` to list, `mise run <name>` to invoke.
+# Namespaces:
+#   docs:*      — rspress documentation site
+#   repro:*     — Layer 1 (WASM) reproduction sources & verification
+#   docker:*    — Layer 2 (Docker) reproduction images
+#   recipes:*   — recipes catalogue index regeneration
+#   mcp:*       — MCP server package (packages/mcp-server)
+#   infra:*     — OpenTofu (infra/github)
+#   ci:*        — local-equivalent of the GitHub Actions workflows
+# ─────────────────────────────────────────────────────────────────────────
+
+# ── Docs site (rspress) ──────────────────────────────────────────────────
+
+[tasks."docs:install"]
+description = "Install docs site dependencies"
+dir = "docs"
+run = "bun install"
+
+[tasks."docs:dev"]
+description = "Run rspress dev server on :3000 (auto-runs prebuild-repro)"
+dir = "docs"
+run = "bun run dev"
+
+[tasks."docs:build"]
+description = "Build static docs site to docs/doc_build/"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun run build"
+
+[tasks."docs:preview"]
+description = "Preview the built static docs site"
+dir = "docs"
+run = "bun run preview"
+
+# ── Layer 1 — WASM reproduction sources ──────────────────────────────────
+
+[tasks."repro:install"]
+description = "Install Layer 1 (WASM) sources dependencies"
+dir = "src/layer1_wasm"
+run = "bun install"
+
+[tasks."repro:typecheck"]
+description = "TypeScript type-check Layer 1 sources + tests"
+depends = ["repro:install"]
+dir = "src/layer1_wasm"
+run = "bun run typecheck"
+
+[tasks."repro:build:ts"]
+description = "Compile Layer 1 TypeScript to .js next to each repro"
+depends = ["repro:install"]
+dir = "src/layer1_wasm"
+run = "bun run build"
+
+[tasks."repro:build:rust"]
+description = "Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
+tools = { rust = "1.84.0" }
+shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
+run = '''
+set -euo pipefail
+rustup target add wasm32-wasip1 || true
+shopt -s nullglob
+for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+  slug_dir=$(dirname "$cargo_toml")
+  echo "==> cargo build $slug_dir"
+  cargo build --release --target wasm32-wasip1 --manifest-path "$cargo_toml"
+  cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" "${slug_dir}/repro.wasm"
+done
+'''
+
+[tasks."repro:build"]
+description = "Build all Layer 1 reproductions (TS + Rust wasm)"
+depends = ["repro:build:ts", "repro:build:rust"]
+
+[tasks."repro:test"]
+description = "Run Playwright contract-v1 regression suite for Layer 1"
+depends = ["repro:install"]
+dir = "src/layer1_wasm"
+run = '''
+bunx playwright install --with-deps chromium
+bun run test
+'''
+
+# ── Native re-verification (run repros against host interpreters) ───────
+
+[tasks."repro:native:python"]
+description = "Run Python repros against host Python (Pyodide-equivalent pins)"
+run = '''
+mise exec uv -- uv run --python 3.13 src/layer1_wasm/pandas-56679/repro.py
+mise exec uv -- uv run --python 3.13 src/layer1_wasm/numpy-28287/repro.py
+mise exec uv -- uv run --python 3.13 src/layer1_wasm/cpython-137205/repro.py
+'''
+
+[tasks."repro:native:ruby"]
+description = "Run Ruby repros against host Ruby (3.3.x pin)"
+tools = { ruby = "3.3.3" }
+run = "ruby src/layer1_wasm/ruby-21709/repro.rb"
+
+[tasks."repro:native:php"]
+description = "Run PHP repros against host PHP (php-wasm-equivalent build)"
+tools = { "conda:php" = "latest" }
+run = "php src/layer1_wasm/php-12167/repro.php"
+
+[tasks."repro:native:rust"]
+description = "Run Rust repros against host Rust toolchain"
+tools = { rust = "1.84.0" }
+run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
+
+[tasks."repro:native"]
+description = "Run all repros against host interpreters/compilers"
+depends = [
+  "repro:native:python",
+  "repro:native:ruby",
+  "repro:native:php",
+  "repro:native:rust",
+]
+
+# ── Layer 2 — Docker reproduction images ─────────────────────────────────
+
+[tasks."docker:build"]
+description = "Build all Layer 2 Docker reproduction images locally"
+shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
+run = '''
+set -euo pipefail
+shopt -s nullglob
+for dockerfile in src/layer2_docker/*/Dockerfile; do
+  slug_dir=$(dirname "$dockerfile")
+  slug=$(basename "$slug_dir")
+  echo "==> docker build vivarium-${slug}:dev"
+  docker build -t "vivarium-${slug}:dev" "$slug_dir"
+done
+'''
+
+[tasks."docker:run"]
+description = "Run a Layer 2 reproduction (set SLUG=<recipe>; e.g. SLUG=postgres-lost-update)"
+run = '''
+if [ -z "${SLUG:-}" ]; then
+  echo "usage: SLUG=<recipe> mise run docker:run"
+  echo "available:" && ls src/layer2_docker | grep -v "^_" | sed "s/^/  /"
+  exit 1
+fi
+docker run --rm "vivarium-${SLUG}:dev"
+'''
+
+# ── Recipes catalogue index ──────────────────────────────────────────────
+
+[tasks."recipes:index"]
+description = "Regenerate docs/public/api/recipes.json from src/layer*/"
+dir = "docs"
+run = "bun run generate-index"
+
+# ── MCP server (packages/mcp-server) ─────────────────────────────────────
+
+[tasks."mcp:install"]
+description = "Install vivarium-mcp dependencies"
+dir = "packages/mcp-server"
+run = "bun install"
+
+[tasks."mcp:build"]
+description = "Build the MCP server package"
+depends = ["mcp:install"]
+dir = "packages/mcp-server"
+run = "bun run build"
+
+[tasks."mcp:test"]
+description = "Test the MCP server package"
+depends = ["mcp:install"]
+dir = "packages/mcp-server"
+run = "bun run test"
+
+# ── Infra (OpenTofu) ─────────────────────────────────────────────────────
+
+[tasks."infra:init"]
+description = "Initialise OpenTofu working directory for infra/github"
+dir = "infra/github"
+run = "tofu init"
+
+[tasks."infra:fmt"]
+description = "Auto-format all OpenTofu files (infra/)"
+dir = "infra"
+run = "tofu fmt -recursive"
+
+[tasks."infra:plan"]
+description = "Plan the OpenTofu deployment for infra/github"
+depends = ["infra:init"]
+dir = "infra/github"
+run = "tofu plan"
+
+[tasks."infra:apply"]
+description = "Apply OpenTofu changes (PRODUCTION — review the plan first)"
+depends = ["infra:init"]
+dir = "infra/github"
+run = "tofu apply"
+
+# ── Local CI equivalents (what GitHub Actions runs) ──────────────────────
+
+[tasks."ci:docs"]
+description = "Local equivalent of test-docs-build.yml"
+dir = "docs"
+run = '''
+bun install --frozen-lockfile
+bun run build
+'''
+
+[tasks."ci:repro"]
+description = "Local equivalent of repro-regression.yml (typecheck + build + Playwright)"
+dir = "src/layer1_wasm"
+shell = "bash -c"  # need `set -o pipefail`, not in POSIX sh
+run = '''
+set -euo pipefail
+bun install --frozen-lockfile
+bun run typecheck
+bun run build
+bunx playwright install --with-deps chromium
+bun run test
+'''
+
+[tasks."ci:commitlint"]
+description = "Lint the most recent commit message against Conventional Commits"
+run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
+
+[tasks."ci:all"]
+description = "Run all local CI tasks (docs + repro + commitlint)"
+depends = ["ci:docs", "ci:repro", "ci:commitlint"]

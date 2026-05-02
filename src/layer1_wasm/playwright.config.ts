@@ -62,7 +62,8 @@ export default defineConfig({
   // server at its layer.
   webServer: [
     {
-      command: `python -m http.server ${LAYER1_PORT}`,
+      // UV provides Python on demand (mise no longer installs Python).
+      command: `uv run --no-project --python 3.13 python -m http.server ${LAYER1_PORT}`,
       url: `${LAYER1_BASE}/`,
       reuseExistingServer: !process.env["CI"],
       timeout: 30_000,
@@ -70,7 +71,7 @@ export default defineConfig({
       stderr: "pipe",
     },
     {
-      command: `python -m http.server ${LAYER2_PORT}`,
+      command: `uv run --no-project --python 3.13 python -m http.server ${LAYER2_PORT}`,
       cwd: "../layer2_docker",
       url: `${LAYER2_BASE}/`,
       reuseExistingServer: !process.env["CI"],

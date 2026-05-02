@@ -93,13 +93,15 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - name: Setup mise (bun)
+        # Installs the project-wide tools listed in `[tools]` (bun,
+        # opentofu, uv). Layer 1 Rust crates compiled to wasm32-wasip1
+        # are handled by the `repro:build:rust` task's `use = [...]`
+        # — mise auto-installs the pinned rust toolchain on first run
+        # so each recipe can choose its own version.
+        uses: ./.github/actions/setup-mise
         with:
-          bun-version: latest
-
-      - name: Install Layer 1 dependencies
-        run: bun install --frozen-lockfile
+          tools: bun
 
       - name: Install ajv-cli for verdict schema validation
         # Single-source clause 4 of the contract v1 conformance check
@@ -107,15 +109,29 @@ jobs:
         # generated / tracked `verdict.json` with ajv-cli below, instead
         # of the historical `jq -e` predicate. Both Layer 2 (CI-built,
         # CI-snapshot) and Layer 3 (maintainer-tracked) verdict files
-        # share the same schema. `bun add --global` puts `ajv` on
-        # PATH for subsequent steps via setup-bun's PATH wiring.
+        # share the same schema.
+        #
+        # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
+        # the CLI's `-c ajv-formats` plugin loader resolves both as
+        # siblings under the same tree — without depending on bun's
+        # global bin being on PATH (`oven-sh/setup-bun` adds it,
+        # `setup-mise`'s bun does not), and without leaking ajv into
+        # the repo's tracked package.jsons.
         #
         # The same ajv install is also reused below for the Phase 5
         # sub-stream C manifest schema validation (manifest.schema.json
         # against `src/external_examples/*/.vivarium/manifest.toml` after
         # a TOML→JSON conversion via Python's stdlib `tomllib`).
-        working-directory: ${{ github.workspace }}
-        run: bun add --global ajv-cli@5 ajv-formats
+        run: |
+          cd "$RUNNER_TEMP"
+          bun init -y >/dev/null
+          bun add ajv-cli@5 ajv-formats
+          # Both forms — `$AJV_BIN` for explicit yaml callers, and the
+          # bin dir on `$GITHUB_PATH` so shell scripts (e.g.
+          # `scripts/capture_layer2_verdict.sh`) can call `ajv` directly
+          # without knowing about this install location.
+          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Validate external manifest examples (manifest v1)
         # Phase 5 sub-stream C (ADR-0015, private memo). Each
@@ -149,7 +165,7 @@ jobs:
             example="$(basename "$(dirname "$(dirname "$manifest")")")"
             echo "Validating ${example}: ${manifest}"
             python3 -c "import json, sys, tomllib; sys.stdout.write(json.dumps(tomllib.load(open(sys.argv[1], 'rb'))))" "$manifest" > "$tmp_json"
-            if ! ajv validate \
+            if ! "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
               -s "$schema" \
@@ -164,60 +180,19 @@ jobs:
           fi
           echo "All ${#manifests[@]} external manifest example(s) validated against manifest v1 schema."
 
-      - name: Type-check (sources + tests)
-        # Catches any TypeScript-level regression before we boot a
-        # browser. Cheap (~1 s) and produces a clear diagnostic on
-        # failure.
-        run: bun run typecheck
-
-      - name: Build Layer 1 TypeScript sources
-        # Emits side-by-side `.js` files; the static server serves
-        # them at runtime.
-        run: bun run build
-
-      - name: Install Rust toolchain (for compiled-language reproductions)
-        # Mirrors the equivalent step in `deploy-docs.yml`: installs
-        # rustup directly because `jdx/mise-action` is not on the
-        # repo's selected-actions allowlist, and adds the
-        # `wasm32-wasip1` target so each `<slug>/Cargo.toml` can
-        # compile to the artefact the page fetches at runtime.
-        # Skipped silently if no Rust crate is present so the
-        # regression suite stays cheap when Phase 2 has no Rust
-        # entries yet.
+      - name: Type-check + build Layer 1 (TS + Rust wasm)
+        # Single mise call wraps:
+        #   - `bun install --frozen-lockfile` in src/layer1_wasm
+        #   - `bun run typecheck`
+        #   - `bun run build` (TypeScript -> .js next to each repro)
+        #   - `rustup target add wasm32-wasip1` + `cargo build` for
+        #     every Cargo.toml found, copying repro.wasm into place.
+        # See [tasks."repro:typecheck"], [tasks."repro:build"] in
+        # mise.toml — the same commands a contributor runs locally.
         working-directory: ${{ github.workspace }}
         run: |
-          set -euo pipefail
-          shopt -s nullglob
-          crates=(src/layer1_wasm/*/Cargo.toml)
-          if [ ${#crates[@]} -eq 0 ]; then
-            echo "No src/layer1_wasm/*/Cargo.toml; skipping Rust setup."
-            exit 0
-          fi
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
-            sh -s -- -y --profile minimal --default-toolchain 1.84.0
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          "$HOME/.cargo/bin/rustup" target add wasm32-wasip1
-
-      - name: Build Layer 1 Rust artefacts (wasm32-wasip1)
-        # Mirrors `deploy-docs.yml`. Compiles every Cargo.toml to
-        # `wasm32-wasip1` and copies the resulting `.wasm` next to
-        # the page's `index.html` (`<slug>/repro.wasm`), where the
-        # Playwright webServer serves it.
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
-            slug_dir="$(dirname "$cargo_toml")"
-            slug="$(basename "$slug_dir")"
-            echo "Building Rust crate: ${slug}"
-            (
-              cd "$slug_dir"
-              cargo build --release --target wasm32-wasip1
-            )
-            cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" \
-              "${slug_dir}/repro.wasm"
-          done
+          mise run repro:typecheck
+          mise run repro:build
 
       - name: Build, run, and snapshot Layer 2 Docker reproductions (no push)
         # Mirrors the deploy-docs Layer 2 build/run/verdict step but
@@ -374,7 +349,7 @@ jobs:
             # Schema-validate the tracked verdict.json against the
             # contract v1 schema. Replaces the historical `jq -e`
             # predicate; ajv reports the offending field on failure.
-            ajv validate \
+            "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
               -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \
