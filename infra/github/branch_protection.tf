@@ -1,50 +1,50 @@
 # Branch protection for main.
 #
-# Phase 0 is solo development, so this configuration enforces a minimum
-# quality bar without being overly strict. The rules will be tightened once
-# a community forms in Phase 1 and beyond.
+# Phase 1 baseline: enforce review, signed commits, and a stable required
+# CI check. Solo development continues, so admin bypass is left enabled
+# (`enforce_admins = false`) so the maintainer can still self-merge —
+# every other rule applies to non-admin contributors as designed.
 
 resource "github_branch_protection" "main" {
   repository_id = github_repository.this.node_id
   pattern       = "main"
 
   # Pull request review requirements.
-  # While this is solo development, keep reviews optional so the sole
-  # maintainer can self-merge.
   required_pull_request_reviews {
-    required_approving_review_count = 0 # Phase 0: 0; Phase 1+: 1
+    required_approving_review_count = 1
     dismiss_stale_reviews           = true
-    require_code_owner_reviews      = false
+    require_code_owner_reviews      = true
     require_last_push_approval      = false
   }
 
   # Required CI checks.
-  # Add contexts here as workflows are introduced.
+  # `check / Commitlint` is the caller-job → reusable-job composition that
+  # fires on every pull_request via .github/workflows/commitlint.yml. Add
+  # more contexts here as additional always-on workflows come online.
   required_status_checks {
     strict = true
     contexts = [
-      # Minimal in Phase 0 — add as workflows come online.
-      # "ci/tests",
-      # "ci/lint",
-      # "terraform/plan",
+      "check / Commitlint",
     ]
   }
 
-  # Whether admins are bound by the same rules (i.e. no admin bypass).
-  enforce_admins = false # false while solo; consider true once there's a team.
+  # Whether admins are bound by the same rules. Kept off so the sole
+  # maintainer can self-merge while solo; flip to true once a second
+  # reviewer is available.
+  enforce_admins = false
 
   # Keep history linear.
   required_linear_history = true
-  # Phase 0 uses the squash-into-initial-commit workflow before PRs exist,
-  # so force-push is allowed. Flip back to false once the first PR lands
-  # (see feedback_early_stage_commits.md).
-  allows_force_pushes = true
+
+  # Phase 1: history rewrites are no longer needed; force-pushes are
+  # disallowed across all repos.
+  allows_force_pushes = false
   allows_deletions    = false
 
   # Block merging while review conversations remain unresolved.
   require_conversation_resolution = true
 
-  # Require signed commits. Setting true enforces GPG/SSH commit signatures;
-  # kept false for solo development pragmatism.
-  require_signed_commits = false
+  # Require signed commits (GPG/SSH commit signatures) for every commit
+  # merged into the default branch.
+  require_signed_commits = true
 }
