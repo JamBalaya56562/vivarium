@@ -1,0 +1,17 @@
+---
+pageType: doc
+title: マニフェスト作成
+---
+
+import { Page, PageHero } from '../../../components/PageChrome';
+import { ManifestScaffolder } from '../../../components/ManifestScaffolder';
+
+<Page>
+  <PageHero
+    eyebrow="// MANIFEST · CREATE"
+    title={<>`.vivarium/manifest.toml` を生成する。</>}
+    sub="Manifest v1 ファイル用のフォーム駆動ジェネレーター。フィールドを埋めて「生成」を押し、TOML をリポジトリの `.vivarium/manifest.toml` にコピーするか、ファイルとして直接ダウンロードする。スキーマは /vivarium/ja/spec/manifest-v1 にある。このページはその対話的コンパニオン。"
+  />
+
+  <ManifestScaffolder lang="ja" />
+</Page>
