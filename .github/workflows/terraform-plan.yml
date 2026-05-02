@@ -11,7 +11,14 @@ name: Terraform Plan
 # org's state.
 
 on:
-  pull_request:
+  # `pull_request_target` so fork PRs see plan output too. GitHub Actions
+  # strips secrets and downgrades GITHUB_TOKEN to read-only on
+  # `pull_request` from a fork, which made tofu plan never run on PRs
+  # opened via `sl pr submit` (which always pushes through a personal
+  # fork). The reusable workflow checks out the PR's head SHA explicitly
+  # so the diff under review is what gets planned. See the security note
+  # in the reusable workflow's checkout step.
+  pull_request_target:
     paths:
       - 'infra/github/**'
       - '.github/workflows/terraform-plan.yml'
@@ -24,18 +31,10 @@ permissions:
 
 jobs:
   plan:
-    # Skip on fork PRs: the reusable workflow downloads the state
-    # artifact from a prior apply run via `actions/download-artifact`,
-    # which fails on fork PRs because the cross-run-id download requires
-    # a repo-scoped token. Without state, `tofu plan` would compare
-    # against an empty state and report every existing resource as a
-    # spurious "to add" — useless for review and noisy in CI. A
-    # maintainer can re-run the plan from a same-repo branch when the
-    # fork's changes are merged through a trusted-fork branch.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.repository_owner == 'aletheia-works'
     # Pinned by commit SHA (org enforces sha_pinning_required). Update
     # this ref when the reusable workflow meaningfully changes.
-    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
+    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github
     secrets: inherit
