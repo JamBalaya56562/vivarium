@@ -94,8 +94,10 @@ visible on the run page:
 | exit code | (e.g.) 0 | (e.g.) 1 |
 
 …followed by a one-line "matches expected" / "does NOT match
-expected" line for the `expected_verdict` assertion. The summary is
-intentionally a stand-in for the R.3 UI until that ships; the
+expected" line for the `expected_verdict` assertion. The Markdown
+summary is the at-a-glance view in the workflow run page; for the
+side-by-side comparison surface, drop the workflow artefact zip on
+the [comparison page](../repro/compare.mdx) (file-drop or paste). The
 artefact is the source of truth either way.
 
 ## What this pipeline does **not** do
@@ -121,6 +123,9 @@ artefact is the source of truth either way.
 
 ## See also
 
+- [Comparison page](../repro/compare.mdx) — the R.3 side-by-side UI
+  that consumes this pipeline's artefact bundle (file-drop, URL
+  params, or JSON paste).
 - [Contract v1](./contract-v1.md) — the verdict surface this
   pipeline emits and consumes.
 - [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) —

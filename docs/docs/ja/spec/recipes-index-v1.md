@@ -58,6 +58,10 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2 / 3: docker-run 手順ページ）。 |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |
+| `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。[`docs/data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/data/recipe-facets.json) のオーバーレイから供給される（ADR-0024 に準拠）。2026-05-03 リビジョンで追加。 |
+| `symptom` | 文字列（ケバブケース） | ⏳ | オプション。エラー → レシピマッチャーが利用する短い症状スラッグ（例: `"dtype-mismatch"`、`"ordering-non-transitive"`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
+| `severity` | 文字列 | ⏳ | オプション。自由形式の重大度バケット（例: `"bug"`、`"regression"`、`"spec-violation"`、`"footgun"`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
+| `tags` | 文字列の配列 | ⏳ | オプション。マッチャーがスコア計算に使う自由形式タグリスト（例: `["sqlite3", "pragma", "foreign-keys"]`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
 
 ## バージョニング
 
@@ -65,13 +69,20 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 [ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md)
 （プライベートメモ）のマイナーリビジョンポリシーに従い:
 
-- **オプションの追加的フィールド**（例: Phase 6 ストリーム S.1 でフロントマタータグが
-  着地した後の将来の `language` フィールド）は v1 リビジョンとして出荷。
-  コンシューマーはフィーチャーデテクトする。
+- **オプションの追加的フィールド**は v1 リビジョンとして出荷される。
+  コンシューマーはフィーチャーデテクトする。Phase 6 ストリーム S.1 は
+  このルールに従って `language` / `symptom` / `severity` / `tags` を追加した
+  （下記リビジョン履歴を参照）。
 - **破壊的変更**（フィールド名変更、型変更、オプション → 必須）には
   v2 スキーマの兄弟ファイルと別の ADR が必要。
 
 現在 v2 は存在しない。
+
+## リビジョン履歴
+
+| 日付 | 変更内容 | 参照 |
+|---|---|---|
+| 2026-05-03 | レシピエントリにオプションの `language` / `symptom` / `severity` / `tags` フィールドを追加。レシピごとのフロントマタではなく、集中型ファセットオーバーレイ（`docs/data/recipe-facets.json`）から供給される。後方互換 — v1 コンシューマーは無視できる。 | [ADR-0024](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0024-phase6-s1-faceted-gallery.md)（プライベートメモ） |
 
 ## 生成方法
 
@@ -84,9 +95,12 @@ slug パターン（末尾に Issue 番号を持つ slug の場合は `<project>
 `project` / `issue` を導出する。
 
 出力は git でトラッキングされるため、レシピを追加する PR の diff にインデックス更新も表示される。
-Phase 6 ストリーム S.1 では slug 由来のヒューリスティックをレシピごとの明示的なフロントマタに
-置き換える。その時点で `project`（やがては `language`）フィールドは
-slug 由来の推測ではなくレシピごとの第一級の宣言になる。
+オプションのファセットフィールド（`language` / `symptom` / `severity` / `tags`）は
+[`docs/data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/data/recipe-facets.json)
+から merge される。これは手作業で維持され PR 差分でレビューされる集中型オーバーレイだ。
+v1 では `project` フィールドは引き続き slug 由来のままにしている — Phase 6 ストリーム S.1
+（ADR-0024）はあえてレシピごとのフロントマタを採用せず、現状のレシピ数なら 1 つのレビュー可能な
+ファイルに収まる集中型オーバーレイの方を選択した。
 
 ## コンフォーマンス
 

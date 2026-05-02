@@ -48,7 +48,7 @@
         "project": {
           "type": "string",
           "minLength": 1,
-          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; will be replaced by frontmatter-driven values when Phase 6 stream S.1 ships."
+          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; per Phase 6 ADR-0024 (private memo) the slug-derived heuristic is retained — facet fields land via a centralised overlay (docs/data/recipe-facets.json) instead of per-recipe frontmatter."
         },
         "issue": {
           "type": "integer",
@@ -74,6 +74,29 @@
           "type": "string",
           "format": "uri",
           "description": "GitHub link to the recipe directory in this repository, useful for human navigation from a programmatic catalogue lookup."
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. Primary implementation language, lowercase (e.g. 'python', 'rust', 'shell'). Sourced from docs/data/recipe-facets.json per Phase 6 ADR-0024 (private memo). Added in the 2026-05-03 v1 revision; backwards-compatible, v1 consumers ignore."
+        },
+        "symptom": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. Short symptom slug (kebab-case) used by the error → recipe matcher (e.g. 'dtype-mismatch', 'ordering-non-transitive'). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+        },
+        "severity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. Free-form severity bucket (e.g. 'bug', 'regression', 'spec-violation', 'footgun'). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Optional. Free-form tag list scored by the matcher (e.g. ['sqlite3', 'pragma', 'foreign-keys']). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
         }
       }
     }

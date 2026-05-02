@@ -59,6 +59,10 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2 / 3: docker-run instructions page). |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 only — deployed `verdict.json` snapshot. Layer 1 verdicts are produced live in-page and have no static snapshot. |
 | `source_url` | URI | ✅ | GitHub link to the recipe directory. |
+| `language` | string | ⏳ | Optional. Primary implementation language, lowercase (e.g. `"python"`, `"rust"`, `"shell"`). Sourced from the [`docs/data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/data/recipe-facets.json) overlay (per ADR-0024). Added in the 2026-05-03 revision. |
+| `symptom` | string (kebab-case) | ⏳ | Optional. Short symptom slug used by the error → recipe matcher (e.g. `"dtype-mismatch"`, `"ordering-non-transitive"`). Sourced from the facet overlay. Added 2026-05-03. |
+| `severity` | string | ⏳ | Optional. Free-form severity bucket (e.g. `"bug"`, `"regression"`, `"spec-violation"`, `"footgun"`). Sourced from the facet overlay. Added 2026-05-03. |
+| `tags` | array of strings | ⏳ | Optional. Free-form tag list scored by the matcher (e.g. `["sqlite3", "pragma", "foreign-keys"]`). Sourced from the facet overlay. Added 2026-05-03. |
 
 ## Versioning
 
@@ -66,13 +70,19 @@ The version is carried as `index = "v1"` on the top-level object. Per
 [ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md)
 (private memo)'s minor-revision policy:
 
-- **Optional additive fields** (e.g. a future `language` field once Phase 6
-  stream S.1 lands frontmatter tags) ship as same-`v1` revisions; consumers
-  feature-detect them.
+- **Optional additive fields** ship as same-`v1` revisions; consumers
+  feature-detect them. Phase 6 stream S.1 added `language`, `symptom`,
+  `severity`, and `tags` under this rule (see revision history below).
 - **Breaking changes** (renamed fields, type changes, optional → required)
   require a v2 schema sibling and a separate ADR.
 
 There is no current v2.
+
+## Revision history
+
+| Date | Change | Reference |
+|---|---|---|
+| 2026-05-03 | Added optional `language`, `symptom`, `severity`, `tags` fields to recipe entries. Sourced from a centralised facet overlay (`docs/data/recipe-facets.json`), not per-recipe frontmatter. Backwards-compatible — v1 consumers ignore. | [ADR-0024](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0024-phase6-s1-faceted-gallery.md) (private memo) |
 
 ## Generation
 
@@ -86,10 +96,14 @@ issue number; first dash-segment otherwise, with a small override map for
 recipes whose slug shape diverges).
 
 The output is tracked in git so PRs that add a recipe also show the index
-update in the diff. Phase 6 stream S.1 will replace the slug-derived
-heuristic with explicit per-recipe frontmatter, at which point the
-`project` and (eventually) `language` fields become first-class
-per-recipe declarations rather than slug-derived guesses.
+update in the diff. The optional facet fields (`language`, `symptom`,
+`severity`, `tags`) are merged in from
+[`docs/data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/data/recipe-facets.json),
+a centralised overlay maintained by hand and reviewed in PR diff. The
+`project` field stays slug-derived in v1 — Phase 6 stream S.1 (per
+ADR-0024) deliberately rejected per-recipe frontmatter in favour of
+the centralised overlay, since the recipe count fits comfortably in a
+single reviewable file at this scale.
 
 ## Conformance
 

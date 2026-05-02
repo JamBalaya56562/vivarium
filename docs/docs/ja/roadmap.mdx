@@ -74,6 +74,10 @@ import {
           lead: 'Phase 6 — ユーザビリティとビジュアルレイヤー。2026-05-02 CLOSED。',
           body: 'ビジュアルリデザイン + 再利用可能コンポーネントライブラリ出荷（Claude Design の利用枠制限を回避するため Stitch 駆動のモックで代替）。対称 URL ツリーと翻訳済み仕様ページを伴う完全な日本語 ⇄ 英語 i18n。再現比較: Contract v1 evidence サーフェス、branch-fix verdict キャプチャパイプライン、横並び比較ページ。ファセット付きレシピギャラリー + エラーを貼り付けると候補レシピがランク順に出るマッチャー。対話的なマニフェストスキャフォルダー。Vivarium MCP サーバには 4 つのツール（list_recipes、get_recipe、lookup_verdict、match_error）。6 つすべてのサブストリーム（V, R, S, M, X, L）が v1 スコープで出荷され、クローズルール（V + R + S/M/X/L のうち少なくとも 1 つ）は 4 重に充足された。',
         },
+        {
+          lead: 'Phase 7 — はじめの 30 分のオンボーディング。ACTIVE。',
+          body: 'Phase 6 の「プリミティブは使える」状態を「初見の人が冷めた状態から拾える」状態へ引き上げる。UI ブラッシュアップ（V′ — 情報設計、レイアウト動線、ビジュアルトークン磨き込み、コンポーネント graduation）とオンボーディングドキュメント（D — getting started、統合ガイド、AI エージェント設定、用語集）は表裏一体: ドキュメントが壁に当たるところは UI が間違っている証拠。AI-slop 検証（B3）は既存の R.2 Path A + R.3 比較ページ + MCP match_error を一本のエンドツーエンドウォークスルーに繋ぎ、AI エージェントが「自分の候補修正は本当に機能しているのか?」を冷めた状態から駆動できるようにする。A-tail は Phase 6 の残作業を片付ける: verdict + manifest validator の ajv-standalone マイグレ、および match_error v2（同義語テーブル、ファジーマッチ、言語別 stopword）。V′ + D + B3 が出荷したらクローズ。A-tail は optional。',
+        },
       ]}
     />
   </Section>
