@@ -51,6 +51,21 @@ export async function renderVerdictSnapshot(options) {
     verdictEl.dataset.verdict = state;
     verdictEl.textContent = text;
     globalThis.__VIVARIUM_VERDICT__ = state;
+
+    // Tell chrome.js's progress bar the run is finished. Without this
+    // dispatch, the progress overlay sits on top of `<pre id="output">`
+    // forever showing "Initialising…", hiding the captured stdout. Layer 1
+    // does the same dispatch from `_shared/verdict.ts`'s setVerdict — this
+    // mirrors that, so chrome.js's `vh-progress` listener fires regardless
+    // of whether the page comes from Layer 1 (Pyodide / Ruby.wasm / etc.)
+    // or Layer 2 (Docker snapshot).
+    if (state !== "pending") {
+      document.dispatchEvent(
+        new CustomEvent("vh-progress", {
+          detail: { stage: "done", pct: 100, label: "Reproduction complete." },
+        }),
+      );
+    }
   }
 
   setVerdict("pending", "Fetching CI verdict snapshot…");

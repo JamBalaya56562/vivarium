@@ -187,6 +187,27 @@ fi
 docker run --rm "vivarium-${SLUG}:dev"
 '''
 
+[tasks."docker:capture-verdicts"]
+description = "Build every Layer 2 image + capture verdict.json into the slug dir (local dev parity with the CI snapshot — lets `bun --cwd docs run dev` show real verdicts)"
+depends = ["docker:build"]
+shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
+run = '''
+set -euo pipefail
+shopt -s nullglob
+# verdict.json is gitignored under src/layer2_docker/**/verdict.json,
+# so this writes purely local files — running this task does not
+# add anything to the index. CI is the canonical producer; this is
+# a developer convenience for `localhost:3000` rendering parity.
+for dockerfile in src/layer2_docker/*/Dockerfile; do
+  slug_dir=$(dirname "$dockerfile")
+  slug=$(basename "$slug_dir")
+  tag="vivarium-${slug}:dev"
+  echo "==> capture verdict.json for ${slug}"
+  bash scripts/capture_layer2_verdict.sh "$tag" "${slug_dir}/verdict.json"
+done
+echo "Done. Refresh http://localhost:3000/vivarium/repro/<slug>/ to see captured verdicts."
+'''
+
 # ── Recipes catalogue index ──────────────────────────────────────────────
 
 [tasks."recipes:index"]

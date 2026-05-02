@@ -58,6 +58,12 @@ concurrency:
 
 jobs:
   build:
+    # Skip on forks. The push trigger fires in any fork that has Actions
+    # enabled, but a fork's main has no Pages site to deploy to (and
+    # would fail at the `actions/deploy-pages` step on GHCR push without
+    # the org's GITHUB_TOKEN scope). The same fork-skip pattern is used
+    # by terraform-apply.yml and terraform-state-backup.yml.
+    if: github.repository_owner == 'aletheia-works'
     runs-on: ubuntu-latest
     defaults:
       run:
