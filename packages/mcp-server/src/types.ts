@@ -22,6 +22,13 @@ export interface RecipeEntry {
   page_url: string;
   verdict_url?: string;
   source_url: string;
+  // Facet overlay added by ADR-0024 §2; always emitted by the generator
+  // but optional here so consumers reading older bundled snapshots (with
+  // no overlay merge) keep working.
+  language?: string;
+  symptom?: string;
+  severity?: string;
+  tags?: string[];
 }
 
 export interface RecipesIndex {
