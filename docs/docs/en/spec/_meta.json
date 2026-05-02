@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Spec overview"
+  },
+  {
+    "type": "file",
+    "name": "contract-v1",
+    "label": "Contract v1"
+  },
+  {
+    "type": "file",
+    "name": "manifest-v1",
+    "label": "Manifest v1"
+  },
+  {
+    "type": "file",
+    "name": "manifest-create",
+    "label": "Manifest scaffolder"
+  },
+  {
+    "type": "file",
+    "name": "recipes-index-v1",
+    "label": "Recipes index v1"
+  },
+  {
+    "type": "file",
+    "name": "consumer-workflow",
+    "label": "Consumer workflow"
+  },
+  {
+    "type": "file",
+    "name": "branch-fix-pipeline",
+    "label": "Branch-fix pipeline"
+  }
+]

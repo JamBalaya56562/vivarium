@@ -1,0 +1,17 @@
+---
+pageType: doc
+title: Manifest scaffolder
+---
+
+import { Page, PageHero } from '../../../components/PageChrome';
+import { ManifestScaffolder } from '../../../components/ManifestScaffolder';
+
+<Page>
+  <PageHero
+    eyebrow="// MANIFEST · CREATE"
+    title={<>Generate a <code>.vivarium/manifest.toml</code>.</>}
+    sub={<>Form-driven generator for the Manifest v1 file. Fill in the fields, click Generate, copy the TOML into <code>.vivarium/manifest.toml</code> in your repository — or download the file directly. The schema lives at <code>/vivarium/spec/manifest-v1</code>; this page is the interactive companion.</>}
+  />
+
+  <ManifestScaffolder lang="en" />
+</Page>
