@@ -18,8 +18,10 @@
 //     issue = 0.
 //   - title = first H1 of the recipe README, with the leading
 //     "Reproduction —" prefix stripped.
-//   - language is intentionally NOT emitted in v1; Phase 6 stream S.1
-//     will add it as an explicit per-recipe frontmatter field.
+//   - language / symptom / severity / tags = merged from the facet overlay
+//     at docs/data/recipe-facets.json (ADR-0024 §1+§2). Recipes without an
+//     overlay row default to language: "unknown" and empty tags; the
+//     gallery degrades to "show but unfilterable on language" for those.
 //
 // Schema is locked at `index = "v1"` per ADR-0019 §4 and follows
 // ADR-0018's minor-revision policy: optional fields can be added without
@@ -43,12 +45,27 @@ interface RecipeEntry {
   page_url: string;
   verdict_url?: string;
   source_url: string;
+  language: string;
+  symptom?: string;
+  severity?: string;
+  tags: string[];
 }
 
 interface RecipesIndex {
   index: 'v1';
   contract: 'v1';
   recipes: RecipeEntry[];
+}
+
+interface FacetEntry {
+  language: string;
+  symptom?: string;
+  severity?: string;
+  tags?: string[];
+}
+
+interface FacetOverlay {
+  facets: Record<string, FacetEntry>;
 }
 
 const LAYERS: ReadonlyArray<{ layer: Layer; dir: string }> = [
@@ -131,15 +148,37 @@ async function readTitle(readmePath: string, fallback: string): Promise<string> 
   }
 }
 
+async function loadFacetOverlay(repoRoot: string): Promise<FacetOverlay> {
+  const overlayPath = join(repoRoot, 'docs', 'data', 'recipe-facets.json');
+  try {
+    const raw = await readFile(overlayPath, 'utf-8');
+    const parsed = JSON.parse(raw) as Partial<FacetOverlay>;
+    if (!parsed.facets || typeof parsed.facets !== 'object') {
+      console.error(
+        `WARNING: ${overlayPath} did not contain a "facets" object; treating as empty overlay.`,
+      );
+      return { facets: {} };
+    }
+    return { facets: parsed.facets };
+  } catch (err) {
+    console.error(
+      `WARNING: could not read ${overlayPath} (${err instanceof Error ? err.message : err}); treating as empty overlay.`,
+    );
+    return { facets: {} };
+  }
+}
+
 async function buildEntry(
   layer: Layer,
   slug: string,
   recipeDir: string,
+  overlay: FacetOverlay,
 ): Promise<RecipeEntry> {
   const { project, issue } = parseSlug(slug);
   const title = await readTitle(join(recipeDir, 'README.md'), slug);
   const pageUrl = `${PAGES_BASE}/repro/${slug}/`;
   const sourceUrl = `${REPO_BASE}/tree/main/src/${LAYER_DIRNAME[layer]}/${slug}`;
+  const facet = overlay.facets[slug];
   const entry: RecipeEntry = {
     slug,
     layer,
@@ -148,7 +187,11 @@ async function buildEntry(
     title,
     page_url: pageUrl,
     source_url: sourceUrl,
+    language: facet?.language ?? 'unknown',
+    tags: facet?.tags ?? [],
   };
+  if (facet?.symptom) entry.symptom = facet.symptom;
+  if (facet?.severity) entry.severity = facet.severity;
   if (layer === 2 || layer === 3) {
     entry.verdict_url = `${PAGES_BASE}/repro/${slug}/verdict.json`;
   }
@@ -159,13 +202,23 @@ async function main(): Promise<void> {
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const REPO_ROOT = join(__dirname, '..', '..');
 
+  const overlay = await loadFacetOverlay(REPO_ROOT);
   const recipes: RecipeEntry[] = [];
   for (const { layer, dir } of LAYERS) {
     const layerDir = join(REPO_ROOT, dir);
     const slugs = await listRecipeSlugs(layerDir);
     for (const slug of slugs) {
-      recipes.push(await buildEntry(layer, slug, join(layerDir, slug)));
+      recipes.push(await buildEntry(layer, slug, join(layerDir, slug), overlay));
     }
+  }
+  const missingFacets = recipes
+    .filter((r) => r.language === 'unknown')
+    .map((r) => r.slug);
+  if (missingFacets.length > 0) {
+    console.error(
+      `NOTE: ${missingFacets.length} recipe(s) missing facet overlay rows; ` +
+        `language defaulted to "unknown": ${missingFacets.join(', ')}`,
+    );
   }
 
   const out: RecipesIndex = {

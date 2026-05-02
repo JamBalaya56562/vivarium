@@ -1,0 +1,71 @@
+{
+  "$comment": "Per-recipe facet overlay for the gallery. Per ADR-0024 §1: hand-curated, reviewed in PR diff, scales to ~50 rows. New recipe → add a row here AND in docs/docs/{en,ja}/repro/index.mdx's table fallback.",
+  "facets": {
+    "cpython-137205": {
+      "language": "python",
+      "symptom": "fk-pragma-silently-dropped",
+      "severity": "spec-violation",
+      "tags": ["sqlite3", "pragma", "foreign-keys", "autocommit"]
+    },
+    "numpy-28287": {
+      "language": "python",
+      "symptom": "ordering-non-transitive",
+      "severity": "bug",
+      "tags": ["timedelta64", "comparison", "datetime-units"]
+    },
+    "pandas-56679": {
+      "language": "python",
+      "symptom": "dtype-mismatch",
+      "severity": "regression",
+      "tags": ["empty-series", "empty-dataframe", "type-inference"]
+    },
+    "php-12167": {
+      "language": "php",
+      "symptom": "json-encode-recursion",
+      "severity": "bug",
+      "tags": ["json_encode", "recursion-depth"]
+    },
+    "regex-779": {
+      "language": "rust",
+      "symptom": "regex-engine-edge-case",
+      "severity": "bug",
+      "tags": ["regex", "wasm32-wasip1"]
+    },
+    "ruby-21709": {
+      "language": "ruby",
+      "symptom": "unicode-normalize-nfd",
+      "severity": "bug",
+      "tags": ["string", "unicode", "combining-diacritics"]
+    },
+    "bash-local-shadows-exit": {
+      "language": "shell",
+      "symptom": "local-shadows-exit-status",
+      "severity": "footgun",
+      "tags": ["bash", "command-substitution", "exit-code"]
+    },
+    "find-xargs-whitespace": {
+      "language": "shell",
+      "symptom": "whitespace-unsafe-pipeline",
+      "severity": "footgun",
+      "tags": ["find", "xargs", "whitespace", "filenames"]
+    },
+    "flock-is-advisory": {
+      "language": "shell",
+      "symptom": "advisory-lock-bypass",
+      "severity": "spec-violation",
+      "tags": ["flock", "filesystem", "concurrency"]
+    },
+    "postgres-lost-update": {
+      "language": "sql",
+      "symptom": "lost-update-read-committed",
+      "severity": "datarace",
+      "tags": ["postgresql", "isolation-level", "concurrency"]
+    },
+    "lost-update": {
+      "language": "c",
+      "symptom": "lost-update-data-race",
+      "severity": "datarace",
+      "tags": ["pthread", "rr-replay", "deterministic"]
+    }
+  }
+}
