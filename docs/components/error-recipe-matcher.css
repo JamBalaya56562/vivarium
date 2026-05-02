@@ -1,0 +1,264 @@
+/* Phase 6 S.2 — error → recipe matcher.
+ * Reuses .v-rg__card and .v-rg__title family from recipe-gallery.css.
+ */
+
+.v-erm {
+  margin: 1.25rem 0 2.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--vh-text);
+}
+
+.v-erm__eyebrow,
+.v-erm__results-eyebrow {
+  display: block;
+  margin: 0 0 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vh-accent-teal);
+}
+
+.v-erm__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.v-erm__field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vh-text-muted);
+}
+
+.v-erm__field-input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  background: var(--vh-card-bg);
+  border: 1px solid var(--vh-hairline);
+  border-radius: 6px;
+  color: var(--vh-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.v-erm__field-input:focus {
+  border-color: var(--vh-accent-teal);
+  background: var(--vh-card-bg-hover);
+}
+
+.v-erm__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.v-erm__btn {
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--vh-hairline-strong);
+  border-radius: 6px;
+  background: var(--vh-card-bg);
+  color: var(--vh-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.v-erm__btn:hover:not(:disabled) {
+  border-color: var(--vh-accent-teal);
+  background: var(--vh-card-bg-hover);
+}
+
+.v-erm__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.v-erm__btn--primary {
+  border-color: var(--vh-accent-teal);
+  color: var(--vh-accent-teal);
+}
+
+.v-erm__btn--ghost {
+  background: transparent;
+}
+
+/* ---------- Tokens chip strip ---------- */
+
+.v-erm__tokens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  margin: 0 0 1.1rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--vh-card-bg);
+  border: 1px solid var(--vh-hairline);
+  border-radius: 6px;
+}
+
+.v-erm__tokens-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--vh-text-muted);
+  margin-right: 0.25rem;
+}
+
+.v-erm__token {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  background: var(--vh-card-bg-hover);
+  color: var(--vh-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  border: 1px solid var(--vh-hairline);
+}
+
+.v-erm__token--input {
+  background: rgba(0, 212, 170, 0.08);
+  border-color: rgba(0, 212, 170, 0.25);
+  color: var(--vh-accent-teal-bright);
+}
+
+.v-erm__token--symptom {
+  background: rgba(124, 92, 255, 0.12);
+  color: var(--vh-accent-violet-bright);
+  border-color: rgba(124, 92, 255, 0.25);
+}
+
+.v-erm__token--tags {
+  background: rgba(0, 212, 170, 0.08);
+  color: var(--vh-accent-teal-bright);
+  border-color: rgba(0, 212, 170, 0.25);
+}
+
+.v-erm__token--project,
+.v-erm__token--slug {
+  background: rgba(255, 113, 108, 0.08);
+  color: var(--vh-accent-coral);
+  border-color: rgba(255, 113, 108, 0.25);
+}
+
+.v-erm__token-source {
+  font-size: 0.62rem;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ---------- Results ---------- */
+
+.v-erm__results {
+  margin-top: 1.5rem;
+}
+
+.v-erm__results-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.v-erm__results-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--vh-text-dim);
+}
+
+.v-erm__card {
+  border-color: var(--vh-accent-teal);
+  background: var(--vh-card-bg);
+}
+
+.v-erm__score {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.v-erm__score-key {
+  color: var(--vh-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.65rem;
+}
+
+.v-erm__score code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--vh-card-bg-hover);
+  color: var(--vh-accent-teal-bright);
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.v-erm__matched {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  margin: 0.4rem 0;
+}
+
+.v-erm__matched-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--vh-text-muted);
+  margin-right: 0.15rem;
+}
+
+/* ---------- Empty / hint states ---------- */
+
+.v-erm__empty {
+  margin-top: 1.5rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  background: var(--vh-card-bg);
+  border-radius: 8px;
+  border: 1px dashed var(--vh-hairline-strong);
+}
+
+.v-erm__empty-heading {
+  margin: 0 0 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  color: var(--vh-text);
+}
+
+.v-erm__empty-body {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--vh-text-muted);
+}
+
+.v-erm__empty-body a {
+  color: var(--vh-accent-teal);
+  text-decoration: underline;
+}
+
+.v-erm__hint {
+  margin: 1.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--vh-text-dim);
+  font-style: italic;
+}

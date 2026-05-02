@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "match",
+    "label": "Match an error"
+  },
+  {
+    "type": "file",
     "name": "compare",
     "label": "Branch-fix comparison"
   }
