@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Spec 概要"
+  },
+  {
+    "type": "file",
+    "name": "contract-v1",
+    "label": "Contract v1"
+  },
+  {
+    "type": "file",
+    "name": "manifest-v1",
+    "label": "Manifest v1"
+  },
+  {
+    "type": "file",
+    "name": "manifest-create",
+    "label": "マニフェスト作成"
+  },
+  {
+    "type": "file",
+    "name": "recipes-index-v1",
+    "label": "Recipes index v1"
+  },
+  {
+    "type": "file",
+    "name": "consumer-workflow",
+    "label": "コンシューマーワークフロー"
+  },
+  {
+    "type": "file",
+    "name": "branch-fix-pipeline",
+    "label": "ブランチ修正パイプライン"
+  }
+]
