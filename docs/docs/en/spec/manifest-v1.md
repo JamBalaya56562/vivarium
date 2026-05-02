@@ -189,7 +189,7 @@ A manifest conforms to Vivarium Manifest v1 when:
 1. It is a valid TOML 1.0 document at `.vivarium/manifest.toml`
    in the consuming repo.
 2. It validates against
-   [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json)
+   [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json)
    after a TOML→JSON conversion.
 3. Exactly one of `[layer1]` / `[layer2]` / `[layer3]` is
    present, matching the top-level `layer` integer.
@@ -216,7 +216,7 @@ schema on every push and pull request.
 
 - [Contract v1](./contract-v1.md) — the runtime verdict surface
   this manifest's pointed-at artefact must publish.
-- [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json)
+- [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json)
   — JSON Schema (draft 2020-12) for the manifest after TOML→JSON
   conversion.
 - [Consumer workflow](./consumer-workflow.md) — the reusable

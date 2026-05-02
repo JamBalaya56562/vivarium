@@ -76,7 +76,7 @@ bundle contains:
 
 | File | Source | Notes |
 |---|---|---|
-| `branch-fix-verdict.json` | Captured live from `branch_image`. | Always present. Conforms to [Contract v1](./contract-v1.md) and validates against [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json). |
+| `branch-fix-verdict.json` | Captured live from `branch_image`. | Always present. Conforms to [Contract v1](./contract-v1.md) and validates against [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json). |
 | `original-verdict.json` | Default: fetched from `https://aletheia-works.github.io/vivarium/repro/<slug>/verdict.json`. With `original_image`: captured from that image. | Omitted when the deployed Pages snapshot returns 404 (e.g. brand-new recipe not yet on the live site). |
 
 The R.3 comparison-page UI consumes this exact bundle structure;
@@ -123,7 +123,7 @@ artefact is the source of truth either way.
 
 - [Contract v1](./contract-v1.md) — the verdict surface this
   pipeline emits and consumes.
-- [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json) —
+- [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) —
   the schema both bundle entries validate against.
 - [Consumer workflow](./consumer-workflow.md) — the sibling
   reusable workflow for verifying a Vivarium recipe in a consumer

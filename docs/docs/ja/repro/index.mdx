@@ -1,0 +1,227 @@
+---
+pageType: doc
+title: 再現一覧
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// REPRODUCTIONS · GALLERY"
+    title="本物のバグ、本物のランタイム、ブラウザで。"
+    sub="各カードは実際のアップストリームプロジェクトから取り出した本物のバグであり、WebAssembly 言語ランタイムを通じてブラウザで再現される。ランタイムの読み込みが完了すると、画面上部に verdict が表示される。"
+  />
+
+  <Section
+    eyebrow="// コントラクト"
+    heading="すべてのページが vivarium-contract: v1 を満たす。"
+  >
+    <p>
+      各ギャラリーページは <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>{' '}
+      を宣言し、<code>data-verdict="pending" | "pass" | "fail"</code> を持つ{' '}
+      <code>#verdict</code> DOM 要素と、<code>window</code> 上の構造化{' '}
+      <code>__VIVARIUM_RESULT__</code> エンベロープを公開する。
+    </p>
+    <Callout>
+      "pass" verdict はバグが再現されたことを意味する。"fail" verdict はランタイムが
+      修正済みバージョンを出荷したことを意味する。セマンティクスはプロジェクトのドメイン語に
+      合わせている: 再現が成功するのは、再現できたときだ。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// LAYER 1 — PYODIDE (PYTHON)"
+    heading="WebAssembly 上の Python。"
+  >
+    <table>
+      <thead>
+        <tr><th>プロジェクト</th><th>Issue</th><th>Verdict</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>pandas</td>
+          <td><a href="https://github.com/pandas-dev/pandas/issues/56679">#56679</a> — 空の Series / DataFrame の dtype ミスマッチ</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/pandas-56679/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+        <tr>
+          <td>numpy</td>
+          <td><a href="https://github.com/numpy/numpy/issues/28287">#28287</a> — 汎用単位をまたぐ timedelta64 の順序が非推移的</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/numpy-28287/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+        <tr>
+          <td>cpython</td>
+          <td><a href="https://github.com/python/cpython/issues/137205">#137205</a> — autocommit=False の下で sqlite3 が PRAGMA foreign_keys=ON をサイレントに無視</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/cpython-137205/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Verdict は各ページが Pyodide v0.29.3（Python 3.13.2、pandas 2.3.3、numpy 2.2.5、
+      SQLite 3.39.0）に対して報告した内容を反映している。リンクされたページが正式な情報源だ——
+      アップストリームの修正が将来の Pyodide リリースに入ると verdict が{' '}
+      <code>fail</code> に反転するため、ライブ verdict の確認はページを直接訪問すること。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// LAYER 1 — RUBY.WASM"
+    heading="WebAssembly (WASI) 上の Ruby。"
+  >
+    <table>
+      <thead>
+        <tr><th>プロジェクト</th><th>Issue</th><th>Verdict</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ruby</td>
+          <td><a href="https://bugs.ruby-lang.org/issues/21709">#21709</a> — Regexp 補間は混合エンコーディングを拒否するが String 補間は UTF-8 にアップグレードする</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/ruby-21709/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+  </Section>
+
+  <Section
+    eyebrow="// LAYER 1 — PHP-WASM"
+    heading="WebAssembly 上の PHP。"
+  >
+    <table>
+      <thead>
+        <tr><th>プロジェクト</th><th>Issue</th><th>Verdict</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>php</td>
+          <td><a href="https://github.com/php/php-src/issues/12167">#12167</a> — SimpleXMLElement::xpath の PI ノード文字列キャストが空の値を返す</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/php-12167/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+  </Section>
+
+  <Section
+    eyebrow="// LAYER 1 — RUST"
+    heading="wasm32-wasip1 にコンパイルされた Rust。"
+  >
+    <table>
+      <thead>
+        <tr><th>プロジェクト</th><th>Issue</th><th>Verdict</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>regex</td>
+          <td><a href="https://github.com/rust-lang/regex/issues/779">#779</a> — (re)+ と (re)(re)* でマッチイテレーションの出力が異なる</td>
+          <td><code>pass</code></td>
+          <td><a href="/vivarium/repro/regex-779/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <code>regex = "=1.8.4"</code> にピン留め。修正は新しい NFA コンパイラとともに
+      regex 1.9 に入った——1.9 以降にバンプすると verdict が <code>fail</code> に反転し、
+      ページが修正検知センチネルになる。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// LAYER 2 — DOCKER"
+    heading="レシピ + イメージ、自分のマシンで実行。"
+  >
+    <p>
+      Layer 2 エントリはページ内実行ではなく、レシピ + ビルド済みイメージとして提供される。
+      ページには <code>Dockerfile</code>、<code>repro.sh</code>、CI の最新 verdict スナップショットへのリンクが含まれる。
+      訪問者は 1 つの <code>docker run</code> コマンドでローカル再現する。
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>プロジェクト</th><th>動作</th><th>イメージ</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>postgres</td>
+          <td>デフォルトの READ COMMITTED 下での lost update — アプリ側の並行インクリメントがサイレントに上書きされる</td>
+          <td><code>vivarium-postgres-lost-update</code></td>
+          <td><a href="/vivarium/repro/postgres-lost-update/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+        <tr>
+          <td>bash</td>
+          <td><code>local</code> がコマンド置換の終了コードをシャドウする — set -e がサイレントにバイパスされる</td>
+          <td><code>vivarium-bash-local-shadows-exit</code></td>
+          <td><a href="/vivarium/repro/bash-local-shadows-exit/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+        <tr>
+          <td>flock</td>
+          <td>flock(2) はアドバイザリのみ — cat / cp はロックを無視する</td>
+          <td><code>vivarium-flock-is-advisory</code></td>
+          <td><a href="/vivarium/repro/flock-is-advisory/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+        <tr>
+          <td>find/xargs</td>
+          <td>find | xargs はファイル名の空白に対して安全でない — ファイルがサイレントに消える</td>
+          <td><code>vivarium-find-xargs-whitespace</code></td>
+          <td><a href="/vivarium/repro/find-xargs-whitespace/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>ローカルで再現する:</p>
+
+    <pre><code>{`docker run --rm ghcr.io/aletheia-works/vivarium-postgres-lost-update:latest
+docker run --rm ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest
+docker run --rm ghcr.io/aletheia-works/vivarium-flock-is-advisory:latest
+docker run --rm ghcr.io/aletheia-works/vivarium-find-xargs-whitespace:latest`}</code></pre>
+  </Section>
+
+  <Section
+    eyebrow="// ネイティブ再検証"
+    heading="本物のインタープリタで同じロジックを実行。"
+  >
+    <p>
+      各ギャラリーページには CLI バリアントが付属する——<code>repro.py</code>、
+      <code>repro.rb</code>、<code>repro.php</code>、または Rust の場合は同じ{' '}
+      <code>Cargo.toml</code> + <code>src/main.rs</code>——本物のネイティブインタープリタ/コンパイラに
+      対して同じロジックを実行する。リポジトリルートの <code>.mise.toml</code> が、
+      WASM ランタイムがバンドルするものと同じ major.minor.patch（または pip 依存ピン）に
+      各ランタイムをピン留めする。
+    </p>
+
+    <pre><code>{`mise install                                                    # マシンごとに一度
+mise exec uv   -- uv run src/layer1_wasm/pandas-56679/repro.py
+mise exec uv   -- uv run src/layer1_wasm/numpy-28287/repro.py
+mise exec uv   -- uv run src/layer1_wasm/cpython-137205/repro.py
+mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
+mise exec php  -- php  src/layer1_wasm/php-12167/repro.php
+mise exec rust -- cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml`}</code></pre>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// 次のページ"
+  heading={
+    <>
+      仕様を読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="すべてのギャラリーページが約束する verdict コントラクト。"
+  primary={{ label: '仕様 →', href: '/vivarium/ja/spec/' }}
+  ghost={{ label: 'アーキテクチャ', href: '/vivarium/ja/architecture' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

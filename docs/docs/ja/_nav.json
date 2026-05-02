@@ -1,37 +1,32 @@
 [
   {
-    "text": "Vision",
+    "text": "ビジョン",
     "link": "/vision",
     "activeMatch": "/vision"
   },
   {
-    "text": "Roadmap",
+    "text": "ロードマップ",
     "link": "/roadmap",
     "activeMatch": "/roadmap"
   },
   {
-    "text": "Architecture",
+    "text": "アーキテクチャ",
     "link": "/architecture",
     "activeMatch": "/architecture"
   },
   {
-    "text": "Spec",
+    "text": "仕様",
     "link": "/spec/",
     "activeMatch": "/spec/"
   },
   {
-    "text": "AI workflow",
+    "text": "AI ワークフロー",
     "link": "/ai-workflow",
     "activeMatch": "/ai-workflow"
   },
   {
-    "text": "Reproductions",
+    "text": "再現一覧",
     "link": "/repro/",
     "activeMatch": "/repro/"
-  },
-  {
-    "text": "日本語",
-    "link": "/ja/",
-    "activeMatch": "/ja/"
   }
 ]

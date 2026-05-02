@@ -9,7 +9,7 @@ The workflow lives at
 It pulls the published `ghcr.io/aletheia-works/vivarium-<slug>`
 image, runs the recipe, captures a `verdict.json` matching
 [Contract v1](./contract-v1.md), validates it against the
-[published JSON Schema](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json),
+[published JSON Schema](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json),
 and asserts the captured verdict matches what the caller
 expected.
 
@@ -95,7 +95,7 @@ Actions API.
 
 - [Contract v1](./contract-v1.md) — the verdict surface this
   workflow consumes.
-- [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json) —
+- [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) —
   the schema the workflow validates against.
 - [Layer 2 catalogue](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
   — the slugs available for `inputs.slug`.

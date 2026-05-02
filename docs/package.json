@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "generate-index": "bun run scripts/generate-recipes-index.ts",
-    "dev": "bun run generate-index && rspress dev",
+    "prebuild-repro": "bun run scripts/prebuild-repro.ts",
+    "dev": "bun run generate-index && bun run prebuild-repro && rspress dev",
     "build": "bun run generate-index && rspress build",
     "preview": "rspress preview"
   },

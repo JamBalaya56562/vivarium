@@ -71,6 +71,12 @@ src/layer1_wasm/**/*.d.ts
 src/layer1_wasm/**/*.d.ts.map
 # `playwright.config.ts` IS tracked — `*.ts` is fine, only generated
 # `*.js` next to it would be excluded.
+# Hand-written shared assets (`chrome.js`, `sw.js`) live in `_assets/`
+# rather than `_shared/` so the broad `*.js` ignore above doesn't apply
+# to them — `_shared/` is exclusively for TS sources + their tsc-emitted
+# `.js` siblings. Force-include the whole `_assets/` tree.
+!src/layer1_wasm/_assets/
+!src/layer1_wasm/_assets/**
 
 # Playwright run artefacts (test reports, traces, screenshots).
 src/layer1_wasm/playwright-report/

@@ -96,7 +96,7 @@ per-recipe declarations rather than slug-derived guesses.
 A `recipes.json` document conforms to v1 when:
 
 1. It validates against
-   [`recipes.schema.json`](https://aletheia-works.github.io/vivarium/api/recipes.schema.json).
+   [`recipes.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/api/recipes.schema.json).
 2. `index === "v1"` and `contract === "v1"`.
 3. Every entry's `slug` matches `^[a-z0-9]+(-[a-z0-9]+)*$`.
 4. Every Layer 2 / 3 entry includes `verdict_url`; Layer 1 entries omit it.

@@ -14,6 +14,18 @@
           - ".github/dependabot.yml"
           - ".github/labeler.yml"
           - ".github/release.yml"
+          - ".github/ISSUE_TEMPLATE/**"
+          - ".github/PULL_REQUEST_TEMPLATE.md"
+          - "mise.toml"
+          - ".gitignore"
+          - ".editorconfig"
+          - ".gitattributes"
+
+"scope: docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "**/*.mdx"
 
 "scope: infra":
   - changed-files:
@@ -46,6 +58,8 @@
           - "**/pnpm-lock.yaml"
           - "**/bun.lock"
           - "**/tsconfig*.json"
+          - "**/*.css"
+          - "**/jsr.json"
 
 "scope: wasm":
   - changed-files:
@@ -54,6 +68,11 @@
           - "**/*.wat"
           - "**/wasm/**"
           - "**/*_wasm/**"
+          - "**/*.php"
+          - "**/*.rb"
+          - "src/layer1_wasm/**"
+          - "src/external_examples/**"
+          - "**/.vivarium/**"
 
 "scope: docker":
   - changed-files:
@@ -62,6 +81,8 @@
           - "**/docker-compose*.yml"
           - "**/docker-compose*.yaml"
           - "**/.dockerignore"
+          - "src/layer2_docker/**"
+          - "src/layer3_thirdway/**"
 
 "type: docs":
   # `any-glob-to-all-files` (not `-any-file`): apply only when every

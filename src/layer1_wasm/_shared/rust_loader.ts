@@ -86,12 +86,15 @@ export async function loadVivariumRust(
   const pendingText = options.pendingText ?? "Loading Rust wasm via WASI shim…";
 
   setVerdict("pending", pendingText);
+  emitProgress(5, "Initialising…", "");
 
   const shimUrl = `https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@${wasiShimVersion}/dist/index.js`;
 
   try {
+    emitProgress(20, "Fetching WASI shim…", "");
     const shim = (await import(/* @vite-ignore */ shimUrl)) as WasiShimModule;
 
+    emitProgress(45, "Downloading repro.wasm…", "");
     const wasmResponse = await fetch(options.wasmUrl);
     if (!wasmResponse.ok) {
       throw new Error(
@@ -99,7 +102,12 @@ export async function loadVivariumRust(
       );
     }
     const wasmBytes = await wasmResponse.arrayBuffer();
+    const sizeMB = (wasmBytes.byteLength / 1_000_000).toFixed(2);
+
+    emitProgress(78, "Compiling WebAssembly…", `${sizeMB} MB`);
     const wasmModule = await WebAssembly.compile(wasmBytes);
+
+    emitProgress(94, "Runtime ready.", `${sizeMB} MB`);
 
     const rust: RustRunner = {
       async run(): Promise<RunResult> {
@@ -153,4 +161,13 @@ export async function loadVivariumRust(
     );
     throw err;
   }
+}
+
+function emitProgress(pct: number, label: string, bytes: string): void {
+  if (typeof document === "undefined") return;
+  document.dispatchEvent(
+    new CustomEvent("vh-progress", {
+      detail: { pct, label, bytes, stage: "runtime" },
+    }),
+  );
 }

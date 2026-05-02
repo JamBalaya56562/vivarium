@@ -1,0 +1,159 @@
+---
+pageType: doc
+title: 仕様
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  CompareCards,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// SPEC · v1"
+    title="Vivarium 仕様。"
+    sub="再現 verdict コントラクト——アップストリームのバグが今日のランタイムに対して再現するかどうかを記述する、小さく安定したサーフェス。"
+  />
+
+  <Section
+    eyebrow="// 01 · 概要"
+    heading="バージョン管理されたサーフェス。移動するターゲットではない。"
+  >
+    <p>
+      Vivarium 仕様は、再現ページが自己宣言できるようにし、外部ツールが verdict を読めるようにし、
+      外部リポジトリがカスタムのグルーなしで独自の再現を公開できるようにする小さなファイルセットだ。
+      <strong>v1</strong> はロックされている。v2 はランディング時に新しい仕様ページとして公開され、
+      後方互換コンシューマーのために v1 を読み続けられるようにする。
+    </p>
+
+    <Callout>
+      再現ページは{' '}
+      <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>{' '}
+      でコンフォーマンスを宣言する。外部ツールは同じサーフェスを読んで
+      ページが今日も再現するかを知る。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · 現在のサーフェス"
+    heading="三つのサーフェス、ひとつのコントラクト。"
+  >
+    <CompareCards
+      others={[
+        {
+          name: 'Contract v1',
+          tagline: 'verdict サーフェス（ランタイム）。Phase 1 から安定。',
+        },
+        {
+          name: 'Manifest v1',
+          tagline: '公開サーフェス（TOML）。Phase 5 から安定。',
+        },
+        {
+          name: 'Recipes index v1',
+          tagline: '機械可読カタログ。Phase 5。',
+        },
+      ]}
+      highlight={{
+        name: 'ライブエンドポイント',
+        tagline:
+          'aletheia-works.github.io/vivarium/api/recipes.json — デプロイごとに更新',
+      }}
+    />
+
+    <h3>Contract v1 — verdict サーフェス</h3>
+    <p>
+      <a href="/vivarium/ja/spec/contract-v1">Contract v1</a> はすべての再現ページが約束することを定義する:
+      <code>verdict</code> DOM バンド、<code>window.__VIVARIUM_RESULT__</code> 上の構造化結果エンベロープ、
+      そして三つのレイヤー全体で同じ pass / fail / pending セマンティクス。
+      Layer 2 / 3 の verdict スナップショットファイルは{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json">
+        verdict.schema.json
+      </a>{' '}
+      （JSON Schema draft 2020-12）に従う。
+    </p>
+
+    <h3>Manifest v1 — 公開サーフェス</h3>
+    <p>
+      <a href="/vivarium/ja/spec/manifest-v1">Manifest v1</a> は、外部リポジトリが
+      <code>.vivarium/manifest.toml</code> に置いて Vivarium 実行可能な再現を宣言するための
+      TOML マニフェストだ。スキーマ:{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json">
+        manifest.schema.json
+      </a>
+      。
+    </p>
+
+    <h3>Recipes index v1 — カタログエンドポイント</h3>
+    <p>
+      <a href="/vivarium/ja/spec/recipes-index-v1">Recipes index v1</a> は、
+      このリポジトリがホストするすべての再現を機械的に生成した JSON リストだ。
+      Vivarium MCP サーバおよびその他のプログラマティックなカタログツールが利用する。スキーマ:{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/api/recipes.schema.json">
+        recipes.schema.json
+      </a>
+      。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 03 · ツール"
+    heading="コントラクトを消費する再利用可能ワークフロー。"
+  >
+    <h3>Consumer workflow</h3>
+    <p>
+      <a href="/vivarium/ja/spec/consumer-workflow">Consumer workflow</a> —
+      任意のリポジトリが <code>uses:</code> することで自分の CI 内で
+      Vivarium ホスト型再現を検証できる再利用可能 GitHub Actions ワークフロー。
+      Phase 5 サブストリーム D。
+    </p>
+
+    <h3>Branch-fix verdict パイプライン</h3>
+    <p>
+      <a href="/vivarium/ja/spec/branch-fix-pipeline">Branch-fix verdict パイプライン</a>{' '}
+      — コントリビューターが提供したブランチフィックス Docker イメージの verdict をキャプチャし、
+      デプロイ済みの元の verdict と並べてサイドバイサイド比較を提供する
+      <code>workflow_dispatch</code> ワークフロー。Phase 6 サブストリーム R.2。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 04 · スコープ"
+    heading="この仕様が何のためにあり、何のためにないか。"
+  >
+    <h3>この仕様が対象とするもの</h3>
+    <ul>
+      <li><code>aletheia-works/vivarium</code> 以下の再現ページ（Layer 1、Layer 2、Layer 3）は meta タグと JSON エンベロープでコンフォーマンスを宣言する。</li>
+      <li>外部ツール（CI、IDE プラグイン、AI レビュアー、サードパーティ再現定義）は同じサーフェスを読んでページが今日も再現するかを知る。</li>
+      <li>このリポジトリ外でホストされる将来の Vivarium 互換再現も同じ方法でコンフォーマンスを宣言できる。</li>
+    </ul>
+
+    <h3>この仕様が対象としないもの</h3>
+    <ul>
+      <li>完全な再現プロトコルではない——verdict サーフェスをカバーするのであり、再現自体の構築方法は対象外（それはレイヤーの README に記述された各レイヤーの規約）。</li>
+      <li>メジャーバージョン間で安定していない。v1 はロックされており、v2 はランディング時に新しい仕様ページとして公開される。</li>
+    </ul>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// 次のページ"
+  heading={
+    <>
+      再現一覧を見る{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="実際のアップストリームプロジェクトからの本物のバグが、ブラウザで再現する。"
+  primary={{ label: '再現一覧 →', href: '/vivarium/ja/repro/' }}
+  ghost={{ label: 'アーキテクチャ', href: '/vivarium/ja/architecture' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

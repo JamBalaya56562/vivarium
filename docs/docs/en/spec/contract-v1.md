@@ -201,7 +201,7 @@ reproduction attempt. The file is fetched on page load and lifted
 into the in-page surface (`__VIVARIUM_RESULT__` etc.) by
 [`src/layer2_docker/_layer2-shared/layer2.js`](https://github.com/aletheia-works/vivarium/blob/main/src/layer2_docker/_layer2-shared/layer2.js).
 
-Schema: [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json) (JSON Schema
+Schema: [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) (JSON Schema
 draft 2020-12).
 
 Field summary:
@@ -294,7 +294,7 @@ A reproduction page conforms to Vivarium Contract v1 when:
 3. It exposes the structured envelope via `__VIVARIUM_RESULT__`,
    conforming to the `VivariumResultV1` type.
 4. If it ships a `verdict.json`, the file validates against
-   [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json).
+   [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json).
 
 CI enforces these clauses mechanically — currently via
 [`src/layer1_wasm/tests/repro.spec.ts`](https://github.com/aletheia-works/vivarium/blob/main/src/layer1_wasm/tests/repro.spec.ts)

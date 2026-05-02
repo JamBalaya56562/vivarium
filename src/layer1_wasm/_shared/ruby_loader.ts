@@ -55,18 +55,23 @@ export async function loadVivariumRuby(
   const rubyWasmVersion = options.rubyWasmVersion ?? DEFAULT_RUBY_WASM_VERSION;
   const rubyVersion = options.rubyVersion ?? DEFAULT_RUBY_VERSION;
   const pendingText = options.pendingText ?? "Loading Ruby.wasm runtime…";
+  const total = 22.0; // ruby+stdlib.wasm is ~21 MB
 
   setVerdict("pending", pendingText);
+  emitProgress(5, "Initialising…", `0.0 MB / ${total.toFixed(1)} MB`);
 
   const loaderUrl = `https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@${rubyWasmVersion}/dist/browser/+esm`;
   const wasmUrl = `https://cdn.jsdelivr.net/npm/@ruby/${rubyVersion}-wasm-wasi@${rubyWasmVersion}/dist/ruby+stdlib.wasm`;
 
   try {
+    emitProgress(20, "Fetching Ruby.wasm loader…", `0.0 MB / ${total.toFixed(1)} MB`);
     const mod = (await import(/* @vite-ignore */ loaderUrl)) as {
       DefaultRubyVM: (
         module: WebAssembly.Module,
       ) => Promise<{ vm: RubyVMInstance }>;
     };
+
+    emitProgress(40, "Downloading ruby+stdlib.wasm…", `0.0 MB / ${total.toFixed(1)} MB`);
     const response = await fetch(wasmUrl);
     if (!response.ok) {
       throw new Error(
@@ -74,8 +79,15 @@ export async function loadVivariumRuby(
       );
     }
     const buffer = await response.arrayBuffer();
+    const downloadedMB = (buffer.byteLength / 1_000_000).toFixed(1);
+
+    emitProgress(70, "Compiling WebAssembly…", `${downloadedMB} MB / ${total.toFixed(1)} MB`);
     const wasmModule = await WebAssembly.compile(buffer);
+
+    emitProgress(88, "Instantiating Ruby VM…", `${downloadedMB} MB / ${total.toFixed(1)} MB`);
     const { vm } = await mod.DefaultRubyVM(wasmModule);
+
+    emitProgress(94, "Runtime ready.", `${downloadedMB} MB / ${total.toFixed(1)} MB`);
     return { vm, rubyWasmVersion, rubyVersion };
   } catch (err: unknown) {
     const errAny = err as { stack?: string; message?: string } | null;
@@ -87,4 +99,13 @@ export async function loadVivariumRuby(
     );
     throw err;
   }
+}
+
+function emitProgress(pct: number, label: string, bytes: string): void {
+  if (typeof document === "undefined") return;
+  document.dispatchEvent(
+    new CustomEvent("vh-progress", {
+      detail: { pct, label, bytes, stage: "runtime" },
+    }),
+  );
 }

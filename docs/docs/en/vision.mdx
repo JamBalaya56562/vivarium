@@ -1,0 +1,170 @@
+---
+pageType: doc
+title: Vision
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  KpiStrip,
+  CompareCards,
+  LayerCards,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// VISION · v1"
+    title="Universal bug reproduction"
+    sub="Any language, any environment, any scale."
+  />
+
+  <Section
+    eyebrow="// 01 · THE PROBLEM"
+    heading="AI slop crossed the threshold."
+  >
+    <p>
+      In 2025–2026, open-source maintainers found themselves on the receiving
+      end of a new kind of flood: AI-generated bug reports and pull requests,
+      filed at machine speed, containing plausible-sounding claims that no
+      human had verified. The shared root cause is not that AI writes bad
+      code — it is that <strong>there is no cheap, universal way to verify whether a
+      bug report or PR describes something real</strong>.
+    </p>
+    <p>
+      Maintainers are asked to run arbitrary code in arbitrary environments
+      with arbitrary dependencies, one report at a time, on goodwill. The
+      reporter side is worse: a contributor who wants to verify their own
+      claim before filing has no easy tool to do so.
+    </p>
+
+    <KpiStrip
+      items={[
+        { value: '<5%', label: 'valid vulnerabilities (cURL 2026)', accent: 'coral' },
+        { value: '1-in-10', label: 'useful AI PRs (industry studies)', accent: 'violet' },
+        { value: '1.7×', label: 'logic issues in AI-authored code', accent: 'coral' },
+        { value: '3×', label: 'readability issues vs human code', accent: 'violet' },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 02 · OUR POSITION"
+    heading="Reproduction is the primitive. Not the runtime."
+  >
+    <p>
+      Every adjacent player is anchored to a single technology. Each is
+      excellent at what it does, and each leaves bugs that do not fit its
+      technology unreproducible. Vivarium starts from the bug and chooses
+      the technology — so that <strong>"unreproducible" becomes a temporary gap we
+      can close, not a permanent exclusion</strong>.
+    </p>
+
+    <CompareCards
+      others={[
+        { name: 'StackBlitz',  tagline: 'anchored to JavaScript+WASM' },
+        { name: 'Codespaces',  tagline: 'anchored to Docker' },
+        { name: 'Replit',      tagline: 'anchored to its runtime' },
+      ]}
+      highlight={{
+        name: 'Vivarium',
+        tagline: 'anchored to nothing — routes by problem',
+      }}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 03 · THREE LAYERS"
+    heading="One primitive, three execution surfaces."
+  >
+    <p>
+      Vivarium organises its reproduction techniques into three layers. Users
+      do not pick a layer; the platform routes a reproduction request to the
+      layer whose tradeoffs fit the problem.
+    </p>
+
+    <LayerCards
+      layers={[
+        {
+          pill: 'L1',
+          accent: 'teal',
+          title: 'Instant, browser-native',
+          body: 'Reproduction runs in the user’s browser via WebAssembly. Startup in milliseconds. Ideal for algorithms, parsers, data processing, and database operations — bugs that don’t need a full operating system.',
+          runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · PHP.wasm',
+        },
+        {
+          pill: 'L2',
+          accent: 'violet',
+          title: 'Full-fidelity, containerised',
+          body: 'Reproduction runs inside Docker or a microVM. Startup in seconds to a minute. For bugs that depend on real filesystems, real processes, and real networks.',
+          runtimes: 'Docker · Firecracker · gVisor',
+        },
+        {
+          pill: 'L3',
+          accent: 'coral',
+          title: 'Creative approaches',
+          body: 'Record-replay, deterministic simulation, WASI Preview 3+, snapshot-based restoration, and techniques yet to be invented. For problems neither L1 nor L2 can reach.',
+          runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 04 · WHY NOW"
+    heading="Three conditions converged in 2025-26."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'The problem became visible.',
+          body: 'AI slop crossed the threshold from individual nuisance to platform-scale crisis. cURL ended its bug bounty, Ghostty published an AI-contribution policy, tldraw began auto-closing external PRs, and GitHub shipped repository-level PR-gating settings.',
+        },
+        {
+          lead: 'The tools became credible.',
+          body: 'WebAssembly shipped enough runtimes — Pyodide matured, wasm32-wasi stabilised, Ruby and PHP arrived — that Layer 1 became possible for real problems, not just toy demos.',
+        },
+        {
+          lead: 'The incentives aligned.',
+          body: 'Maintainers need a way to verify claims cheaply. Reporters need a way to prove claims cheaply. Both sides want the same primitive for opposite reasons.',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 05 · TIME HORIZON"
+    heading="Measured in years, not quarters."
+  >
+    <p>
+      Vivarium is not a project with a completion date. The near-term scope
+      is narrow on purpose: a single working reproduction, in Python over
+      Pyodide, for a real bug from a real upstream project. From there the
+      project widens deliberately — more languages in Layer 1, then Layer 2,
+      then Layer 3 — with no pressure to skip stages in search of a product
+      launch.
+    </p>
+
+    <Callout>
+      The ambition — reproduce any bug, in any language, in any environment —
+      is large enough that the roadmap is measured in years, not quarters.
+    </Callout>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={<>Read the architecture <span className="v-next-cta__heading-arrow">→</span></>}
+  sub="Technical design of the three layers."
+  primary={{ label: 'Architecture →', href: '/vivarium/architecture' }}
+  ghost={{ label: 'Roadmap', href: '/vivarium/roadmap' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works"
+/>

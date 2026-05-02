@@ -1,0 +1,299 @@
+---
+pageType: doc
+title: Architecture
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  LayerCards,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// ARCHITECTURE · v1"
+    title="Three layers, one primitive."
+    sub="Technical design for the three-layer reproduction architecture. The Vision answers what and why; this page answers how the pieces fit together."
+  />
+
+  <Section
+    eyebrow="// 01 · GUIDING PRINCIPLE"
+    heading="Technology serves the problem."
+  >
+    <p>
+      The layers exist because reproduction problems differ in kind, not because
+      the technologies are interesting. A bug that only needs a Python interpreter
+      to reproduce should not pay the startup cost of a container. A bug that
+      needs <code>fork()</code> must not be pretended into a WASM sandbox that
+      cannot run it. A heisenbug that fails to reproduce one in ten runs cannot
+      be solved by running it harder.
+    </p>
+    <Callout>
+      No layer is the right answer. The problem chooses the layer.
+    </Callout>
+    <p>
+      The three-layer split exists so that when a new reproduction domain shows
+      up, we already have a slot for it — and if we do not, that is the signal
+      that a fourth layer (or a new technique inside an existing layer) might be
+      warranted.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · THE LAYERS AT A GLANCE"
+    heading="One primitive, three execution surfaces."
+  >
+    <LayerCards
+      layers={[
+        {
+          pill: 'L1',
+          accent: 'teal',
+          title: 'Browser-native (WASM)',
+          body:
+            'Runs inside the user’s browser tab. Cold load 1–10s, warm load <1s, per-run milliseconds. Ideal for algorithms, parsers, in-process database bugs.',
+          runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · php-wasm',
+        },
+        {
+          pill: 'L2',
+          accent: 'violet',
+          title: 'Container catalogue',
+          body:
+            'Pinned Dockerfile + GHCR-published image + repro.sh on the visitor’s own Docker (or Codespaces). Real fork, real sockets, real filesystem.',
+          runtimes: 'OCI image · Firecracker · Kata · gVisor',
+        },
+        {
+          pill: 'L3',
+          accent: 'coral',
+          title: 'Trace catalogue',
+          body:
+            'Pre-recorded traces baked into images. Capture is offline on a PMU host; replay runs anywhere. For heisenbugs that resist a fresh rerun.',
+          runtimes: 'rr · Pernosco-style · Antithesis · CRIU',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 03 · LAYER 1 — IN DETAIL"
+    heading="WebAssembly, in the page."
+  >
+    <h3>Target use cases</h3>
+    <ul>
+      <li>Algorithmic bugs (sorting, parsing, text processing).</li>
+      <li>Data-processing regressions (pandas / polars / numpy shape bugs).</li>
+      <li>Database behavioural bugs (sqlite query anomalies, JSON path edge cases).</li>
+      <li>Library-internal logic where the repro does not touch the filesystem, network, or process model.</li>
+    </ul>
+
+    <h3>Startup-time characteristics</h3>
+    <ul>
+      <li><strong>Cold load</strong> (first visit, no service-worker cache): 1–10s, dominated by runtime download (Pyodide wheel bundle ≈ 10 MB compressed) and module instantiation.</li>
+      <li><strong>Warm load</strong> (cached runtime): &lt;1s to ready state.</li>
+      <li><strong>Per-reproduction execution</strong>: milliseconds to a few seconds, in the regime where Layer 1 is the right fit.</li>
+    </ul>
+
+    <h3>Known limits</h3>
+    <ul>
+      <li><strong>Memory.</strong> Pyodide tabs commonly degrade past ~1 GB peak; 4 GB is an effective hard ceiling. Production-scale data belongs in Layer 2.</li>
+      <li><strong>System calls.</strong> No real <code>fork</code>/<code>exec</code>, no real sockets. WASI shims cover common cases but not all.</li>
+      <li><strong>Deterministic-interleaving bugs.</strong> Single-threaded by default; race conditions belong in Layer 3.</li>
+      <li><strong>Compiled-language toolchains.</strong> Running a Rust bug in-browser is fine; rebuilding the Rust compiler is not (host toolchain → Layer 2).</li>
+    </ul>
+
+    <h3>Candidate runtimes</h3>
+    <table>
+      <thead>
+        <tr><th>Language</th><th>Runtime</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Python</td><td><a href="https://pyodide.org">Pyodide</a></td><td>Phase 1 target</td></tr>
+        <tr><td>SQLite</td><td><a href="https://sqlite.org/wasm/">sqlite-wasm</a></td><td>Paired with Pyodide</td></tr>
+        <tr><td>Rust</td><td><code>wasm32-wasi</code> / <code>wasm32-unknown-unknown</code></td><td>Phase 2</td></tr>
+        <tr><td>JavaScript</td><td>Native browser</td><td>Phase 2</td></tr>
+        <tr><td>Ruby</td><td><a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a></td><td>Phase 2</td></tr>
+        <tr><td>PHP</td><td><a href="https://github.com/WordPress/wordpress-playground">php-wasm</a></td><td>Phase 2</td></tr>
+      </tbody>
+    </table>
+  </Section>
+
+  <Section
+    eyebrow="// 04 · LAYER 2 — IN DETAIL"
+    heading="Docker / microVM, on the visitor’s machine."
+  >
+    <h3>Target use cases</h3>
+    <ul>
+      <li>Whole-project reproductions — the bug needs the project's actual dependency resolver against a real package index.</li>
+      <li>System-call-dependent bugs — real <code>fork</code>, real sockets, real file locking, real signals.</li>
+      <li>Toolchain-specific bugs — a particular GCC, a particular glibc, a particular kernel ABI quirk.</li>
+      <li>Multi-process / multi-container bugs where the interaction <em>between</em> processes is the bug.</li>
+    </ul>
+
+    <h3>Delivery model: catalogue, not execution SaaS</h3>
+    <p>
+      Layer 2 is a <strong>catalogue of reproducible recipes</strong>, not a hosted-sandbox
+      service. Each gallery entry ships a pinned <code>Dockerfile</code>, a{' '}
+      <code>repro.sh</code> that emits the same <code>pass</code> /{' '}
+      <code>fail</code> verdict shape Layer 1 uses, and a pre-built image
+      published to <code>ghcr.io/aletheia-works/vivarium-&lt;slug&gt;</code>. The
+      page surfaces a copy-pasteable <code>docker run …</code> invocation and a
+      CI verdict snapshot; the visitor's own run is the live confirmation. An
+      "Open in Codespaces" badge is offered where applicable, opening the same
+      image in a one-click cloud devcontainer billed to the visitor's GitHub
+      account.
+    </p>
+
+    <h3>Known limits</h3>
+    <ul>
+      <li><strong>No in-page run.</strong> Layer 2 reproductions never execute inside the gallery page — the visitor invokes them locally or in Codespaces.</li>
+      <li><strong>Visitor needs Docker</strong> (or a Codespaces account). Without either, the recipe and verdict snapshot are still readable.</li>
+      <li><strong>Sandboxing trust boundary.</strong> Visitors run Layer 2 reproductions on their own Docker, so Vivarium is not the host of the untrusted code — the trust boundary is the visitor's own runtime.</li>
+      <li><strong>Cost on the visitor side</strong>, not Vivarium's. Image storage, bandwidth, and CI minutes are all in the public-repo / public-image free tiers.</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 05 · LAYER 3 — IN DETAIL"
+    heading="Trace-shipped, replayed anywhere."
+  >
+    <h3>Target use cases</h3>
+    <ul>
+      <li>Heisenbugs: data races, memory-ordering bugs, use-after-free where a naive rerun does not reproduce the failure.</li>
+      <li>Long-replay scenarios: hours of captured execution replayed in minutes, with time-travel debugging.</li>
+      <li>Distributed-system bugs where the failure depends on a specific message interleaving.</li>
+      <li>Post-mortem forensic analysis — stepping backwards through a recorded trace rather than forwards from a fresh run.</li>
+    </ul>
+
+    <h3>Delivery model: trace-shipped catalogue</h3>
+    <p>
+      Layer 3 is a <strong>catalogue of pre-recorded traces</strong> packaged into
+      self-contained images, not a hosted record-replay service. Capture is
+      offline and one-time per recipe: the maintainer records on a Linux/x86_64
+      host that exposes a usable PMU, uploads the trace as a tag-pinned release
+      asset, and CI bakes it into the image at build time.{' '}
+      <code>rr replay</code> does not need the PMU, so visitor and CI replays
+      both work on commodity Linux.
+    </p>
+
+    <h3>Known limits</h3>
+    <ul>
+      <li><strong>Cost per reproduction is high.</strong> Layer 3 runs only when Layers 1 and 2 cannot observe the failure — not as a default upgrade path.</li>
+      <li><strong>Tool-specific coverage gaps.</strong> <code>rr</code> targets single-process Linux x86_64; distributed simulation tools target distributed systems; neither covers the other.</li>
+      <li><strong>Recording is a maintainer responsibility, not CI's.</strong> Adding a Layer 3 recipe requires access to a Linux/x86_64 host with a working PMU.</li>
+      <li><strong>Storage.</strong> Traces are large (tens of MB to single-digit GB per recipe).</li>
+      <li><strong>Visitor needs Linux/x86_64.</strong> ARM-Mac and Windows visitors fall back to Codespaces or WSL2 + Docker.</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 06 · ROUTING"
+    heading="How a reproduction request is routed."
+  >
+    <p>
+      Routing is a first-class concern, not a side effect. No mechanical router
+      exists yet — the Layer 1 and Layer 2 catalogues live as directory-level
+      slots, and every existing recipe was hand-routed to its layer at
+      recipe-creation time. The selection rules are intentionally conservative:
+    </p>
+
+    <NumberedList
+      items={[
+        {
+          lead: 'Layer 1 wins by default.',
+          body: 'If Layer 1 can run the reproduction faithfully, Layer 1 wins. Faster first paint, cheaper to host, runs without an account.',
+        },
+        {
+          lead: 'Layer 2 covers the rest.',
+          body: 'If Layer 1 cannot, but Layer 2 covers the requirements, Layer 2 wins. Real OS, real processes, at the cost of startup latency.',
+        },
+        {
+          lead: 'Layer 3 only for bugs the others cannot observe.',
+          body: 'Concurrency, non-determinism, time-travel needs. Layer 3 is not an upgrade on Layer 2 — it is a different product for different bugs.',
+        },
+      ]}
+    />
+
+    <p>
+      Ambiguous cases stay in the cheapest feasible layer until evidence says
+      otherwise. Promoting a reproduction to a more expensive layer requires a
+      concrete failure signal, not a hunch.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 07 · INTERFACE"
+    heading="A single declaration shape across layers."
+  >
+    <p>
+      A reproduction declares itself via a small, layer-agnostic spec. The
+      intent is that the same declaration shape works whether the reproduction
+      runs in a browser tab or a Firecracker microVM:
+    </p>
+    <ul>
+      <li><strong>Identity</strong> — upstream repo + issue / commit / version being reproduced.</li>
+      <li><strong>Inputs</strong> — deterministic inputs required to trigger the bug.</li>
+      <li><strong>Expected failure signal</strong> — what "reproduced" looks like (exit code, specific error text, structured verdict).</li>
+      <li><strong>Runtime hints</strong> — minimum requirements (Python 3.12+, glibc ≥ 2.36, network: no, filesystem: read-only, etc.).</li>
+      <li><strong>Preferred layer (optional)</strong> — only set when the reporter has a specific reason; the router's default decision is expected to be right.</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 08 · CURRENT SCOPE"
+    heading="State of the layers (2026-05-01)."
+  >
+    <p>
+      As of 2026-05-01, Phases 0–5 are closed and Phase 6 (usability and visual
+      layer) is active. The architectural slots have filled in unevenly — by
+      design, since each layer waits for a concrete Issue before a vertical lands.
+    </p>
+
+    <h3>Layer 1</h3>
+    <p>
+      Six verticals live under <code>src/layer1_wasm/</code>:{' '}
+      <code>cpython-137205</code>, <code>numpy-28287</code>,{' '}
+      <code>pandas-56679</code>, <code>regex-779</code> (Python via Pyodide),{' '}
+      <code>ruby-21709</code> (Ruby.wasm), and <code>php-12167</code> (php-wasm).
+    </p>
+
+    <h3>Layer 2</h3>
+    <p>
+      Four recipes live under <code>src/layer2_docker/</code>:{' '}
+      <code>postgres-lost-update</code>, <code>find-xargs-whitespace</code>,{' '}
+      <code>flock-is-advisory</code>, <code>bash-local-shadows-exit</code>. Each
+      ships the catalogue model in full — pinned Dockerfile, repro.sh,
+      GHCR-published image, copy-pasteable docker run invocation, CI verdict
+      snapshot.
+    </p>
+
+    <h3>Layer 3</h3>
+    <p>
+      Phase 4 closed with one recipe shipped: the <code>pthread</code>-style
+      canonical lost-update data race under{' '}
+      <code>src/layer3_thirdway/lost-update/</code>, distributed as a GHCR image
+      with the <code>rr</code> trace baked in.
+    </p>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the roadmap{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="Phase 0 → Phase 5 plan, and what each layer is expected to land."
+  primary={{ label: 'Roadmap →', href: '/vivarium/roadmap' }}
+  ghost={{ label: 'Vision', href: '/vivarium/vision' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

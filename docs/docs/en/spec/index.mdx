@@ -1,0 +1,160 @@
+---
+pageType: doc
+title: Specification
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  CompareCards,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// SPEC · v1"
+    title="Vivarium specification."
+    sub="The reproduction-verdict contract — a small, stable surface that describes whether the upstream bug reproduces against today's runtime."
+  />
+
+  <Section
+    eyebrow="// 01 · OVERVIEW"
+    heading="A versioned surface, not a moving target."
+  >
+    <p>
+      The Vivarium specification is the small set of files that lets a
+      reproduction page declare itself, lets external tools read the verdict,
+      and lets external repos publish their own reproductions without bespoke
+      glue. <strong>v1</strong> is locked. v2 will land as a new spec page when
+      it does, leaving v1 readable for backward-compatible consumers.
+    </p>
+
+    <Callout>
+      Reproduction pages declare conformance via{' '}
+      <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>; external
+      tools read the same surface to know whether a page reproduces today.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · CURRENT SURFACES"
+    heading="Three surfaces, one contract."
+  >
+    <CompareCards
+      others={[
+        {
+          name: 'Contract v1',
+          tagline: 'verdict surface (runtime). Stable since Phase 1.',
+        },
+        {
+          name: 'Manifest v1',
+          tagline: 'publication surface (TOML). Stable since Phase 5.',
+        },
+        {
+          name: 'Recipes index v1',
+          tagline: 'machine-readable catalogue. Phase 5.',
+        },
+      ]}
+      highlight={{
+        name: 'Live endpoint',
+        tagline:
+          'aletheia-works.github.io/vivarium/api/recipes.json — refreshed on each deploy',
+      }}
+    />
+
+    <h3>Contract v1 — verdict surface</h3>
+    <p>
+      <a href="/vivarium/spec/contract-v1">Contract v1</a> defines what every
+      reproduction page promises: a <code>verdict</code> DOM band, a structured
+      result envelope on <code>window.__VIVARIUM_RESULT__</code>, and the same
+      pass / fail / pending semantics across all three layers. The Layer 2 / 3
+      verdict snapshot file follows{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json">
+        verdict.schema.json
+      </a>{' '}
+      (JSON Schema draft 2020-12).
+    </p>
+
+    <h3>Manifest v1 — publication surface</h3>
+    <p>
+      <a href="/vivarium/spec/manifest-v1">Manifest v1</a> is the TOML manifest
+      that an external repo ships at <code>.vivarium/manifest.toml</code> to
+      declare a Vivarium-runnable reproduction. Schema:{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json">
+        manifest.schema.json
+      </a>
+      .
+    </p>
+
+    <h3>Recipes index v1 — catalogue endpoint</h3>
+    <p>
+      <a href="/vivarium/spec/recipes-index-v1">Recipes index v1</a> is the
+      machine-generated JSON listing of every reproduction this repository
+      hosts. Consumed by the Vivarium MCP server and other programmatic
+      catalogue tooling. Schema:{' '}
+      <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/api/recipes.schema.json">
+        recipes.schema.json
+      </a>
+      .
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 03 · TOOLING"
+    heading="Reusable workflows that consume the contract."
+  >
+    <h3>Consumer workflow</h3>
+    <p>
+      <a href="/vivarium/spec/consumer-workflow">Consumer workflow</a> — a
+      reusable GitHub Actions workflow any repo can <code>uses:</code> to
+      verify a Vivarium-hosted reproduction in their own CI. Phase 5 sub-stream D.
+    </p>
+
+    <h3>Branch-fix verdict pipeline</h3>
+    <p>
+      <a href="/vivarium/spec/branch-fix-pipeline">Branch-fix verdict pipeline</a>{' '}
+      — a <code>workflow_dispatch</code> workflow that captures a verdict for a
+      contributor-supplied branch-fix Docker image and bundles it alongside the
+      deployed original for side-by-side comparison. Phase 6 sub-stream R.2.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 04 · SCOPE"
+    heading="What this spec is — and is not."
+  >
+    <h3>What this spec is for</h3>
+    <ul>
+      <li>Reproduction pages (Layer 1, Layer 2, Layer 3) under <code>aletheia-works/vivarium</code> declare conformance via the meta tag and the JSON envelope.</li>
+      <li>External tools (CI, IDE plugins, AI reviewers, third-party reproduction definitions) read the same surface to know whether a page reproduces today.</li>
+      <li>Future Vivarium-compatible reproductions hosted outside this repo can declare conformance the same way.</li>
+    </ul>
+
+    <h3>What this spec is not</h3>
+    <ul>
+      <li>It is not a full reproduction protocol — it covers the verdict surface, not how the reproduction itself is constructed (that is per-layer convention, in the layer READMEs).</li>
+      <li>It is not stable across major versions; v1 is locked, v2 will be a new spec page when it lands.</li>
+    </ul>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Browse the reproductions{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="Real bugs from real upstream projects, reproducing in your browser."
+  primary={{ label: 'Reproductions →', href: '/vivarium/repro/' }}
+  ghost={{ label: 'Architecture', href: '/vivarium/architecture' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

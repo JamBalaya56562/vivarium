@@ -1,0 +1,117 @@
+---
+pageType: doc
+title: ロードマップ
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// ROADMAP · v1"
+    title="締め切りではなく、フェーズで。"
+    sub="フェーズごとの計画——何がいつ、どのような順序でリリースされるか。再現プリミティブという観点で語る。"
+  />
+
+  <Section
+    eyebrow="// 00 · 日付についての注記"
+    heading="期限の列はない。"
+  >
+    <p>
+      このプロジェクトのフェーズ期間は方向性を示すもの——数ヶ月〜数年——であり、
+      コミットメントではない。終わりのないプロジェクトにカレンダー上の目標を設定することは、
+      正直さを犠牲にして進捗の外観を作るだけであり、以降のあらゆる決断を
+      「正しくバグを再現する」ではなく「数字を達成する」方向に歪める。
+    </p>
+    <Callout>
+      フェーズに本当の締め切りが生まれたとき、日付はフェーズとともに説明付きで掲載される。
+      それまでは、順序と「出荷した内容」のシグナルがロードマップだ。
+    </Callout>
+    <p>
+      フェーズタイトルは GitHub Milestones に対応する。Milestones が正式な計画サーフェスであり、
+      このページはユーザー向けの翻訳だ。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// フェーズ"
+    heading="出荷済み、出荷中、キューにあるもの。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Phase 0 — Bootstrap。2026-04-26 CLOSED。',
+          body: 'Infrastructure-as-Code の基盤（GitHub 設定、ラベル、マイルストーン、ブランチ保護）。AI 委譲開発ワークフロー。ビジョン、アーキテクチャスタブ、ロードマップ、非目標。三層アーキテクチャを表す初期 src/ ツリー——製品コードなし、スキャフォールドのみ。',
+        },
+        {
+          lead: 'Phase 1 — Layer 1: データ処理。',
+          body: '初の本格的な再現実装: Pyodide による Python + SQLite over WebAssembly。手選びのアップストリームバグ数件（pandas / numpy / sqlite の動作リグレッション）が、ブラウザのタブ 1 枚から再現可能になる。バグの説明 → リンク先の再現ページ → クリック → pass/fail verdict。',
+        },
+        {
+          lead: 'Phase 2 — Layer 1: 多言語。',
+          body: 'Layer 1 の拡張: Rust (wasm32-wasi)、JavaScript/TypeScript、Ruby (Ruby.wasm)、PHP (php-wasm)。言語を追加する作業がゼロからの書き直しではなく小さなランタイムアダプタになるよう、共通のブラウザサイドスキャフォールドを抽出。',
+        },
+        {
+          lead: 'Phase 3 — Layer 2: Docker。',
+          body: '本物の fork、本物のソケット、本物のファイルシステムが必要なバグのための完全忠実度コンテナ再現。カタログモデル（ホスト実行ではない）: ピン留めされた Dockerfile + repro.sh + GHCR 公開イメージ。訪問者は 1 回の `docker run` でローカル再現。必要に応じて「Open in Codespaces」でワンクリック。CI スナップショット verdict が各ギャラリーページに掲載。',
+        },
+        {
+          lead: 'Phase 4 — Layer 3: record-replay & deterministic。2026-04-28 CLOSED。',
+          body: 'Layer 1 と Layer 2 では届かないバグのための第三のレイヤー: record-replay (rr) と決定論的シミュレーション (Antithesis スタイル)。トレース同梱カタログ: トレースを GHCR イメージに焼き込み、訪問者のマシン上で replay。1 つのレシピ出荷（lost-update データレース）。以降のエントリは具体的なバグが生まれるまで保留。',
+        },
+        {
+          lead: 'Phase 5 — Ecosystem。2026-04-29 CLOSED。',
+          body: 'Contract v1 を JSON Schema と CI 強制付きの外部標準として公開。Manifest v1 と 3 つのリファレンス TOML マニフェストにより、外部リポジトリが `.vivarium/manifest.toml` 1 ファイルで Vivarium 実行可能な再現を宣言できるようになった。再利用可能な verdict キャプチャ用 GitHub Actions ワークフロー。週次 cron による verdict ドリフト検出。Issue トリアージツールは採用がないため保留。',
+        },
+        {
+          lead: 'Phase 6 — ユーザビリティとビジュアルレイヤー。ACTIVE。',
+          body: 'ビジュアルリデザイン + 再利用可能コンポーネントライブラリ。AI が生成した修正を PR を開く前にレシピに対して検証できる branch-fix verdict パイプライン。ファセット付きギャラリー検索。マニフェスト作成 UX。Vivarium MCP サーバ（出荷済み、JSR + npm にデュアル公開）。日本語 ⇄ 英語 i18n。クローズルール: V + R + S/M/X/L のうち少なくとも 1 つの出荷。',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 計測"
+    heading="クローズルール: 部分的な完成でよい。"
+  >
+    <p>
+      このプロジェクトのフェーズクローズは、Phase 4 クローズ ADR (ADR-0012) で定めた
+      意図的なパターンに従う。フェーズの輪郭が
+      <strong>部分的な完成によって証明</strong>されたとき——1 つの Layer 3 レシピ、
+      1 つの MCP ツール、1 人の外部採用者——フェーズはクローズし、
+      残作業は再キューイングされる。これにより、いつまでも閉じない「未完フェーズ」が
+      じわじわと累積していく事態からプロジェクトを守っている。
+    </p>
+    <p>
+      出荷しなかった決断も、出荷した決断と同じ丁寧さで記録される。
+      公開のフェーズクローズ要約は、トレードオフを捉えたプライベート ADR を参照しているため、
+      将来のコントリビューターは「なぜそのパスが却下されたのか」まで理解できるようになっている。
+    </p>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// 次のページ"
+  heading={
+    <>
+      AI ワークフローを読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="フェーズがどう実装されるか: 人間が方向を設定してマージし、AI エージェントが実装とレビューを行う。"
+  primary={{ label: 'AI ワークフロー →', href: '/vivarium/ja/ai-workflow' }}
+  ghost={{ label: 'アーキテクチャ', href: '/vivarium/ja/architecture' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

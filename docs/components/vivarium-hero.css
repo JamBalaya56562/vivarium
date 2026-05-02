@@ -1,0 +1,967 @@
+/* Vivarium hero — dark-first; light tokens to be filled later. */
+
+/*
+ * Two layers of tokens:
+ *  - Theme-aware  : --vh-* (page chrome, body text, accents) — flip on light/dark.
+ *  - Surface-fixed: --vh-on-dark-* (text on the always-dark window/code/terminal
+ *    interiors) — never flip, since the product screenshots stay dark even when
+ *    the surrounding page is light.
+ */
+
+html.dark {
+  --vh-bg: #00110e;
+  --vh-bg-deep: #000508;
+  --vh-text: #ffffff;
+  --vh-text-muted: #a8b3b0;
+  --vh-text-dim: #71807d;
+  --vh-accent-teal: #00d4aa;
+  --vh-accent-teal-bright: #33e5ba;
+  --vh-accent-teal-deep: #004132;
+  --vh-accent-violet: #7c5cff;
+  --vh-accent-violet-bright: #a18eff;
+  --vh-accent-coral: #ff716c;
+  --vh-hairline: rgba(255, 255, 255, 0.08);
+  --vh-window-bg: #000508;
+  --vh-window-chrome: #18181b;
+  --vh-window-chrome-text: #d4d4d8;
+  --vh-window-chrome-border: rgba(255, 255, 255, 0.1);
+  --vh-code-bg: #001713;
+  --vh-terminal-bg: #0a1f1a;
+  --vh-terminal-border: rgba(0, 212, 170, 0.45);
+}
+
+:root:not(.dark) {
+  --vh-bg: #f5fbf9;
+  --vh-bg-deep: #ffffff;
+  --vh-text: #04221c;
+  --vh-text-muted: #3a554f;
+  --vh-text-dim: #5a7570;
+  --vh-accent-teal: #00b894;
+  --vh-accent-teal-bright: #00d4aa;
+  --vh-accent-teal-deep: #ffffff;
+  --vh-accent-violet: #5229d4;
+  --vh-accent-violet-bright: #7c5cff;
+  --vh-accent-coral: #d7383b;
+  --vh-hairline: rgba(4, 34, 28, 0.12);
+  --vh-window-bg: #00110e;
+  --vh-window-chrome: #1f2937;
+  --vh-window-chrome-text: #e2e8f0;
+  --vh-window-chrome-border: rgba(255, 255, 255, 0.08);
+  --vh-code-bg: #001713;
+  --vh-terminal-bg: #0a1f1a;
+  --vh-terminal-border: rgba(0, 212, 170, 0.45);
+}
+
+.v-hero {
+  /* Surface-fixed tokens for content that always sits on dark surfaces
+     (browser window interiors, code blocks, terminals). */
+  --vh-on-dark-strong: #ffffff;
+  --vh-on-dark-muted: #c1d4cf;
+  --vh-on-dark-dim: #93a8a3;
+}
+
+.v-hero {
+  position: relative;
+  width: 100%;
+  min-height: 880px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--vh-bg);
+  color: var(--vh-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  isolation: isolate;
+}
+
+@media (min-width: 1024px) {
+  .v-hero {
+    flex-direction: row;
+    min-height: 760px;
+  }
+}
+
+/* ---------- Left column ---------- */
+
+.v-hero__left {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5rem 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 1024px) {
+  .v-hero__left {
+    width: 40%;
+    padding: 0 2rem 0 4rem;
+  }
+}
+
+.v-hero__inner {
+  max-width: 36rem;
+}
+
+.v-hero__kicker {
+  display: inline-block;
+  max-width: 100%;
+  margin-bottom: 2rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 9999px;
+  background: rgba(0, 212, 170, 0.05);
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.65rem;
+  color: var(--vh-accent-teal);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-hero__headline {
+  margin: 0 0 1.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.875rem, 3vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--vh-text);
+  text-wrap: balance;
+}
+
+.v-hero__headline-gradient {
+  background: linear-gradient(to right, var(--vh-accent-teal-bright), var(--vh-accent-violet-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.v-hero__lede {
+  margin: 0 0 2.5rem;
+  max-width: 28rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--vh-text-muted);
+}
+
+.v-hero__ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 540px) {
+  .v-hero__ctas {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.v-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease;
+  border: 1px solid transparent;
+}
+
+.v-hero__cta--primary {
+  background: var(--vh-accent-teal);
+  color: var(--vh-accent-teal-deep);
+}
+
+.v-hero__cta--primary:hover {
+  background: var(--vh-accent-teal-bright);
+}
+
+.v-hero__cta--ghost {
+  background: transparent;
+  color: var(--vh-text);
+  border-color: var(--vh-hairline);
+}
+
+.v-hero__cta--ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.v-hero__cta-arrow {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ---------- Right column ---------- */
+
+.v-hero__right {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+  overflow: hidden;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px
+  );
+  background-size: 32px 32px;
+}
+
+@media (min-width: 1024px) {
+  .v-hero__right {
+    width: 60%;
+    box-shadow: inset 0 0 100px 20px var(--vh-bg);
+  }
+}
+
+.v-hero__glow {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 9999px;
+  filter: blur(80px);
+  mix-blend-mode: screen;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.v-hero__glow--teal {
+  bottom: 0;
+  left: 0;
+  background: var(--vh-accent-teal);
+}
+
+.v-hero__glow--violet {
+  top: 0;
+  right: 0;
+  background: var(--vh-accent-violet);
+}
+
+.v-hero__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.v-hero__particles span {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  opacity: 0.18;
+}
+
+.v-hero__particles span:nth-child(1) { top: 15%; left: 20%; color: var(--vh-accent-teal); }
+.v-hero__particles span:nth-child(2) { top: 25%; left: 45%; color: var(--vh-accent-violet); }
+.v-hero__particles span:nth-child(3) { top: 40%; right: 15%; color: var(--vh-accent-teal); }
+.v-hero__particles span:nth-child(4) { bottom: 30%; left: 10%; color: var(--vh-accent-violet); }
+.v-hero__particles span:nth-child(5) { bottom: 15%; right: 25%; color: var(--vh-accent-teal); }
+.v-hero__particles span:nth-child(6) { top: 60%; left: 8%; color: var(--vh-accent-violet); }
+.v-hero__particles span:nth-child(7) { top: 8%; right: 30%; color: var(--vh-accent-teal); }
+.v-hero__particles span:nth-child(8) { bottom: 40%; right: 5%; color: var(--vh-accent-violet); }
+
+.v-hero__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Bento (desktop) ---------- */
+
+.v-bento {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 580px;
+}
+
+/* ---------- Tabs (mobile-only) ---------- */
+
+.v-tabs {
+  display: none;
+  gap: 0.5rem;
+  padding: 0;
+  background: transparent;
+  border-radius: 14px;
+}
+
+.v-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.625rem 0.875rem 0.7rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--vh-hairline);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--vh-on-dark-muted);
+  text-align: left;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.12s ease;
+}
+
+.v-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--vh-on-dark-strong);
+}
+
+.v-tab--active {
+  background: rgba(0, 212, 170, 0.08);
+  border-color: rgba(0, 212, 170, 0.4);
+  color: var(--vh-on-dark-strong);
+  box-shadow: inset 0 0 24px rgba(0, 212, 170, 0.06);
+}
+
+.v-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  margin-bottom: 0.1rem;
+}
+
+.v-tab__dot--fail {
+  background: var(--vh-accent-coral);
+  box-shadow: 0 0 8px rgba(255, 113, 108, 0.6);
+}
+
+.v-tab__dot--pending {
+  background: var(--vh-accent-violet-bright);
+  box-shadow: 0 0 8px rgba(124, 92, 255, 0.6);
+  animation: v-pulse 1.6s ease-in-out infinite;
+}
+
+.v-tab__dot--pass {
+  background: var(--vh-accent-teal-bright);
+  box-shadow: 0 0 8px rgba(0, 212, 170, 0.6);
+}
+
+@keyframes v-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.v-tab__label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.v-tab__sublabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vh-on-dark-dim);
+}
+
+.v-tab--active .v-tab__sublabel {
+  color: var(--vh-accent-teal-bright);
+}
+
+/* ---------- Browser windows ---------- *
+ *
+ * Default (desktop): all 3 windows are absolute-positioned inside .v-bento,
+ * with their slot class (--slot-front/mid/low) deciding placement, scale,
+ * rotation, and opacity. Clicking a non-front window updates state which
+ * swaps slot classes; CSS transitions interpolate between them.
+ */
+
+.v-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: var(--vh-window-bg);
+  border: 1px solid var(--vh-hairline);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform-origin: center center;
+  transition:
+    top 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.45s ease,
+    filter 0.45s ease,
+    box-shadow 0.4s ease;
+}
+
+/* Slot: front — large, centered, gentle tilt, lit from within */
+.v-window--slot-front {
+  top: 6%;
+  left: 12%;
+  width: 70%;
+  z-index: 30;
+  opacity: 1;
+  filter: none;
+  transform: rotate(-2deg);
+  cursor: default;
+  box-shadow:
+    inset 4px 0 32px rgba(0, 212, 170, 0.12),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* Slot: mid — peeks from upper-right, smaller, more rotated, faded */
+.v-window--slot-mid {
+  top: 0;
+  left: 38%;
+  width: 55%;
+  z-index: 20;
+  opacity: 0.32;
+  filter: saturate(0.55);
+  transform: rotate(4deg) scale(0.96);
+  cursor: pointer;
+}
+
+.v-window--slot-mid:hover {
+  opacity: 0.55;
+  filter: saturate(0.85);
+  transform: rotate(4deg) scale(0.98) translateY(-6px);
+}
+
+/* Slot: low — peeks from lower-left, smallest, fades furthest */
+.v-window--slot-low {
+  top: 38%;
+  left: 0;
+  width: 50%;
+  z-index: 10;
+  opacity: 0.26;
+  filter: saturate(0.5);
+  transform: rotate(-3deg) scale(0.94);
+  cursor: pointer;
+}
+
+.v-window--slot-low:hover {
+  opacity: 0.5;
+  filter: saturate(0.85);
+  transform: rotate(-3deg) scale(0.96) translateY(-6px);
+}
+
+.v-window__chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  background: var(--vh-window-chrome);
+  border-bottom: 1px solid var(--vh-window-chrome-border);
+  border-radius: 14px 14px 0 0;
+}
+
+.v-window__dots {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.v-window__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  opacity: 0.5;
+}
+
+.v-window__dot--red    { background: #ef4444; }
+.v-window__dot--yellow { background: #eab308; }
+.v-window__dot--green  { background: #22c55e; }
+
+.v-window__url {
+  margin: 0 auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--vh-window-chrome-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-window__url--pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 60%;
+  text-align: left;
+  justify-content: center;
+}
+
+.v-window__lock {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  color: var(--vh-on-dark-dim);
+}
+
+.v-window__chrome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  border: 1px solid;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+
+.v-window__chrome-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+.v-window__chrome-badge--wasm {
+  color: var(--vh-accent-violet-bright);
+  background: rgba(124, 92, 255, 0.12);
+  border-color: rgba(124, 92, 255, 0.3);
+}
+
+.v-window__chrome-badge--docker {
+  color: #5cb8ff;
+  background: rgba(92, 184, 255, 0.12);
+  border-color: rgba(92, 184, 255, 0.32);
+}
+
+.v-window__eyebrow--violet {
+  color: var(--vh-accent-violet-bright);
+}
+
+.v-console__chev--ok {
+  color: var(--vh-accent-teal-bright);
+  font-weight: 700;
+}
+
+.v-console__tab--ok {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--vh-accent-teal-bright);
+  cursor: default;
+}
+
+.v-console__tab--ok::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--vh-accent-teal-bright);
+  border-radius: 9999px;
+}
+
+.v-console__tab--running {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: var(--vh-accent-violet-bright);
+  cursor: default;
+}
+
+.v-console__tab--running::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--vh-accent-violet-bright);
+  border-radius: 9999px;
+  animation: v-pulse 1.6s ease-in-out infinite;
+}
+
+/* DevTools-style Console panel — replaces the old terminal panel for the
+   front (WASM) window so it reads as "running in a browser" rather than
+   "running in a terminal". */
+
+.v-console {
+  margin-top: 0.75rem;
+  background: var(--vh-terminal-bg);
+  border: 1px solid var(--vh-terminal-border);
+  border-radius: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  overflow: hidden;
+}
+
+.v-console__tabs {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 0.5rem;
+}
+
+.v-console__tab {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  color: var(--vh-on-dark-dim);
+  border-bottom: 2px solid transparent;
+  cursor: default;
+}
+
+.v-console__tab--active {
+  color: var(--vh-on-dark-strong);
+  border-bottom-color: var(--vh-accent-teal-bright);
+  background: rgba(0, 212, 170, 0.05);
+}
+
+.v-console__tab--filter {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0;
+  color: var(--vh-accent-coral);
+  cursor: default;
+}
+
+.v-console__tab--filter::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--vh-accent-coral);
+  border-radius: 9999px;
+}
+
+.v-console__body {
+  padding: 0.625rem 0.875rem;
+}
+
+.v-console__line {
+  display: flex;
+  gap: 0.55rem;
+  align-items: baseline;
+  padding: 0.1rem 0;
+  color: var(--vh-on-dark-dim);
+  line-height: 1.5;
+}
+
+.v-console__line--input {
+  color: var(--vh-on-dark-muted);
+}
+
+.v-console__chev {
+  color: var(--vh-on-dark-dim);
+  font-weight: 700;
+}
+
+.v-console__line--error {
+  margin: 0.25rem -0.875rem;
+  padding: 0.4rem 0.875rem 0.4rem 0.7rem;
+  background: rgba(255, 113, 108, 0.08);
+  border-left: 3px solid var(--vh-accent-coral);
+  color: var(--vh-accent-coral);
+  font-weight: 600;
+}
+
+.v-console__icon {
+  color: var(--vh-accent-coral);
+  font-weight: 700;
+}
+
+.v-console__line--trace {
+  padding-left: 1.5rem;
+  font-size: 0.625rem;
+}
+
+.v-window__chrome {
+  height: 2.5rem;
+}
+
+.v-window__body {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.v-window__eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  color: var(--vh-accent-teal);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.v-window__title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vh-on-dark-strong);
+}
+
+.v-window__lede {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--vh-on-dark-muted);
+  line-height: 1.5;
+}
+
+/* Verdict pills */
+
+.v-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  padding: 0.375rem 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.25rem;
+  border: 1px solid;
+}
+
+.v-verdict--fail {
+  background: rgba(255, 113, 108, 0.1);
+  color: var(--vh-accent-coral);
+  border-color: rgba(255, 113, 108, 0.3);
+  box-shadow: 0 0 15px rgba(255, 113, 108, 0.2);
+}
+
+.v-verdict--fail__sep {
+  opacity: 0.5;
+  margin: 0 0.25rem;
+  font-weight: 400;
+}
+
+.v-verdict--pending {
+  background: rgba(124, 92, 255, 0.1);
+  color: var(--vh-accent-violet-bright);
+  border-color: rgba(124, 92, 255, 0.3);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  font-weight: 400;
+}
+
+.v-verdict--pass {
+  background: rgba(0, 212, 170, 0.1);
+  color: var(--vh-accent-teal);
+  border-color: rgba(0, 212, 170, 0.3);
+  font-size: 0.625rem;
+  font-weight: 400;
+}
+
+/* Code block */
+
+.v-code {
+  background: var(--vh-code-bg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  line-height: 1.65;
+  color: #e0e6e3;
+}
+
+.v-code__comment { color: #71807d; display: block; margin-bottom: 0.5rem; }
+.v-code__line    { display: block; }
+.v-code__indent  { padding-left: 1rem; }
+.v-code__kw      { color: #f9a8d4; }
+.v-code__fn      { color: #93c5fd; }
+.v-code__str     { color: #6ee7b7; }
+.v-code__num     { color: #fdba74; }
+
+/* Terminal panel — clear teal hairline so it reads as a distinct surface */
+
+.v-terminal {
+  margin-top: 0.75rem;
+  padding: 14px;
+  background-color: var(--vh-terminal-bg);
+  border: 1px solid var(--vh-terminal-border);
+  border-radius: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6875rem;
+  line-height: 1.7;
+}
+
+.v-terminal__label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.625rem;
+  color: var(--vh-accent-teal-bright);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.v-terminal__line {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--vh-on-dark-dim);
+}
+
+.v-terminal__prompt {
+  color: var(--vh-accent-teal-bright);
+  font-weight: 700;
+}
+
+.v-terminal__cmd {
+  color: #c1fdf0;
+  opacity: 0.9;
+}
+
+.v-terminal__error {
+  display: block;
+  width: fit-content;
+  font-weight: 700;
+  color: var(--vh-accent-coral);
+  border-bottom: 1px solid rgba(255, 113, 108, 0.4);
+  box-shadow: 0 1px 4px -1px rgba(255, 113, 108, 0.4);
+}
+
+.v-terminal__trace {
+  display: block;
+  color: #7db6ab;
+}
+
+.v-window__log {
+  background: var(--vh-code-bg);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.625rem;
+  line-height: 1.7;
+  color: var(--vh-on-dark-dim);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.v-window__log span {
+  display: block;
+}
+
+.v-window__log .ok {
+  color: var(--vh-accent-teal);
+}
+
+/* ---------------- Mobile / narrow viewports (< 1024px) ----------------
+ *
+ * Same tabbed layout, just reflowed: the right column drops below the
+ * left column instead of sitting beside it. Glows and particles are
+ * dropped — they overpower a narrow column.
+ */
+
+@media (max-width: 1023px) {
+  .v-hero {
+    min-height: 0;
+  }
+
+  .v-hero__left {
+    padding: 4rem 1.5rem 2rem;
+  }
+
+  .v-hero__right {
+    width: 100%;
+    padding: 0 1.5rem 4rem;
+    background-image: none;
+    box-shadow: none;
+  }
+
+  .v-hero__glow,
+  .v-hero__particles {
+    display: none;
+  }
+
+  .v-hero__stage {
+    padding: 0;
+    max-width: none;
+  }
+
+  /* Tabs visible on mobile, controlling which window is in the front slot */
+  .v-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .v-tab {
+    flex-basis: calc(33.333% - 0.34rem);
+    padding: 0.5rem 0.625rem 0.55rem;
+  }
+
+  .v-tab__label {
+    font-size: 0.85rem;
+  }
+
+  .v-tab__sublabel {
+    font-size: 0.55rem;
+  }
+
+  /* On mobile the bento collapses to a single window — only the one in
+     the front slot stays visible. The other two are hidden because they
+     have nowhere to peek from. State (and therefore which window is
+     "front") is driven by the tab strip above. */
+  .v-bento {
+    position: static;
+    min-height: 0;
+  }
+
+  .v-window {
+    position: static;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .v-window--slot-front {
+    width: 100%;
+    transform: none;
+    box-shadow: inset 4px 0 24px rgba(0, 212, 170, 0.1);
+  }
+
+  .v-window--slot-mid,
+  .v-window--slot-low {
+    display: none;
+  }
+}
+
+@media (max-width: 540px) {
+  .v-hero__left {
+    padding: 3rem 1.25rem 1.5rem;
+  }
+
+  .v-hero__right {
+    padding: 0 1.25rem 3rem;
+  }
+
+  .v-window__title {
+    font-size: 1.05rem;
+  }
+
+  .v-code,
+  .v-console {
+    font-size: 0.625rem;
+  }
+}

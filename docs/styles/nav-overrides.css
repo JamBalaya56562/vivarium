@@ -1,0 +1,121 @@
+/* ──────────────────────────────────────────────────────────────────
+ * Brand colour overrides — repaint rspress's default blue to the
+ * Vivarium teal palette (#00d4aa / #33e5ba) so sidebars, outlines,
+ * inline links, and active states all match the landing hero.
+ * ────────────────────────────────────────────────────────────────── */
+
+:root {
+  --rp-c-brand: #00b894;
+  --rp-c-brand-dark: #00d4aa;
+  --rp-c-brand-darker: #007a63;
+  --rp-c-brand-light: #33e5ba;
+  --rp-c-brand-lighter: #66f0d0;
+}
+
+html.dark {
+  --rp-c-brand: #33e5ba;
+  --rp-c-brand-dark: #00d4aa;
+  --rp-c-brand-darker: #00b894;
+  --rp-c-brand-light: #66f0d0;
+  --rp-c-brand-lighter: #99f5dd;
+}
+
+/* Vivarium docs site nav overrides.
+ *
+ * rspress's default nav puts the GitHub icon and theme toggle inside
+ * `.rp-nav__others`, which is hidden below 1280px viewport width. Below
+ * that threshold the icons collapse into the hamburger menu, and at
+ * 1024–1279px (typical laptop/PC) you lose direct access to them.
+ *
+ * Reproduction pages always show these icons inline (no hamburger),
+ * so we lower rspress's threshold here to keep the docs nav consistent
+ * with that pattern: from 960px upwards, GitHub + theme toggle live
+ * directly in the nav, the hamburger is hidden.
+ */
+
+@media (min-width: 960px) {
+  .rp-nav__others {
+    display: flex !important;
+  }
+
+  .rp-nav-hamburger,
+  .rp-nav-hamburger__md {
+    display: none !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Sidebar + outline — Vivarium dark-teal accent overrides.
+ * rspress's default sidebar is functional but plain; align it to the
+ * Vivarium home / hero palette so the docs feel cohesive with the
+ * landing.
+ * ────────────────────────────────────────────────────────────────── */
+
+/* Active sidebar item — teal accent strip + brighter text */
+.rp-sidebar-section [class*="active"],
+.rp-sidebar-section-header[class*="active"],
+[class*="rp-sidebar"] a[class*="active"],
+[class*="sidebar"] [class*="link-active"] {
+  color: var(--rp-c-brand) !important;
+  font-weight: 600 !important;
+  background: color-mix(in srgb, var(--rp-c-brand) 10%, transparent);
+  border-left: 2px solid var(--rp-c-brand);
+}
+
+/* Hover state for sidebar links */
+[class*="rp-sidebar"] a:hover,
+[class*="sidebar"] [class*="link"]:hover {
+  color: var(--rp-c-brand) !important;
+}
+
+/* Outline (right TOC) active marker in teal */
+[class*="rp-outline"] [class*="active"],
+[class*="outline"] [class*="link-active"] {
+  color: var(--rp-c-brand) !important;
+  border-color: var(--rp-c-brand) !important;
+}
+
+/* Section eyebrows (mono "// ...") in our docs already use teal — make
+ * sure rspress's default link colour doesn't override them when they
+ * appear inside markdown link contexts. */
+.v-section__eyebrow,
+.v-page-hero__eyebrow,
+.v-next-cta__eyebrow {
+  color: var(--rp-c-brand) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Layout widths — keep main content width comparable to the
+ * pre-sidebar pageType:custom layout. rspress's defaults give the
+ * sidebars priority and squeeze the content; we flip the budget so
+ * content always gets enough room and sidebars truncate text instead.
+ * ────────────────────────────────────────────────────────────────── */
+
+/* CSS custom properties that rspress sets on :root with the same
+ * specificity. We need !important to win the cascade because rspress's
+ * stylesheet loads after this one. */
+:root {
+  --rp-sidebar-width: 232px !important;
+  --rp-outline-width: 200px !important;
+  --rp-content-max-width: 1100px !important;
+}
+
+/* Sidebar links wrap less aggressively; let single-line entries overflow
+ * with ellipsis rather than wrapping into 2-3 lines and inflating the
+ * sidebar height. The user explicitly OK'd visible truncation. */
+[class*="rp-sidebar"] a {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inside the doc layout, drop our .v-page max-width clamp — rspress's
+ * content area already provides the right width, so an additional 880px
+ * cap inside it just makes the text feel cramped. The standalone
+ * pageType:custom home page (which has no rspress doc shell) keeps
+ * its 880px clamp via the rule in page-chrome.css. */
+.rp-doc .v-page,
+.rspress-doc .v-page {
+  max-width: none;
+  padding: 0;
+}

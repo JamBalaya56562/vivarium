@@ -1,3 +1,12 @@
+// Side-effect: imports the shared reproduction-page chrome (nav, footer,
+// theme toggle, progress bar, service-worker registration). Every repro.ts
+// imports this verdict module (Pyodide / Ruby.wasm / php-wasm / Rust),
+// so wiring the chrome import here gives all language families the same
+// look without each loader having to opt in. The asset lives in `_assets/`
+// (hand-written, no tsc step) — kept apart from `_shared/` (TS sources +
+// their compiled `.js` siblings, which `.gitignore` blanket-excludes).
+import "../_assets/chrome.js";
+
 // Vivarium contract v1 — verdict and result envelope helpers.
 //
 // Pages must include `<meta name="vivarium-contract" content="v1">` in
@@ -78,6 +87,17 @@ export function setVerdict(state: VerdictState, text: string): void {
   el.dataset["verdict"] = state;
   el.textContent = text;
   globalThis.__VIVARIUM_VERDICT__ = state;
+
+  // Tell the chrome.js progress bar the run is finished. Pending updates
+  // (which arrive multiple times during loading) are ignored by chrome.js
+  // because it only cares about pct + label fields.
+  if (state !== "pending") {
+    document.dispatchEvent(
+      new CustomEvent("vh-progress", {
+        detail: { stage: "done", pct: 100, label: "Reproduction complete." },
+      }),
+    );
+  }
 }
 
 /**

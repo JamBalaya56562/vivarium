@@ -1,0 +1,119 @@
+---
+pageType: doc
+title: Roadmap
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// ROADMAP · v1"
+    title="Phases, not deadlines."
+    sub="The per-phase plan — what a visitor should expect to see land, in what order, framed in terms of the reproduction primitive."
+  />
+
+  <Section
+    eyebrow="// 00 · A NOTE ON DATES"
+    heading="No due-date column."
+  >
+    <p>
+      Phase durations on this project are directional — months to years — not
+      commitments. Inventing calendar targets for a lifelong project would
+      trade honesty for the appearance of progress, and would drive every later
+      decision toward hitting a number rather than reproducing bugs correctly.
+    </p>
+    <Callout>
+      When a phase acquires a real deadline, the date will land alongside the
+      phase, explained. Until then, the ordering and the "what shipped"
+      signals are the roadmap.
+    </Callout>
+    <p>
+      Phase titles mirror the GitHub Milestones; the Milestones are the
+      canonical planning surface, and this page is the user-facing translation.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// PHASES"
+    heading="What has shipped, what is shipping, what is queued."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Phase 0 — Bootstrap. CLOSED 2026-04-26.',
+          body: 'Infrastructure-as-Code foundations (GitHub Settings, labels, milestones, branch protection). The AI-delegated development workflow. Vision, architecture stub, roadmap, non-goals. Initial src/ tree representing the three-layer architecture — scaffolding only, no product code.',
+        },
+        {
+          lead: 'Phase 1 — Layer 1: data processing.',
+          body: 'The first real reproduction vertical: Python + SQLite over WebAssembly via Pyodide. A handful of hand-picked upstream bugs (pandas / numpy / sqlite behavioural regressions) reproducible from a single browser tab. Bug description → linked reproduction page → click → pass/fail verdict.',
+        },
+        {
+          lead: 'Phase 2 — Layer 1: multi-language.',
+          body: 'Layer 1 broadens: Rust (wasm32-wasi), JavaScript/TypeScript, Ruby (Ruby.wasm), PHP (php-wasm). Common browser-side scaffolding extracted so adding a language is a small per-runtime adapter, not a greenfield rewrite.',
+        },
+        {
+          lead: 'Phase 3 — Layer 2: Docker.',
+          body: 'Full-fidelity container-based reproduction for bugs needing real fork, real sockets, real filesystems. Catalogue model (not hosted execution): pinned Dockerfile + repro.sh + GHCR-published image. Visitor reproduces locally with one `docker run`, optionally one-click via "Open in Codespaces". CI-snapshot verdict on each gallery page.',
+        },
+        {
+          lead: 'Phase 4 — Layer 3: record-replay & deterministic. CLOSED 2026-04-28.',
+          body: 'Third layer for bugs Layers 1 and 2 cannot reach: record-replay (rr) and deterministic simulation (Antithesis-style). Trace-shipped catalogue: trace baked into a GHCR image, replayed on the visitor’s machine. One recipe shipped (lost-update data race); further entries deferred until a concrete bug forces them.',
+        },
+        {
+          lead: 'Phase 5 — Ecosystem. CLOSED 2026-04-29.',
+          body: 'Contract v1 published as an external standard with JSON Schema and CI enforcement. Manifest v1 + three reference TOML manifests so external repos can declare a Vivarium-runnable reproduction with a single .vivarium/manifest.toml. Reusable verdict-capture GitHub Actions workflow. Verdict drift detection on the weekly cron. Issue-triage tooling deferred without adoption.',
+        },
+        {
+          lead: 'Phase 6 — Usability and visual layer. ACTIVE.',
+          body: 'Visual redesign + reusable component library. Branch-fix verdict pipeline so an AI-generated fix can be checked against a recipe before opening a PR. Faceted gallery search. Manifest authoring UX. Vivarium MCP server (already shipped, dual-published to JSR + npm). Japanese ⇄ English i18n. Closure rule: V + R + at least one of S / M / X / L ships.',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// MEASUREMENT"
+    heading="Closure rule: partial completion is acceptable."
+  >
+    <p>
+      Phase closure on this project follows a deliberate pattern set by the
+      Phase 4 close ADR (ADR-0012). When the shape of the phase is{' '}
+      <strong>proven by partial completion</strong> — one Layer 3 recipe,
+      one MCP tool, one external adopter — the phase closes and remaining work
+      is requeued. This protects the lifelong project from the slow-creep of
+      incomplete phases that never close.
+    </p>
+    <p>
+      The decisions that did <em>not</em> ship are recorded with the same care
+      as the ones that did. Public phase-close briefs cite the private ADRs
+      that captured the trade-offs, so future contributors understand{' '}
+      <em>why</em> a path was rejected, not just <em>that</em> it was.
+    </p>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the AI workflow{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="How phases get implemented: humans set direction and merge, AI agents implement and review."
+  primary={{ label: 'AI workflow →', href: '/vivarium/ai-workflow' }}
+  ghost={{ label: 'Architecture', href: '/vivarium/architecture' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

@@ -74,14 +74,20 @@ export async function loadVivariumPhp(
   const phpWasmVersion = options.phpWasmVersion ?? DEFAULT_PHP_WASM_VERSION;
   const pendingText = options.pendingText ?? "Loading php-wasm runtime…";
 
+  const total = 8.0; // php-wasm bundle is ~7-8 MB
+
   setVerdict("pending", pendingText);
+  emitProgress(5, "Initialising…", `0.0 MB / ${total.toFixed(1)} MB`);
 
   const loaderUrl = `https://cdn.jsdelivr.net/npm/php-wasm@${phpWasmVersion}/PhpWeb.mjs`;
 
   try {
+    emitProgress(20, "Fetching php-wasm loader…", `0.0 MB / ${total.toFixed(1)} MB`);
     const mod = (await import(/* @vite-ignore */ loaderUrl)) as {
       PhpWeb: new () => PhpWebInstance;
     };
+
+    emitProgress(45, "Loading PHP runtime + extensions…", `0.0 MB / ${total.toFixed(1)} MB`);
     const instance = new mod.PhpWeb();
     await new Promise<void>((resolve, reject) => {
       instance.addEventListener("ready", () => resolve(), { once: true });
@@ -91,6 +97,8 @@ export async function loadVivariumPhp(
         { once: true },
       );
     });
+
+    emitProgress(94, "Runtime ready.", `${total.toFixed(1)} MB / ${total.toFixed(1)} MB`);
 
     const php: PhpRunner = {
       async run(code: string): Promise<PhpRunResult> {
@@ -118,4 +126,13 @@ export async function loadVivariumPhp(
     );
     throw err;
   }
+}
+
+function emitProgress(pct: number, label: string, bytes: string): void {
+  if (typeof document === "undefined") return;
+  document.dispatchEvent(
+    new CustomEvent("vh-progress", {
+      detail: { pct, label, bytes, stage: "runtime" },
+    }),
+  );
 }

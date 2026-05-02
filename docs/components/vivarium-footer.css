@@ -1,0 +1,73 @@
+/* Vivarium footer — always-dark visual anchor at the bottom of the home
+   page, irrespective of the surrounding light/dark theme. */
+
+.v-footer {
+  width: 100%;
+  background: #0a0e0d;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.v-footer__inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+@media (min-width: 768px) {
+  .v-footer__inner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2.5rem 3rem;
+  }
+}
+
+.v-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.v-footer__wordmark {
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #ffffff;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.v-footer__legal {
+  margin: 0;
+  font-size: 0.825rem;
+  color: #6b7670;
+  letter-spacing: 0.01em;
+}
+
+.v-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.v-footer__link {
+  color: #6b7670;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  opacity: 0.85;
+  transition:
+    color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.v-footer__link:hover {
+  color: #a18eff;
+  opacity: 1;
+}
