@@ -180,21 +180,30 @@ export default defineConfig({
             const subpath = match[1] ?? '';
             const filePath = resolveReproFile(subpath);
             if (!filePath) {
-              // No file on disk. Two cases:
+              // No file on disk. Three cases:
               //
               // 1. Directory-shaped URL (empty subpath or ends with '/') —
               //    `/vivarium/repro/`, `/vivarium/repro/some-slug/`. These
               //    should fall through to rspress's SPA so the gallery
-              //    page (docs/docs/repro/index.mdx) can render. Only the
-              //    individual recipe slugs that DO have an index.html in
-              //    src/ get intercepted above.
+              //    page (docs/docs/{en,ja}/repro/index.mdx) can render.
+              //    Only the individual recipe slugs that DO have an
+              //    index.html in src/ get intercepted above.
               //
-              // 2. Asset-shaped URL (has an extension) — `repro.wasm`,
-              //    `verdict.json`, `repro.js`. These should NOT fall
+              // 2. Extension-less URL — `/vivarium/repro/compare`,
+              //    `/vivarium/repro/some-slug`. These are rspress SPA
+              //    routes (e.g. R.3's compare.mdx page) or directory URLs
+              //    that need a redirect. Fall through so rspress can
+              //    handle them.
+              //
+              // 3. Asset-shaped URL (has an extension) — `repro.wasm`,
+              //    `verdict.json`, `repro.js`. These must NOT fall
               //    through, otherwise the SPA returns its HTML shell and
               //    the page tries to parse it as wasm/JSON. Return 404
               //    explicitly with a hint.
               if (subpath === '' || subpath.endsWith('/')) {
+                return next();
+              }
+              if (!path.extname(subpath)) {
                 return next();
               }
               res.statusCode = 404;

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Gallery"
+  },
+  {
+    "type": "file",
+    "name": "compare",
+    "label": "Branch-fix comparison"
+  }
+]
