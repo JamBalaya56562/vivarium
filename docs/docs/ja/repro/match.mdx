@@ -1,0 +1,17 @@
+---
+pageType: doc
+title: エラーからレシピを探す
+---
+
+import { Page, PageHero } from '../../../components/PageChrome';
+import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
+
+<Page>
+  <PageHero
+    eyebrow="// MATCH · ERROR → RECIPE"
+    title={<>エラーを貼り付けて、候補レシピを探す。</>}
+    sub="レシピカタログに対する機械的なトークンオーバーラップマッチ。LLM 非依存、ファジーマッチ非対応——各レシピの symptom / tags / project / slug に対する正確な小文字トークン一致のみ。スコアリングはすべてローカルで実行される。"
+  />
+
+  <ErrorRecipeMatcher lang="ja" />
+</Page>
