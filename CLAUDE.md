@@ -84,3 +84,17 @@ Claude Code (as both implementer and reviewer), Dosu, Dependabot, and
 GitHub Actions compose — is documented in
 [`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md). Defer to it for process
 questions.
+
+## 7. Pre-PR local validation (mandatory)
+
+Before opening or force-pushing a PR branch, run the matching CI checks
+locally first — every workflow whose `paths:` filter matches the diff.
+The canonical entry points are the `mise run ci:*` tasks in
+[`mise.toml`](mise.toml); `mise run ci:all` covers the union. Where a
+`ci:*` task is missing for the workflow you triggered, transcribe its
+`run:` steps from the YAML and execute them by hand. Do **not** push
+hoping CI catches things — pushing red-then-fix burns the human's
+review attention faster than a local rerun. See
+[`AGENTS.md § 4.14`](AGENTS.md) for the full rationale and the
+"convergence in both directions" requirement (when CI catches what
+local missed, extend the local task).

@@ -386,6 +386,37 @@ A trivial style choice or a day-to-day implementation pick does not
 warrant an ADR; AGENTS.md or tooling configuration is the right home
 for those.
 
+### 4.14 Pre-PR local validation
+
+**Run the matching CI checks locally before pushing a PR branch.**
+
+Every PR triggers a set of CI workflows based on its file changes
+(see each workflow's `paths:` filter under `.github/workflows/`).
+Before opening or force-pushing to the PR branch, run the equivalent
+steps locally for every triggered workflow.
+
+The `mise run ci:*` tasks in [`mise.toml`](mise.toml) are the
+canonical local entry points and mirror the workflows job-for-job:
+
+- `mise run ci:docs` — `test-docs-build.yml`
+- `mise run ci:repro` — `repro-regression.yml` (typecheck + build +
+  Playwright; needs Linux for the Playwright browser fixture)
+- `mise run ci:commitlint` — commitlint on the latest commit
+- `mise run ci:all` — the union of the above
+
+If a `ci:*` task is missing for the workflow you triggered, transcribe
+its `run:` steps from the YAML and execute them by hand — do **not**
+skip the check. The cost of a PR that fails on something a local run
+would have caught is multiple round-trips of red CI eating reviewer
+attention; the cost of running the suite once locally is minutes.
+
+**When CI catches something the local run missed** (an OS-specific
+shell behaviour, a path-resolution edge case, a tool only setup-bun's
+PATH wiring exposed, etc.), treat it as a gap in the local-validation
+toolchain: extend the matching `ci:*` task — or add a new one — so
+the next contributor catches it locally too. CI and local should
+converge on the same surface, in both directions.
+
 ## 5. Three-layer architecture (reference)
 
 Product-level technology choices are framed by these three layers. Do not
