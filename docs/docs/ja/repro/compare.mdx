@@ -1,0 +1,17 @@
+---
+pageType: doc
+title: ブランチ修正の比較
+---
+
+import { Page, PageHero } from '../../../components/PageChrome';
+import { ReproCompareApp } from '../../../components/ReproCompare';
+
+<Page>
+  <PageHero
+    eyebrow="// REPRO COMPARE · v1"
+    title={<>ブランチ修正 と オリジナルの比較。</>}
+    sub="branch-fix-verdict.yml が出力した verdict バンドルをドロップして、自分の修正がデプロイ済みスナップショットに対してどう変化したかを確認できる。すべての解析はブラウザ内で完結する——verdict はこのブラウザの外に出ない。"
+  />
+
+  <ReproCompareApp lang="ja" />
+</Page>

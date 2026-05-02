@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "ギャラリー"
+  },
+  {
+    "type": "file",
+    "name": "compare",
+    "label": "ブランチ修正の比較"
+  }
+]
