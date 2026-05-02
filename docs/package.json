@@ -12,6 +12,7 @@
     "preview": "rspress preview"
   },
   "devDependencies": {
-    "@rspress/core": "^2.0.9"
+    "@rspress/core": "^2.0.9",
+    "jszip": "^3.10.1"
   }
 }
