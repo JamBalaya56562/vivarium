@@ -22,6 +22,18 @@ resource "github_repository" "this" {
   visibility  = var.repository_visibility
   topics      = var.repository_topics
 
+  # About-section homepage URL — mirrors the GitHub UI checkbox
+  # "Use your GitHub Pages website".
+  #
+  # Constructed from var.github_owner + var.repository_name rather than
+  # `github_repository_pages.this.html_url` because the latter creates a
+  # dependency cycle (github_repository_pages.this depends on
+  # github_repository.this.name). The default Pages URL format is
+  # https://{owner}.github.io/{repo}/, identical to what html_url would
+  # return; if a custom domain is later configured on Pages, update this
+  # line at the same time.
+  homepage_url = "https://${var.github_owner}.github.io/${var.repository_name}/"
+
   # Feature toggles
   has_issues      = true
   has_discussions = true
