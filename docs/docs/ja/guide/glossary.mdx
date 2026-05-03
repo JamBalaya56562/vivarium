@@ -1,0 +1,204 @@
+---
+pageType: doc
+title: 用語集
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · 用語集"
+    title="このプロジェクトが特殊な使い方をする言葉。"
+    sub="ほとんどの用語は他の文脈では普通の意味を持つが、Vivarium は特定の役割に固定している。検索しやすく、五十音/英字順に並べ、その語が load-bearing な仕様ページへ相互リンクしている。"
+  />
+
+  <Section
+    eyebrow="// CORE"
+    heading="どのページでも出てくる必須語。"
+  >
+    <dl className="v-glossary">
+      <dt id="bug-reproduction"><strong>バグ再現 (Bug reproduction)</strong></dt>
+      <dd>
+        以前に報告されたバグが発生することを観察できる、入力と環境の繰り返し可能なシーケンス。
+        Vivarium はこれらを書面化されたインシデントレポートではなく、
+        <strong>実行可能なアーティファクト</strong>としてホストする。
+      </dd>
+
+      <dt id="recipe"><strong>レシピ (Recipe)</strong></dt>
+      <dd>
+        1 つの再現。<code>src/layer{`{1,2,3}`}_*/&lt;slug&gt;/</code>
+        に配置され、実行可能なページ（Layer 1）またはピン留めされたイメージ手順
+        （Layer 2 / 3）として出荷される。1 つのレシピは 1 つのアップストリームバグを対象とする。
+        カタログとはこのリポジトリがホストするすべてのレシピの集合のこと。
+      </dd>
+
+      <dt id="slug"><strong>スラッグ (Slug)</strong></dt>
+      <dd>
+        レシピのケバブケース識別子——アップストリーム Issue が存在する場合は通常
+        <code>&lt;project&gt;-&lt;issue-number&gt;</code>（例:
+        <code>pandas-56679</code>）、それ以外の場合は説明的な句（例:
+        <code>bash-local-shadows-exit</code>）。ディレクトリ名、および
+        <a href="/vivarium/ja/spec/manifest-v1#root-fields">Manifest v1 の
+        <code>slug</code> フィールド</a>と同じ形。
+      </dd>
+
+      <dt id="layer"><strong>レイヤー (Layer 1 / 2 / 3)</strong></dt>
+      <dd>
+        レシピがどのランタイムに乗るか。Layer 1 = ブラウザ内 WASM（瞬時起動）。
+        Layer 2 = Docker（完全忠実度）。Layer 3 = 第三の道——record-replay、
+        決定論的シミュレーション、microVM。選択は
+        <em>そのレシピがどの種類のバグを再現できるか</em>の話であって、
+        どの技術が流行っているかではない。詳細は
+        <a href="/vivarium/ja/architecture">アーキテクチャ</a>。
+      </dd>
+
+      <dt id="verdict"><strong>Verdict</strong></dt>
+      <dd>
+        レシピを実行した結果——<code>"pass"</code> または <code>"fail"</code> のいずれか。
+        <strong>pass はアップストリームバグが再現することを意味する。</strong>
+        fail は再現しないことを意味する。直感に反するが意図的な命名。詳細は
+        <a href="/vivarium/ja/spec/contract-v1#verdict-セマンティクス">verdict セマンティクス</a>。
+      </dd>
+
+      <dt id="evidence"><strong>Evidence</strong></dt>
+      <dd>
+        verdict の根拠となるデータ——キャプチャされた stdout / stderr、
+        終了コード、所要時間。Layer 1 はページ内に inline で公開し、
+        Layer 2 / 3 は <code>verdict.json</code> 内に同梱する。
+        Phase 6 R.1 で Contract v1 rev 2 として追加された。これにより
+        比較ページが「再現するか<em>どうか</em>」だけでなく「<em>なぜ</em>」も示せる。
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// 仕様サーフェス"
+    heading="外部リポジトリとツールが読む 3 つの面。"
+  >
+    <dl className="v-glossary">
+      <dt id="contract"><strong>Contract (v1)</strong></dt>
+      <dd>
+        すべての再現ページが公開するランタイムサーフェス——DOM 属性、
+        JS グローバル、メタタグ、そして <code>verdict.json</code>
+        ファイル形状。Vivarium ページが
+        <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>
+        を載せて署名する規約。Phase 5 から v1 でロックされている。詳細は
+        <a href="/vivarium/ja/spec/contract-v1">Contract v1</a>。
+      </dd>
+
+      <dt id="manifest"><strong>Manifest (v1)</strong></dt>
+      <dd>
+        公開サーフェス——外部リポジトリが
+        <code>.vivarium/manifest.toml</code> に置く TOML ファイルで、
+        その repo 自身の Vivarium 実行可能な再現を宣言する。Phase 5 から v1 安定。
+        詳細は <a href="/vivarium/ja/spec/manifest-v1">Manifest v1</a>。
+        manifest は外部 repo が書くもの、recipe（上記）は<em>このリポジトリ</em>がホストするもの。
+      </dd>
+
+      <dt id="recipes-index"><strong>Recipes index (v1)</strong></dt>
+      <dd>
+        <a href="https://aletheia-works.github.io/vivarium/api/recipes.json"><code>/api/recipes.json</code></a>
+        にある機械可読カタログ。このリポジトリがホストするすべてのレシピを列挙する。
+        MCP サーバ、ギャラリーのファセット UI、レシピを列挙・フィルタリングしたい
+        外部ツールが消費する。スキーマ:
+        <a href="/vivarium/ja/spec/recipes-index-v1">recipes-index v1</a>。
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// ワークフロー"
+    heading="仕様ページが繰り返し参照する動詞。"
+  >
+    <dl className="v-glossary">
+      <dt id="branch-fix"><strong>Branch-fix（ブランチ修正）</strong></dt>
+      <dd>
+        アップストリームバグに対する候補修正。通常はコントリビューターのブランチ
+        （または AI エージェントのドラフト）からビルドされる。
+        branch-fix verdict パイプラインは候補修正に対してレシピを再現する。
+        verdict が <code>pass</code> から <code>fail</code> へ反転すれば修正は機能している。
+        詳細は <a href="/vivarium/ja/spec/branch-fix-pipeline">branch-fix パイプライン</a>。
+      </dd>
+
+      <dt id="ai-slop-verification"><strong>AI-slop verification（AI スロップ検証）</strong></dt>
+      <dd>
+        モチベーションとなったワークフロー: コントリビューター（人間または
+        AI エージェント）が候補修正を作成し、レシピに対して実行し、
+        PR を出す前に比較を確認する。「自分の AI のドラフトは本当にバグを解いたのか、
+        それとも正しそうに見えるだけなのか?」Phase 7 サブストリーム B3 が、既存の
+        branch-fix パイプライン + 比較ページ + MCP ツールを 1 本のウォークスルーに繋ぐ。
+      </dd>
+
+      <dt id="consumer-workflow"><strong>Consumer workflow</strong></dt>
+      <dd>
+        外部リポジトリが自身の CI から呼び出して自身の manifest の再現に対する
+        verdict をキャプチャする再利用可能 GitHub Actions ワークフロー。
+        詳細は <a href="/vivarium/ja/spec/consumer-workflow">spec/consumer-workflow</a>。
+        Phase 5 サブストリーム D。
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// メタ"
+    heading="このプロジェクト自身について使う言葉。"
+  >
+    <dl className="v-glossary">
+      <dt id="phase"><strong>フェーズ (Phase)</strong></dt>
+      <dd>
+        スプリント単位ではなく、月から年単位で測る一貫したまとまりの作業。
+        各フェーズはオープナー ADR、クローズ ADR、ロードマップエントリを持つ。
+        クローズは網羅的な機能リストではなく、
+        部分的だが正直な完成（ADR-0012 の precedent）で行う。
+        詳細は <a href="/vivarium/ja/roadmap">ロードマップ</a>。
+      </dd>
+
+      <dt id="adr"><strong>ADR</strong>（Architecture Decision Record / アーキテクチャ決定記録）</dt>
+      <dd>
+        <em>なぜ</em>その決定がなされたか、どの代替案が検討されたか、
+        どのトレードオフが受け入れられたかを記録する番号付き設計メモ。
+        <code>_context/decisions/</code> 以下にプライベートに置かれる——
+        AI エージェントと将来のメンテナーにとって load-bearing だが、
+        公開ドキュメントサーフェスの一部ではない。
+      </dd>
+
+      <dt id="layer-uniform"><strong>Layer-uniform（レイヤー一様）</strong></dt>
+      <dd>
+        どの Layer（1 / 2 / 3）が生成したかに関わらず同じ見え方をするサーフェスを表す性質。
+        Contract v1 は layer-uniform である: verdict は Pyodide からでも、
+        Docker からでも、rr replay からでも同じように読める。
+      </dd>
+    </dl>
+  </Section>
+
+  <Callout>
+    ドキュメント内でこのページに無い用語を見つけたら Issue を立ててほしい——
+    用語集の漏れはオンボーディングサーフェスのバグであり、
+    スタイルの好みではない。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      アーキテクチャを読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="言葉の意味が腹落ちしたら、次に押さえるべきは三層アーキテクチャ。"
+  primary={{ label: 'アーキテクチャ →', href: '/vivarium/ja/architecture' }}
+  ghost={{ label: 'ビジョン', href: '/vivarium/ja/vision' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

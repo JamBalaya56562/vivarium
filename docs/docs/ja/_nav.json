@@ -15,6 +15,11 @@
     "activeMatch": "/architecture"
   },
   {
+    "text": "ガイド",
+    "link": "/guide/glossary",
+    "activeMatch": "/guide/"
+  },
+  {
     "text": "仕様",
     "link": "/spec/",
     "activeMatch": "/spec/"
