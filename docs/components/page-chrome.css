@@ -715,3 +715,55 @@ html.dark {
 .v-bottom-note:hover {
   color: var(--vh-accent-teal-bright);
 }
+
+/* ---------- Glossary (definition list) ---------- */
+/*
+ * Used by guide/glossary pages. <dl><dt><strong>Term</strong></dt>
+ * <dd>Definition…</dd></dl>. Definitions are typographically subordinate
+ * to terms — the same hierarchy a printed glossary uses.
+ */
+
+.v-glossary {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem 0;
+}
+
+.v-glossary dt {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--vh-text);
+  scroll-margin-top: 5rem;
+}
+
+.v-glossary dt code {
+  font-size: 0.95em;
+}
+
+.v-glossary dd {
+  margin: 0.375rem 0 0 0;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid var(--vh-hairline);
+  color: var(--vh-text-muted);
+  line-height: 1.65;
+}
+
+.v-glossary dd a {
+  color: var(--vh-accent-teal);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--vh-accent-teal);
+}
+
+.v-glossary dd a:hover {
+  color: var(--vh-accent-teal-bright);
+  border-bottom-color: var(--vh-accent-teal-bright);
+}
+
+.v-glossary dd code {
+  font-size: 0.9em;
+  background: var(--vh-card-bg);
+  padding: 0.05em 0.35em;
+  border-radius: 3px;
+}

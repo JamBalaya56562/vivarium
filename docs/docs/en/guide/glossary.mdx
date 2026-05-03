@@ -1,0 +1,210 @@
+---
+pageType: doc
+title: Glossary
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · GLOSSARY"
+    title="Words this project uses oddly."
+    sub="Most terms here have ordinary meanings elsewhere; Vivarium pins them to specific roles. Lookup-friendly, alphabetised, cross-linked to the spec where the word is load-bearing."
+  />
+
+  <Section
+    eyebrow="// CORE"
+    heading="The handful you'll see in every other page."
+  >
+    <dl className="v-glossary">
+      <dt id="bug-reproduction"><strong>Bug reproduction</strong></dt>
+      <dd>
+        A repeatable sequence of inputs and an environment under which a
+        previously-reported bug is observed to occur. Vivarium hosts these as
+        runnable artefacts, not as written-up incident reports.
+      </dd>
+
+      <dt id="recipe"><strong>Recipe</strong></dt>
+      <dd>
+        One reproduction. Lives in <code>src/layer{`{1,2,3}`}_*/&lt;slug&gt;/</code>
+        and ships as a runnable page (Layer 1) or pinned image instructions
+        (Layers 2 / 3). One recipe targets one upstream bug. The catalogue is
+        the set of all recipes this repository hosts.
+      </dd>
+
+      <dt id="slug"><strong>Slug</strong></dt>
+      <dd>
+        Kebab-case identifier for a recipe — usually
+        <code>&lt;project&gt;-&lt;issue-number&gt;</code> (e.g.
+        <code>pandas-56679</code>) when there is an upstream issue, or a
+        descriptive phrase otherwise (e.g. <code>bash-local-shadows-exit</code>).
+        Same shape as the directory name and the
+        <a href="/spec/manifest-v1#root-fields"><code>slug</code> field in
+        Manifest v1</a>.
+      </dd>
+
+      <dt id="layer"><strong>Layer (1 / 2 / 3)</strong></dt>
+      <dd>
+        Which runtime a recipe lives on. Layer 1 = WASM in browser
+        (instant). Layer 2 = Docker (full fidelity). Layer 3 = third way —
+        record-replay, deterministic simulation, microVM. The choice is
+        about <em>which kind of bug the recipe can reproduce</em>, not about
+        which technology is fashionable. See
+        <a href="/architecture">Architecture</a> for the long form.
+      </dd>
+
+      <dt id="verdict"><strong>Verdict</strong></dt>
+      <dd>
+        The output of running a recipe — either <code>"pass"</code> or
+        <code>"fail"</code>. <strong>Pass means the upstream bug
+        reproduces.</strong> Fail means it does not. The naming is
+        counter-intuitive and deliberate; see
+        <a href="/spec/contract-v1#verdict-semantics">verdict semantics</a>.
+      </dd>
+
+      <dt id="evidence"><strong>Evidence</strong></dt>
+      <dd>
+        The supporting data behind a verdict — captured stdout / stderr,
+        exit code, duration. Layer 1 publishes evidence inline on the
+        page; Layer 2 / 3 ship it inside <code>verdict.json</code>. Added
+        in Contract v1 rev 2 (Phase 6 R.1) so the comparison page can
+        show <em>why</em>, not just <em>whether</em>.
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// SPEC SURFACES"
+    heading="The three things external repos and tools read."
+  >
+    <dl className="v-glossary">
+      <dt id="contract"><strong>Contract (v1)</strong></dt>
+      <dd>
+        The runtime surface every reproduction page publishes — DOM
+        attributes, JS globals, the meta tag, and the
+        <code>verdict.json</code> file shape. The contract a Vivarium page
+        signs by carrying
+        <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>.
+        Locked at v1 since Phase 5; see
+        <a href="/spec/contract-v1">Contract v1</a>.
+      </dd>
+
+      <dt id="manifest"><strong>Manifest (v1)</strong></dt>
+      <dd>
+        The publication surface — a TOML file at
+        <code>.vivarium/manifest.toml</code> that an external repo ships to
+        declare its own Vivarium-runnable reproduction. v1 stable since
+        Phase 5; see <a href="/spec/manifest-v1">Manifest v1</a>. A manifest
+        is what an external repo writes; a recipe (above) is what
+        <em>this</em> repo hosts.
+      </dd>
+
+      <dt id="recipes-index"><strong>Recipes index (v1)</strong></dt>
+      <dd>
+        The machine-readable catalogue at
+        <a href="https://aletheia-works.github.io/vivarium/api/recipes.json"><code>/api/recipes.json</code></a>.
+        Lists every recipe this repo hosts. Consumed by the MCP server, the
+        gallery facet UI, and any external tool that wants to enumerate or
+        filter recipes. Schema:
+        <a href="/spec/recipes-index-v1">recipes-index v1</a>.
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// WORKFLOWS"
+    heading="The verbs the spec pages keep referring to."
+  >
+    <dl className="v-glossary">
+      <dt id="branch-fix"><strong>Branch-fix</strong></dt>
+      <dd>
+        A candidate fix for the upstream bug, typically built from a
+        contributor's branch (or AI agent's draft). The branch-fix verdict
+        pipeline reproduces the recipe against the candidate fix; if the
+        verdict flips from <code>pass</code> to <code>fail</code>, the fix
+        is doing its job. See
+        <a href="/spec/branch-fix-pipeline">branch-fix pipeline</a>.
+      </dd>
+
+      <dt id="ai-slop-verification"><strong>AI-slop verification</strong></dt>
+      <dd>
+        The motivating workflow: a contributor (human or AI agent) produces
+        a candidate fix, runs it against the recipe, and sees the comparison
+        before opening a PR. "Did my AI's draft actually solve the bug, or
+        does it just look right?" Phase 7 sub-stream B3 wires the existing
+        branch-fix pipeline + comparison page + MCP tools into one walkthrough.
+      </dd>
+
+      <dt id="consumer-workflow"><strong>Consumer workflow</strong></dt>
+      <dd>
+        The reusable GitHub Actions workflow at
+        <a href="/spec/consumer-workflow">spec/consumer-workflow</a>
+        that an external repo invokes from its CI to capture a
+        verdict for its own manifest's reproduction. Phase 5 sub-stream D.
+      </dd>
+    </dl>
+  </Section>
+
+  <Section
+    eyebrow="// META"
+    heading="Words this project uses about itself."
+  >
+    <dl className="v-glossary">
+      <dt id="phase"><strong>Phase</strong></dt>
+      <dd>
+        A coherent stretch of work measured in months-to-years, not sprints.
+        Each phase has an opener ADR, a close ADR, and a roadmap entry.
+        Closure is by partial-but-honest completion (precedent: ADR-0012),
+        not by exhaustive feature list. See <a href="/roadmap">Roadmap</a>.
+      </dd>
+
+      <dt id="adr"><strong>ADR</strong> (Architecture Decision Record)</dt>
+      <dd>
+        Numbered design memo recording <em>why</em> a decision was made,
+        what alternatives were considered, and what trade-offs were
+        accepted. Lives privately under <code>_context/decisions/</code> —
+        load-bearing for AI agents and future maintainers; not part of
+        the public docs surface.
+      </dd>
+
+      <dt id="layer-uniform"><strong>Layer-uniform</strong></dt>
+      <dd>
+        A property describing surfaces that look the same regardless of
+        which Layer (1 / 2 / 3) produced them. Contract v1 is
+        layer-uniform: a verdict reads the same whether it came from
+        Pyodide, Docker, or rr replay.
+      </dd>
+    </dl>
+  </Section>
+
+  <Callout>
+    Found a term in the docs that isn't here? Open an issue —
+    glossary gaps are bugs in the onboarding surface, not stylistic
+    preferences.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the architecture{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="Once the words make sense, the three-layer architecture is the next thing to internalise."
+  primary={{ label: 'Architecture →', href: '/architecture' }}
+  ghost={{ label: 'Vision', href: '/vision' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
