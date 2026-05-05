@@ -1,0 +1,82 @@
+{
+  "$comment": "Project-level metadata overlay for /repro/<project>/ landing pages. Hand-curated and reviewed in PR diff, mirroring the recipe-facets.json convention from ADR-0024 §1. Project keys must match the `project` field generate-recipes-index.ts derives from each recipe slug. Recipes whose project has no row here fall back to slug-as-display-name with no description.",
+  "projects": {
+    "cpython": {
+      "display_name": "CPython",
+      "tagline": "The reference Python interpreter.",
+      "description": "Reproductions hit Python 3.13 / sqlite3 in the same Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
+      "homepage": "https://www.python.org/",
+      "github": "https://github.com/python/cpython"
+    },
+    "numpy": {
+      "display_name": "NumPy",
+      "tagline": "Array programming in Python.",
+      "description": "Bugs in numeric or temporal semantics that survive when numpy is loaded inside Pyodide. The browser page and the host-Python repro.py share the exact same script.",
+      "homepage": "https://numpy.org/",
+      "github": "https://github.com/numpy/numpy"
+    },
+    "pandas": {
+      "display_name": "pandas",
+      "tagline": "DataFrames for Python.",
+      "description": "Empty / dtype-edge regressions that reproduce against the pandas wheel bundled with Pyodide; the same script also runs against host pandas via uv.",
+      "homepage": "https://pandas.pydata.org/",
+      "github": "https://github.com/pandas-dev/pandas"
+    },
+    "ruby": {
+      "display_name": "Ruby",
+      "tagline": "Ruby standard library and language semantics.",
+      "description": "Reproductions run on ruby.wasm (CRuby compiled to WASI). Host parity is provided by mise-pinned ruby for the repro.rb script.",
+      "homepage": "https://www.ruby-lang.org/",
+      "github": "https://github.com/ruby/ruby"
+    },
+    "php": {
+      "display_name": "PHP",
+      "tagline": "PHP runtime and standard extensions.",
+      "description": "Reproductions execute under php-wasm; host parity via mise-pinned php running the same repro.php.",
+      "homepage": "https://www.php.net/",
+      "github": "https://github.com/php/php-src"
+    },
+    "regex": {
+      "display_name": "rust-lang/regex",
+      "tagline": "Rust's standard regex crate.",
+      "description": "Compiled to wasm32-wasip1 with a pinned crate version, so verdicts flip when the upstream fix lands in a future regex release — turning the page into a fix-detection sentinel.",
+      "homepage": "https://docs.rs/regex/",
+      "github": "https://github.com/rust-lang/regex"
+    },
+    "bash": {
+      "display_name": "bash",
+      "tagline": "GNU bash and POSIX shell semantics.",
+      "description": "Layer 2 reproductions ship as Docker images: visitors run a single `docker run` command to observe the documented footgun on their own machine.",
+      "homepage": "https://www.gnu.org/software/bash/",
+      "github": "https://git.savannah.gnu.org/cgit/bash.git/"
+    },
+    "find": {
+      "display_name": "find / xargs",
+      "tagline": "Coreutils-style filesystem traversal.",
+      "description": "Cross-tool footguns at the find/xargs boundary, packaged as Layer 2 Docker reproductions for one-shot local replication.",
+      "homepage": "https://www.gnu.org/software/findutils/",
+      "github": "https://git.savannah.gnu.org/cgit/findutils.git"
+    },
+    "flock": {
+      "display_name": "flock",
+      "tagline": "util-linux flock(2) advisory locks.",
+      "description": "Layer 2 reproductions demonstrating advisory-only lock semantics — non-flock-aware tools bypass the lock silently.",
+      "homepage": "https://man7.org/linux/man-pages/man2/flock.2.html",
+      "github": "https://github.com/util-linux/util-linux"
+    },
+    "postgres": {
+      "display_name": "PostgreSQL",
+      "tagline": "PostgreSQL transaction and isolation-level semantics.",
+      "description": "Layer 2 Docker reproductions targeting documented (but easily-missed) behaviours under default isolation levels.",
+      "homepage": "https://www.postgresql.org/",
+      "github": "https://github.com/postgres/postgres"
+    },
+    "pthread": {
+      "display_name": "POSIX threads",
+      "tagline": "Native pthread races, captured deterministically.",
+      "description": "Layer 3 record-replay reproductions: a real pthreaded program is run under rr, the recorded trace ships in the image, and replay produces a bit-identical verdict every time.",
+      "homepage": "https://man7.org/linux/man-pages/man7/pthreads.7.html",
+      "github": "https://github.com/rr-debugger/rr"
+    }
+  }
+}

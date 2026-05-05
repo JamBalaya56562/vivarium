@@ -19,5 +19,5 @@ issue = 56679
 upstream_url = "https://github.com/pandas-dev/pandas/issues/56679"
 
 [layer1]
-page_url = "https://aletheia-works.github.io/vivarium/repro/pandas-56679/"
+page_url = "https://aletheia-works.github.io/vivarium/repro/pandas/56679/"
 expected_verdict = "pass"

@@ -88,6 +88,13 @@ src/layer1_wasm/.last-run.json
 doc_build/
 .rspress/
 
+# Per-project landing pages under `/repro/<project>/` are generated at
+# build time by `docs/scripts/generate-project-pages.ts` from the
+# `docs/public/api/projects.json` index — see the AUTO-GENERATED marker
+# inside each emitted MDX. Regenerated on every `bun run dev` / `build`,
+# so checking them in would just create noise.
+docs/docs/*/repro/*/index.mdx
+
 # ─── WASM build artifacts ────────────────────
 *.wasm
 !**/test/**/*.wasm

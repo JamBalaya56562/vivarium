@@ -22,7 +22,7 @@ manifests, one per layer:
 
 | Subdirectory | Layer | Points at |
 |---|---|---|
-| [`layer1-pandas-56679/`](./layer1-pandas-56679/.vivarium/manifest.toml) | 1 (WASM) | `https://aletheia-works.github.io/vivarium/repro/pandas-56679/` |
+| [`layer1-pandas-56679/`](./layer1-pandas-56679/.vivarium/manifest.toml) | 1 (WASM) | `https://aletheia-works.github.io/vivarium/repro/pandas/56679/` |
 | [`layer2-bash-local-shadows-exit/`](./layer2-bash-local-shadows-exit/.vivarium/manifest.toml) | 2 (Docker) | `ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest` |
 | [`layer3-lost-update/`](./layer3-lost-update/.vivarium/manifest.toml) | 3 (record-replay) | `ghcr.io/aletheia-works/vivarium-lost-update:latest` |
 

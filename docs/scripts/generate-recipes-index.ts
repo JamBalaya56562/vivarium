@@ -16,6 +16,12 @@
 //   - project / issue = parsed from "<project>-<digits>" slug pattern;
 //     for slugs without a trailing number, project = first dash-segment,
 //     issue = 0.
+//   - page_url = "<pages-base>/repro/<project>/<issue_path>/", where
+//     issue_path = the upstream issue number when slug ends in "-<digits>",
+//     otherwise the slug suffix after the project prefix (e.g. slug
+//     "bash-local-shadows-exit" → "/repro/bash/local-shadows-exit/"). For
+//     PROJECT_OVERRIDES entries the disk slug becomes the issue_path under
+//     the override's project (e.g. "lost-update" → "/repro/pthread/lost-update/").
 //   - title = first H1 of the recipe README, with the leading
 //     "Reproduction —" prefix stripped.
 //   - language / symptom / severity / tags = merged from the facet overlay
@@ -68,6 +74,35 @@ interface FacetOverlay {
   facets: Record<string, FacetEntry>;
 }
 
+interface ProjectMetaEntry {
+  display_name?: string;
+  tagline?: string;
+  description?: string;
+  homepage?: string;
+  github?: string;
+}
+
+interface ProjectsOverlay {
+  projects: Record<string, ProjectMetaEntry>;
+}
+
+interface ProjectEntry {
+  project: string;
+  display_name: string;
+  tagline?: string;
+  description?: string;
+  homepage?: string;
+  github?: string;
+  recipe_count: number;
+  layers: Layer[];
+  page_url: string;
+}
+
+interface ProjectsIndex {
+  index: 'v1';
+  projects: ProjectEntry[];
+}
+
 const LAYERS: ReadonlyArray<{ layer: Layer; dir: string }> = [
   { layer: 1, dir: 'src/layer1_wasm' },
   { layer: 2, dir: 'src/layer2_docker' },
@@ -118,18 +153,40 @@ const PROJECT_OVERRIDES: Record<string, string> = {
   'lost-update': 'pthread',
 };
 
-function parseSlug(slug: string): { project: string; issue: number } {
+// Parse a recipe directory slug into the routing triple consumed by the
+// catalogue and URL builder.
+//
+// `project` and `issue` are the v1 schema fields; `issuePath` is the
+// second URL segment under `/repro/<project>/<issue_path>/`. For numeric
+// upstream issues `issuePath` is the stringified issue number; for
+// descriptive slugs (no trailing digits) it is the slug suffix after the
+// project prefix; for PROJECT_OVERRIDES entries (where the disk slug does
+// not start with the project name) the whole disk slug becomes the
+// issue_path under the overridden project.
+function parseSlug(slug: string): {
+  project: string;
+  issue: number;
+  issuePath: string;
+} {
   if (PROJECT_OVERRIDES[slug]) {
-    return { project: PROJECT_OVERRIDES[slug]!, issue: 0 };
+    return { project: PROJECT_OVERRIDES[slug]!, issue: 0, issuePath: slug };
   }
   const match = slug.match(/^([a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*?)-(\d+)$/);
   if (match) {
-    return { project: match[1]!, issue: Number(match[2]) };
+    return {
+      project: match[1]!,
+      issue: Number(match[2]),
+      issuePath: match[2]!,
+    };
   }
   const firstDash = slug.indexOf('-');
+  if (firstDash === -1) {
+    return { project: slug, issue: 0, issuePath: slug };
+  }
   return {
-    project: firstDash === -1 ? slug : slug.slice(0, firstDash),
+    project: slug.slice(0, firstDash),
     issue: 0,
+    issuePath: slug.slice(firstDash + 1),
   };
 }
 
@@ -168,15 +225,66 @@ async function loadFacetOverlay(repoRoot: string): Promise<FacetOverlay> {
   }
 }
 
+async function loadProjectsOverlay(repoRoot: string): Promise<ProjectsOverlay> {
+  const overlayPath = join(repoRoot, 'docs', 'data', 'projects.json');
+  try {
+    const raw = await readFile(overlayPath, 'utf-8');
+    const parsed = JSON.parse(raw) as Partial<ProjectsOverlay>;
+    if (!parsed.projects || typeof parsed.projects !== 'object') {
+      console.error(
+        `WARNING: ${overlayPath} did not contain a "projects" object; treating as empty overlay.`,
+      );
+      return { projects: {} };
+    }
+    return { projects: parsed.projects };
+  } catch (err) {
+    console.error(
+      `WARNING: could not read ${overlayPath} (${err instanceof Error ? err.message : err}); treating as empty overlay.`,
+    );
+    return { projects: {} };
+  }
+}
+
+function aggregateProjects(
+  recipes: RecipeEntry[],
+  overlay: ProjectsOverlay,
+): ProjectEntry[] {
+  const buckets = new Map<string, { layers: Set<Layer>; count: number }>();
+  for (const r of recipes) {
+    const bucket = buckets.get(r.project) ?? { layers: new Set(), count: 0 };
+    bucket.layers.add(r.layer);
+    bucket.count += 1;
+    buckets.set(r.project, bucket);
+  }
+  const projects: ProjectEntry[] = [];
+  for (const [project, bucket] of buckets) {
+    const meta = overlay.projects[project] ?? {};
+    const entry: ProjectEntry = {
+      project,
+      display_name: meta.display_name ?? project,
+      recipe_count: bucket.count,
+      layers: Array.from(bucket.layers).sort(),
+      page_url: `${PAGES_BASE}/repro/${project}/`,
+    };
+    if (meta.tagline) entry.tagline = meta.tagline;
+    if (meta.description) entry.description = meta.description;
+    if (meta.homepage) entry.homepage = meta.homepage;
+    if (meta.github) entry.github = meta.github;
+    projects.push(entry);
+  }
+  projects.sort((a, b) => a.project.localeCompare(b.project));
+  return projects;
+}
+
 async function buildEntry(
   layer: Layer,
   slug: string,
   recipeDir: string,
   overlay: FacetOverlay,
 ): Promise<RecipeEntry> {
-  const { project, issue } = parseSlug(slug);
+  const { project, issue, issuePath } = parseSlug(slug);
   const title = await readTitle(join(recipeDir, 'README.md'), slug);
-  const pageUrl = `${PAGES_BASE}/repro/${slug}/`;
+  const pageUrl = `${PAGES_BASE}/repro/${project}/${issuePath}/`;
   const sourceUrl = `${REPO_BASE}/tree/main/src/${LAYER_DIRNAME[layer]}/${slug}`;
   const facet = overlay.facets[slug];
   const entry: RecipeEntry = {
@@ -193,7 +301,7 @@ async function buildEntry(
   if (facet?.symptom) entry.symptom = facet.symptom;
   if (facet?.severity) entry.severity = facet.severity;
   if (layer === 2 || layer === 3) {
-    entry.verdict_url = `${PAGES_BASE}/repro/${slug}/verdict.json`;
+    entry.verdict_url = `${PAGES_BASE}/repro/${project}/${issuePath}/verdict.json`;
   }
   return entry;
 }
@@ -203,6 +311,7 @@ async function main(): Promise<void> {
   const REPO_ROOT = join(__dirname, '..', '..');
 
   const overlay = await loadFacetOverlay(REPO_ROOT);
+  const projectsOverlay = await loadProjectsOverlay(REPO_ROOT);
   const recipes: RecipeEntry[] = [];
   for (const { layer, dir } of LAYERS) {
     const layerDir = join(REPO_ROOT, dir);
@@ -227,10 +336,31 @@ async function main(): Promise<void> {
     recipes,
   };
 
+  const projects = aggregateProjects(recipes, projectsOverlay);
+  const projectsOut: ProjectsIndex = {
+    index: 'v1',
+    projects,
+  };
+  const missingMeta = projects
+    .filter((p) => p.display_name === p.project && !p.tagline && !p.description)
+    .map((p) => p.project);
+  if (missingMeta.length > 0) {
+    console.error(
+      `NOTE: ${missingMeta.length} project(s) missing projects.json overlay rows; ` +
+        `landing pages will fall back to slug-as-display-name: ${missingMeta.join(', ')}`,
+    );
+  }
+
   const outDir = join(__dirname, '..', 'public', 'api');
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, 'recipes.json');
   await writeFile(outPath, JSON.stringify(out, null, 2) + '\n', 'utf-8');
+  const projectsPath = join(outDir, 'projects.json');
+  await writeFile(
+    projectsPath,
+    JSON.stringify(projectsOut, null, 2) + '\n',
+    'utf-8',
+  );
 
   const counts = recipes.reduce<Record<Layer, number>>(
     (acc, r) => {
@@ -242,6 +372,9 @@ async function main(): Promise<void> {
   console.error(
     `Wrote ${recipes.length} recipe(s) to ${outPath} ` +
       `(layer 1: ${counts[1]}, layer 2: ${counts[2]}, layer 3: ${counts[3]})`,
+  );
+  console.error(
+    `Wrote ${projects.length} project(s) to ${projectsPath}`,
   );
 }
 

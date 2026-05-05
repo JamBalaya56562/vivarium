@@ -8,7 +8,7 @@
       "project": "cpython",
       "issue": 137205,
       "title": "python/cpython#137205",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/cpython-137205/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/cpython/137205/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/cpython-137205",
       "language": "python",
       "tags": [
@@ -26,7 +26,7 @@
       "project": "numpy",
       "issue": 28287,
       "title": "numpy/numpy#28287",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/numpy-28287/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/numpy/28287/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/numpy-28287",
       "language": "python",
       "tags": [
@@ -43,7 +43,7 @@
       "project": "pandas",
       "issue": 56679,
       "title": "pandas-dev/pandas#56679",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas-56679/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas/56679/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679",
       "language": "python",
       "tags": [
@@ -60,7 +60,7 @@
       "project": "php",
       "issue": 12167,
       "title": "php/php-src#12167",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/php-12167/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/php/12167/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/php-12167",
       "language": "php",
       "tags": [
@@ -76,7 +76,7 @@
       "project": "regex",
       "issue": 779,
       "title": "rust-lang/regex#779",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/regex-779/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/regex/779/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779",
       "language": "rust",
       "tags": [
@@ -92,7 +92,7 @@
       "project": "ruby",
       "issue": 21709,
       "title": "ruby/ruby#21709",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/ruby-21709/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/ruby/21709/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/ruby-21709",
       "language": "ruby",
       "tags": [
@@ -109,7 +109,7 @@
       "project": "bash",
       "issue": 0,
       "title": "bash `local` shadows command-substitution exit code",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit",
       "language": "shell",
       "tags": [
@@ -119,7 +119,7 @@
       ],
       "symptom": "local-shadows-exit-status",
       "severity": "footgun",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/verdict.json"
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/verdict.json"
     },
     {
       "slug": "find-xargs-whitespace",
@@ -127,7 +127,7 @@
       "project": "find",
       "issue": 0,
       "title": "`find … | xargs cmd` is unsafe for whitespace in filenames",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/find-xargs-whitespace/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/find/xargs-whitespace/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/find-xargs-whitespace",
       "language": "shell",
       "tags": [
@@ -138,7 +138,7 @@
       ],
       "symptom": "whitespace-unsafe-pipeline",
       "severity": "footgun",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/find-xargs-whitespace/verdict.json"
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/find/xargs-whitespace/verdict.json"
     },
     {
       "slug": "flock-is-advisory",
@@ -146,7 +146,7 @@
       "project": "flock",
       "issue": 0,
       "title": "`flock(2)` is advisory only",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/flock/is-advisory/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory",
       "language": "shell",
       "tags": [
@@ -156,7 +156,7 @@
       ],
       "symptom": "advisory-lock-bypass",
       "severity": "spec-violation",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/flock-is-advisory/verdict.json"
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/flock/is-advisory/verdict.json"
     },
     {
       "slug": "postgres-lost-update",
@@ -164,7 +164,7 @@
       "project": "postgres",
       "issue": 0,
       "title": "PostgreSQL lost update under READ COMMITTED",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/postgres/lost-update/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update",
       "language": "sql",
       "tags": [
@@ -174,7 +174,7 @@
       ],
       "symptom": "lost-update-read-committed",
       "severity": "datarace",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres-lost-update/verdict.json"
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres/lost-update/verdict.json"
     },
     {
       "slug": "lost-update",
@@ -182,7 +182,7 @@
       "project": "pthread",
       "issue": 0,
       "title": "pthread lost-update data race (canonical)",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/lost-update/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/pthread/lost-update/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway/lost-update",
       "language": "c",
       "tags": [
@@ -192,7 +192,7 @@
       ],
       "symptom": "lost-update-data-race",
       "severity": "datarace",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/lost-update/verdict.json"
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/pthread/lost-update/verdict.json"
     }
   ]
 }

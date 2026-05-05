@@ -71,7 +71,7 @@ gh workflow run branch-fix-verdict.yml \
 | ファイル | ソース | 注記 |
 |---|---|---|
 | `branch-fix-verdict.json` | `branch_image` からライブキャプチャ。 | 常に存在。[Contract v1](./contract-v1.md) に準拠し [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) に対して検証パスする。 |
-| `original-verdict.json` | デフォルト: `https://aletheia-works.github.io/vivarium/repro/<slug>/verdict.json` からフェッチ。`original_image` を指定した場合: そのイメージからキャプチャ。 | デプロイ済みの Pages スナップショットが 404 を返す場合（例: まだライブサイトにない新しいレシピ）は省略。 |
+| `original-verdict.json` | デフォルト: `https://aletheia-works.github.io/vivarium/repro/<project>/<issue_path>/verdict.json` からフェッチ（`recipes.json` 内エントリの `page_url` に `verdict.json` を付加した形）。`original_image` を指定した場合: そのイメージからキャプチャ。 | デプロイ済みの Pages スナップショットが 404 を返す場合（例: まだライブサイトにない新しいレシピ）は省略。 |
 
 R.3 比較ページ UI はこのバンドル構造を正確に消費する。
 このようにファイルに名前を付けることで、R.2 が R.3 のプログラミング対象となる
