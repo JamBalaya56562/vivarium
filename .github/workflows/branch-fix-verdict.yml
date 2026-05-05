@@ -68,8 +68,6 @@ jobs:
   capture:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      PAGES_BASE: https://aletheia-works.github.io/vivarium/repro
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -151,7 +149,14 @@ jobs:
               "$out" \
               --image-tag "$original_image"
           else
-            url="${PAGES_BASE}/${slug}/verdict.json"
+            verdict_url="$(jq -r --arg s "$slug" \
+              '.recipes[] | select(.slug == $s) | .verdict_url' \
+              docs/public/api/recipes.json)"
+            if [ -z "$verdict_url" ] || [ "$verdict_url" = "null" ]; then
+              echo "::error::Recipe ${slug} has no verdict_url in recipes.json (Layer 1 recipes have no static snapshot; only Layer 2 / 3 do)."
+              exit 1
+            fi
+            url="$verdict_url"
             echo "Fetching deployed original verdict: ${url}"
             http_status=$(curl -sS \
               --connect-timeout 5 \

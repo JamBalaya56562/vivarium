@@ -91,7 +91,9 @@ already provides.
 The weekly `repro-regression` cron (also `workflow_dispatch`)
 contrasts the freshly-captured `verdict.json` against the
 verdict.json currently published on GitHub Pages
-(`https://aletheia-works.github.io/vivarium/repro/<slug>/verdict.json`).
+(`https://aletheia-works.github.io/vivarium/repro/<project>/<issue_path>/verdict.json` —
+the `page_url` field of the recipe's entry in `recipes.json`, with
+`verdict.json` appended).
 A divergence means the recipe started behaving differently
 **without any commit landing in between** — typically a base-image
 or package update silently changed the run. The workflow fails

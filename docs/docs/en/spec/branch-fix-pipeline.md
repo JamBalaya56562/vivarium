@@ -77,7 +77,7 @@ bundle contains:
 | File | Source | Notes |
 |---|---|---|
 | `branch-fix-verdict.json` | Captured live from `branch_image`. | Always present. Conforms to [Contract v1](./contract-v1.md) and validates against [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json). |
-| `original-verdict.json` | Default: fetched from `https://aletheia-works.github.io/vivarium/repro/<slug>/verdict.json`. With `original_image`: captured from that image. | Omitted when the deployed Pages snapshot returns 404 (e.g. brand-new recipe not yet on the live site). |
+| `original-verdict.json` | Default: fetched from `https://aletheia-works.github.io/vivarium/repro/<project>/<issue_path>/verdict.json` (the `page_url` value from the recipe's entry in `recipes.json`, with `verdict.json` appended). With `original_image`: captured from that image. | Omitted when the deployed Pages snapshot returns 404 (e.g. brand-new recipe not yet on the live site). |
 
 The R.3 comparison-page UI consumes this exact bundle structure;
 naming the files this way commits R.2 to a wire format R.3 can
