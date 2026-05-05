@@ -29,13 +29,14 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
     <p>
       Each gallery page declares <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>{' '}
       and exposes a <code>#verdict</code> DOM element with{' '}
-      <code>data-verdict="pending" | "pass" | "fail"</code>, plus a structured{' '}
+      <code>data-verdict="pending" | "reproduced" | "unreproduced"</code>, plus a structured{' '}
       <code>__VIVARIUM_RESULT__</code> envelope on <code>window</code>.
     </p>
     <Callout>
-      A "pass" verdict means the bug reproduced. A "fail" verdict means the
-      runtime ships a fixed version. The semantics match the project's domain
-      noun: a reproduction succeeds when it reproduces.
+      A "reproduced" verdict means the bug reproduced. An "unreproduced"
+      verdict means the runtime ships a fixed version. The literal value
+      names match the project's domain verb directly (renamed from
+      "pass" / "fail" in Contract v1 Revision 3 — ADR-0029).
     </Callout>
   </Section>
 
@@ -51,19 +52,19 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/repro/pandas/">pandas</a></td>
           <td><a href="https://github.com/pandas-dev/pandas/issues/56679">#56679</a> — empty Series / DataFrame dtype mismatch</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
         <tr>
           <td><a href="/vivarium/repro/numpy/">numpy</a></td>
           <td><a href="https://github.com/numpy/numpy/issues/28287">#28287</a> — timedelta64 ordering non-transitive across generic units</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/numpy/28287/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
         <tr>
           <td><a href="/vivarium/repro/cpython/">cpython</a></td>
           <td><a href="https://github.com/python/cpython/issues/137205">#137205</a> — sqlite3 silently drops PRAGMA foreign_keys=ON under autocommit=False</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/cpython/137205/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
       </tbody>
@@ -73,7 +74,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
       3.13.2, pandas 2.3.3, numpy 2.2.5, SQLite 3.39.0). The linked page is
       authoritative — visit it to confirm the live verdict, since an upstream
       fix landing in a future Pyodide release will flip the verdict to{' '}
-      <code>fail</code>.
+      <code>unreproduced</code>.
     </p>
   </Section>
 
@@ -89,7 +90,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/repro/ruby/">ruby</a></td>
           <td><a href="https://bugs.ruby-lang.org/issues/21709">#21709</a> — Regexp interpolation rejects mixed encodings while String interpolation upgrades to UTF-8</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/ruby/21709/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
       </tbody>
@@ -108,7 +109,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/repro/php/">php</a></td>
           <td><a href="https://github.com/php/php-src/issues/12167">#12167</a> — SimpleXMLElement::xpath PI-node string-cast yields empty value</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/php/12167/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
       </tbody>
@@ -127,7 +128,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/repro/regex/">regex</a></td>
           <td><a href="https://github.com/rust-lang/regex/issues/779">#779</a> — (re)+ and (re)(re)* produce different match-iteration outputs</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/regex/779/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>Open ↗</span></a></td>
         </tr>
       </tbody>
@@ -135,7 +136,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
     <p>
       Pinned to <code>regex = "=1.8.4"</code>. The fix landed in regex 1.9
       together with the new NFA compiler — bumping past 1.9 will flip the
-      verdict to <code>fail</code>, turning the page into a fix-detection
+      verdict to <code>unreproduced</code>, turning the page into a fix-detection
       sentinel.
     </p>
   </Section>

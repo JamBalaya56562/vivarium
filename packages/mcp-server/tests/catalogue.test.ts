@@ -118,7 +118,7 @@ describe('catalogue', () => {
     mockFetch(
       async () =>
         new Response(
-          JSON.stringify({ contract: 'v999', verdict: 'pass' }),
+          JSON.stringify({ contract: 'v999', verdict: 'reproduced' }),
           { status: 200 },
         ),
     );

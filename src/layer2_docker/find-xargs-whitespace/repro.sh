@@ -78,9 +78,9 @@ cat <<JSON
 JSON
 
 if [ "$reproduced" = "true" ]; then
-  echo "verdict=pass — naive find|xargs splits on whitespace; -print0/-0 fixes it" >&2
+  echo "verdict=reproduced — naive find|xargs splits on whitespace; -print0/-0 fixes it" >&2
   exit 0
 fi
 
-echo "verdict=fail — pipelines behaved unexpectedly (naive=$naive_found_file, nul=$nul_found_file)" >&2
+echo "verdict=unreproduced — pipelines behaved unexpectedly (naive=$naive_found_file, nul=$nul_found_file)" >&2
 exit 1

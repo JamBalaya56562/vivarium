@@ -61,9 +61,13 @@ import {
 
       <dt id="verdict"><strong>Verdict</strong></dt>
       <dd>
-        レシピを実行した結果——<code>"pass"</code> または <code>"fail"</code> のいずれか。
-        <strong>pass はアップストリームバグが再現することを意味する。</strong>
-        fail は再現しないことを意味する。直感に反するが意図的な命名。詳細は
+        レシピを実行した結果——<code>"reproduced"</code> または
+        <code>"unreproduced"</code> のいずれか。
+        <strong>reproduced はアップストリームバグが再現することを意味する。</strong>
+        unreproduced は再現しないことを意味する。
+        以前は <code>"pass"</code> / <code>"fail"</code> だったが、
+        Contract v1 リビジョン 3（ADR-0029）で値の名前そのものが意味と一致するように
+        リネームされた。詳細は
         <a href="/vivarium/ja/spec/contract-v1#verdict-セマンティクス">verdict セマンティクス</a>。
       </dd>
 
@@ -123,7 +127,7 @@ import {
         アップストリームバグに対する候補修正。通常はコントリビューターのブランチ
         （または AI エージェントのドラフト）からビルドされる。
         branch-fix verdict パイプラインは候補修正に対してレシピを再現する。
-        verdict が <code>pass</code> から <code>fail</code> へ反転すれば修正は機能している。
+        verdict が <code>reproduced</code> から <code>unreproduced</code> へ反転すれば修正は機能している。
         詳細は <a href="/vivarium/ja/spec/branch-fix-pipeline">branch-fix パイプライン</a>。
       </dd>
 

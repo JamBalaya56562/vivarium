@@ -198,9 +198,9 @@ jobs:
             set -e
 
             if [ "$exit_code" -eq 0 ]; then
-              verdict="pass"
+              verdict="reproduced"
             else
-              verdict="fail"
+              verdict="unreproduced"
             fi
 
             captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

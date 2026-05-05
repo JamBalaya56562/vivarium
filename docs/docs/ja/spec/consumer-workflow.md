@@ -37,15 +37,16 @@ jobs:
 |---|---|---|---|---|
 | `slug` | 文字列 | ✅ | — | レシピスラッグ（例: `bash-local-shadows-exit`）。デフォルトのイメージタグ導出とアーティファクト・ログ行のラベル付けに使用。 |
 | `image` | 文字列 | — | `ghcr.io/aletheia-works/vivarium-<slug>:latest` | イメージオーバーライド。特定の git-sha タグをピン留めしたいか、プライベートフォークをテストしたいコンシューマーに有用。 |
-| `expected_verdict` | 文字列 | — | `"pass"` | `"pass"` または `"fail"`。キャプチャした verdict と一致しない場合、ジョブは失敗する。アップストリームのバグが修正されているレシピを意図的に追跡する場合にのみ `"fail"` を使用。 |
+| `expected_verdict` | 文字列 | — | `"reproduced"` | `"reproduced"` または `"unreproduced"`。キャプチャした verdict と一致しない場合、ジョブは失敗する。アップストリームのバグが修正されているレシピを意図的に追跡する場合にのみ `"unreproduced"` を使用。 |
 | `timeout_minutes` | 数値 | — | `5` | ジョブのタイムアウト。ほとんどの Layer 2 レシピは数秒で完了する。このバジェットは低速ネットワークでのイメージプルのために存在する。 |
 
 ## Verdict セマンティクス
 
-`pass` はこの実行で**アップストリームバグが再現された**ことを意味する——
-再現は機能している。`fail` はバグが**再現されない**ことを意味する。
+`reproduced` はこの実行で**アップストリームバグが再現された**ことを意味する——
+再現は機能している。`unreproduced` はバグが**再現されない**ことを意味する。
 通常はアップストリームプロジェクトがバンドルイメージに取り込んだ修正を出荷したからだ。
-これは典型的な「green CI = good」フレームの逆だ。完全な説明は
+（リビジョン 3 で `pass`/`fail` からリネーム——ADR-0029 によって、値の名前そのものが
+意味と一致するようになった。）完全な説明は
 [Contract v1: Verdict セマンティクス](./contract-v1.md#verdict-セマンティクス)を参照。
 
 「このバグは修正された」アラートを望むコンシューマーは:
@@ -56,7 +57,7 @@ jobs:
     uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: my-favourite-recipe
-      expected_verdict: pass        # デフォルト; 明確にするため明示
+      expected_verdict: reproduced  # デフォルト; 明確にするため明示
 ```
 
 …と書けばよく、バグの再現が止まった瞬間にワークフローが赤くなる——

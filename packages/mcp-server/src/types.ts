@@ -37,7 +37,7 @@ export interface RecipesIndex {
   recipes: RecipeEntry[];
 }
 
-export type Verdict = 'pass' | 'fail';
+export type Verdict = 'reproduced' | 'unreproduced';
 
 // Layer 2 / 3 verdict snapshot shape per Contract v1.
 // `stderr_tail` keeps its source-side name; the in-page contract surface

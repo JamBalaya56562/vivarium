@@ -3,12 +3,12 @@
 // Loads `php-wasm` from jsDelivr, instantiates `PhpWeb`, and returns a
 // thin `runPhp` wrapper that captures stdout via the runtime's
 // `output` event and resolves to `{ exitCode, stdout }`. On any
-// load-time failure the helper sets the verdict to "fail" with the
+// load-time failure the helper sets the verdict to "unreproduced" with the
 // error text and re-throws — mirroring `loader.ts` (Pyodide) and
 // `ruby_loader.ts` (Ruby.wasm).
 //
 // Pages should still wrap their reproduction code in `try/catch` and
-// call `setVerdict("fail", ...)` themselves on REPRODUCTION-time errors;
+// call `setVerdict("unreproduced", ...)` themselves on REPRODUCTION-time errors;
 // this helper only owns load-time errors.
 //
 // php-wasm@0.0.8 ships PHP 8.2.11 (Linux, 32-bit, Zend 4.2.11) with
@@ -66,7 +66,7 @@ interface PhpWebInstance {
 /**
  * Load php-wasm and return a thin runner.
  *
- * @throws Re-throws the underlying error after setting the verdict to "fail".
+ * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
  */
 export async function loadVivariumPhp(
   options: LoadOptions = {},
@@ -121,8 +121,8 @@ export async function loadVivariumPhp(
     const message =
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error during php-wasm load: ${message}`,
+      "unreproduced",
+      `bug not reproduced — runtime error during php-wasm load: ${message}`,
     );
     throw err;
   }

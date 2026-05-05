@@ -12,17 +12,19 @@ import "../_assets/chrome.js";
 // Pages must include `<meta name="vivarium-contract" content="v1">` in
 // `<head>` and an element with `id="verdict"` somewhere in the body.
 //
-// Surface published by these helpers (per ADR-0008):
-// - DOM: `#verdict[data-verdict]` ∈ {"pending", "pass", "fail"}
+// Surface published by these helpers (per ADR-0008, with values renamed
+// in revision 3 by ADR-0029):
+// - DOM: `#verdict[data-verdict]` ∈ {"pending", "reproduced", "unreproduced"}
 // - Globals: `__VIVARIUM_VERDICT__`, `__VIVARIUM_RESULT__`
 // - Visible text on `#verdict`, set by `setVerdict(state, text)`
 //
-// `pass` means the bug REPRODUCES (the upstream behaviour is observable in
-// the runtime this page loads). `fail` means it does NOT — either the
-// runtime ships a fixed version, or the runtime errored before producing a
-// result. `pending` means the run has not yet produced a verdict.
+// `reproduced` means the bug REPRODUCES (the upstream behaviour is
+// observable in the runtime this page loads). `unreproduced` means it
+// does NOT — either the runtime ships a fixed version, or the runtime
+// errored before producing a result. `pending` means the run has not yet
+// produced a verdict.
 
-export type VerdictState = "pending" | "pass" | "fail";
+export type VerdictState = "pending" | "reproduced" | "unreproduced";
 
 export interface VivariumResultV1Bug {
   /** Upstream project short name (e.g. "pandas"). */
@@ -72,8 +74,8 @@ declare global {
  *
  * @param state Verdict state.
  * @param text  Human-readable verdict. Should start with
- *   "reproduction succeeded", "reproduction failed", or a page-specific
- *   pending message — see ADR-0008.
+ *   "bug reproduced", "bug not reproduced", or a page-specific
+ *   pending message — see ADR-0008 / ADR-0029.
  */
 export function setVerdict(state: VerdictState, text: string): void {
   const el = document.getElementById("verdict");
@@ -82,7 +84,7 @@ export function setVerdict(state: VerdictState, text: string): void {
       'vivarium contract v1: missing element with id="verdict".',
     );
   }
-  el.classList.remove("pass", "fail", "pending");
+  el.classList.remove("reproduced", "unreproduced", "pending");
   el.classList.add(state);
   el.dataset["verdict"] = state;
   el.textContent = text;

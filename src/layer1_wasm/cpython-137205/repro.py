@@ -53,13 +53,13 @@ print(json.dumps(result, indent=2))
 
 if fk_disagreement:
     print(
-        "verdict=pass — autocommit=False silently drops PRAGMA foreign_keys",
+        "verdict=reproduced — autocommit=False silently drops PRAGMA foreign_keys",
         file=sys.stderr,
     )
     sys.exit(0)
 else:
     print(
-        "verdict=fail — both connections agree on PRAGMA foreign_keys "
+        "verdict=unreproduced — both connections agree on PRAGMA foreign_keys "
         "(likely fixed upstream)",
         file=sys.stderr,
     )

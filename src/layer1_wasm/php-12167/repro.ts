@@ -11,8 +11,8 @@
 // in the SimpleXML string-cast path for processing-instruction nodes.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (PI string cast is empty).
-//   - "fail" — the bug does NOT reproduce (the runtime ships a fix,
+//   - "reproduced" — the bug REPRODUCES (PI string cast is empty).
+//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 
 import { loadVivariumPhp } from "../_shared/php_loader.js";
@@ -81,8 +81,8 @@ try {
 
   if (reproduced) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.",
+      "reproduced",
+      "bug reproduced — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.",
     );
   } else if (
     result.xpath_count === 1 &&
@@ -90,13 +90,13 @@ try {
     result.pi_text !== null
   ) {
     setVerdict(
-      "fail",
-      "reproduction failed — SimpleXML now returns the PI content correctly (likely fixed upstream).",
+      "unreproduced",
+      "bug not reproduced — SimpleXML now returns the PI content correctly (likely fixed upstream).",
     );
   } else {
     setVerdict(
-      "fail",
-      `reproduction failed — unexpected outcome (xpath_count=${result.xpath_count}, pi_text=${JSON.stringify(result.pi_text)}).`,
+      "unreproduced",
+      `bug not reproduced — unexpected outcome (xpath_count=${result.xpath_count}, pi_text=${JSON.stringify(result.pi_text)}).`,
     );
   }
 
@@ -133,10 +133,10 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

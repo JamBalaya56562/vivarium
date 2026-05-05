@@ -45,13 +45,13 @@ print(json.dumps(result, indent=2))
 
 if mismatch:
     print(
-        "verdict=pass — Series and DataFrame disagree on empty-input dtype",
+        "verdict=reproduced — Series and DataFrame disagree on empty-input dtype",
         file=sys.stderr,
     )
     sys.exit(0)
 else:
     print(
-        "verdict=fail — Series and DataFrame agree on empty-input dtype "
+        "verdict=unreproduced — Series and DataFrame agree on empty-input dtype "
         "(likely fixed upstream)",
         file=sys.stderr,
     )

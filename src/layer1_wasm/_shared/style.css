@@ -38,12 +38,12 @@
   --vh-code-bg: #001713;
   --vh-terminal-bg: #0a1f1a;
   --vh-terminal-border: rgba(0, 212, 170, 0.45);
-  --vh-pass-bg: rgba(0, 212, 170, 0.12);
-  --vh-pass-fg: #00624d;
-  --vh-pass-border: rgba(0, 212, 170, 0.4);
-  --vh-fail-bg: rgba(255, 113, 108, 0.12);
-  --vh-fail-fg: #82071e;
-  --vh-fail-border: rgba(255, 113, 108, 0.4);
+  --vh-reproduced-bg: rgba(0, 212, 170, 0.12);
+  --vh-reproduced-fg: #00624d;
+  --vh-reproduced-border: rgba(0, 212, 170, 0.4);
+  --vh-unreproduced-bg: rgba(255, 113, 108, 0.12);
+  --vh-unreproduced-fg: #82071e;
+  --vh-unreproduced-border: rgba(255, 113, 108, 0.4);
   --vh-pending-bg: rgba(124, 92, 255, 0.12);
   --vh-pending-fg: #4816cb;
   --vh-pending-border: rgba(124, 92, 255, 0.4);
@@ -66,8 +66,8 @@ html.dark {
   --vh-card-bg: rgba(255, 255, 255, 0.025);
   --vh-window-chrome: #18181b;
   --vh-window-bg: #000508;
-  --vh-pass-fg: #33e5ba;
-  --vh-fail-fg: #ff716c;
+  --vh-reproduced-fg: #33e5ba;
+  --vh-unreproduced-fg: #ff716c;
   --vh-pending-fg: #a18eff;
 }
 
@@ -474,17 +474,17 @@ pre code {
   animation: vh-pulse 1.6s ease-in-out infinite;
 }
 
-.verdict.pass {
-  background: var(--vh-pass-bg);
-  color: var(--vh-pass-fg);
-  border-color: var(--vh-pass-border);
+.verdict.reproduced {
+  background: var(--vh-reproduced-bg);
+  color: var(--vh-reproduced-fg);
+  border-color: var(--vh-reproduced-border);
   box-shadow: 0 0 24px rgba(0, 212, 170, 0.18);
 }
 
-.verdict.fail {
-  background: var(--vh-fail-bg);
-  color: var(--vh-fail-fg);
-  border-color: var(--vh-fail-border);
+.verdict.unreproduced {
+  background: var(--vh-unreproduced-bg);
+  color: var(--vh-unreproduced-fg);
+  border-color: var(--vh-unreproduced-border);
   box-shadow: 0 0 24px rgba(255, 113, 108, 0.18);
 }
 

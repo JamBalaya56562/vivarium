@@ -44,12 +44,12 @@ result[:reproduced] = reproduced
 puts JSON.pretty_generate(result)
 
 if reproduced
-  warn "verdict=pass — bug reproduces on this interpreter"
+  warn "verdict=reproduced — bug reproduces on this interpreter"
   exit 0
 elsif result[:regexp_built] && result[:string_built]
-  warn "verdict=fail — Regexp and String interpolation now agree (likely fixed upstream)"
+  warn "verdict=unreproduced — Regexp and String interpolation now agree (likely fixed upstream)"
   exit 1
 else
-  warn "verdict=fail — unexpected outcome (regexp_built=#{result[:regexp_built]}, string_built=#{result[:string_built]})"
+  warn "verdict=unreproduced — unexpected outcome (regexp_built=#{result[:regexp_built]}, string_built=#{result[:string_built]})"
   exit 1
 end

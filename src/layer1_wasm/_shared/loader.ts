@@ -2,11 +2,11 @@
 //
 // Loads Pyodide from the jsDelivr CDN with a pinned version and an optional
 // list of preload packages. On any load failure, the helper sets the verdict
-// to "fail" with the error text so the caller does not have to duplicate
+// to "unreproduced" with the error text so the caller does not have to duplicate
 // that plumbing — and re-throws so the caller can also short-circuit.
 //
 // Pages should still also wrap their reproduction code in `try/catch` and
-// call `setVerdict("fail", ...)` themselves on REPRODUCTION-time errors —
+// call `setVerdict("unreproduced", ...)` themselves on REPRODUCTION-time errors —
 // this helper only owns load-time errors.
 //
 // Side-effect: imports `./chrome.js` so every Layer 1 page gets the
@@ -79,7 +79,7 @@ export interface LoadResult {
 /**
  * Load Pyodide and return the runtime instance.
  *
- * @throws Re-throws the underlying error after setting the verdict to "fail".
+ * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
  */
 export async function loadVivariumPyodide(
   options: LoadOptions = {},
@@ -140,8 +140,8 @@ export async function loadVivariumPyodide(
     const message =
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error during Pyodide load: ${message}`,
+      "unreproduced",
+      `bug not reproduced — runtime error during Pyodide load: ${message}`,
     );
     emitProgress({
       pct: 100,

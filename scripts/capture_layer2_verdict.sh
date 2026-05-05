@@ -34,15 +34,16 @@
 #
 # Exit code:
 #   0  — verdict.json written and schema-validated successfully.
-#        The captured verdict itself ("pass" or "fail") is recorded
-#        inside the file; this script does not assert which it should
-#        be — that is the caller's responsibility.
+#        The captured verdict itself ("reproduced" or "unreproduced")
+#        is recorded inside the file; this script does not assert
+#        which it should be — that is the caller's responsibility.
 #   non-zero — could not run the image, could not write the file, or
 #        the produced JSON failed schema validation.
 #
-# Verdict semantics (catalogue model from ADR-0010, private memo):
-#   container exit 0 → verdict "pass" (bug reproduces)
-#   container exit ≠ 0 → verdict "fail" (bug did not reproduce)
+# Verdict semantics (catalogue model from ADR-0010, private memo;
+# vocabulary updated in Contract v1 Revision 3 by ADR-0029):
+#   container exit 0 → verdict "reproduced" (bug reproduces)
+#   container exit ≠ 0 → verdict "unreproduced" (bug did not reproduce)
 #
 # Schema validation requires `ajv` (ajv-cli) on PATH and
 # `docs/public/spec/verdict.schema.json` reachable via $REPO_ROOT
@@ -113,9 +114,9 @@ exit_code=$?
 set -e
 
 if [ "$exit_code" -eq 0 ]; then
-  verdict="pass"
+  verdict="reproduced"
 else
-  verdict="fail"
+  verdict="unreproduced"
 fi
 
 captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

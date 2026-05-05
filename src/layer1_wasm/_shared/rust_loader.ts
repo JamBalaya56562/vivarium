@@ -10,7 +10,7 @@
 // `proc_exit`, `fd_write`, `clock_time_get`, etc. imports the Rust
 // `_start` entry point depends on, then runs the artefact and returns
 // the captured stdout/stderr + exit code. On any load-time failure it
-// sets the verdict to "fail" with the error text and re-throws —
+// sets the verdict to "unreproduced" with the error text and re-throws —
 // mirroring `loader.ts` (Pyodide), `ruby_loader.ts` (Ruby.wasm), and
 // `php_loader.ts` (php-wasm).
 
@@ -77,7 +77,7 @@ interface WasiShimModule {
  * Compile a wasm32-wasip1 artefact and return a runner that can
  * execute it under a fresh WASI environment.
  *
- * @throws Re-throws the underlying error after setting the verdict to "fail".
+ * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
  */
 export async function loadVivariumRust(
   options: LoadOptions,
@@ -156,8 +156,8 @@ export async function loadVivariumRust(
     const message =
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error during Rust wasm load: ${message}`,
+      "unreproduced",
+      `bug not reproduced — runtime error during Rust wasm load: ${message}`,
     );
     throw err;
   }

@@ -13,7 +13,9 @@ import "../_assets/chrome.js";
 // module fetches `./verdict.json` (CI-generated, sitting next to
 // the HTML in the deployed Pages artefact) and:
 //   - flips the DOM `#verdict[data-verdict]` element to
-//     "pass" / "fail" with human-readable text;
+//     "reproduced" / "unreproduced" with human-readable text
+//     (renamed from "pass"/"fail" in Contract v1 Revision 3 — see
+//     ADR-0029);
 //   - publishes `__VIVARIUM_VERDICT__` and `__VIVARIUM_RESULT__`
 //     globals matching the contract-v1 surface Layer 1 uses, so
 //     the same Playwright suite can later assert against
@@ -46,7 +48,7 @@ export async function renderVerdictSnapshot(options) {
   }
 
   function setVerdict(state, text) {
-    verdictEl.classList.remove("pass", "fail", "pending");
+    verdictEl.classList.remove("reproduced", "unreproduced", "pending");
     verdictEl.classList.add(state);
     verdictEl.dataset.verdict = state;
     verdictEl.textContent = text;
@@ -109,16 +111,16 @@ export async function renderVerdictSnapshot(options) {
     }
 
     const verdict = snap.verdict;
-    if (verdict !== "pass" && verdict !== "fail") {
+    if (verdict !== "reproduced" && verdict !== "unreproduced") {
       throw new Error(
-        `verdict.json verdict must be "pass" or "fail"; got ${JSON.stringify(verdict)}`,
+        `verdict.json verdict must be "reproduced" or "unreproduced"; got ${JSON.stringify(verdict)}`,
       );
     }
 
-    const verb = verdict === "pass" ? "succeeded" : "failed";
+    const headline = verdict === "reproduced" ? "bug reproduced" : "bug not reproduced";
     setVerdict(
       verdict,
-      `reproduction ${verb} (CI snapshot captured ${snap.captured_at})`,
+      `${headline} (CI snapshot captured ${snap.captured_at})`,
     );
 
     if (metaEl) {
@@ -169,7 +171,7 @@ export async function renderVerdictSnapshot(options) {
   } catch (err) {
     console.error(err);
     const msg = (err && (err.message || String(err))) || "unknown error";
-    setVerdict("fail", `verdict snapshot unavailable: ${msg}`);
+    setVerdict("unreproduced", `verdict snapshot unavailable: ${msg}`);
     if (outputEl) outputEl.textContent = String(err.stack || err.message || err);
   }
 }

@@ -30,15 +30,15 @@ $reproduced = $result["xpath_count"] === 1 && $result["pi_text_empty"];
 echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n";
 
 if ($reproduced) {
-    fwrite(STDOUT, "verdict=pass — bug reproduces on this interpreter\n");
+    fwrite(STDOUT, "verdict=reproduced — bug reproduces on this interpreter\n");
     exit(0);
 } elseif ($result["xpath_count"] === 1 && !$result["pi_text_empty"]) {
-    fwrite(STDOUT, "verdict=fail — SimpleXML now returns the PI content (likely fixed upstream)\n");
+    fwrite(STDOUT, "verdict=unreproduced — SimpleXML now returns the PI content (likely fixed upstream)\n");
     exit(1);
 } else {
     fwrite(
         STDOUT,
-        "verdict=fail — unexpected outcome (xpath_count={$result['xpath_count']}, pi_text=" . json_encode($result["pi_text"]) . ")\n",
+        "verdict=unreproduced — unexpected outcome (xpath_count={$result['xpath_count']}, pi_text=" . json_encode($result["pi_text"]) . ")\n",
     );
     exit(1);
 }

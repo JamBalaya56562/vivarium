@@ -73,9 +73,9 @@ cat <<JSON
 JSON
 
 if [ "${reproduced}" = "true" ]; then
-  echo "verdict=pass — \`local\` shadows command-substitution exit code; set -e silently bypassed" >&2
+  echo "verdict=reproduced — \`local\` shadows command-substitution exit code; set -e silently bypassed" >&2
   exit 0
 fi
 
-echo "verdict=fail — bash did not exhibit the surprise (bare=${status_bare}, local=${status_local})" >&2
+echo "verdict=unreproduced — bash did not exhibit the surprise (bare=${status_bare}, local=${status_local})" >&2
 exit 1

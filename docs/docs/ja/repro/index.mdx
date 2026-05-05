@@ -28,14 +28,15 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
   >
     <p>
       各ギャラリーページは <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>{' '}
-      を宣言し、<code>data-verdict="pending" | "pass" | "fail"</code> を持つ{' '}
+      を宣言し、<code>data-verdict="pending" | "reproduced" | "unreproduced"</code> を持つ{' '}
       <code>#verdict</code> DOM 要素と、<code>window</code> 上の構造化{' '}
       <code>__VIVARIUM_RESULT__</code> エンベロープを公開する。
     </p>
     <Callout>
-      "pass" verdict はバグが再現されたことを意味する。"fail" verdict はランタイムが
-      修正済みバージョンを出荷したことを意味する。セマンティクスはプロジェクトのドメイン語に
-      合わせている: 再現が成功するのは、再現できたときだ。
+      "reproduced" verdict はバグが再現されたことを意味する。"unreproduced" verdict は
+      ランタイムが修正済みバージョンを出荷したことを意味する。値リテラルそのものが
+      プロジェクトのドメイン動詞と直接一致する（リビジョン 3 で "pass" / "fail" から
+      リネーム——ADR-0029）。
     </Callout>
   </Section>
 
@@ -51,19 +52,19 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/ja/repro/pandas/">pandas</a></td>
           <td><a href="https://github.com/pandas-dev/pandas/issues/56679">#56679</a> — 空の Series / DataFrame の dtype ミスマッチ</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
         <tr>
           <td><a href="/vivarium/ja/repro/numpy/">numpy</a></td>
           <td><a href="https://github.com/numpy/numpy/issues/28287">#28287</a> — 汎用単位をまたぐ timedelta64 の順序が非推移的</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/numpy/28287/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
         <tr>
           <td><a href="/vivarium/ja/repro/cpython/">cpython</a></td>
           <td><a href="https://github.com/python/cpython/issues/137205">#137205</a> — autocommit=False の下で sqlite3 が PRAGMA foreign_keys=ON をサイレントに無視</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/cpython/137205/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
       </tbody>
@@ -72,7 +73,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
       Verdict は各ページが Pyodide v0.29.3（Python 3.13.2、pandas 2.3.3、numpy 2.2.5、
       SQLite 3.39.0）に対して報告した内容を反映している。リンクされたページが正式な情報源だ——
       アップストリームの修正が将来の Pyodide リリースに入ると verdict が{' '}
-      <code>fail</code> に反転するため、ライブ verdict の確認はページを直接訪問すること。
+      <code>unreproduced</code> に反転するため、ライブ verdict の確認はページを直接訪問すること。
     </p>
   </Section>
 
@@ -88,7 +89,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/ja/repro/ruby/">ruby</a></td>
           <td><a href="https://bugs.ruby-lang.org/issues/21709">#21709</a> — Regexp 補間は混合エンコーディングを拒否するが String 補間は UTF-8 にアップグレードする</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/ruby/21709/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
       </tbody>
@@ -107,7 +108,7 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/ja/repro/php/">php</a></td>
           <td><a href="https://github.com/php/php-src/issues/12167">#12167</a> — SimpleXMLElement::xpath の PI ノード文字列キャストが空の値を返す</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/php/12167/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
       </tbody>
@@ -126,14 +127,14 @@ import { RecipeGallery } from '../../../components/RecipeGallery';
         <tr>
           <td><a href="/vivarium/ja/repro/regex/">regex</a></td>
           <td><a href="https://github.com/rust-lang/regex/issues/779">#779</a> — (re)+ と (re)(re)* でマッチイテレーションの出力が異なる</td>
-          <td><code>pass</code></td>
+          <td><code>reproduced</code></td>
           <td><a href="/vivarium/repro/regex/779/" target="_blank" rel="noreferrer"><span style={{whiteSpace:"nowrap"}}>開く ↗</span></a></td>
         </tr>
       </tbody>
     </table>
     <p>
       <code>regex = "=1.8.4"</code> にピン留め。修正は新しい NFA コンパイラとともに
-      regex 1.9 に入った——1.9 以降にバンプすると verdict が <code>fail</code> に反転し、
+      regex 1.9 に入った——1.9 以降にバンプすると verdict が <code>unreproduced</code> に反転し、
       ページが修正検知センチネルになる。
     </p>
   </Section>

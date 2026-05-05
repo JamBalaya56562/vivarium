@@ -36,7 +36,7 @@ upstream_url = "https://lists.gnu.org/archive/html/bug-bash/"
 [layer2]
 image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
 dockerfile = "./Dockerfile"
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 再現を実行したいコンシューマーはマニフェストを読み、`layer` でディスパッチし、
@@ -97,13 +97,13 @@ layer = 1
 
 [layer1]
 page_url = "https://example.org/repro/some-bug/"
-expected_verdict = "pass"  # デフォルト; オプション
+expected_verdict = "reproduced"  # デフォルト; オプション
 ```
 
 | フィールド | 必須 | 注記 |
 |---|---|---|
 | `page_url` | ✅ | 静的再現ページの URL。ページは [Contract v1](./contract-v1.md) に準拠しなければならない。 |
-| `expected_verdict` | ⏳ | `"pass"`（デフォルト）または `"fail"`。 |
+| `expected_verdict` | ⏳ | `"reproduced"`（デフォルト）または `"unreproduced"`。 |
 
 ### `[layer2]` — Docker カタログ
 
@@ -113,14 +113,14 @@ layer = 2
 [layer2]
 image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
 dockerfile = "./Dockerfile"  # オプション、情報提供のみ
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 | フィールド | 必須 | 注記 |
 |---|---|---|
-| `image` | ✅ | コンテナイメージ参照。訪問者は `docker run <image>` を実行する。デフォルト CMD はレシピの再現スクリプト。終了コード 0 = バグが再現される（`pass`）。 |
+| `image` | ✅ | コンテナイメージ参照。訪問者は `docker run <image>` を実行する。デフォルト CMD はレシピの再現スクリプト。終了コード 0 = バグが再現される（`reproduced`）。 |
 | `dockerfile` | ⏳ | ソース Dockerfile へのリポジトリ相対パス。情報提供のみ——Vivarium はここからビルドしない。 |
-| `expected_verdict` | ⏳ | デフォルト `"pass"`。 |
+| `expected_verdict` | ⏳ | デフォルト `"reproduced"`。 |
 
 ### `[layer3]` — Record-replay カタログ
 
@@ -130,14 +130,14 @@ layer = 3
 [layer3]
 image = "ghcr.io/example-org/example-recipe-with-trace:latest"
 dockerfile = "./Dockerfile"
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 | フィールド | 必須 | 注記 |
 |---|---|---|
 | `image` | ✅ | コンテナイメージ参照。イメージは**録音済みの `rr` トレースを焼き込んで**出荷することが期待される。エントリポイントはピン留めされたトレースに対して `rr replay` を実行する。 |
 | `dockerfile` | ⏳ | 情報提供のみ。 |
-| `expected_verdict` | ⏳ | デフォルト `"pass"`。 |
+| `expected_verdict` | ⏳ | デフォルト `"reproduced"`。 |
 
 > ⚠️ Layer 3 replay は訪問者の CPU が録音 CPU と異なる場合に
 > **CPUID フォールティングサポート**を持つホストが必要。
@@ -150,14 +150,15 @@ expected_verdict = "pass"
 ## Verdict セマンティクス
 
 `expected_verdict` の値は [Contract v1](./contract-v1.md#verdict-セマンティクス) で
-ロックされた「典型的な CI の逆」フレームに従う:
+ロックされた値リテラルに一致する（リビジョン 3 で `pass`/`fail` から
+リネーム——ADR-0029）:
 
-- `"pass"` ⇒ アップストリームバグが**再現される**。
-- `"fail"` ⇒ アップストリームバグが**再現されない**。
+- `"reproduced"` ⇒ アップストリームバグが**再現される**。
+- `"unreproduced"` ⇒ アップストリームバグが**再現されない**。
 
-`expected_verdict = "pass"` を宣言するページが一般的なケースだ——
+`expected_verdict = "reproduced"` を宣言するページが一般的なケースだ——
 レシピはアップストリームレポートが記述した失敗を実証する。
-`expected_verdict = "fail"` を宣言するページはアップストリームの修正を
+`expected_verdict = "unreproduced"` を宣言するページはアップストリームの修正を
 意図的に追跡するセンチネルだ。バグが再びリグレッションした瞬間に赤くなる。
 
 ## バージョニング

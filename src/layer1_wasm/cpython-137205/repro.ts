@@ -11,8 +11,8 @@
 // The two connections should agree on whether FK enforcement is on.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (the two connections disagree).
-//   - "fail" — the bug does NOT reproduce (the runtime ships a fix,
+//   - "reproduced" — the bug REPRODUCES (the two connections disagree).
+//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 
 import { loadVivariumPyodide } from "../_shared/loader.js";
@@ -96,13 +96,13 @@ try {
 
   if (result.fk_disagreement) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — autocommit=False silently drops PRAGMA foreign_keys; the two connections disagree.",
+      "reproduced",
+      "bug reproduced — autocommit=False silently drops PRAGMA foreign_keys; the two connections disagree.",
     );
   } else {
     setVerdict(
-      "fail",
-      "reproduction failed — both connections agree on PRAGMA foreign_keys (likely fixed upstream).",
+      "unreproduced",
+      "bug not reproduced — both connections agree on PRAGMA foreign_keys (likely fixed upstream).",
     );
   }
 
@@ -139,10 +139,10 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

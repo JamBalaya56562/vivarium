@@ -13,7 +13,7 @@ import './manifest-scaffolder.css';
 
 type Lang = 'en' | 'ja';
 type LayerLiteral = 1 | 2 | 3;
-type ExpectedVerdict = '' | 'pass' | 'fail';
+type ExpectedVerdict = '' | 'reproduced' | 'unreproduced';
 
 interface FormState {
   slug: string;
@@ -227,7 +227,7 @@ const STRINGS: Record<Lang, Strings> = {
       'Repo-relative path. Informational only — Vivarium does not build from this.',
     expectedVerdictLabel: 'expected_verdict (optional)',
     expectedVerdictHelp:
-      "'pass' = bug reproduces; 'fail' = bug does not reproduce (sentinel).",
+      "'reproduced' = bug reproduces; 'unreproduced' = bug does not reproduce (sentinel).",
     expectedVerdictUnset: '— (omit field)',
     generate: 'Generate TOML',
     copy: 'Copy',
@@ -281,7 +281,7 @@ const STRINGS: Record<Lang, Strings> = {
       'リポジトリ相対パス。情報目的のみ——Vivarium はここからビルドしない。',
     expectedVerdictLabel: 'expected_verdict (任意)',
     expectedVerdictHelp:
-      '`pass` = バグが再現する。`fail` = バグが再現しない (sentinel)。',
+      '`reproduced` = バグが再現する。`unreproduced` = バグが再現しない (sentinel)。',
     expectedVerdictUnset: '— (フィールドを省略)',
     generate: 'TOML を生成',
     copy: 'コピー',
@@ -568,8 +568,8 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 }
               >
                 <option value="">{s.expectedVerdictUnset}</option>
-                <option value="pass">pass</option>
-                <option value="fail">fail</option>
+                <option value="reproduced">reproduced</option>
+                <option value="unreproduced">unreproduced</option>
               </select>
             </Field>
           </>
@@ -615,8 +615,8 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 }
               >
                 <option value="">{s.expectedVerdictUnset}</option>
-                <option value="pass">pass</option>
-                <option value="fail">fail</option>
+                <option value="reproduced">reproduced</option>
+                <option value="unreproduced">unreproduced</option>
               </select>
             </Field>
           </>
@@ -662,8 +662,8 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 }
               >
                 <option value="">{s.expectedVerdictUnset}</option>
-                <option value="pass">pass</option>
-                <option value="fail">fail</option>
+                <option value="reproduced">reproduced</option>
+                <option value="unreproduced">unreproduced</option>
               </select>
             </Field>
           </>

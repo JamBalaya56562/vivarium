@@ -22,9 +22,9 @@ the recipe from reproducing?"** before opening a PR.
 
 The mechanical answer is: re-run the recipe against an image that
 contains the fix, capture a fresh `verdict.json`, and compare it to
-the original. If the original verdict was `"pass"` (bug reproduces)
-and the branch-fix verdict is `"fail"` (bug does not reproduce), the
-fix is doing its job.
+the original. If the original verdict was `"reproduced"` (bug
+reproduces) and the branch-fix verdict is `"unreproduced"` (bug does
+not reproduce), the fix is doing its job.
 
 This pipeline runs that comparison in CI. The contributor builds and
 publishes the branch-fix image themselves; this workflow is purely a
@@ -37,7 +37,7 @@ gh workflow run branch-fix-verdict.yml \
   --repo aletheia-works/vivarium \
   -f slug=bash-local-shadows-exit \
   -f branch_image=ghcr.io/contributor/bash-fix:branch-x \
-  -f expected_verdict=fail
+  -f expected_verdict=unreproduced
 ```
 
 The run page renders a Markdown comparison summary, and the captured
@@ -51,22 +51,24 @@ fetch.
 |---|---|---|---|---|
 | `slug` | string | ✅ | — | Recipe slug under [`src/layer2_docker/`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker), e.g. `bash-local-shadows-exit`. The slug must exist in tree on the workflow's checkout; the workflow fails fast on a typo. |
 | `branch_image` | string | ✅ | — | Docker image ref to verify (e.g. `ghcr.io/contributor/foo-fix:branch-x`). Must be pullable by the runner without authentication. Private-registry support is a follow-up. |
-| `expected_verdict` | choice (`pass`\|`fail`) | — | `fail` | Verdict the contributor expects on the branch-fix image. `fail` (bug does NOT reproduce) is the typical "fix works" answer. The workflow's final step asserts the captured verdict matches this and exits non-zero on divergence. |
+| `expected_verdict` | choice (`reproduced`\|`unreproduced`) | — | `unreproduced` | Verdict the contributor expects on the branch-fix image. `unreproduced` (bug does NOT reproduce) is the typical "fix works" answer. The workflow's final step asserts the captured verdict matches this and exits non-zero on divergence. |
 | `original_image` | string | — | (empty) | Optional override. By default the workflow fetches the deployed original verdict from GitHub Pages — cheaper than re-running an image and identical to what the gallery serves. Supplying an `original_image` re-captures from that image instead, useful for anchoring the comparison at a specific tag or testing a private fork. |
 
 ## Verdict semantics (reminder)
 
-`pass` means **the upstream bug reproduces** in this run. `fail`
-means it **does not**. This is the inverse of typical "green CI =
-good" framing; see
+`reproduced` means **the upstream bug reproduces** in this run.
+`unreproduced` means it **does not**. (Renamed from `pass`/`fail` in
+Contract v1 Revision 3 — ADR-0029 — so the value name now matches
+its meaning directly, instead of inverting the typical CI
+"green = good" framing.) See
 [Contract v1: Verdict semantics](./contract-v1.md#verdict-semantics)
 for the full reasoning.
 
-For a recipe whose original verdict is `pass`, a successful
-branch-fix is therefore expected to flip the verdict to `fail`. For
-a recipe whose original verdict is already `fail` (a sentinel page
-tracking an upstream-fix-detected event), a contributor is unlikely
-to need this workflow at all.
+For a recipe whose original verdict is `reproduced`, a successful
+branch-fix is therefore expected to flip the verdict to
+`unreproduced`. For a recipe whose original verdict is already
+`unreproduced` (a sentinel page tracking an upstream-fix-detected
+event), a contributor is unlikely to need this workflow at all.
 
 ## Artefact
 
@@ -90,7 +92,7 @@ visible on the run page:
 
 | | original | branch-fix |
 |---|---|---|
-| verdict | (e.g.) `pass` | (e.g.) `fail` |
+| verdict | (e.g.) `reproduced` | (e.g.) `unreproduced` |
 | exit code | (e.g.) 0 | (e.g.) 1 |
 
 …followed by a one-line "matches expected" / "does NOT match

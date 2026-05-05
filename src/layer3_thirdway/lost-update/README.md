@@ -76,7 +76,7 @@ not substitutes.
 | ------------- | ------------------------------------------------------------ |
 | `repro.c`     | The two-thread reproducer. Exit 0 if the race did not fire (counter == 2*N), exit 1 if it did. |
 | `Dockerfile`  | `ubuntu:24.04` + `rr` + `build-essential`. Pulls the trace from the pinned release URL via `ADD` at build time. |
-| `replay.sh`   | The visitor-facing entrypoint. Runs `rr replay --autopilot`, parses the recorded stderr for the race marker, exits 0 on `pass` (race re-fires) / 1 on `fail`. |
+| `replay.sh`   | The visitor-facing entrypoint. Runs `rr replay --autopilot`, parses the recorded stderr for the race marker, exits 0 on `reproduced` (race re-fires) / 1 on `unreproduced`. |
 | `record.sh`   | Maintainer-only. Records a fresh trace on a Linux/x86_64 host with PMU, retrying under `--chaos` until a failing run is captured. Not invoked by CI or visitors. |
 | `trace.url`   | Pinned URL of the trace artifact (a GitHub Release asset on `aletheia-works/vivarium`). |
 | `verdict.json`| **Locally generated** verdict snapshot (see "Verdict snapshot" below). Tracked in git. |
@@ -141,11 +141,11 @@ context switches add a few hundred milliseconds at replay time).
 ```
 Replaying trace at: /trace/repro-0
 counter = 11272759, expected = 20000000, lost = 8727241
-pass: lost-update race observed in recorded trace
+reproduced: lost-update race observed in recorded trace
 ```
 
 Exit code `0`: the recorded race re-fires deterministically; page
-reports `pass`. The exact `lost = N` value depends on the
+reports `reproduced`. The exact `lost = N` value depends on the
 recording's captured schedule (deterministic per trace, not
 per-run on the visitor's machine — every visitor sees `lost =
 8727241` from this `lost-update-trace-v1` trace).

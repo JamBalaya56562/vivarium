@@ -5,9 +5,9 @@
 // dtype for an empty input.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (Series dtype ≠ DataFrame dtype on the
+//   - "reproduced" — the bug REPRODUCES (Series dtype ≠ DataFrame dtype on the
 //     pandas build that Pyodide ships).
-//   - "fail" — the bug does NOT reproduce (or the runtime errored).
+//   - "unreproduced" — the bug does NOT reproduce (or the runtime errored).
 
 import {
   loadVivariumPyodide,
@@ -83,13 +83,13 @@ try {
 
   if (result.mismatch) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — Series dtype ≠ DataFrame dtype.",
+      "reproduced",
+      "bug reproduced — Series dtype ≠ DataFrame dtype.",
     );
   } else {
     setVerdict(
-      "fail",
-      "reproduction failed — dtypes are consistent in this pandas build.",
+      "unreproduced",
+      "bug not reproduced — dtypes are consistent in this pandas build.",
     );
   }
 
@@ -126,13 +126,13 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  // `loadVivariumPyodide` already sets the verdict to "fail" on load-time
+  // `loadVivariumPyodide` already sets the verdict to "unreproduced" on load-time
   // errors. Cover the case where the runtime loaded but the reproduction
   // itself errored — e.g. an unexpected pandas API change.
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

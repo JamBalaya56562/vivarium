@@ -29,7 +29,7 @@ const STRINGS = {
       title: 'Reproducing python/cpython#137205',
       lede: 'PRAGMA foreign_keys silently dropped under autocommit=False.',
       verdictText: 'fk_off ≠ fk_on',
-      verdictPrefix: '✕ FAIL',
+      verdictPrefix: '✕ UNREPRODUCED',
       tabError: '1 error',
     },
     postgres: {
@@ -48,10 +48,10 @@ const STRINGS = {
       title: 'Reproducing ruby/ruby#21709',
       lede:
         'String#unicode_normalize edge case for combining diacritics in NFD form.',
-      verdictText: '✓ PASS — bug reproduced',
+      verdictText: '✓ REPRODUCED — bug reproduced',
       tabVerified: 'verified',
       okLine: 'round-trip lost (RuntimeError raised as expected)',
-      verdictTrace: 'verdict: PASS — issue#21709 reproducible in ruby.wasm',
+      verdictTrace: 'verdict: REPRODUCED — issue#21709 reproducible in ruby.wasm',
     },
   },
   ja: {
@@ -77,7 +77,7 @@ const STRINGS = {
       lede:
         'PRAGMA foreign_keys が autocommit=False 下でサイレントに無視される。',
       verdictText: 'fk_off ≠ fk_on',
-      verdictPrefix: '✕ FAIL',
+      verdictPrefix: '✕ UNREPRODUCED',
       tabError: 'エラー 1 件',
     },
     postgres: {
@@ -96,11 +96,11 @@ const STRINGS = {
       title: 'ruby/ruby#21709 を再現',
       lede:
         'NFD 形式の結合ダイアクリティカル記号における String#unicode_normalize のエッジケース。',
-      verdictText: '✓ PASS — バグ再現',
+      verdictText: '✓ REPRODUCED — バグ再現',
       tabVerified: '検証済み',
       okLine: 'round-trip lost (RuntimeError を期待通り raise)',
       verdictTrace:
-        'verdict: PASS — issue#21709 が ruby.wasm で再現可能',
+        'verdict: REPRODUCED — issue#21709 が ruby.wasm で再現可能',
     },
   },
 } as const;
@@ -196,9 +196,9 @@ const CpythonInner = ({ s }: { s: typeof STRINGS.en }) => (
       <span className="v-window__eyebrow">{s.cpython.eyebrow}</span>
       <h2 className="v-window__title">{s.cpython.title}</h2>
       <p className="v-window__lede">{s.cpython.lede}</p>
-      <span className="v-verdict v-verdict--fail">
+      <span className="v-verdict v-verdict--unreproduced">
         {s.cpython.verdictPrefix}
-        <span className="v-verdict--fail__sep">|</span>
+        <span className="v-verdict--unreproduced__sep">|</span>
         {s.cpython.verdictText}
       </span>
 
@@ -332,7 +332,7 @@ const RubyInner = ({ s }: { s: typeof STRINGS.en }) => (
       <span className="v-window__eyebrow">{s.ruby.eyebrow}</span>
       <h2 className="v-window__title">{s.ruby.title}</h2>
       <p className="v-window__lede">{s.ruby.lede}</p>
-      <span className="v-verdict v-verdict--pass">{s.ruby.verdictText}</span>
+      <span className="v-verdict v-verdict--reproduced">{s.ruby.verdictText}</span>
 
       <div className="v-code">
         <span className="v-code__comment"># repro.rb</span>
@@ -389,10 +389,10 @@ type SlotName = 'front' | 'mid' | 'low';
 
 const TAB_ORDER: TabId[] = ['cpython', 'postgres', 'ruby'];
 
-const TAB_STATUS: Record<TabId, 'fail' | 'pending' | 'pass'> = {
-  cpython: 'fail',
+const TAB_STATUS: Record<TabId, 'unreproduced' | 'pending' | 'reproduced'> = {
+  cpython: 'unreproduced',
   postgres: 'pending',
-  ruby: 'pass',
+  ruby: 'reproduced',
 };
 
 const INITIAL_SLOTS: Record<TabId, SlotName> = {

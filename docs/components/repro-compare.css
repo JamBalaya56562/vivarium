@@ -291,13 +291,13 @@
   font-size: 0.7rem;
 }
 
-.v-vbadge--pass {
+.v-vbadge--reproduced {
   background: rgba(0, 212, 170, 0.12);
   color: var(--vh-accent-teal-bright);
   border-color: rgba(0, 212, 170, 0.35);
 }
 
-.v-vbadge--fail {
+.v-vbadge--unreproduced {
   background: rgba(255, 113, 108, 0.12);
   color: var(--vh-accent-coral);
   border-color: rgba(255, 113, 108, 0.35);

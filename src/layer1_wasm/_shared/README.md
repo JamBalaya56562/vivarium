@@ -48,15 +48,15 @@ in the maintainer's private ADR-0008.
 
 ## Verdict semantics
 
-- `pass` — the bug **reproduces**. The behaviour the upstream issue
-  describes is observable in the runtime this page loaded.
-- `fail` — the bug does **not** reproduce. Either the runtime ships a
-  fixed version, or it errored before producing a result.
+- `reproduced` — the bug **reproduces**. The behaviour the upstream
+  issue describes is observable in the runtime this page loaded.
+- `unreproduced` — the bug does **not** reproduce. Either the runtime
+  ships a fixed version, or it errored before producing a result.
 - `pending` — the run has not yet produced a verdict.
 
-`pass` meaning "the bug is still there" is counterintuitive in
-isolation but matches the project's domain noun: a *reproduction*
-succeeds when it reproduces.
+The values were originally `pass` / `fail`; renamed in Contract v1
+Revision 3 (ADR-0029) so the literal name now matches its meaning
+directly.
 
 ## Local development
 
@@ -83,9 +83,9 @@ python -m http.server -d _shared 8766
 
 Open `<pages-base>/poc/_shared/_test/` in a browser. Expected:
 
-- The verdict band shows `reproduction succeeded — _shared helpers
-  wired up.` and `data-verdict="pass"`.
-- `globalThis.__VIVARIUM_VERDICT__ === "pass"`.
+- The verdict band shows `bug reproduced — _shared helpers wired
+  up.` and `data-verdict="reproduced"`.
+- `globalThis.__VIVARIUM_VERDICT__ === "reproduced"`.
 - `globalThis.__VIVARIUM_RESULT__.contract === "v1"`.
 - Network: only the smoke-test page itself plus `verdict.js` and
   `repro.js`. No CDN traffic.

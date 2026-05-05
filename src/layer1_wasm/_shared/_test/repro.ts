@@ -26,7 +26,7 @@ if (!outputEl || !metaEl) {
 }
 
 try {
-  setVerdict("pass", "reproduction succeeded — _shared helpers wired up.");
+  setVerdict("reproduced", "bug reproduced — _shared helpers wired up.");
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -60,7 +60,7 @@ try {
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
   setVerdict(
-    "fail",
+    "unreproduced",
     `smoke test failed: ${errAny?.message ?? String(err)}`,
   );
 }
