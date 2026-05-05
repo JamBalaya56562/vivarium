@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "getting-started",
+    "label": "はじめての 5 分"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "用語集"
   }

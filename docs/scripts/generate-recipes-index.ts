@@ -119,6 +119,7 @@ const NON_RECIPE_NAMES = new Set([
   '_shared',
   '_layer2-shared',
   'node_modules',
+  'scripts',
   'tests',
   'test-results',
 ]);
