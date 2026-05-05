@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "getting-started",
+    "label": "First five minutes"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "Glossary"
   }
