@@ -96,8 +96,9 @@ CI's role for Layer 3 is reduced to:
 - Push to GHCR (`ghcr.io/aletheia-works/vivarium-<slug>`) on push
   to main.
 - Surface `verdict.json` in the gallery artefact at
-  `/repro/<slug>/verdict.json` (no CI write, just a copy of the
-  tracked file).
+  `/repro/<project>/<issue_path>/verdict.json` (the URL path is the
+  one published as `page_url` in `recipes.json`; no CI write, just a
+  copy of the tracked file).
 
 Visitor replay still works on every realistic visitor host
 (Intel Ivy Bridge+ / modern AMD with stock Linux + Docker, where

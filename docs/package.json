@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
     "generate-index": "bun run scripts/generate-recipes-index.ts",
+    "generate-project-pages": "bun run scripts/generate-project-pages.ts",
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
-    "dev": "bun run generate-index && bun run prebuild-repro && rspress dev",
-    "build": "bun run generate-index && rspress build",
+    "dev": "bun run generate-index && bun run generate-project-pages && bun run prebuild-repro && rspress dev",
+    "build": "bun run generate-index && bun run generate-project-pages && rspress build",
     "preview": "rspress preview"
   },
   "devDependencies": {

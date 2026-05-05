@@ -1,0 +1,268 @@
+/* Project landing page (/repro/<project>/).
+ * Tokens inherit from page-chrome.css; layer accent classes mirror
+ * recipe-gallery.css's `--teal/--violet/--coral` chips so the same
+ * colour means the same layer everywhere on the site.
+ */
+
+.v-pp {
+  margin: 1.25rem 0 2.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--vh-text);
+}
+
+.v-pp__eyebrow {
+  display: block;
+  margin: 0 0 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vh-accent-teal);
+}
+
+.v-pp__hero {
+  padding: 1.6rem 1.4rem 1.4rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 12px;
+  background: var(--vh-card-bg);
+  margin-bottom: 1.4rem;
+}
+
+.v-pp__title {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.v-pp__tagline {
+  margin: 0.55rem 0 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--vh-text-muted);
+}
+
+.v-pp__description {
+  margin: 0.85rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--vh-text);
+  max-width: 60ch;
+}
+
+.v-pp__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.v-pp__count-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--vh-text-muted);
+}
+
+html.dark .v-pp__count-chip {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.v-pp__layer-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+
+.v-pp__layer-pill--teal {
+  border-color: var(--vh-accent-teal);
+  color: var(--vh-accent-teal);
+  background: rgba(38, 166, 154, 0.08);
+}
+
+.v-pp__layer-pill--violet {
+  border-color: var(--vh-accent-violet);
+  color: var(--vh-accent-violet);
+  background: rgba(124, 92, 184, 0.08);
+}
+
+.v-pp__layer-pill--coral {
+  border-color: var(--vh-accent-coral);
+  color: var(--vh-accent-coral);
+  background: rgba(232, 105, 84, 0.08);
+}
+
+.v-pp__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.v-pp__link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--vh-accent-teal);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  padding-bottom: 1px;
+}
+
+.v-pp__link:hover {
+  color: var(--vh-accent-violet);
+}
+
+/* ------------------------- Recipes table ------------------------- */
+
+.v-pp__section-heading {
+  margin: 1.6rem 0 0.6rem;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.v-pp__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.v-pp__table thead th {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--vh-hairline);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vh-text-muted);
+  font-weight: 500;
+}
+
+.v-pp__table tbody td {
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--vh-hairline);
+  vertical-align: top;
+}
+
+.v-pp__row-title {
+  display: block;
+  line-height: 1.45;
+}
+
+.v-pp__row-symptom {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--vh-text-muted);
+}
+
+.v-pp__row-symptom code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+}
+
+.v-pp__unfiled {
+  font-style: italic;
+  color: var(--vh-text-muted);
+  font-size: 0.85rem;
+}
+
+.v-pp__actions-cell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.v-pp__btn {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  margin-left: 0.4rem;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-decoration: none;
+  border: 1px solid var(--vh-hairline);
+  white-space: nowrap;
+}
+
+.v-pp__btn--primary {
+  background: var(--vh-accent-teal);
+  color: white;
+  border-color: var(--vh-accent-teal);
+}
+
+.v-pp__btn--primary:hover {
+  background: var(--vh-accent-violet);
+  border-color: var(--vh-accent-violet);
+}
+
+.v-pp__btn--ghost {
+  color: var(--vh-text);
+  background: transparent;
+}
+
+.v-pp__btn--ghost:hover {
+  border-color: var(--vh-accent-teal);
+  color: var(--vh-accent-teal);
+}
+
+.v-pp__empty {
+  margin: 1rem 0 2rem;
+  padding: 1rem;
+  border: 1px dashed var(--vh-hairline);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--vh-text-muted);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+html.dark .v-pp__empty {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 720px) {
+  .v-pp__table thead {
+    display: none;
+  }
+
+  .v-pp__table,
+  .v-pp__table tbody,
+  .v-pp__table tr,
+  .v-pp__table td {
+    display: block;
+    width: 100%;
+  }
+
+  .v-pp__table tr {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--vh-hairline);
+  }
+
+  .v-pp__table tbody td {
+    border: none;
+    padding: 0.25rem 0;
+  }
+
+  .v-pp__actions-cell {
+    text-align: left;
+    margin-top: 0.4rem;
+  }
+
+  .v-pp__btn {
+    margin-left: 0;
+    margin-right: 0.4rem;
+  }
+}

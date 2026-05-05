@@ -21,7 +21,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
       "project": "pandas",
       "issue": 56679,
       "title": "pandas-dev/pandas#56679",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas-56679/",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/pandas/56679/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"
     },
     {
@@ -30,8 +30,8 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
       "project": "bash",
       "issue": 0,
       "title": "bash `local` shadows command-substitution exit code",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash-local-shadows-exit/verdict.json",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/verdict.json",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit"
     }
   ]

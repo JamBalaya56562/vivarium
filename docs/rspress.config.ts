@@ -30,28 +30,89 @@ const REPRO_MIME: Record<string, string> = {
   '.map': 'application/json; charset=utf-8',
 };
 
-/**
- * Resolve a `/repro/<sub>` URL path to an absolute file under one of
- * `src/layer{1,2,3}_*`. Supports trailing-slash → index.html and
- * extension-based MIME type. Returns null if no match.
- */
+// Resolve a /repro/<sub> URL path to an absolute file under one of
+// src/layer{1,2,3}_*. Supports trailing-slash to index.html and
+// extension-based MIME type. Returns null if no match.
+//
+// URL to disk-slug mapping for the <project>/<issue_path>/... URL shape:
+//
+//   1. Underscore-prefixed first segment (e.g. _shared/sw.js,
+//      _layer2-shared/...) is looked up as-is, since shared scaffolding
+//      lives flat under each src/layer{N}_*/ and never had project /
+//      issue segmentation.
+//
+//   2. Single-segment lookups (e.g. just compare, no recipe assets) are
+//      tried as-is so unaffected static files keep resolving.
+//
+//   3. Multi-segment lookups: first segment is the project, second
+//      segment is the issue_path. The recipe directory on disk is one of:
+//        a. <project>-<issue_path> (the prefix-style slug, the common
+//           case, e.g. cpython-137205, bash-local-shadows-exit).
+//        b. <issue_path> (the override-style slug for recipes whose
+//           on-disk name does not embed the project, e.g.
+//           PROJECT_OVERRIDES['lost-update'] = 'pthread', served at
+//           /repro/pthread/lost-update/ from the disk dir lost-update/).
+//      Both candidates are tried; the first that exists wins. Any
+//      remaining segments are joined back onto the resolved disk slug as
+//      the asset path under that recipe directory (e.g. repro.wasm,
+//      verdict.json).
 function resolveReproFile(subpath: string): string | null {
   if (!subpath) subpath = '';
-  let lookup = subpath;
-  if (lookup === '' || lookup.endsWith('/')) lookup += 'index.html';
 
-  for (const root of REPRO_ROOTS) {
-    const candidate = path.join(root, lookup);
-    if (!existsSync(candidate)) continue;
-    const s = statSync(candidate);
-    if (s.isDirectory()) {
-      const idx = path.join(candidate, 'index.html');
-      if (existsSync(idx)) return idx;
-      continue;
+  // Trailing-slash directory URL → index.html lookup.
+  let trailingFile = '';
+  let lookupPath = subpath;
+  if (lookupPath === '' || lookupPath.endsWith('/')) {
+    trailingFile = 'index.html';
+    if (lookupPath.endsWith('/')) lookupPath = lookupPath.slice(0, -1);
+  }
+
+  const segments = lookupPath === '' ? [] : lookupPath.split('/');
+
+  // Build the list of candidate disk-relative paths to try, in order.
+  const candidates: string[] = [];
+  if (segments.length === 0) {
+    // Bare `/repro/` — fall through (no candidate).
+  } else if (segments[0]!.startsWith('_')) {
+    // Shared scaffolding — keep flat lookup.
+    candidates.push(joinDisk(segments, trailingFile));
+  } else if (segments.length === 1) {
+    // Single segment — could be a project landing (no on-disk match) or a
+    // legacy flat asset. Try as-is; if it doesn't exist on disk, the
+    // caller falls through to rspress.
+    candidates.push(joinDisk(segments, trailingFile));
+  } else {
+    // Multi-segment — try the prefix-style slug first, then the
+    // override-style slug.
+    const project = segments[0]!;
+    const issuePath = segments[1]!;
+    const rest = segments.slice(2);
+    const prefixSlug = `${project}-${issuePath}`;
+    candidates.push(joinDisk([prefixSlug, ...rest], trailingFile));
+    const overrideSlug = issuePath;
+    candidates.push(joinDisk([overrideSlug, ...rest], trailingFile));
+  }
+
+  for (const candidate of candidates) {
+    for (const root of REPRO_ROOTS) {
+      const abs = path.join(root, candidate);
+      if (!existsSync(abs)) continue;
+      const s = statSync(abs);
+      if (s.isDirectory()) {
+        const idx = path.join(abs, 'index.html');
+        if (existsSync(idx)) return idx;
+        continue;
+      }
+      return abs;
     }
-    return candidate;
   }
   return null;
+}
+
+function joinDisk(segments: string[], trailingFile: string): string {
+  const base = segments.join('/');
+  if (!trailingFile) return base;
+  return base ? `${base}/${trailingFile}` : trailingFile;
 }
 
 export default defineConfig({
