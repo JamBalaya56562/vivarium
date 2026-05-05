@@ -31,10 +31,10 @@ the page reproduces.
   by every mainstream PHP build (and bundled into php-wasm).
 - Verdict reduces to a boolean — `count($pis) === 1` ∧ `(string)
   $pis[0] === ""` — so the page emits a mechanically-distinguishable
-  `pass` / `fail`.
+  `reproduced` / `unreproduced`.
 - Closed upstream by [PR #12190](https://github.com/php/php-src/pull/12190),
   merged into `PHP-8.2.12`. Pyodide-style "sentinel" semantics: when
-  php-wasm bumps to a build ≥ 8.2.12, the verdict flips to `fail` and
+  php-wasm bumps to a build ≥ 8.2.12, the verdict flips to `unreproduced` and
   the page becomes a fix-detection signal.
 - Reproduces without I/O, network, or non-default extensions — fits
   the WASM cell shape exactly.
@@ -60,10 +60,11 @@ of the envelope reports `xpath_count`, `pi_text`, `pi_text_empty`,
 and `reproduced` — enough for downstream tooling to distinguish the
 specific shape of any future change.
 
-A `pass` means **the bug reproduced** — xpath returned the PI node
-*and* its string-cast was empty. A `fail` means either the runtime
-ships a fix (PI string-cast now non-empty), or the runtime errored
-before producing a result.
+A `reproduced` verdict means **the bug reproduced** — xpath
+returned the PI node *and* its string-cast was empty. An
+`unreproduced` verdict means either the runtime ships a fix (PI
+string-cast now non-empty), or the runtime errored before producing
+a result.
 
 ## Running locally — in-browser
 
@@ -87,7 +88,7 @@ to match the version php-wasm bundles, so:
 # One-time per machine / .mise.toml change.
 mise install
 
-# Reproduces the bug; exits 0 on `pass`.
+# Reproduces the bug; exits 0 on `reproduced`.
 mise exec php -- php src/layer1_wasm/php-12167/repro.php
 
 # Expected output (8.2.11):
@@ -97,7 +98,7 @@ mise exec php -- php src/layer1_wasm/php-12167/repro.php
 #     "pi_text": "",
 #     "pi_text_empty": true
 # }
-# verdict=pass — bug reproduces on this interpreter
+# verdict=reproduced — bug reproduces on this interpreter
 ```
 
 `mise install` may need a Unix-y toolchain (autoconf, libxml2

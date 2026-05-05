@@ -18,7 +18,7 @@ Originally selected as Phase 0's "easiest to debug at a glance" PoC:
 
 - Three-line reproduction, zero non-pandas dependencies.
 - Verdict is a `dtype` comparison — a single boolean — so the page emits
-  a mechanically-distinguishable `pass` / `fail` value.
+  a mechanically-distinguishable `reproduced` / `unreproduced` value.
 - Reported against pandas 2.1.4; verified on pandas 2.3.3, which is the
   version Pyodide v0.29.3 ships. The bug is expected to reproduce on the
   same Pyodide build the page loads.
@@ -45,19 +45,20 @@ The page conforms to the contract canonicalised in
 
 - `<meta name="vivarium-contract" content="v1">` declared in `<head>`.
 - `document.querySelector('#verdict').dataset.verdict` ∈
-  `{"pending", "pass", "fail"}`.
+  `{"pending", "reproduced", "unreproduced"}`.
 - `globalThis.__VIVARIUM_VERDICT__` — mirror of the DOM verdict.
 - `globalThis.__VIVARIUM_RESULT__` — a `VivariumResultV1` envelope:
   `{ contract: "v1", bug: { project: "pandas", issue: 56679, upstream_url },
   runtime: { name: "pyodide", version, extras: { python, pandas } },
   result: { series_dtype, df_dtype, mismatch }, timing }`.
-- Visible verdict text starts with `reproduction succeeded` or
-  `reproduction failed`.
+- Visible verdict text starts with `bug reproduced` or
+  `bug not reproduced`.
 
-A `pass` means **the bug reproduced** (the Pyodide-bundled pandas still
-exhibits the inconsistency). A `fail` means either the bug was fixed in
-the version Pyodide currently ships, or the runtime itself errored
-before producing a result.
+A `reproduced` verdict means **the bug reproduced** (the
+Pyodide-bundled pandas still exhibits the inconsistency). An
+`unreproduced` verdict means either the bug was fixed in the version
+Pyodide currently ships, or the runtime itself errored before
+producing a result.
 
 ## Running locally — in-browser
 
@@ -88,7 +89,7 @@ root pins Python to 3.13:
 # One-time per machine / .mise.toml change.
 mise install
 
-# Reproduces the bug; exits 0 on `pass`. uv reads the inline
+# Reproduces the bug; exits 0 on `reproduced`. uv reads the inline
 # metadata, builds an ephemeral venv, and runs the script.
 mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
 
@@ -101,7 +102,7 @@ mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
 #   "mismatch": true,
 #   "reproduced": true
 # }
-# verdict=pass — Series and DataFrame disagree on empty-input dtype
+# verdict=reproduced — Series and DataFrame disagree on empty-input dtype
 ```
 
 ## Deployment
@@ -129,8 +130,8 @@ work.
   runtime: { name: "pyodide", version: "0.29.3", extras: { python: "3.13.2",
   pandas: "2.3.3" } }, result: { series_dtype: "object", df_dtype: "float64",
   mismatch: true }, ... }`.
-- `data-verdict="pass"`, visible text `reproduction succeeded — Series
-  dtype ≠ DataFrame dtype.`, `__VIVARIUM_VERDICT__ === "pass"`.
+- `data-verdict="reproduced"`, visible text `bug reproduced — Series
+  dtype ≠ DataFrame dtype.`, `__VIVARIUM_VERDICT__ === "reproduced"`.
 - No console errors.
 
 ### Needs a human check

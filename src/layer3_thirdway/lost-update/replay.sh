@@ -5,14 +5,15 @@
 # against the trace baked into the image at /trace and emits the
 # gallery verdict by parsing the recorded program's stderr.
 #
-# Verdict semantics (match Layer 1 / Layer 2):
+# Verdict semantics (match Layer 1 / Layer 2 — Contract v1 Revision 3):
 #
-#   exit 0 → `pass` — bug reproduces; the recorded race re-fires
-#                     deterministically on replay.
-#   exit 1 → `fail` — bug did not reproduce; either the trace
-#                     replayed clean (no lost increments — should
-#                     be impossible for this trace, captured here
-#                     defensively) or `rr replay` itself errored.
+#   exit 0 → `reproduced`   — bug reproduces; the recorded race
+#                             re-fires deterministically on replay.
+#   exit 1 → `unreproduced` — bug did not reproduce; either the trace
+#                             replayed clean (no lost increments —
+#                             should be impossible for this trace,
+#                             captured here defensively) or
+#                             `rr replay` itself errored.
 #
 # Why we parse stderr instead of the replay exit code:
 # `rr replay --autopilot` exit code reports whether the replay run
@@ -28,7 +29,7 @@ set -uo pipefail
 
 TRACE_DIR=$(find /trace -mindepth 1 -maxdepth 1 -type d | head -n1)
 if [ -z "$TRACE_DIR" ]; then
-  echo "fail: no rr trace found under /trace/" >&2
+  echo "unreproduced: no rr trace found under /trace/" >&2
   exit 1
 fi
 
@@ -55,7 +56,7 @@ set -e
 grep -vE 'TraceStream\.cc.*Metadata of .* changed: replay divergence likely, but continuing anyway' "$REPLAY_LOG" || true
 
 if [ "$RP_EXIT" -ne 0 ]; then
-  echo "fail: rr replay errored (exit $RP_EXIT)" >&2
+  echo "unreproduced: rr replay errored (exit $RP_EXIT)" >&2
   exit 1
 fi
 
@@ -63,14 +64,14 @@ fi
 # means the race fired during recording. The replay reproduces the
 # exact same stderr deterministically, so the marker is reliable.
 if grep -qE 'lost = [1-9][0-9]*' "$REPLAY_LOG"; then
-  echo "pass: lost-update race observed in recorded trace"
+  echo "reproduced: lost-update race observed in recorded trace"
   exit 0
 fi
 
 if grep -q 'lost = 0' "$REPLAY_LOG"; then
-  echo "fail: trace replayed clean (counter == 2*N — race did not fire during recording)" >&2
+  echo "unreproduced: trace replayed clean (counter == 2*N — race did not fire during recording)" >&2
   exit 1
 fi
 
-echo "fail: replay produced no recognisable lost-counter line" >&2
+echo "unreproduced: replay produced no recognisable lost-counter line" >&2
 exit 1

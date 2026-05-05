@@ -31,7 +31,7 @@ on.execute("PRAGMA foreign_keys").fetchone()[0]   # => 1
   in-memory SQLite connection.
 - Verdict reduces to a boolean — the two connections disagree on
   the PRAGMA value — so the page emits a mechanically-distinguishable
-  `pass` / `fail`.
+  `reproduced` / `unreproduced`.
 - Reported against Python 3.13. Related upstream PRs are doc-only;
   Pyodide v0.29.3 ships Python 3.13.2 (and SQLite 3.39.0 via the
   `sqlite3` Pyodide package), which still exhibits the behaviour.
@@ -69,10 +69,10 @@ The page conforms to the contract canonicalised in
 of the envelope reports `off_autocommit_fk`, `on_autocommit_fk`, and
 `fk_disagreement`.
 
-A `pass` means **the bug reproduced** (the two connections disagree
-on the PRAGMA value). A `fail` means either the runtime ships a fix
-(both connections agree), or the runtime errored before producing a
-result.
+A `reproduced` verdict means **the bug reproduced** (the two
+connections disagree on the PRAGMA value). An `unreproduced` verdict
+means either the runtime ships a fix (both connections agree), or
+the runtime errored before producing a result.
 
 ## Running locally — in-browser
 
@@ -94,7 +94,7 @@ The `.mise.toml` at the repo root pins Python to 3.13:
 ```bash
 mise install
 mise exec uv -- uv run src/layer1_wasm/cpython-137205/repro.py
-# verdict=pass — autocommit=False silently drops PRAGMA foreign_keys
+# verdict=reproduced — autocommit=False silently drops PRAGMA foreign_keys
 ```
 
 ## Deployment

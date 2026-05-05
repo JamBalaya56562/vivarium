@@ -340,7 +340,7 @@ html.dark {
   margin-bottom: 0.1rem;
 }
 
-.v-tab__dot--fail {
+.v-tab__dot--unreproduced {
   background: var(--vh-accent-coral);
   box-shadow: 0 0 8px rgba(255, 113, 108, 0.6);
 }
@@ -351,7 +351,7 @@ html.dark {
   animation: v-pulse 1.6s ease-in-out infinite;
 }
 
-.v-tab__dot--pass {
+.v-tab__dot--reproduced {
   background: var(--vh-accent-teal-bright);
   box-shadow: 0 0 8px rgba(0, 212, 170, 0.6);
 }
@@ -745,14 +745,14 @@ html.dark {
   border: 1px solid;
 }
 
-.v-verdict--fail {
+.v-verdict--unreproduced {
   background: rgba(255, 113, 108, 0.1);
   color: var(--vh-accent-coral);
   border-color: rgba(255, 113, 108, 0.3);
   box-shadow: 0 0 15px rgba(255, 113, 108, 0.2);
 }
 
-.v-verdict--fail__sep {
+.v-verdict--unreproduced__sep {
   opacity: 0.5;
   margin: 0 0.25rem;
   font-weight: 400;
@@ -768,7 +768,7 @@ html.dark {
   font-weight: 400;
 }
 
-.v-verdict--pass {
+.v-verdict--reproduced {
   background: rgba(0, 212, 170, 0.1);
   color: var(--vh-accent-teal);
   border-color: rgba(0, 212, 170, 0.3);

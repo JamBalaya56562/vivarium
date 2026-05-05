@@ -60,7 +60,7 @@ const FIXTURE_INDEX = {
 
 const FIXTURE_VERDICT = {
   contract: 'v1',
-  verdict: 'pass',
+  verdict: 'reproduced',
   exit_code: 0,
   image_tag: 'ghcr.io/example-org/bash:latest',
   image_digest: 'sha256:deadbeef',
@@ -151,7 +151,7 @@ describe('lookup_verdict', () => {
     const r = await lookupVerdict({ slug: 'bash-local-shadows-exit' });
     assert.equal(r.kind, 'snapshot');
     if (r.kind === 'snapshot') {
-      assert.equal(r.snapshot.verdict, 'pass');
+      assert.equal(r.snapshot.verdict, 'reproduced');
       assert.equal(r.snapshot.contract, 'v1');
     }
   });

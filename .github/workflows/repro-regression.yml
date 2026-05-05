@@ -8,12 +8,12 @@ name: repro-regression
 # v1 surface (DOM `#verdict[data-verdict]`, `__VIVARIUM_VERDICT__`,
 # `__VIVARIUM_RESULT__`, `<meta name="vivarium-contract">`).
 #
-# A `pass` verdict means the upstream bug still reproduces on the
-# bundled Pyodide build; a `fail` verdict means either the upstream
-# project shipped a fix that Pyodide picked up, or the runtime
-# regressed. Either case is signal — the workflow turns it into a
-# loud red CI failure so a human can decide what to do (retire the
-# page, file an upstream-fix-detection Issue, etc.).
+# A `reproduced` verdict means the upstream bug still reproduces on
+# the bundled Pyodide build; an `unreproduced` verdict means either
+# the upstream project shipped a fix that Pyodide picked up, or the
+# runtime regressed. Either case is signal — the workflow turns it
+# into a loud red CI failure so a human can decide what to do
+# (retire the page, file an upstream-fix-detection Issue, etc.).
 #
 # Triggers:
 # - `push` to `main` touching Layer 1 sources / this workflow / the
@@ -201,7 +201,7 @@ jobs:
         # Playwright suite below — which loads each Layer 2 page from
         # the auto-started Layer 2 webServer — can read CI's actual
         # capture rather than fall through to "verdict snapshot
-        # unavailable: HTTP 404" and report `fail`.
+        # unavailable: HTTP 404" and report `unreproduced`.
         #
         # The capture itself is delegated to
         # `scripts/capture_layer2_verdict.sh`, which is also the
@@ -227,10 +227,11 @@ jobs:
             verdict=$(jq -r '.verdict' "${slug_dir}/verdict.json")
             exit_code=$(jq -r '.exit_code' "${slug_dir}/verdict.json")
 
-            # Pass-expected for now. A future `fail`-expected sentinel
-            # page would need the Playwright spec to flag it, which we
-            # check there, not here — the regression-suite step just
-            # records the verdict honestly.
+            # `reproduced`-expected for now. A future
+            # `unreproduced`-expected sentinel page would need the
+            # Playwright spec to flag it, which we check there, not
+            # here — the regression-suite step just records the
+            # verdict honestly.
             if [ "$exit_code" -ne 0 ]; then
               echo "::warning::Layer 2 reproduction ${slug} exited ${exit_code}; downstream Playwright step will assert verdict expectations"
             fi

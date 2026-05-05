@@ -3,11 +3,11 @@
 // Loads `@ruby/wasm-wasi` from jsDelivr, fetches the matching
 // `@ruby/<ruby-major-minor>-wasm-wasi` ruby+stdlib.wasm binary, and
 // returns an instantiated RubyVM. On any load failure, the helper sets
-// the verdict to "fail" with the error text and re-throws — mirroring
+// the verdict to "unreproduced" with the error text and re-throws — mirroring
 // `loader.ts` for Pyodide.
 //
 // Pages should still wrap their reproduction code in `try/catch` and
-// call `setVerdict("fail", ...)` themselves on REPRODUCTION-time errors;
+// call `setVerdict("unreproduced", ...)` themselves on REPRODUCTION-time errors;
 // this helper only owns load-time errors.
 
 import { setVerdict } from "./verdict.js";
@@ -47,7 +47,7 @@ export interface LoadResult {
 /**
  * Load Ruby.wasm and return an instantiated VM.
  *
- * @throws Re-throws the underlying error after setting the verdict to "fail".
+ * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
  */
 export async function loadVivariumRuby(
   options: LoadOptions = {},
@@ -94,8 +94,8 @@ export async function loadVivariumRuby(
     const message =
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error during Ruby.wasm load: ${message}`,
+      "unreproduced",
+      `bug not reproduced — runtime error during Ruby.wasm load: ${message}`,
     );
     throw err;
   }

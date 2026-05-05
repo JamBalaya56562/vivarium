@@ -12,8 +12,8 @@
 // captures stdout, parses the JSON envelope, and reports the verdict.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (the two patterns disagree).
-//   - "fail" — the bug does NOT reproduce (regex now agrees, the
+//   - "reproduced" — the bug REPRODUCES (the two patterns disagree).
+//   - "unreproduced" — the bug does NOT reproduce (regex now agrees, the
 //     wasm artefact errored, or the WASI shim could not load).
 
 import { loadVivariumRust } from "../_shared/rust_loader.js";
@@ -83,18 +83,18 @@ try {
 
   if (result.reproduced && exitCode === 0) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — `(re)+` and `(re)(re)*` produce different match lists on the same haystack.",
+      "reproduced",
+      "bug reproduced — `(re)+` and `(re)(re)*` produce different match lists on the same haystack.",
     );
   } else if (!result.reproduced && exitCode === 1) {
     setVerdict(
-      "fail",
-      "reproduction failed — `(re)+` and `(re)(re)*` now produce identical match lists (likely fixed upstream).",
+      "unreproduced",
+      "bug not reproduced — `(re)+` and `(re)(re)*` now produce identical match lists (likely fixed upstream).",
     );
   } else {
     setVerdict(
-      "fail",
-      `reproduction failed — unexpected outcome (exitCode=${exitCode}, reproduced=${result.reproduced}).`,
+      "unreproduced",
+      `bug not reproduced — unexpected outcome (exitCode=${exitCode}, reproduced=${result.reproduced}).`,
     );
   }
 
@@ -134,10 +134,10 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

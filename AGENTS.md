@@ -342,6 +342,38 @@ read (`<meta name="vivarium-contract">` for Contract v1,
 index). Revisions never touch that literal; consumers feature-detect
 new optional surface.
 
+**Pre-adoption breaking-change carve-out (active as of 2026-05-05).**
+The two-tier policy above presumes the spec already has external
+consumers who would be harmed by a silent breaking change. As long as
+this project has **no known external consumers** — a state explicitly
+acknowledged through Phase 6 — breaking changes that would otherwise
+require a major bump (`v2`) may instead be **absorbed in-place inside
+v1**, provided that:
+
+- The change is recorded in an ADR under `_context/decisions/` with
+  the rationale and the in-v1 absorption decision.
+- Every site within this repository (schemas, helpers, recipes, CSS,
+  CI, tests, docs in both `ja` and `en`) is migrated atomically in
+  the same change set; the spec is not allowed to be self-inconsistent.
+- The Contract v1 / Manifest v1 spec page's revision history records
+  the change with date and ADR reference, even though the version
+  literal stays `"v1"`.
+
+The carve-out **expires automatically** when any of the following
+holds:
+
+- A third party documents a Vivarium reproduction or imports the MCP
+  server in a tracked downstream project, or
+- Vivarium begins formally announcing the spec for outside consumption
+  (blog post, conference talk, listing in a curated index, etc.), or
+- Phase 7 opens (whichever comes first as project momentum picks up).
+
+After expiry, breaking changes revert to the strict two-tier policy
+(`v2` major bump). Until expiry, AI agents may exercise the carve-out
+themselves only with explicit human authorisation captured in the
+chat for that specific change — it is not standing approval. ADR-0029
+(verdict vocabulary rename) is the first invocation.
+
 ### 4.12 Package distribution
 
 Runtime artefacts the project publishes (Vivarium MCP server today,

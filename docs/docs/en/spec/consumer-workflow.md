@@ -38,16 +38,17 @@ their own CI. Slugs are the directory names under
 |---|---|---|---|---|
 | `slug` | string | ✅ | — | Recipe slug, e.g. `bash-local-shadows-exit`. Used to derive the default image tag and to label artefacts and log lines. |
 | `image` | string | — | `ghcr.io/aletheia-works/vivarium-<slug>:latest` | Image override. Useful when the consumer wants to pin a specific git-sha tag or test a private fork. |
-| `expected_verdict` | string | — | `"pass"` | `"pass"` or `"fail"`. Job fails if the captured verdict differs. Use `"fail"` only if you intentionally track a recipe whose upstream bug has been fixed (sentinel page). |
+| `expected_verdict` | string | — | `"reproduced"` | `"reproduced"` or `"unreproduced"`. Job fails if the captured verdict differs. Use `"unreproduced"` only if you intentionally track a recipe whose upstream bug has been fixed (sentinel page). |
 | `timeout_minutes` | number | — | `5` | Job timeout. Most Layer 2 recipes complete in seconds; the budget exists for image-pull on slow networks. |
 
 ## Verdict semantics
 
-`pass` means **the upstream bug reproduces** in this run — the
-reproduction is doing its job. `fail` means the bug **does not
-reproduce**, usually because the upstream project shipped a fix
-the bundled image picked up. This is the inverse of typical
-"green CI = good" framing; see
+`reproduced` means **the upstream bug reproduces** in this run —
+the reproduction is doing its job. `unreproduced` means the bug
+**does not reproduce**, usually because the upstream project
+shipped a fix the bundled image picked up. (Renamed from
+`pass`/`fail` in Contract v1 Revision 3 — ADR-0029 — so the value
+name now matches its meaning directly.) See
 [Contract v1: Verdict semantics](./contract-v1.md#verdict-semantics)
 for the full reasoning.
 
@@ -60,7 +61,7 @@ jobs:
     uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: my-favourite-recipe
-      expected_verdict: pass        # default; spelled out for clarity
+      expected_verdict: reproduced  # default; spelled out for clarity
 ```
 
 …and the workflow flips red the moment the bug stops reproducing,

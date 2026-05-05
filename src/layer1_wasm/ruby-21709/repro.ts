@@ -10,8 +10,8 @@
 // fragments of different encodings — they don't.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (Regexp raises, String succeeds).
-//   - "fail" — the bug does NOT reproduce (the runtime ships a fix,
+//   - "reproduced" — the bug REPRODUCES (Regexp raises, String succeeds).
+//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 
 import { loadVivariumRuby } from "../_shared/ruby_loader.js";
@@ -99,18 +99,18 @@ try {
 
   if (reproduced) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — Regexp interpolation rejects mixed encodings while String interpolation silently upgrades.",
+      "reproduced",
+      "bug reproduced — Regexp interpolation rejects mixed encodings while String interpolation silently upgrades.",
     );
   } else if (result.regexp_built && result.string_built) {
     setVerdict(
-      "fail",
-      "reproduction failed — Regexp and String interpolation now agree (likely fixed upstream).",
+      "unreproduced",
+      "bug not reproduced — Regexp and String interpolation now agree (likely fixed upstream).",
     );
   } else {
     setVerdict(
-      "fail",
-      `reproduction failed — unexpected outcome (regexp_built=${result.regexp_built}, string_built=${result.string_built}).`,
+      "unreproduced",
+      `bug not reproduced — unexpected outcome (regexp_built=${result.regexp_built}, string_built=${result.string_built}).`,
     );
   }
 
@@ -150,10 +150,10 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

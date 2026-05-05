@@ -3,7 +3,7 @@
 > The reproduction-verdict surface that every Vivarium-compatible
 > reproduction page emits. Stable since Phase 1, locked at v1 by
 > [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md)
-> (private memo). Currently at **revision 2** — see the
+> (private memo). Currently at **revision 3** — see the
 > [revision history](#revision-history) at the foot of this page.
 
 ## At a glance
@@ -14,8 +14,9 @@ A page conforming to Vivarium Contract v1 publishes:
   - `<meta name="vivarium-contract" content="v1">` in `<head>`.
   - `"contract": "v1"` in any JSON envelope it emits (in-page
     `__VIVARIUM_RESULT__` global, or the `verdict.json` file).
-- A **verdict** — one of `"pass"` (the upstream bug reproduces),
-  `"fail"` (it does not), or `"pending"` (run not yet finished).
+- A **verdict** — one of `"reproduced"` (the upstream bug was
+  reproduced), `"unreproduced"` (it was not), or `"pending"` (run not
+  yet finished).
 - A **result envelope** describing the bug, the runtime, and the
   page-specific output.
 
@@ -32,24 +33,30 @@ layers; the file snapshot only exists for Layer 2 and Layer 3.
 
 ## Verdict semantics
 
-`pass` means **the upstream bug reproduces** in this run. The page
-demonstrates the failure the upstream report describes; the
+`reproduced` means **the upstream bug was reproduced** in this run.
+The page demonstrates the failure the upstream report describes; the
 reproduction is doing its job.
 
-`fail` means the bug **does not reproduce**. Either the runtime
-shipped a fix the page picked up (e.g., Pyodide upgraded its bundled
-pandas past the buggy release), or the runtime regressed in a
-different way before producing a verdict at all. Either reading is
+`unreproduced` means the bug **did not reproduce**. Either the
+runtime shipped a fix the page picked up (e.g., Pyodide upgraded its
+bundled pandas past the buggy release), or the runtime regressed in
+a different way before producing a verdict at all. Either reading is
 worth investigating — the page is no longer demonstrating what its
 README claims.
 
 `pending` is the default state until the reproduction code (Layer 1)
 or the verdict-snapshot fetch (Layer 2 / 3) settles.
 
-This convention is deliberately the **inverse** of typical CI
-"green = good" framing. A passing reproduction is the demonstration
-that the reported bug exists; a failing reproduction is a signal
-that something changed, not a goal in itself.
+> **Vocabulary note.** The verdict values were `"pass"` / `"fail"` in
+> revisions 1 and 2 of this contract. The original wording carried a
+> deliberate inversion of the typical CI "green = good" framing — a
+> "pass" meant the bug *was* reproduced — which doubled as cognitive
+> tax on every reader. Revision 3 ([ADR-0029](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0029-contract-v1-verdict-rename.md),
+> private memo) renames the values to `"reproduced"` / `"unreproduced"`
+> so that the literal name matches the meaning directly. The contract
+> version literal (`v1`) is unchanged; this rename is a v1-internal
+> breaking change absorbed under the pre-adoption carve-out in
+> [`AGENTS.md` § 4.11](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md).
 
 ## In-page surface (all layers)
 
@@ -73,17 +80,17 @@ The element with `id="verdict"` carries:
 
 | attribute / content | value | purpose |
 |---|---|---|
-| `data-verdict` | `"pending"` \| `"pass"` \| `"fail"` | machine-readable verdict |
-| `class` | `"pending"` \| `"pass"` \| `"fail"` (one of) | CSS hook |
+| `data-verdict` | `"pending"` \| `"reproduced"` \| `"unreproduced"` | machine-readable verdict |
+| `class` | `"pending"` \| `"reproduced"` \| `"unreproduced"` (one of) | CSS hook |
 | text content | human-readable verdict line | visitor-facing message |
 
 The reproduction code transitions the element from `"pending"` to
-`"pass"` or `"fail"` exactly once per page load.
+`"reproduced"` or `"unreproduced"` exactly once per page load.
 
 ### JavaScript globals
 
 ```ts
-globalThis.__VIVARIUM_VERDICT__: "pending" | "pass" | "fail";
+globalThis.__VIVARIUM_VERDICT__: "pending" | "reproduced" | "unreproduced";
 globalThis.__VIVARIUM_RESULT__: VivariumResultV1;  // see envelope below
 ```
 
@@ -209,7 +216,7 @@ Field summary:
 | field | type | required | meaning |
 |---|---|---|---|
 | `contract` | `"v1"` (literal) | ✅ | version literal — always `"v1"` for this spec |
-| `verdict` | `"pass"` \| `"fail"` | ✅ | snapshot verdict (no `"pending"` — the snapshot is post-run) |
+| `verdict` | `"reproduced"` \| `"unreproduced"` | ✅ | snapshot verdict (no `"pending"` — the snapshot is post-run) |
 | `exit_code` | integer | ✅ | recorded program / replay exit code |
 | `image_tag` | string | ✅ | docker image tag the snapshot was captured against |
 | `image_digest` | string | ✅ | docker image identifier — CI-pushed captures use the registry RepoDigest, Layer 3 local-build captures use the local image ID (`docker inspect --format='{{.Id}}'`); empty string allowed when neither is available |
@@ -218,8 +225,8 @@ Field summary:
 | `stderr_tail` | string | ✅ | last 4 KiB of stderr, truncated front-back to fit |
 
 The schema enforces the v1 invariant: `contract === "v1"` and
-`verdict ∈ {"pass", "fail"}`. Layer 1 does **not** ship a
-`verdict.json`; its verdict is live in-page.
+`verdict ∈ {"reproduced", "unreproduced"}`. Layer 1 does **not** ship
+a `verdict.json`; its verdict is live in-page.
 
 ### Lift to the in-page evidence surface (revision 2+)
 
@@ -309,7 +316,7 @@ enforcement single-sourced.
 The optional revision-2 evidence surface deliberately has **no**
 conformance clause: gating an optional surface on CI would create
 the wrong incentive (page authors padding empty evidence elements
-to "pass"). When the gallery's first non-PoC page emits evidence,
+just to satisfy the gate). When the gallery's first non-PoC page emits evidence,
 a follow-up Issue can decide whether to enforce shape (e.g. "if
 `#evidence` exists, it must contain at least one
 `[data-evidence]` child") at that point.
@@ -325,6 +332,7 @@ pages stay conformant unchanged.
 |---|---|---|---|
 | 1 | Phase 1 (Layer 1 surface) → 2026-04-28 (locked) | [ADR-0008](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0008-phase1-gallery-structure.md) (private memo); locked at v1 by [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md) (private memo) | Initial published surface: `<meta>`, `#verdict[data-verdict]`, JS globals, `VivariumResultV1` envelope, Layer 2/3 `verdict.json` snapshot. |
 | 2 | 2026-04-30 | [ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md) (private memo) | Optional `#evidence` DOM container with `[data-evidence]` children (`stdout`, `stderr`, `exit-code`, `duration-ms`) and matching `__VIVARIUM_RESULT__.evidence` envelope field. Layer 2/3 lift renames `verdict.json#stderr_tail` → `evidence.stderr` at the lift boundary; `verdict.schema.json` is unchanged. Minor-revision policy in [Versioning](#versioning) above is also clarified by this ADR. |
+| 3 | 2026-05-05 | [ADR-0029](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0029-contract-v1-verdict-rename.md) (private memo) | **Breaking within v1.** Verdict enum values renamed: `"pass"` → `"reproduced"`, `"fail"` → `"unreproduced"` (`"pending"` unchanged). The contract version literal stays `v1`. `verdict.schema.json` enum is updated; old snapshots that still carry `"pass"` / `"fail"` no longer validate. CSS class names on `#verdict` and the `data-verdict` attribute follow the same rename. Absorbed in-place rather than bumped to `v2` per the pre-adoption breaking-change carve-out in [`AGENTS.md` § 4.11](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md). |
 
 ## References
 

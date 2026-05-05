@@ -14,11 +14,11 @@
 // `verdict.json` captured by CI rather than from a live in-page run,
 // so the same envelope shape covers both layers.
 //
-// When the verdict a page produces flips from `pass` to `fail`, that
-// is a real signal: either the upstream project merged a fix and the
-// runtime picked it up, or the runtime regressed. Either way, this
-// suite turns that into a CI failure so a human can decide whether
-// to update / retire the page.
+// When the verdict a page produces flips from `reproduced` to
+// `unreproduced`, that is a real signal: either the upstream project
+// merged a fix and the runtime picked it up, or the runtime regressed.
+// Either way, this suite turns that into a CI failure so a human can
+// decide whether to update / retire the page.
 
 import { expect, test, type Page } from "@playwright/test";
 
@@ -30,8 +30,8 @@ interface ReproCase {
   name: string;
   /** Absolute URL — pick the Layer 1 or Layer 2 host as appropriate. */
   url: string;
-  /** Expected verdict — currently "pass" for every case (reproduces). */
-  expectedVerdict: "pass" | "fail";
+  /** Expected verdict — currently "reproduced" for every case. */
+  expectedVerdict: "reproduced" | "unreproduced";
   /** Envelope `bug.project` field. */
   expectedBugProject: string;
   /** Envelope `bug.issue` field. */
@@ -56,7 +56,7 @@ const cases: ReproCase[] = [
   {
     name: "_shared/_test smoke test",
     url: `${LAYER1}/_shared/_test/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "vivarium",
     expectedBugIssue: 0,
     expectedRuntimeName: "browser",
@@ -64,7 +64,7 @@ const cases: ReproCase[] = [
   {
     name: "pandas-56679 reproduction",
     url: `${LAYER1}/pandas-56679/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "pandas",
     expectedBugIssue: 56679,
     expectedRuntimeName: "pyodide",
@@ -72,7 +72,7 @@ const cases: ReproCase[] = [
   {
     name: "numpy-28287 reproduction",
     url: `${LAYER1}/numpy-28287/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "numpy",
     expectedBugIssue: 28287,
     expectedRuntimeName: "pyodide",
@@ -80,7 +80,7 @@ const cases: ReproCase[] = [
   {
     name: "ruby-21709 reproduction",
     url: `${LAYER1}/ruby-21709/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "ruby",
     expectedBugIssue: 21709,
     expectedRuntimeName: "ruby.wasm",
@@ -88,7 +88,7 @@ const cases: ReproCase[] = [
   {
     name: "cpython-137205 reproduction",
     url: `${LAYER1}/cpython-137205/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "cpython",
     expectedBugIssue: 137205,
     expectedRuntimeName: "pyodide",
@@ -96,7 +96,7 @@ const cases: ReproCase[] = [
   {
     name: "php-12167 reproduction",
     url: `${LAYER1}/php-12167/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "php",
     expectedBugIssue: 12167,
     expectedRuntimeName: "php-wasm",
@@ -104,7 +104,7 @@ const cases: ReproCase[] = [
   {
     name: "regex-779 reproduction",
     url: `${LAYER1}/regex-779/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "regex",
     expectedBugIssue: 779,
     expectedRuntimeName: "rust-wasi",
@@ -113,12 +113,12 @@ const cases: ReproCase[] = [
   // `verdict.json` next to the page. CI generates `verdict.json` in
   // both `repro-regression.yml` (build + run + write) and
   // `deploy-docs.yml` (build + push + write); locally Playwright sees
-  // the regression-flow output. All three current entries are
-  // expected `pass` snapshots.
+  // the regression-flow output. All current entries are
+  // expected `reproduced` snapshots.
   {
     name: "postgres-lost-update Layer 2 snapshot",
     url: `${LAYER2}/postgres-lost-update/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "postgres",
     expectedBugIssue: 0,
     expectedRuntimeName: "docker-snapshot",
@@ -126,7 +126,7 @@ const cases: ReproCase[] = [
   {
     name: "bash-local-shadows-exit Layer 2 snapshot",
     url: `${LAYER2}/bash-local-shadows-exit/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "bash",
     expectedBugIssue: 0,
     expectedRuntimeName: "docker-snapshot",
@@ -134,7 +134,7 @@ const cases: ReproCase[] = [
   {
     name: "flock-is-advisory Layer 2 snapshot",
     url: `${LAYER2}/flock-is-advisory/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "flock",
     expectedBugIssue: 0,
     expectedRuntimeName: "docker-snapshot",
@@ -142,7 +142,7 @@ const cases: ReproCase[] = [
   {
     name: "find-xargs-whitespace Layer 2 snapshot",
     url: `${LAYER2}/find-xargs-whitespace/`,
-    expectedVerdict: "pass",
+    expectedVerdict: "reproduced",
     expectedBugProject: "find-xargs",
     expectedBugIssue: 0,
     expectedRuntimeName: "docker-snapshot",
@@ -190,14 +190,14 @@ for (const c of cases) {
     await page.goto(c.url);
 
     // Wait for the verdict to settle. Pages start at `pending` and
-    // transition to `pass` or `fail` once the reproduction (or the
-    // verdict-snapshot fetch) completes.
+    // transition to `reproduced` or `unreproduced` once the reproduction
+    // (or the verdict-snapshot fetch) completes.
     await page.waitForFunction(
       () => {
         const v = (
           globalThis as unknown as { __VIVARIUM_VERDICT__?: string }
         ).__VIVARIUM_VERDICT__;
-        return v === "pass" || v === "fail";
+        return v === "reproduced" || v === "unreproduced";
       },
       undefined,
       { timeout: timeoutForRuntime(c.expectedRuntimeName) },

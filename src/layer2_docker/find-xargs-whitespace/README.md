@@ -41,7 +41,7 @@ apostrophe, or a newline.
 - **Deterministic verdict.** A single test file with a
   whitespace name is created in `/tmp/`; the naive pipeline
   fails to find it, the `-print0`/`-0` pipeline finds it. The
-  page reports `pass` iff both halves behave as documented.
+  page reports `reproduced` iff both halves behave as documented.
 - **Catalogue-fit.** Documented Unix tooling behaviour. Same
   framing as the other Layer 2 entries: Vivarium catalogues
   observable real-world surprises, not just numbered upstream
@@ -65,9 +65,9 @@ Per [ADR-0010](../../_context/decisions/0010-phase3-catalogue-model.md):
 
 - The gallery surfaces the **last verdict CI captured**.
 - The visitor's local `docker run` is the **live confirmation**.
-- `pass` ⇔ naive pipeline fails to find the whitespace-named
+- `reproduced` ⇔ naive pipeline fails to find the whitespace-named
   file AND `-print0` pipeline finds it.
-- `fail` ⇔ naive pipeline now finds the file (which would
+- `unreproduced` ⇔ naive pipeline now finds the file (which would
   mean `xargs`'s default tokenisation changed — it won't, but
   the verdict captures that branch honestly).
 
@@ -95,7 +95,7 @@ findutils 4.9.0, prior to first CI run):
   "nul_exit_code": 0,
   "reproduced": true
 }
-verdict=pass — naive find|xargs splits on whitespace; -print0/-0 fixes it
+verdict=reproduced — naive find|xargs splits on whitespace; -print0/-0 fixes it
 ```
 
 The naive pipeline's exit 123 is `xargs`'s "one or more child

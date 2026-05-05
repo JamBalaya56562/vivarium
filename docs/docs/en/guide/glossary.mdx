@@ -62,11 +62,14 @@ import {
 
       <dt id="verdict"><strong>Verdict</strong></dt>
       <dd>
-        The output of running a recipe — either <code>"pass"</code> or
-        <code>"fail"</code>. <strong>Pass means the upstream bug
-        reproduces.</strong> Fail means it does not. The naming is
-        counter-intuitive and deliberate; see
-        <a href="/spec/contract-v1#verdict-semantics">verdict semantics</a>.
+        The output of running a recipe — either <code>"reproduced"</code>
+        or <code>"unreproduced"</code>. <strong>Reproduced means the
+        upstream bug reproduces.</strong> Unreproduced means it does
+        not. The values were originally <code>"pass"</code> /
+        <code>"fail"</code>; renamed in Contract v1 Revision 3
+        (ADR-0029) so the literal name now matches its meaning.
+        See <a href="/spec/contract-v1#verdict-semantics">verdict
+        semantics</a>.
       </dd>
 
       <dt id="evidence"><strong>Evidence</strong></dt>
@@ -128,8 +131,8 @@ import {
         A candidate fix for the upstream bug, typically built from a
         contributor's branch (or AI agent's draft). The branch-fix verdict
         pipeline reproduces the recipe against the candidate fix; if the
-        verdict flips from <code>pass</code> to <code>fail</code>, the fix
-        is doing its job. See
+        verdict flips from <code>reproduced</code> to
+        <code>unreproduced</code>, the fix is doing its job. See
         <a href="/spec/branch-fix-pipeline">branch-fix pipeline</a>.
       </dd>
 

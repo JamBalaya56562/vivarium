@@ -15,9 +15,10 @@
 // Same script doubles as the in-browser reproduction (compiled to
 // wasm32-wasip1 and run via `@bjorn3/browser_wasi_shim`) and as the
 // native CLI variant (`cargo run --release` from this directory).
-// Verdict semantics match the rest of the gallery:
-//   - exit 0 + JSON `"reproduced": true`  → page reports "pass"
-//   - exit 1 + JSON `"reproduced": false` → page reports "fail"
+// Verdict semantics match the rest of the gallery (Contract v1
+// Revision 3 / ADR-0029):
+//   - exit 0 + JSON `"reproduced": true`  → page reports "reproduced"
+//   - exit 1 + JSON `"reproduced": false` → page reports "unreproduced"
 
 use regex::Regex;
 use serde_json::json;
@@ -57,12 +58,12 @@ fn main() {
 
     if reproduced {
         eprintln!(
-            "verdict=pass — `(re)+` and `(re)(re)*` disagree on this haystack"
+            "verdict=reproduced — `(re)+` and `(re)(re)*` disagree on this haystack"
         );
         std::process::exit(0);
     } else {
         eprintln!(
-            "verdict=fail — `(re)+` and `(re)(re)*` agree (likely fixed upstream)"
+            "verdict=unreproduced — `(re)+` and `(re)(re)*` agree (likely fixed upstream)"
         );
         std::process::exit(1);
     }

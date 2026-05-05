@@ -57,10 +57,10 @@ directory ships:
 |----------------|-------------------------------------------------------------------------------------------------------------------------------------|--------------|
 | `Dockerfile`   | Pinned base image with `rr` installed and the upstream reproducer compiled. Pulls the trace artifact via `ADD <trace.url>` so the image is self-contained. Pin everything: base image by digest, package versions explicit. | ✅           |
 | `record.sh`    | Documents how the maintainer recorded the trace locally on a Linux/x86_64 host with a usable PMU. Not invoked by CI or visitors — reproducibility note for future maintainers. | ✅           |
-| `replay.sh`    | The visitor-facing replay invocation. Runs `rr replay /trace …` and exits 0 on `pass` (bug reproduces in the trace) or 1 on `fail`. Same verdict semantics as Layer 1 / Layer 2. | ✅           |
+| `replay.sh`    | The visitor-facing replay invocation. Runs `rr replay /trace …` and exits 0 on `reproduced` (bug reproduces in the trace) or 1 on `unreproduced`. Same verdict semantics as Layer 1 / Layer 2. | ✅           |
 | `trace.url`    | Pinned URL of the trace artifact (a GitHub Release asset under `aletheia-works/vivarium`, tag-pinned and content-addressable).      | ✅           |
 | `README.md`    | Bug description (with upstream issue link), the exact `docker run …` command, expected output, the CI-snapshot verdict, and any "why this bug" notes. | ✅           |
-| `verdict.json` | *Generated locally by the maintainer*, alongside the trace, then committed to the recipe. Captures the `pass` / `fail` snapshot from `rr replay` + run timestamp + the local-build image ID. Surfaced on the gallery. CI does not regenerate this — see "Why no replay in CI". | ✅ (tracked) |
+| `verdict.json` | *Generated locally by the maintainer*, alongside the trace, then committed to the recipe. Captures the `reproduced` / `unreproduced` snapshot from `rr replay` + run timestamp + the local-build image ID. Surfaced on the gallery. CI does not regenerate this — see "Why no replay in CI". | ✅ (tracked) |
 | Fixtures       | Whatever the recipe needs *outside* the trace. Kept minimal; the trace itself is the heavyweight artifact and lives in the Release asset, not in git. | ⏳           |
 
 ## Why no replay in CI
@@ -151,7 +151,7 @@ A Layer 3 page reports the **maintainer-captured** verdict
 snapshot from the time the recipe was lifted (or last
 re-recorded). The page surfaces:
 
-- The verdict (`pass` / `fail`).
+- The verdict (`reproduced` / `unreproduced`).
 - The local-build image ID the snapshot ran against.
 - The capture timestamp.
 - The exit code and a short stdout snippet from `replay.sh`.

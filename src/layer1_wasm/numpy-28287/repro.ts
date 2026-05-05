@@ -8,9 +8,9 @@
 // NumPy reports x < y and y < z but x > z — a transitivity violation.
 //
 // Verdict semantics (per ADR-0008 / contract v1):
-//   - "pass" — the bug REPRODUCES (numpy reports the non-transitive
+//   - "reproduced" — the bug REPRODUCES (numpy reports the non-transitive
 //     ordering on the build Pyodide ships).
-//   - "fail" — the bug does NOT reproduce (or the runtime errored).
+//   - "unreproduced" — the bug does NOT reproduce (or the runtime errored).
 
 import { loadVivariumPyodide } from "../_shared/loader.js";
 import {
@@ -93,13 +93,13 @@ try {
 
   if (result.transitivity_violated) {
     setVerdict(
-      "pass",
-      "reproduction succeeded — timedelta64 ordering is non-transitive (x < y < z but x ≥ z).",
+      "reproduced",
+      "bug reproduced — timedelta64 ordering is non-transitive (x < y < z but x ≥ z).",
     );
   } else {
     setVerdict(
-      "fail",
-      "reproduction failed — timedelta64 ordering is transitive in this numpy build.",
+      "unreproduced",
+      "bug not reproduced — timedelta64 ordering is transitive in this numpy build.",
     );
   }
 
@@ -137,12 +137,12 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  // `loadVivariumPyodide` already sets "fail" on load-time errors. Cover
+  // `loadVivariumPyodide` already sets "unreproduced" on load-time errors. Cover
   // the case where the runtime loaded but the reproduction itself errored.
-  if (globalThis.__VIVARIUM_VERDICT__ !== "fail") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
-      "fail",
-      `reproduction failed — runtime error: ${errAny?.message ?? String(err)}`,
+      "unreproduced",
+      `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
 }

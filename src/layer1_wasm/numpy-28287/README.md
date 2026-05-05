@@ -23,7 +23,7 @@ contradicts itself is a clear violation.
 
 - Three-line reproduction (plus an import), zero non-numpy dependencies.
 - Verdict is a boolean — `(x < y) ∧ (y < z) ∧ ¬(x < z)` — so the page
-  emits a mechanically-distinguishable `pass` / `fail`.
+  emits a mechanically-distinguishable `reproduced` / `unreproduced`.
 - Reported against numpy 2.2.2; no merged fix as of this writing.
   Pyodide v0.29.3 ships numpy 2.2.5 as an installable package (loaded
   via `loadPyodide({ packages: ["numpy"] })`), so the bug is expected
@@ -51,19 +51,19 @@ The page conforms to the contract canonicalised in
 
 - `<meta name="vivarium-contract" content="v1">` declared in `<head>`.
 - `document.querySelector('#verdict').dataset.verdict` ∈
-  `{"pending", "pass", "fail"}`.
+  `{"pending", "reproduced", "unreproduced"}`.
 - `globalThis.__VIVARIUM_VERDICT__` — mirror of the DOM verdict.
 - `globalThis.__VIVARIUM_RESULT__` — a `VivariumResultV1` envelope:
   `{ contract: "v1", bug: { project: "numpy", issue: 28287, upstream_url },
   runtime: { name: "pyodide", version, extras: { python, numpy } },
   result: { x_lt_y, y_lt_z, x_lt_z, transitivity_violated }, timing }`.
-- Visible verdict text starts with `reproduction succeeded` or
-  `reproduction failed`.
+- Visible verdict text starts with `bug reproduced` or
+  `bug not reproduced`.
 
-A `pass` means **the bug reproduced** (NumPy still reports the
-non-transitive ordering). A `fail` means either the bug was fixed in the
-version Pyodide currently ships, or the runtime itself errored before
-producing a result.
+A `reproduced` verdict means **the bug reproduced** (NumPy still
+reports the non-transitive ordering). An `unreproduced` verdict
+means either the bug was fixed in the version Pyodide currently
+ships, or the runtime itself errored before producing a result.
 
 ## Running locally — in-browser
 
@@ -91,7 +91,7 @@ repo root pins Python to 3.13:
 ```bash
 mise install
 mise exec uv -- uv run src/layer1_wasm/numpy-28287/repro.py
-# verdict=pass — timedelta64 ordering is non-transitive
+# verdict=reproduced — timedelta64 ordering is non-transitive
 ```
 
 ## Deployment

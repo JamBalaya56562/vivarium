@@ -25,4 +25,4 @@ upstream_url = "https://github.com/aletheia-works/vivarium/blob/main/src/layer3_
 [layer3]
 image = "ghcr.io/aletheia-works/vivarium-lost-update:latest"
 dockerfile = "./Dockerfile"
-expected_verdict = "pass"
+expected_verdict = "reproduced"

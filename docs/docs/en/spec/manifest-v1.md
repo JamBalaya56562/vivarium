@@ -37,7 +37,7 @@ upstream_url = "https://lists.gnu.org/archive/html/bug-bash/"
 [layer2]
 image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
 dockerfile = "./Dockerfile"
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 A consumer that wants to run the reproduction reads the manifest,
@@ -104,13 +104,13 @@ layer = 1
 
 [layer1]
 page_url = "https://example.org/repro/some-bug/"
-expected_verdict = "pass"  # default; optional
+expected_verdict = "reproduced"  # default; optional
 ```
 
 | Field | Required | Notes |
 |---|---|---|
 | `page_url` | ✅ | URL of the static reproduction page. The page must conform to [Contract v1](./contract-v1.md) — `<meta name="vivarium-contract" content="v1">` in `<head>`, `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__` globals, and `#verdict[data-verdict]` element. |
-| `expected_verdict` | ⏳ | `"pass"` (default) or `"fail"`. |
+| `expected_verdict` | ⏳ | `"reproduced"` (default) or `"unreproduced"`. |
 
 ### `[layer2]` — Docker catalogue
 
@@ -120,14 +120,14 @@ layer = 2
 [layer2]
 image = "ghcr.io/example-org/example-bash-local-shadows-exit:latest"
 dockerfile = "./Dockerfile"  # optional, informational
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 | Field | Required | Notes |
 |---|---|---|
-| `image` | ✅ | Container image reference. Visitors run `docker run <image>`. The default CMD is the recipe's reproduction script; exit code 0 = bug reproduces (`pass`). |
+| `image` | ✅ | Container image reference. Visitors run `docker run <image>`. The default CMD is the recipe's reproduction script; exit code 0 = bug reproduces (`reproduced`). |
 | `dockerfile` | ⏳ | Repo-relative path to the source Dockerfile. Informational — Vivarium does not build from it. |
-| `expected_verdict` | ⏳ | Default `"pass"`. |
+| `expected_verdict` | ⏳ | Default `"reproduced"`. |
 
 ### `[layer3]` — Record-replay catalogue
 
@@ -137,14 +137,14 @@ layer = 3
 [layer3]
 image = "ghcr.io/example-org/example-recipe-with-trace:latest"
 dockerfile = "./Dockerfile"
-expected_verdict = "pass"
+expected_verdict = "reproduced"
 ```
 
 | Field | Required | Notes |
 |---|---|---|
 | `image` | ✅ | Container image reference. Image is expected to **ship with the recorded `rr` trace baked in**; entrypoint runs `rr replay` against the pinned trace. |
 | `dockerfile` | ⏳ | Informational. |
-| `expected_verdict` | ⏳ | Default `"pass"`. |
+| `expected_verdict` | ⏳ | Default `"reproduced"`. |
 
 > ⚠️ Layer 3 replay needs a host with **CPUID-faulting support**
 > when the visitor's CPU differs from the recording CPU. GitHub
@@ -157,16 +157,17 @@ expected_verdict = "pass"
 
 ## Verdict semantics
 
-The `expected_verdict` value follows the same inverse-of-typical-CI
-framing locked in [Contract v1](./contract-v1.md#verdict-semantics):
+The `expected_verdict` values match the literal names locked in
+[Contract v1](./contract-v1.md#verdict-semantics) (renamed from
+`pass`/`fail` in Revision 3 — ADR-0029):
 
-- `"pass"` ⇒ the upstream bug **reproduces**.
-- `"fail"` ⇒ the upstream bug **does not reproduce**.
+- `"reproduced"` ⇒ the upstream bug **reproduces**.
+- `"unreproduced"` ⇒ the upstream bug **does not reproduce**.
 
-A page declaring `expected_verdict = "pass"` is the common case —
-the recipe demonstrates the failure the upstream report
-describes. A page declaring `expected_verdict = "fail"` is a
-sentinel that intentionally tracks an upstream fix; it goes red
+A page declaring `expected_verdict = "reproduced"` is the common
+case — the recipe demonstrates the failure the upstream report
+describes. A page declaring `expected_verdict = "unreproduced"` is
+a sentinel that intentionally tracks an upstream fix; it goes red
 the moment the bug regresses back.
 
 ## Versioning

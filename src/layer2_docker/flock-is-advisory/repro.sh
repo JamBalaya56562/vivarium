@@ -74,9 +74,9 @@ cat <<JSON
 JSON
 
 if [ "$reproduced" = "true" ]; then
-  echo "verdict=pass — flock(2) is advisory; cat(1) bypassed the exclusive lock" >&2
+  echo "verdict=reproduced — flock(2) is advisory; cat(1) bypassed the exclusive lock" >&2
   exit 0
 fi
 
-echo "verdict=fail — unexpected (lock_held=$lock_actually_held, cat_bypassed=$cat_bypassed_lock)" >&2
+echo "verdict=unreproduced — unexpected (lock_held=$lock_actually_held, cat_bypassed=$cat_bypassed_lock)" >&2
 exit 1

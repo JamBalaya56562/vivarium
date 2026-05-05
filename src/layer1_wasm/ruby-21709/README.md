@@ -25,8 +25,8 @@ of different encodings. The disagreement is the bug surface.
 - Pure Ruby standard library (Regexp, String, Encoding) — no gems,
   no native extensions, no I/O.
 - Verdict reduces to a boolean — Regexp build raises ∧ String build
-  succeeds — so the page emits a mechanically-distinguishable `pass`
-  / `fail`.
+  succeeds — so the page emits a mechanically-distinguishable
+  `reproduced` / `unreproduced`.
 - Open upstream (Status: Open) at the time of writing; reported
   against Ruby 3.4 and confirmed to affect 3.2 / 3.3 / 3.4. A draft
   patch is in flight but has not landed.
@@ -57,10 +57,11 @@ of the envelope reports `regexp_built`, `regexp_raised`,
 `reproduced` — enough for downstream tooling to distinguish the
 specific shape of any future change.
 
-A `pass` means **the bug reproduced** — Regexp interpolation raised
-while String interpolation succeeded. A `fail` means either the
-runtime ships a fix (both forms succeed, or both raise the same
-way), or the runtime errored before producing a result.
+A `reproduced` verdict means **the bug reproduced** — Regexp
+interpolation raised while String interpolation succeeded. An
+`unreproduced` verdict means either the runtime ships a fix (both
+forms succeed, or both raise the same way), or the runtime errored
+before producing a result.
 
 ## Running locally — in-browser
 
@@ -84,7 +85,7 @@ to match the version `@ruby/3.3-wasm-wasi` bundles, so:
 # One-time per machine / .mise.toml change.
 mise install
 
-# Reproduces the bug; exits 0 on `pass`.
+# Reproduces the bug; exits 0 on `reproduced`.
 mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
 
 # Expected output (Ruby 3.3.3):
@@ -97,7 +98,7 @@ mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
 #   "string_raised": null,
 #   "reproduced": true
 # }
-# verdict=pass — bug reproduces on this interpreter
+# verdict=reproduced — bug reproduces on this interpreter
 ```
 
 `mise install` may need a Unix-y toolchain (ruby-build, openssl

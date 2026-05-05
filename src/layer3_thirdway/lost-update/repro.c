@@ -9,16 +9,16 @@
  *
  * Designed to be the smallest possible Layer 3 reproduction:
  *
- *   exit 0  →  pass (counter == 2*ITERATIONS — race did NOT fire)
- *   exit 1  →  fail (counter <  2*ITERATIONS — race fired, bug
- *                    reproduces)
+ *   exit 0  →  counter == 2*ITERATIONS — race did NOT fire
+ *              (Vivarium catalogue verdict: "unreproduced")
+ *   exit 1  →  counter <  2*ITERATIONS — race fired, bug reproduces
+ *              (Vivarium catalogue verdict: "reproduced")
  *
- * Layer 1 / Layer 2 verdict semantics are flipped for catalogue
- * purposes (`pass` means "the bug reproduces"). Layer 3 follows the
- * same convention via `replay.sh`, which inspects the recorded
- * stderr to detect the race rather than relying on this binary's
- * exit code alone — `rr replay --autopilot` does not propagate the
- * recorded program's exit status to its caller.
+ * `replay.sh` derives the Vivarium catalogue verdict (`reproduced`
+ * / `unreproduced`, per Contract v1 Revision 3 / ADR-0029) by
+ * inspecting the recorded stderr rather than relying on this
+ * binary's exit code alone — `rr replay --autopilot` does not
+ * propagate the recorded program's exit status to its caller.
  */
 
 #include <pthread.h>

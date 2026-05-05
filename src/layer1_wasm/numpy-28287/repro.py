@@ -50,14 +50,14 @@ print(json.dumps(result, indent=2))
 
 if transitivity_violated:
     print(
-        "verdict=pass — timedelta64 ordering is non-transitive "
+        "verdict=reproduced — timedelta64 ordering is non-transitive "
         "(x < y < z but x ≥ z)",
         file=sys.stderr,
     )
     sys.exit(0)
 else:
     print(
-        "verdict=fail — timedelta64 ordering is transitive "
+        "verdict=unreproduced — timedelta64 ordering is transitive "
         "(likely fixed upstream)",
         file=sys.stderr,
     )

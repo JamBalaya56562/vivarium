@@ -88,14 +88,14 @@ cat <<JSON
 JSON
 
 if [ "$FINAL" = "1" ]; then
-  echo "verdict=pass — lost update reproduces under default READ COMMITTED isolation" >&2
+  echo "verdict=reproduced — lost update reproduces under default READ COMMITTED isolation" >&2
   exit 0
 fi
 
 if [ "$FINAL" = "2" ]; then
-  echo "verdict=fail — both increments preserved (final=2). Postgres did not exhibit the lost-update anomaly." >&2
+  echo "verdict=unreproduced — both increments preserved (final=2). Postgres did not exhibit the lost-update anomaly." >&2
   exit 1
 fi
 
-echo "verdict=fail — unexpected final value: $FINAL" >&2
+echo "verdict=unreproduced — unexpected final value: $FINAL" >&2
 exit 1

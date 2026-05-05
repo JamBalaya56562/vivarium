@@ -10,15 +10,18 @@ name: branch-fix verdict
 # image to a registry the GitHub Actions runner can pull from; this
 # workflow does not build sources.
 #
-# Verdict semantics (Contract v1 § Verdict semantics):
-#   "pass" → the upstream bug REPRODUCES on the supplied image.
-#   "fail" → the bug does NOT reproduce.
+# Verdict semantics (Contract v1 § Verdict semantics — Revision 3,
+# ADR-0029):
+#   "reproduced"   → the upstream bug REPRODUCES on the supplied image.
+#   "unreproduced" → the bug does NOT reproduce.
 #
 # A working branch-fix is therefore expected to produce verdict
-# "fail" — the inverse of typical CI green/red framing. The
-# `expected_verdict` input defaults to "fail" for that reason; set
-# it to "pass" only if the branch-fix is meant to leave the bug
-# unaffected (e.g. an unrelated refactor on the recipe path).
+# "unreproduced" (the value name now matches that meaning directly,
+# unlike the pre-Revision-3 "fail" which was the inverse of typical
+# CI green/red framing). The `expected_verdict` input defaults to
+# "unreproduced" for that reason; set it to "reproduced" only if the
+# branch-fix is meant to leave the bug unaffected (e.g. an unrelated
+# refactor on the recipe path).
 #
 # Triggers:
 # - `workflow_dispatch` only. The verdict comparison is a
@@ -41,13 +44,13 @@ on:
         type: string
         required: true
       expected_verdict:
-        description: 'Verdict the contributor expects to see on the branch-fix image. "fail" (bug does NOT reproduce) is the typical "fix works" answer.'
+        description: 'Verdict the contributor expects to see on the branch-fix image. "unreproduced" (bug does NOT reproduce) is the typical "fix works" answer.'
         type: choice
         required: false
-        default: 'fail'
+        default: 'unreproduced'
         options:
-          - fail
-          - pass
+          - unreproduced
+          - reproduced
       original_image:
         description: 'Optional override for the deployed-original image. Default behaviour fetches the deployed verdict.json from GitHub Pages instead of re-running an image, which is cheaper and matches the live snapshot.'
         type: string

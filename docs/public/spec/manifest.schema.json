@@ -63,9 +63,9 @@
           "description": "URL of the static reproduction page. The page must conform to Vivarium Contract v1 — i.e., publish `<meta name=\"vivarium-contract\" content=\"v1\">`, expose `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__`, and update `#verdict[data-verdict]`. See https://aletheia-works.github.io/vivarium/spec/contract-v1 for the in-page surface."
         },
         "expected_verdict": {
-          "enum": ["pass", "fail"],
-          "default": "pass",
-          "description": "Expected verdict at this manifest's last review. 'pass' = bug reproduces; 'fail' = bug does not reproduce (sentinel page tracking an upstream fix). Most pages declare 'pass'."
+          "enum": ["reproduced", "unreproduced"],
+          "default": "reproduced",
+          "description": "Expected verdict at this manifest's last review. 'reproduced' = bug reproduces; 'unreproduced' = bug does not reproduce (sentinel page tracking an upstream fix). Most pages declare 'reproduced'. Renamed from 'pass'/'fail' in Contract v1 Revision 3 (ADR-0029)."
         }
       }
     },
@@ -77,7 +77,7 @@
         "image": {
           "type": "string",
           "minLength": 1,
-          "description": "Container image reference (e.g. 'ghcr.io/example-org/example-recipe' or 'ghcr.io/example-org/example-recipe:1.2.3'). Visitors run `docker run <image>` to reproduce. The image's default CMD is the recipe's reproduction script; exit code 0 = bug reproduces ('pass') per the per-layer convention."
+          "description": "Container image reference (e.g. 'ghcr.io/example-org/example-recipe' or 'ghcr.io/example-org/example-recipe:1.2.3'). Visitors run `docker run <image>` to reproduce. The image's default CMD is the recipe's reproduction script; exit code 0 = bug reproduces ('reproduced') per the per-layer convention."
         },
         "dockerfile": {
           "type": "string",
@@ -85,9 +85,9 @@
           "description": "Optional repo-relative path to the Dockerfile that produces the image. Informational only — Vivarium does not build from this. Useful for visitors who want to inspect the recipe before pulling the image."
         },
         "expected_verdict": {
-          "enum": ["pass", "fail"],
-          "default": "pass",
-          "description": "Expected verdict at this manifest's last review. 'pass' = bug reproduces; 'fail' = bug does not reproduce (sentinel)."
+          "enum": ["reproduced", "unreproduced"],
+          "default": "reproduced",
+          "description": "Expected verdict at this manifest's last review. 'reproduced' = bug reproduces; 'unreproduced' = bug does not reproduce (sentinel). Renamed from 'pass'/'fail' in Contract v1 Revision 3 (ADR-0029)."
         }
       }
     },
@@ -107,9 +107,9 @@
           "description": "Optional repo-relative path to the Dockerfile that produces the image. Informational only."
         },
         "expected_verdict": {
-          "enum": ["pass", "fail"],
-          "default": "pass",
-          "description": "Expected verdict at this manifest's last review."
+          "enum": ["reproduced", "unreproduced"],
+          "default": "reproduced",
+          "description": "Expected verdict at this manifest's last review. Renamed from 'pass'/'fail' in Contract v1 Revision 3 (ADR-0029)."
         }
       }
     }
@@ -145,7 +145,7 @@
       "layer2": {
         "image": "ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest",
         "dockerfile": "./Dockerfile",
-        "expected_verdict": "pass"
+        "expected_verdict": "reproduced"
       }
     }
   ]

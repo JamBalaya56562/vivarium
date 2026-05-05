@@ -24,7 +24,7 @@ import './repro-compare.css';
 
 /* ----------------------------- Types & schema ---------------------------- */
 
-type VerdictLiteral = 'pass' | 'fail';
+type VerdictLiteral = 'reproduced' | 'unreproduced';
 
 export interface VerdictV1 {
   contract: 'v1';
@@ -90,12 +90,12 @@ function validateVerdict(raw: unknown): ValidationResult {
       },
     };
   }
-  if (obj.verdict !== 'pass' && obj.verdict !== 'fail') {
+  if (obj.verdict !== 'reproduced' && obj.verdict !== 'unreproduced') {
     return {
       ok: false,
       error: {
         path: '/verdict',
-        message: `expected "pass" or "fail", got ${JSON.stringify(obj.verdict)}`,
+        message: `expected "reproduced" or "unreproduced", got ${JSON.stringify(obj.verdict)}`,
       },
     };
   }
@@ -224,8 +224,8 @@ const STRINGS: Record<Lang, Strings> = {
     slugHelp:
       'When set, the original side is fetched from the deployed gallery snapshot.',
     expectedLabel: 'Expected branch-fix verdict',
-    expectedFailDesc: 'fail — bug does NOT reproduce on the fix (typical "fix works")',
-    expectedPassDesc: 'pass — bug still reproduces on the fix (regression check)',
+    expectedFailDesc: 'unreproduced — bug does NOT reproduce on the fix (typical "fix works")',
+    expectedPassDesc: 'reproduced — bug still reproduces on the fix (regression check)',
     loading: 'Loading…',
     fetchOriginal: 'Fetch deployed original',
     refetchOriginal: 'Re-fetch deployed original',
@@ -265,7 +265,7 @@ const STRINGS: Record<Lang, Strings> = {
     workflowDocs: 'Pipeline spec → /vivarium/spec/branch-fix-pipeline',
     semanticsHeader: '// VERDICT SEMANTICS',
     semanticsBody:
-      '`pass` means the upstream bug reproduced; `fail` means it did not. A working branch-fix flips the verdict from `pass` to `fail`.',
+      '`reproduced` means the upstream bug was reproduced; `unreproduced` means it was not. A working branch-fix flips the verdict from `reproduced` to `unreproduced`.',
     durationMsSuffix: 'ms',
   },
   ja: {
@@ -288,8 +288,8 @@ const STRINGS: Record<Lang, Strings> = {
     slugHelp:
       '指定するとオリジナル側はデプロイ済みギャラリースナップショットから取得される。',
     expectedLabel: '期待する branch-fix の verdict',
-    expectedFailDesc: 'fail — 修正によりバグが再現しなくなる (典型的な「修正成立」)',
-    expectedPassDesc: 'pass — 修正後もバグが再現する (リグレッション確認)',
+    expectedFailDesc: 'unreproduced — 修正によりバグが再現しなくなる (典型的な「修正成立」)',
+    expectedPassDesc: 'reproduced — 修正後もバグが再現する (リグレッション確認)',
     loading: '読み込み中…',
     fetchOriginal: 'デプロイ済みオリジナルを取得',
     refetchOriginal: 'デプロイ済みオリジナルを再取得',
@@ -329,14 +329,14 @@ const STRINGS: Record<Lang, Strings> = {
     workflowDocs: 'パイプライン仕様 → /vivarium/ja/spec/branch-fix-pipeline',
     semanticsHeader: '// VERDICT のセマンティクス',
     semanticsBody:
-      '`pass` は アップストリームのバグが再現したことを意味する。`fail` は再現しなかったことを意味する。修正が機能している branch-fix は verdict を `pass` から `fail` に反転させる。',
+      '`reproduced` は アップストリームのバグが再現したことを意味する。`unreproduced` は再現しなかったことを意味する。修正が機能している branch-fix は verdict を `reproduced` から `unreproduced` に反転させる。',
     durationMsSuffix: 'ms',
   },
 };
 
 /* ----------------------------- VerdictBadge ------------------------------ */
 
-type BadgeVerdict = 'pass' | 'fail' | 'pending' | 'unavailable';
+type BadgeVerdict = 'reproduced' | 'unreproduced' | 'pending' | 'unavailable';
 
 export function VerdictBadge({
   verdict,
@@ -346,9 +346,9 @@ export function VerdictBadge({
   size?: 'sm' | 'md' | 'lg';
 }) {
   const symbol =
-    verdict === 'pass'
+    verdict === 'reproduced'
       ? '✓'
-      : verdict === 'fail'
+      : verdict === 'unreproduced'
         ? '✕'
         : verdict === 'pending'
           ? '◌'
@@ -644,7 +644,7 @@ interface SideError {
 export function ReproCompareApp({ lang }: ReproCompareProps) {
   const s = STRINGS[lang];
   const [slug, setSlug] = useState('');
-  const [expected, setExpected] = useState<VerdictLiteral>('fail');
+  const [expected, setExpected] = useState<VerdictLiteral>('unreproduced');
   const [branch, setBranch] = useState<VerdictV1 | null>(null);
   const [original, setOriginal] = useState<VerdictV1 | null>(null);
   const [errors, setErrors] = useState<SideError[]>([]);
@@ -664,7 +664,7 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
     const urlOriginal = params.get('original_url');
     const urlExpected = params.get('expected');
     if (urlSlug) setSlug(urlSlug);
-    if (urlExpected === 'pass' || urlExpected === 'fail') {
+    if (urlExpected === 'reproduced' || urlExpected === 'unreproduced') {
       setExpected(urlExpected);
     }
     if (urlBranch) {
@@ -881,11 +881,11 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
               className="v-rc__field-input"
               value={expected}
               onChange={(e) =>
-                setExpected(e.target.value === 'pass' ? 'pass' : 'fail')
+                setExpected(e.target.value === 'reproduced' ? 'reproduced' : 'unreproduced')
               }
             >
-              <option value="fail">{s.expectedFailDesc}</option>
-              <option value="pass">{s.expectedPassDesc}</option>
+              <option value="unreproduced">{s.expectedFailDesc}</option>
+              <option value="reproduced">{s.expectedPassDesc}</option>
             </select>
           </label>
         </div>
@@ -972,7 +972,7 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
               spellCheck={false}
               value={pasteOriginal}
               onChange={(e) => setPasteOriginal(e.target.value)}
-              placeholder='{"contract":"v1","verdict":"pass",...}'
+              placeholder='{"contract":"v1","verdict":"reproduced",...}'
             />
           </label>
           <label>
@@ -983,7 +983,7 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
               spellCheck={false}
               value={pasteBranch}
               onChange={(e) => setPasteBranch(e.target.value)}
-              placeholder='{"contract":"v1","verdict":"fail",...}'
+              placeholder='{"contract":"v1","verdict":"unreproduced",...}'
             />
           </label>
         </div>
