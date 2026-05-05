@@ -123,9 +123,7 @@ that points at a static page (Layer 1) or a published container image
 Three reference manifests live under
 [`src/external_examples/`](src/external_examples/), one per layer.
 
-Issue and PR contributions to this repo are also welcome; the
-AI-delegated workflow ([`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md))
-applies regardless of who opens them.
+Issue and PR contributions to this repo are also welcome.
 
 ## Tech Stack
 

@@ -1,0 +1,118 @@
+---
+pageType: doc
+title: Overview
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  LayerCards,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// OVERVIEW"
+    title="What Vivarium is."
+    sub="A platform for reproducing bugs across any language and any environment, from a single browser tab."
+  />
+
+  <Section
+    eyebrow="// 01 · WHAT IT GIVES YOU"
+    heading="A platform for bug reproduction."
+  >
+    <p>
+      Vivarium is <strong>a platform for reproducing bugs</strong>. Open a
+      page, click once, and find out whether a previously-reported bug
+      still reproduces — or whether a candidate fix actually fixes it.
+    </p>
+    <p>
+      For each upstream bug, the catalogue holds one <strong>recipe</strong>.
+      Every recipe satisfies the same <code>verdict.json v1</code> contract,
+      so each page returns either <code>reproduced</code> (the bug
+      reproduces) or <code>unreproduced</code> (it does not). Results show
+      inline on the page and are also exposed as machine-readable JSON.
+    </p>
+    <Callout>
+      Vivarium ships bugs as <strong>runnable artefacts, not write-ups</strong>.
+      Instead of someone telling you "this is a bug," you open it in your
+      browser and watch.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · THREE EXECUTION SURFACES"
+    heading="Each recipe declares the layer that fits the bug."
+  >
+    <p>
+      Bugs differ wildly in what environment they need. Vivarium organises
+      reproduction techniques into three layers, and you don't pick the
+      layer — the recipe declares it for you.
+    </p>
+
+    <LayerCards
+      layers={[
+        {
+          pill: 'L1',
+          accent: 'teal',
+          title: 'Instant start, browser-native',
+          body: 'The reproduction runs directly in your browser via WebAssembly. Startup is milliseconds to a few seconds. Right for algorithms, parsers, data processing, and in-memory database operations — bugs that don\'t need a full OS.',
+          runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · PHP.wasm',
+        },
+        {
+          pill: 'L2',
+          accent: 'violet',
+          title: 'Full fidelity, container execution',
+          body: 'The reproduction runs inside Docker or a microVM. Startup is seconds to a minute. Right for bugs that depend on a real filesystem, real processes, or real networking.',
+          runtimes: 'Docker · Firecracker · gVisor',
+        },
+        {
+          pill: 'L3',
+          accent: 'coral',
+          title: 'Third way',
+          body: 'Record-replay, deterministic simulation, WASI Preview 3+, snapshot-based restore — and techniques that don\'t exist yet. For bugs that L1 and L2 can\'t reach.',
+          runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 03 · HOW WE GOT HERE"
+    heading="The cheap-verification gap."
+  >
+    <p>
+      The trigger was the surge of AI-generated bug reports and pull
+      requests. Maintainers were drowning in plausible-but-unverified
+      claims arriving at machine speed; contributors had no way to check
+      whether their own AI-drafted fixes actually worked.
+    </p>
+    <p>
+      The shared root cause is that <strong>there is no cheap, universal
+      way to verify whether a bug is real or whether a fix actually fixes
+      it</strong>. Vivarium provides one — "does this reproduce?" reduced
+      to a single click.
+    </p>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Try it yourself{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The fastest way to understand Vivarium is to open one recipe in a browser tab and read the verdict."
+  primary={{ label: 'First five minutes →', href: '/vivarium/guide/getting-started' }}
+  ghost={{ label: 'Reproductions', href: '/vivarium/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM is part of ALETHEIA-WORKS · See the source on GitHub →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

@@ -7,28 +7,6 @@
 
 The workflow lives at
 [`.github/workflows/branch-fix-verdict.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/branch-fix-verdict.yml).
-It is the **build & verify** half of Phase 6 sub-stream R
-(reproduction comparison). The comparison-page UI half (R.3) is a
-separate deliverable that consumes the artefact this pipeline
-produces.
-
-## Why this exists
-
-Vivarium recipes pin one specific runtime (image, package version,
-toolchain) so the gallery's verdict snapshot is stable. When a
-contributor — human or AI agent — produces a candidate fix for the
-upstream bug, they need a way to ask **"does my fix actually stop
-the recipe from reproducing?"** before opening a PR.
-
-The mechanical answer is: re-run the recipe against an image that
-contains the fix, capture a fresh `verdict.json`, and compare it to
-the original. If the original verdict was `"reproduced"` (bug
-reproduces) and the branch-fix verdict is `"unreproduced"` (bug does
-not reproduce), the fix is doing its job.
-
-This pipeline runs that comparison in CI. The contributor builds and
-publishes the branch-fix image themselves; this workflow is purely a
-verification surface.
 
 ## Five-line invocation
 
@@ -57,10 +35,7 @@ fetch.
 ## Verdict semantics (reminder)
 
 `reproduced` means **the upstream bug reproduces** in this run.
-`unreproduced` means it **does not**. (Renamed from `pass`/`fail` in
-Contract v1 Revision 3 — ADR-0029 — so the value name now matches
-its meaning directly, instead of inverting the typical CI
-"green = good" framing.) See
+`unreproduced` means it **does not**. See
 [Contract v1: Verdict semantics](./contract-v1.md#verdict-semantics)
 for the full reasoning.
 
@@ -105,23 +80,17 @@ artefact is the source of truth either way.
 ## What this pipeline does **not** do
 
 - **Build the branch-fix image.** The contributor is expected to
-  build and publish to a registry the runner can pull from. Bundling
-  source-build steps would couple the pipeline to an unbounded set
-  of upstream toolchains; keeping the image as the input boundary
-  matches Phase 3's catalogue model.
+  build and publish to a registry the runner can pull from. The image
+  is the input boundary of this pipeline.
 - **Verify Layer 1 (WASM) reproductions.** Layer 1 verdicts are
   produced live in-page by a browser; there is no Docker image to
-  swap. The Layer 1 equivalent is editing the page sources locally
-  and re-running the existing Playwright suite.
-- **Verify Layer 3 (rr replay) reproductions on hosted runners.** As
-  with the [Consumer workflow](./consumer-workflow.md), GitHub-hosted
-  Ubuntu runners cannot drive `rr replay` per
-  [ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)
-  (private memo). Layer 3 branch-fix verification needs a self-hosted
-  runner exposing CPUID faulting.
+  swap.
+- **Verify Layer 3 (rr replay) reproductions on hosted runners.**
+  GitHub-hosted Ubuntu runners cannot drive `rr replay`. Layer 3
+  branch-fix verification needs a self-hosted runner exposing CPUID
+  faulting.
 - **Authenticate to private registries.** v1 assumes the supplied
-  image ref is anonymously pullable. Adding pull-secret plumbing is
-  a deliberate follow-up gated on real demand.
+  image ref is anonymously pullable.
 
 ## See also
 
@@ -134,10 +103,6 @@ artefact is the source of truth either way.
   the schema both bundle entries validate against.
 - [Consumer workflow](./consumer-workflow.md) — the sibling
   reusable workflow for verifying a Vivarium recipe in a consumer
-  repo's CI; the branch-fix pipeline reuses the same Layer 2
-  capture helper internally.
+  repo's CI.
 - [Layer 2 catalogue](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
   — the slugs available for `inputs.slug`.
-
-Phase 6 sub-stream R.2 per the
-[roadmap](../roadmap.md#phase-6--usability-and-visual-layer).

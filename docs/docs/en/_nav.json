@@ -1,18 +1,8 @@
 [
   {
-    "text": "Vision",
-    "link": "/vision",
-    "activeMatch": "/vision"
-  },
-  {
-    "text": "Roadmap",
-    "link": "/roadmap",
-    "activeMatch": "/roadmap"
-  },
-  {
-    "text": "Architecture",
-    "link": "/architecture",
-    "activeMatch": "/architecture"
+    "text": "Overview",
+    "link": "/overview",
+    "activeMatch": "/overview"
   },
   {
     "text": "Guide",
@@ -20,18 +10,23 @@
     "activeMatch": "/guide/"
   },
   {
+    "text": "Reproductions",
+    "link": "/repro/",
+    "activeMatch": "/repro/"
+  },
+  {
+    "text": "Architecture",
+    "link": "/architecture",
+    "activeMatch": "/architecture"
+  },
+  {
     "text": "Spec",
     "link": "/spec/",
     "activeMatch": "/spec/"
   },
   {
-    "text": "AI workflow",
-    "link": "/ai-workflow",
-    "activeMatch": "/ai-workflow"
-  },
-  {
-    "text": "Reproductions",
-    "link": "/repro/",
-    "activeMatch": "/repro/"
+    "text": "Roadmap",
+    "link": "/roadmap",
+    "activeMatch": "/roadmap"
   }
 ]

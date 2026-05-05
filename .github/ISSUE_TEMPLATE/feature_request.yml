@@ -10,8 +10,7 @@ body:
     attributes:
       value: |
         Thanks for proposing a feature. This form asks for the structured
-        information needed to evaluate fit with the project's phased roadmap
-        and [non-goals](https://github.com/aletheia-works/vivarium/blob/main/docs/docs/non-goals.md).
+        information needed to evaluate fit with the project's phased roadmap.
 
   - type: textarea
     id: problem

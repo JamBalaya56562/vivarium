@@ -1,9 +1,7 @@
 # Vivarium Contract v1
 
 > The reproduction-verdict surface that every Vivarium-compatible
-> reproduction page emits. Stable since Phase 1, locked at v1 by
-> [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md)
-> (private memo). Currently at **revision 3** — see the
+> reproduction page emits. Currently at **revision 3** — see the
 > [revision history](#revision-history) at the foot of this page.
 
 ## At a glance
@@ -46,17 +44,6 @@ README claims.
 
 `pending` is the default state until the reproduction code (Layer 1)
 or the verdict-snapshot fetch (Layer 2 / 3) settles.
-
-> **Vocabulary note.** The verdict values were `"pass"` / `"fail"` in
-> revisions 1 and 2 of this contract. The original wording carried a
-> deliberate inversion of the typical CI "green = good" framing — a
-> "pass" meant the bug *was* reproduced — which doubled as cognitive
-> tax on every reader. Revision 3 ([ADR-0029](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0029-contract-v1-verdict-rename.md),
-> private memo) renames the values to `"reproduced"` / `"unreproduced"`
-> so that the literal name matches the meaning directly. The contract
-> version literal (`v1`) is unchanged; this rename is a v1-internal
-> breaking change absorbed under the pre-adoption carve-out in
-> [`AGENTS.md` § 4.11](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md).
 
 ## In-page surface (all layers)
 
@@ -248,9 +235,7 @@ The 4 KiB front-back truncation rule is a property of the source
 field; the in-page surface inherits whatever bound the source applied.
 
 The schema is **not** amended for revision 2 — the source fields
-were already present at the snapshot's top level since Phase 3
-(see [ADR-0010](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0010-phase3-catalogue-model.md),
-private memo).
+were already present at the snapshot's top level and are reused as-is.
 
 ### Why no `"pending"` in the file
 
@@ -273,20 +258,16 @@ The contract evolves under a two-tier policy:
 
 - **Major bump (v2)** — required for changes to existing v1 fields
   (renamed, removed, type changed, semantics changed, optional →
-  required). A v2 ships a new spec page, a new JSON Schema sibling,
-  and a separate ADR; consumers will be expected to support v1 and
-  v2 simultaneously by dispatching on the version literal.
+  required). A v2 ships a new spec page and a new JSON Schema
+  sibling; consumers can support v1 and v2 simultaneously by
+  dispatching on the version literal.
 - **Minor revision (within v1)** — used for **optional, additive**
   surface that v1 consumers can ignore. The version literal stays
   `"v1"` (no `meta` change, no `verdict.json#contract` change), the
   same spec page is updated, and the
   [revision history](#revision-history) below records the addition
-  with date and ADR reference. Consumers feature-detect the new
-  surface (e.g. `if (result.evidence) …`).
-
-This sharpening of the policy was added with revision 2 (see
-[ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md),
-private memo).
+  with date. Consumers feature-detect the new surface
+  (e.g. `if (result.evidence) …`).
 
 There is no current v2.
 
@@ -328,11 +309,11 @@ The version literal carried in `<meta name="vivarium-contract">` and
 non-breaking, additive evolutions of v1's surface. Pre-revision-2
 pages stay conformant unchanged.
 
-| Revision | Date | ADR | Change |
-|---|---|---|---|
-| 1 | Phase 1 (Layer 1 surface) → 2026-04-28 (locked) | [ADR-0008](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0008-phase1-gallery-structure.md) (private memo); locked at v1 by [ADR-0014](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0014-contract-v1-as-public-spec.md) (private memo) | Initial published surface: `<meta>`, `#verdict[data-verdict]`, JS globals, `VivariumResultV1` envelope, Layer 2/3 `verdict.json` snapshot. |
-| 2 | 2026-04-30 | [ADR-0018](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0018-contract-v1-evidence-extension.md) (private memo) | Optional `#evidence` DOM container with `[data-evidence]` children (`stdout`, `stderr`, `exit-code`, `duration-ms`) and matching `__VIVARIUM_RESULT__.evidence` envelope field. Layer 2/3 lift renames `verdict.json#stderr_tail` → `evidence.stderr` at the lift boundary; `verdict.schema.json` is unchanged. Minor-revision policy in [Versioning](#versioning) above is also clarified by this ADR. |
-| 3 | 2026-05-05 | [ADR-0029](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0029-contract-v1-verdict-rename.md) (private memo) | **Breaking within v1.** Verdict enum values renamed: `"pass"` → `"reproduced"`, `"fail"` → `"unreproduced"` (`"pending"` unchanged). The contract version literal stays `v1`. `verdict.schema.json` enum is updated; old snapshots that still carry `"pass"` / `"fail"` no longer validate. CSS class names on `#verdict` and the `data-verdict` attribute follow the same rename. Absorbed in-place rather than bumped to `v2` per the pre-adoption breaking-change carve-out in [`AGENTS.md` § 4.11](https://github.com/aletheia-works/vivarium/blob/main/AGENTS.md). |
+| Revision | Date | Change |
+|---|---|---|
+| 1 | 2026-04-28 (locked) | Initial published surface: `<meta>`, `#verdict[data-verdict]`, JS globals, `VivariumResultV1` envelope, Layer 2/3 `verdict.json` snapshot. |
+| 2 | 2026-04-30 | Optional `#evidence` DOM container with `[data-evidence]` children (`stdout`, `stderr`, `exit-code`, `duration-ms`) and matching `__VIVARIUM_RESULT__.evidence` envelope field. Layer 2/3 lift renames `verdict.json#stderr_tail` → `evidence.stderr` at the lift boundary; `verdict.schema.json` is unchanged. |
+| 3 | 2026-05-05 | Verdict enum values renamed: `"pass"` → `"reproduced"`, `"fail"` → `"unreproduced"` (`"pending"` unchanged). The contract version literal stays `v1`. `verdict.schema.json` enum is updated; old snapshots that still carry `"pass"` / `"fail"` no longer validate. CSS class names on `#verdict` and the `data-verdict` attribute follow the same rename. |
 
 ## References
 
@@ -346,8 +327,3 @@ pages stay conformant unchanged.
   — current `jq -e` validators (target for replacement in PR 2).
 - [`.github/workflows/deploy-docs.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/deploy-docs.yml)
   — Layer 2 build/run/snapshot workflow.
-- ADR-0008 — Phase 1 gallery structure (original surface
-  definition; private memo).
-- ADR-0014 — this contract's stabilising decision (private memo).
-- ADR-0018 — revision 2 evidence surface and minor-revision policy
-  (private memo).

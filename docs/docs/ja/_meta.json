@@ -1,33 +1,8 @@
 [
   {
     "type": "file",
-    "name": "index",
-    "label": "ホーム"
-  },
-  {
-    "type": "file",
-    "name": "vision",
-    "label": "ビジョン"
-  },
-  {
-    "type": "file",
-    "name": "architecture",
-    "label": "アーキテクチャ"
-  },
-  {
-    "type": "file",
-    "name": "roadmap",
-    "label": "ロードマップ"
-  },
-  {
-    "type": "file",
-    "name": "ai-workflow",
-    "label": "AI ワークフロー"
-  },
-  {
-    "type": "file",
-    "name": "non-goals",
-    "label": "非目標"
+    "name": "overview",
+    "label": "概要"
   },
   {
     "type": "dir",
@@ -40,8 +15,18 @@
     "label": "再現一覧"
   },
   {
+    "type": "file",
+    "name": "architecture",
+    "label": "アーキテクチャ"
+  },
+  {
     "type": "dir",
     "name": "spec",
     "label": "仕様"
+  },
+  {
+    "type": "file",
+    "name": "roadmap",
+    "label": "ロードマップ"
   }
 ]

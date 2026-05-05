@@ -7,8 +7,6 @@ import {
   Page,
   PageHero,
   Section,
-  LayerCards,
-  NumberedList,
   Callout,
   NextCta,
   BottomNote,
@@ -16,270 +14,147 @@ import {
 
 <Page>
   <PageHero
-    eyebrow="// ARCHITECTURE · v1"
-    title="三層、ひとつのプリミティブ。"
-    sub="三層再現アーキテクチャの技術設計。ビジョンが「何を・なぜ」を答えるなら、このページは「部品がどう組み合わさるか」を答える。"
+    eyebrow="// ARCHITECTURE"
+    title="3 つの実行レイヤー。"
+    sub="あなたのバグに合うレイヤーはどれか——Layer 1 のブラウザネイティブ WebAssembly、Layer 2 のコンテナ、Layer 3 の record-replay。それぞれ得意なバグの種類が違います。"
   />
 
   <Section
-    eyebrow="// 01 · 設計原則"
-    heading="技術は問題に仕える。"
-  >
-    <p>
-      レイヤーが存在するのは、再現問題の性質が異なるからであり、
-      技術が面白いからではない。Python インタープリタさえあれば再現できるバグに、
-      コンテナの起動コストを払わせるべきではない。<code>fork()</code> が必要なバグを、
-      それを実行できない WASM サンドボックスに押し込めてはならない。
-      10 回に 1 回しか再現しないハイゼンバグは、より多く回すだけでは解決できない。
-    </p>
-    <Callout>
-      正解のレイヤーは存在しない。問題がレイヤーを選ぶ。
-    </Callout>
-    <p>
-      三層の分割は、新しい再現ドメインが現れたときにすでにスロットが用意されているようにするためにある。
-      もし用意がなければ、第四のレイヤー（または既存レイヤー内の新技法）が必要なサインだ。
-    </p>
-  </Section>
-
-  <Section
-    eyebrow="// 02 · 三層の概観"
-    heading="ひとつのプリミティブ、三つの実行サーフェス。"
-  >
-    <LayerCards
-      layers={[
-        {
-          pill: 'L1',
-          accent: 'teal',
-          title: 'ブラウザネイティブ (WASM)',
-          body: 'ユーザーのブラウザタブ内で動作。コールドロード 1〜10 秒、ウォームロード 1 秒未満、実行はミリ秒単位。アルゴリズム、パーサ、インプロセスのデータベースバグに最適。',
-          runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · php-wasm',
-        },
-        {
-          pill: 'L2',
-          accent: 'violet',
-          title: 'コンテナカタログ',
-          body: 'ピン留めされた Dockerfile + GHCR 公開イメージ + 訪問者自身の Docker (または Codespaces) 上で動作する repro.sh。本物の fork、本物のソケット、本物のファイルシステム。',
-          runtimes: 'OCI image · Firecracker · Kata · gVisor',
-        },
-        {
-          pill: 'L3',
-          accent: 'coral',
-          title: 'トレースカタログ',
-          body: 'イメージに焼き込まれた事前録音トレース。キャプチャは PMU ホスト上でオフライン実施。replay はどこでも動作。再実行では再現しないハイゼンバグ向け。',
-          runtimes: 'rr · Pernosco-style · Antithesis · CRIU',
-        },
-      ]}
-    />
-  </Section>
-
-  <Section
-    eyebrow="// 03 · LAYER 1 — 詳細"
+    eyebrow="// 01 · LAYER 1"
     heading="WebAssembly、ページの中で。"
   >
-    <h3>対象ユースケース</h3>
+    <p>
+      ユーザーのブラウザタブの中で再現が直接実行される層です。
+      アカウントもインストールも不要、ページを開けばすぐ動きます。
+    </p>
+
+    <h3>このレイヤーが向くバグ</h3>
     <ul>
       <li>アルゴリズムバグ（ソート、パース、テキスト処理）。</li>
-      <li>データ処理のリグレッション（pandas / polars / numpy のシェイプバグ）。</li>
-      <li>データベースの動作バグ（sqlite のクエリ異常、JSON パスのエッジケース）。</li>
-      <li>ファイルシステム、ネットワーク、プロセスモデルに触れないライブラリ内部ロジック。</li>
+      <li>データ処理のリグレッション（pandas / polars / numpy のシェイプバグなど）。</li>
+      <li>データベースの動作バグ（SQLite のクエリ異常、JSON パスのエッジケースなど）。</li>
+      <li>ファイルシステム・ネットワーク・プロセスモデルに触れない、ライブラリ内部のロジックバグ。</li>
     </ul>
 
-    <h3>起動時間の特性</h3>
+    <h3>起動時間</h3>
     <ul>
-      <li><strong>コールドロード</strong>（初回訪問、service-worker キャッシュなし）: 1〜10 秒。ランタイムのダウンロード（Pyodide wheel bundle ≈ 10 MB 圧縮）とモジュールのインスタンス化が支配的。</li>
-      <li><strong>ウォームロード</strong>（キャッシュ済みランタイム）: 1 秒未満でレディ状態。</li>
-      <li><strong>再現実行ごと</strong>: Layer 1 が適切な問題では、ミリ秒〜数秒。</li>
+      <li><strong>初回（キャッシュなし）</strong>: 1〜10 秒。ランタイムのダウンロード（Pyodide なら ≈ 10 MB 圧縮）とインスタンス化が支配的。</li>
+      <li><strong>2 回目以降</strong>: ブラウザのキャッシュが効いて 1 秒未満で起動。</li>
+      <li><strong>再現スクリプトの実行自体</strong>: ミリ秒〜数秒。</li>
     </ul>
 
-    <h3>既知の制限</h3>
+    <h3>このレイヤーで届かないこと</h3>
     <ul>
-      <li><strong>メモリ。</strong> Pyodide タブはピーク ~1 GB 超で性能が劣化する。4 GB が実質的な上限。本番規模のデータは Layer 2 へ。</li>
-      <li><strong>システムコール。</strong> 本物の <code>fork</code>/<code>exec</code>、本物のソケットは使えない。WASI シムが一般的なケースをカバーするが全てではない。</li>
-      <li><strong>非決定論的インターリーブバグ。</strong> デフォルトはシングルスレッド。レースコンディションは Layer 3 へ。</li>
-      <li><strong>コンパイル言語のツールチェーン。</strong> Rust のバグをブラウザ内で実行するのは問題ないが、Rust コンパイラ自体のビルドは不可（ホストツールチェーン → Layer 2）。</li>
+      <li><strong>メモリ。</strong> ブラウザタブはピーク 1 GB 超で性能が劣化、4 GB が実質上限。本番規模のデータは Layer 2 へ。</li>
+      <li><strong>システムコール。</strong> 本物の <code>fork</code>/<code>exec</code>、本物のソケットは使えない。WASI シムが一般的なケースをカバー。</li>
+      <li><strong>並行性バグ。</strong> デフォルトはシングルスレッド。データレースやハイゼンバグは Layer 3 へ。</li>
+      <li><strong>コンパイラ自体のビルド。</strong> Rust のバグはブラウザ内で再現できますが、Rust コンパイラ自体のビルドは Layer 2。</li>
     </ul>
 
-    <h3>候補ランタイム</h3>
+    <h3>対応ランタイム</h3>
     <table>
       <thead>
-        <tr><th>言語</th><th>ランタイム</th><th>状態</th></tr>
+        <tr><th>言語</th><th>ランタイム</th></tr>
       </thead>
       <tbody>
-        <tr><td>Python</td><td><a href="https://pyodide.org">Pyodide</a></td><td>Phase 1 ターゲット</td></tr>
-        <tr><td>SQLite</td><td><a href="https://sqlite.org/wasm/">sqlite-wasm</a></td><td>Pyodide と同時</td></tr>
-        <tr><td>Rust</td><td><code>wasm32-wasi</code> / <code>wasm32-unknown-unknown</code></td><td>Phase 2</td></tr>
-        <tr><td>JavaScript</td><td>ネイティブブラウザ</td><td>Phase 2</td></tr>
-        <tr><td>Ruby</td><td><a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a></td><td>Phase 2</td></tr>
-        <tr><td>PHP</td><td><a href="https://github.com/WordPress/wordpress-playground">php-wasm</a></td><td>Phase 2</td></tr>
+        <tr><td>Python</td><td><a href="https://pyodide.org">Pyodide</a></td></tr>
+        <tr><td>SQLite</td><td><a href="https://sqlite.org/wasm/">sqlite-wasm</a>（Pyodide 経由）</td></tr>
+        <tr><td>Rust</td><td><code>wasm32-wasip1</code></td></tr>
+        <tr><td>Ruby</td><td><a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a></td></tr>
+        <tr><td>PHP</td><td><a href="https://github.com/WordPress/wordpress-playground">php-wasm</a></td></tr>
       </tbody>
     </table>
   </Section>
 
   <Section
-    eyebrow="// 04 · LAYER 2 — 詳細"
+    eyebrow="// 02 · LAYER 2"
     heading="Docker / microVM、訪問者のマシン上で。"
   >
-    <h3>対象ユースケース</h3>
-    <ul>
-      <li>プロジェクト全体の再現——バグが実際のパッケージインデックスに対してプロジェクトの依存関係リゾルバを必要とする。</li>
-      <li>システムコール依存バグ——本物の <code>fork</code>、本物のソケット、本物のファイルロック、本物のシグナル。</li>
-      <li>ツールチェーン固有バグ——特定の GCC、特定の glibc、特定のカーネル ABI の癖。</li>
-      <li>プロセス間の相互作用がバグの原因であるマルチプロセス / マルチコンテナバグ。</li>
-    </ul>
-
-    <h3>デリバリーモデル: SaaS 実行ではなくカタログ</h3>
     <p>
-      Layer 2 はホスト型サンドボックスサービスではなく、<strong>再現可能なレシピのカタログ</strong>だ。
-      各ギャラリーエントリにはピン留めされた <code>Dockerfile</code>、Layer 1 と同じ{' '}
-      <code>pass</code> / <code>fail</code> verdict 形式を出力する <code>repro.sh</code>、
-      そして <code>ghcr.io/aletheia-works/vivarium-&lt;slug&gt;</code> に公開された
-      ビルド済みイメージが含まれる。ページにはコピペ可能な <code>docker run …</code> 
-      コマンドと CI の verdict スナップショットが表示され、訪問者自身の実行がライブ確認となる。
-      該当する場合は「Open in Codespaces」バッジも提供する。
+      本物のファイルシステム、本物のプロセス、本物のネットワークが必要なバグのための層です。
+      Vivarium 側で再現を実行するのではなく、訪問者自身の Docker（または Codespaces）で動かす
+      <strong>カタログ型</strong>の配信モデルを採用しています。
     </p>
 
-    <h3>既知の制限</h3>
+    <h3>このレイヤーが向くバグ</h3>
     <ul>
-      <li><strong>ページ内実行なし。</strong> Layer 2 の再現はギャラリーページ内では実行されない——訪問者がローカルまたは Codespaces で実行する。</li>
-      <li><strong>Docker が必要</strong>（または Codespaces アカウント）。どちらもない場合でも、レシピと verdict スナップショットは閲覧できる。</li>
-      <li><strong>サンドボックスの信頼境界。</strong> 訪問者が自身の Docker で Layer 2 再現を実行するため、Vivarium は未検証コードのホストではない——信頼境界は訪問者自身のランタイムとなる。</li>
-      <li><strong>コストは訪問者側に。</strong> イメージストレージ、帯域幅、CI 分数はすべてパブリックリポジトリ / パブリックイメージの無料枠内に収まる。</li>
+      <li>プロジェクト全体の再現——実際のパッケージインデックスへの依存解決を要するバグ。</li>
+      <li>システムコール依存のバグ——本物の <code>fork</code>、ソケット、ファイルロック、シグナル。</li>
+      <li>ツールチェーン固有のバグ——特定の GCC、特定の glibc、特定のカーネル ABI の癖。</li>
+      <li>プロセス間の相互作用が原因のマルチプロセスバグ。</li>
+    </ul>
+
+    <h3>使い方</h3>
+    <p>
+      各レシピページにはピン留めされた <code>Dockerfile</code> と、コピペ可能な
+      <code>docker run …</code> コマンド、そして
+      <code>ghcr.io/aletheia-works/vivarium-&lt;slug&gt;</code> に公開された
+      ビルド済みイメージへのリンクが揃っています。CI で取得した verdict
+      スナップショットがページ上に表示され、訪問者自身の <code>docker run</code>
+      がライブ再現になります。Codespaces 対応のレシピには「Open in Codespaces」
+      バッジも提供されます。
+    </p>
+
+    <h3>このレイヤーで届かないこと</h3>
+    <ul>
+      <li><strong>ページ内では実行されない。</strong> 訪問者がローカルか Codespaces で実行します。</li>
+      <li><strong>Docker（または Codespaces アカウント）が必要。</strong> どちらもない場合は、レシピと verdict スナップショットの閲覧のみ可能。</li>
+      <li><strong>並行性そのものをデバッグするバグ。</strong> Layer 2 は本物のスレッドで動きますが、ハイゼンバグの再現性確保は Layer 3 の領分。</li>
     </ul>
   </Section>
 
   <Section
-    eyebrow="// 05 · LAYER 3 — 詳細"
-    heading="トレースを同梱し、どこでも replay。"
+    eyebrow="// 03 · LAYER 3"
+    heading="トレースを同梱、どこでも再生。"
   >
-    <h3>対象ユースケース</h3>
+    <p>
+      数回再実行しても再現する保証がない<strong>ハイゼンバグ</strong>のための層です。
+      Vivarium 側であらかじめ録音したトレースを GHCR イメージに焼き込み、
+      訪問者は<strong>再生だけ</strong>すれば済むようにしています。
+    </p>
+
+    <h3>このレイヤーが向くバグ</h3>
     <ul>
-      <li>ハイゼンバグ: データレース、メモリ順序バグ、単純な再実行では再現しない use-after-free。</li>
-      <li>長時間 replay シナリオ: 何時間ものキャプチャ実行を数分で replay し、タイムトラベルデバッグを行う。</li>
+      <li>データレース、メモリ順序バグ、単純な再実行では再現しない use-after-free。</li>
+      <li>長時間 replay シナリオ：何時間ものキャプチャ実行を数分で巻き戻す。</li>
       <li>特定のメッセージインターリーブに依存する分散システムバグ。</li>
-      <li>事後フォレンジック分析——新規実行から前に進むのではなく、録音済みトレースを後ろに戻る。</li>
+      <li>事後フォレンジック分析——録音済みトレースを後ろに戻る形のデバッグ。</li>
     </ul>
 
-    <h3>デリバリーモデル: トレース同梱カタログ</h3>
+    <h3>使い方</h3>
     <p>
-      Layer 3 はホスト型 record-replay サービスではなく、
-      <strong>事前録音トレースをパッケージした自己完結イメージのカタログ</strong>だ。
-      キャプチャはレシピごとに一度、オフラインで実施する。
-      メンテナーが使用可能な PMU を持つ Linux/x86_64 ホストで録音し、
-      トレースをタグピン留めのリリースアセットとしてアップロードし、
-      CI がビルド時にイメージに焼き込む。
-      <code>rr replay</code> は PMU を必要としないため、
-      訪問者と CI の replay はどちらもコモディティ Linux 上で動作する。
+      各 Layer 3 レシピは、トレースを焼き込んだ自己完結 GHCR イメージとして配布されます。
+      <code>rr replay</code> は PMU を必要としないため、訪問者と CI の再生はどちらも
+      <strong>コモディティな Linux ホストで動作</strong>します。録音そのものは PMU を
+      備えた Linux/x86_64 環境を要するため、レシピ追加時のオフライン作業として
+      Vivarium 側で済ませてあります。
     </p>
 
-    <h3>既知の制限</h3>
+    <h3>このレイヤーで届かないこと</h3>
     <ul>
-      <li><strong>再現ごとのコストが高い。</strong> Layer 3 は Layer 1 と Layer 2 が失敗を観測できない場合にのみ使用する——Layer 2 のアップグレードパスとしてではない。</li>
-      <li><strong>ツール固有のカバレッジギャップ。</strong> <code>rr</code> はシングルプロセスの Linux x86_64 を対象とし、分散シミュレーションツールは分散システムを対象とする——互いの領域はカバーしない。</li>
-      <li><strong>録音はメンテナーの責任、CI ではない。</strong> Layer 3 レシピの追加には、動作する PMU を持つ Linux/x86_64 ホストへのアクセスが必要。</li>
-      <li><strong>ストレージ。</strong> トレースは大きい（レシピあたり数十 MB から一桁 GB）。</li>
-      <li><strong>訪問者は Linux/x86_64 が必要。</strong> ARM Mac や Windows の訪問者は Codespaces または WSL2 + Docker にフォールバックする。</li>
+      <li><strong>環境制約。</strong> 訪問者のマシンは Linux/x86_64 が前提。ARM Mac や Windows の場合は Codespaces または WSL2 + Docker にフォールバック。</li>
+      <li><strong>カバレッジの形が違う。</strong> <code>rr</code> は単一プロセス Linux x86_64、分散シミュレーションツールは分散システムを対象。互いの領域はカバーしない。</li>
+      <li><strong>トレースが大きい。</strong> レシピあたり数十 MB から一桁 GB のオーダー。</li>
     </ul>
   </Section>
 
-  <Section
-    eyebrow="// 06 · ルーティング"
-    heading="再現リクエストのルーティング方法。"
-  >
-    <p>
-      ルーティングは副次的な関心事ではなく、第一級の設計事項だ。現時点で機械的なルーターは存在しない——
-      Layer 1 と Layer 2 のカタログはディレクトリレベルのスロットとして存在し、
-      既存のレシピはすべて作成時に手動でレイヤーを割り当てている。
-      選択ルールは意図的に保守的だ:
-    </p>
-
-    <NumberedList
-      items={[
-        {
-          lead: 'Layer 1 がデフォルトで勝つ。',
-          body: 'Layer 1 で再現を忠実に実行できるなら、Layer 1 が勝つ。初回描画が速く、ホスティングコストも安く、アカウント不要で動作する。',
-        },
-        {
-          lead: 'Layer 2 が残りをカバーする。',
-          body: 'Layer 1 が対応できないが Layer 2 が要件を満たすなら、Layer 2 が勝つ。本物の OS、本物のプロセス、起動レイテンシのコストと引き換えに。',
-        },
-        {
-          lead: 'Layer 3 は他のレイヤーが観測できないバグだけ。',
-          body: '並行性、非決定論、タイムトラベルが必要な場合。Layer 3 は Layer 2 のアップグレードではなく、異なるバグのための異なるプロダクトだ。',
-        },
-      ]}
-    />
-
-    <p>
-      曖昧なケースは、証拠が出るまで最も安価なレイヤーにとどまる。
-      より高価なレイヤーへの昇格には、勘ではなく具体的な失敗シグナルが必要だ。
-    </p>
-  </Section>
-
-  <Section
-    eyebrow="// 07 · インターフェース"
-    heading="レイヤー横断で統一された単一の宣言形式。"
-  >
-    <p>
-      再現はコンパクトなレイヤー非依存の仕様で自己宣言する。
-      ブラウザタブで動作しても Firecracker microVM で動作しても、
-      同じ宣言形式が使えることを意図している:
-    </p>
-    <ul>
-      <li><strong>Identity</strong> — 再現対象のアップストリームリポジトリ + Issue / commit / バージョン。</li>
-      <li><strong>Inputs</strong> — バグをトリガーするために必要な決定論的入力。</li>
-      <li><strong>Expected failure signal</strong> — 「再現した」とはどういう状態か（終了コード、特定のエラーテキスト、構造化 verdict）。</li>
-      <li><strong>Runtime hints</strong> — 最小要件（Python 3.12 以降、glibc ≥ 2.36、network: no、filesystem: read-only など）。</li>
-      <li><strong>Preferred layer（任意）</strong> — 報告者が特定の理由を持つ場合にのみ設定。ルーターのデフォルト判断が正しいことが期待される。</li>
-    </ul>
-  </Section>
-
-  <Section
-    eyebrow="// 08 · 現在のスコープ"
-    heading="各レイヤーの状態 (2026-05-01)。"
-  >
-    <p>
-      2026-05-01 時点で Phase 0〜5 はクローズし、Phase 6（ユーザビリティとビジュアルレイヤー）が進行中だ。
-      アーキテクチャのスロットは意図的に不均等に埋まっている——各レイヤーは具体的な Issue が来てはじめて、その縦方向の実装が増えていく仕組みだ。
-    </p>
-
-    <h3>Layer 1</h3>
-    <p>
-      <code>src/layer1_wasm/</code> 以下に 6 つのレシピがある:{' '}
-      <code>cpython-137205</code>、<code>numpy-28287</code>、
-      <code>pandas-56679</code>、<code>regex-779</code>（Pyodide による Python）、
-      <code>ruby-21709</code>（Ruby.wasm）、<code>php-12167</code>（php-wasm）。
-    </p>
-
-    <h3>Layer 2</h3>
-    <p>
-      <code>src/layer2_docker/</code> 以下に 4 つのレシピがある:{' '}
-      <code>postgres-lost-update</code>、<code>find-xargs-whitespace</code>、
-      <code>flock-is-advisory</code>、<code>bash-local-shadows-exit</code>。
-      各レシピはカタログモデルを完全に実装している——ピン留めされた Dockerfile、repro.sh、
-      GHCR 公開イメージ、コピペ可能な docker run コマンド、CI verdict スナップショット。
-    </p>
-
-    <h3>Layer 3</h3>
-    <p>
-      Phase 4 は 1 つのレシピを出荷してクローズした:{' '}
-      <code>src/layer3_thirdway/lost-update/</code> 以下にある
-      <code>pthread</code> スタイルの典型的 lost-update データレース。
-      <code>rr</code> トレースを焼き込んだ GHCR イメージとして配布される。
-    </p>
-  </Section>
+  <Callout>
+    どのレイヤーで動くかは、レシピ側があらかじめ宣言しています。あなたが選ぶ必要はなく、
+    レシピを開けば自動的にそのレイヤーで動作します。
+  </Callout>
 </Page>
 
 <NextCta
   eyebrow="// 次のページ"
   heading={
     <>
-      ロードマップを読む{' '}
+      実例を見る{' '}
       <span className="v-next-cta__heading-arrow">→</span>
     </>
   }
-  sub="Phase 0 → Phase 5 の計画と、各レイヤーに期待されるもの。"
-  primary={{ label: 'ロードマップ →', href: '/vivarium/ja/roadmap' }}
-  ghost={{ label: 'ビジョン', href: '/vivarium/ja/vision' }}
+  sub="3 つのレイヤーがそれぞれどんなバグを再現しているか、再現一覧で実物を確認できます。"
+  primary={{ label: '再現一覧 →', href: '/vivarium/ja/repro/' }}
+  ghost={{ label: '概要', href: '/vivarium/ja/overview' }}
 />
 
 <BottomNote

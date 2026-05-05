@@ -2,15 +2,11 @@
 
 > 外部リポジトリが `.vivarium/manifest.toml` に置いて
 > Vivarium 実行可能な再現を宣言するための静的マニフェスト。
-> [ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md)
->（プライベートメモ）によって v1 にロックされている。
 
 これは*アップストリーム*サーフェスだ——外部プロジェクトが Vivarium に
 「私たちは再現をホストしている。場所はここだ」と伝える方法。
 *ランタイム*サーフェス（DOM verdict、`verdict.json`）は
 [Contract v1](./contract-v1.md) で別途定義されている。
-この二つの仕様を合わせることで、サードパーティは
-`aletheia-works/vivarium` のソースツリーに触れることなく再現を公開できる。
 
 ## 概要
 
@@ -57,14 +53,6 @@ manifest = "v1"
 このディレクティブは TOML コメントなので、プレーンパーサー（`tomllib` など）には
 見えず、CI バリデーションはディレクティブの有無に関わらず同一の動作をする。
 Cargo と pyproject マニフェストも同じパターンを使用する。
-
-## なぜ TOML か
-
-TOML 1.0（YAML でも JSON でもない）。フォーマットの選択は
-[ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md)
-でロックされている。要約: マニフェストはレシピごとに一度、人間が手書きする。
-TOML のフラットなサーフェス（有意な空白なし、アンカーなし、暗黙の型強制なし）は
-YAML よりも手書きリスクを最小化する。一方でコメントと末尾カンマを許可する点で JSON より優れる。
 
 ## 必須トップレベルキー
 
@@ -141,17 +129,15 @@ expected_verdict = "reproduced"
 
 > ⚠️ Layer 3 replay は訪問者の CPU が録音 CPU と異なる場合に
 > **CPUID フォールティングサポート**を持つホストが必要。
-> GitHub Actions ホスト型 Ubuntu ランナーはこの機能を**公開しない**——
-> [ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)
->（プライベートメモ）参照。Layer 3 マニフェストは、
-> セルフホストランナーまたは最新の Intel（Ivy Bridge 以降）/ 最新 AMD シリコンを持つ
+> GitHub Actions ホスト型 Ubuntu ランナーはこの機能を公開しない。
+> Layer 3 マニフェストは、セルフホストランナーまたは
+> 最新の Intel（Ivy Bridge 以降）/ 最新 AMD シリコンを持つ
 > 訪問者のデスクトップで消費するのが最適だ。
 
 ## Verdict セマンティクス
 
 `expected_verdict` の値は [Contract v1](./contract-v1.md#verdict-セマンティクス) で
-ロックされた値リテラルに一致する（リビジョン 3 で `pass`/`fail` から
-リネーム——ADR-0029）:
+ロックされた値リテラルに一致する:
 
 - `"reproduced"` ⇒ アップストリームバグが**再現される**。
 - `"unreproduced"` ⇒ アップストリームバグが**再現されない**。

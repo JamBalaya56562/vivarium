@@ -45,8 +45,7 @@ jobs:
 `reproduced` はこの実行で**アップストリームバグが再現された**ことを意味する——
 再現は機能している。`unreproduced` はバグが**再現されない**ことを意味する。
 通常はアップストリームプロジェクトがバンドルイメージに取り込んだ修正を出荷したからだ。
-（リビジョン 3 で `pass`/`fail` からリネーム——ADR-0029 によって、値の名前そのものが
-意味と一致するようになった。）完全な説明は
+完全な説明は
 [Contract v1: Verdict セマンティクス](./contract-v1.md#verdict-セマンティクス)を参照。
 
 「このバグは修正された」アラートを望むコンシューマーは:
@@ -80,10 +79,8 @@ GitHub Actions API 経由でアーティファクトをフェッチできる。
   replay ステップ自体はレシピのイメージ CMD の一部として実行されるため、
   このワークフローはコンシューマー側から Layer 3 を駆動するが、
   **CPUID フォールティングをゲストに公開するランナーでのみ**機能する。
-  GitHub ホスト型 Ubuntu ランナーはこれを公開しない
-  （[ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)、
-  プライベートメモ）。Layer 3 コンシューマー検証にはベアメタルまたは PMU 公開型 KVM の
-  セルフホストランナーが必要だ。
+  GitHub ホスト型 Ubuntu ランナーはこれを公開しない。Layer 3 コンシューマー検証
+  にはベアメタルまたは PMU 公開型 KVM のセルフホストランナーが必要だ。
 
 ## 関連情報
 
@@ -94,8 +91,3 @@ GitHub Actions API 経由でアーティファクトをフェッチできる。
   — `inputs.slug` に使用できるスラッグ。
 - [Layer 3 カタログ](https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway)
   — 追加スラッグ（rr replay。上記のランナー注意事項あり）。
-
-Phase 5 サブストリーム D。
-[ADR-0013](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0013-phase5-opener.md)
-（プライベートメモ）に従う。
-[Issue #119](https://github.com/aletheia-works/vivarium/issues/119) で追跡中。

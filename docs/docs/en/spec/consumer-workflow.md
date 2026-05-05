@@ -46,9 +46,7 @@ their own CI. Slugs are the directory names under
 `reproduced` means **the upstream bug reproduces** in this run —
 the reproduction is doing its job. `unreproduced` means the bug
 **does not reproduce**, usually because the upstream project
-shipped a fix the bundled image picked up. (Renamed from
-`pass`/`fail` in Contract v1 Revision 3 — ADR-0029 — so the value
-name now matches its meaning directly.) See
+shipped a fix the bundled image picked up. See
 [Contract v1: Verdict semantics](./contract-v1.md#verdict-semantics)
 for the full reasoning.
 
@@ -87,10 +85,9 @@ Actions API.
   The `replay` step itself runs as part of the recipe's image
   CMD, so this workflow does drive Layer 3 from the consumer
   side, but **only on runners that expose CPUID faulting** to
-  the guest. GitHub-hosted Ubuntu runners do not, per
-  [ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)
-  (private memo). Self-hosted runners on bare metal or
-  PMU-exposing KVM are required for Layer 3 consumer verification.
+  the guest. GitHub-hosted Ubuntu runners do not. Self-hosted
+  runners on bare metal or PMU-exposing KVM are required for
+  Layer 3 consumer verification.
 
 ## See also
 
@@ -102,8 +99,3 @@ Actions API.
   — the slugs available for `inputs.slug`.
 - [Layer 3 catalogue](https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway)
   — additional slugs (rr-replay; runner caveat above).
-
-Phase 5 sub-stream D per
-[ADR-0013](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0013-phase5-opener.md)
-(private memo). Tracking
-[Issue #119](https://github.com/aletheia-works/vivarium/issues/119).

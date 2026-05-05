@@ -1,33 +1,8 @@
 [
   {
     "type": "file",
-    "name": "index",
-    "label": "Home"
-  },
-  {
-    "type": "file",
-    "name": "vision",
-    "label": "Vision"
-  },
-  {
-    "type": "file",
-    "name": "non-goals",
-    "label": "Non-goals"
-  },
-  {
-    "type": "file",
-    "name": "roadmap",
-    "label": "Roadmap"
-  },
-  {
-    "type": "file",
-    "name": "architecture",
-    "label": "Architecture"
-  },
-  {
-    "type": "file",
-    "name": "ai-workflow",
-    "label": "AI workflow"
+    "name": "overview",
+    "label": "Overview"
   },
   {
     "type": "dir",
@@ -36,12 +11,22 @@
   },
   {
     "type": "dir",
+    "name": "repro",
+    "label": "Reproductions"
+  },
+  {
+    "type": "file",
+    "name": "architecture",
+    "label": "Architecture"
+  },
+  {
+    "type": "dir",
     "name": "spec",
     "label": "Spec"
   },
   {
-    "type": "dir",
-    "name": "repro",
-    "label": "Reproductions"
+    "type": "file",
+    "name": "roadmap",
+    "label": "Roadmap"
   }
 ]
