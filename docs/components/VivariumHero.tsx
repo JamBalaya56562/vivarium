@@ -11,9 +11,9 @@ const STRINGS = {
     headline: ['Reproduce any bug.', 'Any language.', 'Any environment.'],
     lede:
       'Vivarium is a three-layer reproduction substrate. WebAssembly for milliseconds, Docker for fidelity, and a third layer for everything else. Problem first, technology second.',
-    ctaPrimary: 'Read the vision',
+    ctaPrimary: 'Read the overview',
     ctaGhost: 'View on GitHub',
-    visionHref: '/vivarium/vision',
+    visionHref: '/vivarium/overview',
     sectionAria: 'Vivarium hero',
     tabsAria: 'Reproduction examples',
     activeAria: (label: string) => `${label} reproduction (active)`,
@@ -59,9 +59,9 @@ const STRINGS = {
     headline: ['あらゆるバグを再現。', 'あらゆる言語で。', 'あらゆる環境で。'],
     lede:
       'Vivarium は三層の再現基盤。ミリ秒単位の WebAssembly、忠実度の Docker、そしてそれ以外すべてのための第三のレイヤー。問題が先、技術は後。',
-    ctaPrimary: 'ビジョンを読む',
+    ctaPrimary: '概要を読む',
     ctaGhost: 'GitHub で見る',
-    visionHref: '/vivarium/ja/vision',
+    visionHref: '/vivarium/ja/overview',
     sectionAria: 'Vivarium ヒーロー',
     tabsAria: '再現サンプル',
     activeAria: (label: string) => `${label} 再現（アクティブ）`,

@@ -2,16 +2,12 @@
 
 > A static manifest an external repository ships at
 > `.vivarium/manifest.toml` to declare a Vivarium-runnable
-> reproduction. Locked at v1 by
-> [ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md)
-> (private memo).
+> reproduction.
 
 This is the *upstream* surface — how an external project tells
 Vivarium "we host a reproduction; here is where to find it." The
 *runtime* surface (DOM verdict, `verdict.json`) is defined
-separately in [Contract v1](./contract-v1.md). The two specs
-together let a third party publish a reproduction without
-touching the `aletheia-works/vivarium` source tree.
+separately in [Contract v1](./contract-v1.md).
 
 ## At a glance
 
@@ -62,16 +58,6 @@ The directive is a TOML comment, so it is invisible to plain
 parsers (`tomllib` etc.) and CI validation behaves identically
 with or without it. Cargo and pyproject manifests use the same
 pattern.
-
-## Why TOML
-
-TOML 1.0 (not YAML, not JSON). The format choice is locked by
-[ADR-0015](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0015-third-party-manifest-format.md).
-Short version: manifests are handwritten by a human one time per
-recipe; TOML's flat surface (no significant whitespace, no
-anchors, no implicit type coercion) minimises handwriting risk
-better than YAML, while permitting comments and trailing commas
-where JSON does not.
 
 ## Required top-level keys
 
@@ -148,18 +134,15 @@ expected_verdict = "reproduced"
 
 > ⚠️ Layer 3 replay needs a host with **CPUID-faulting support**
 > when the visitor's CPU differs from the recording CPU. GitHub
-> Actions hosted Ubuntu runners do **not** expose this
-> capability — see
-> [ADR-0011](https://github.com/aletheia-works/vivarium/blob/main/_context/decisions/0011-phase4-first-vertical-rr.md)
-> (private memo). Layer 3 manifests are therefore best consumed
-> from self-hosted runners or visitor desktops with modern Intel
-> (Ivy Bridge+) / recent AMD silicon.
+> Actions hosted Ubuntu runners do not expose this capability.
+> Layer 3 manifests are therefore best consumed from self-hosted
+> runners or visitor desktops with modern Intel (Ivy Bridge+) /
+> recent AMD silicon.
 
 ## Verdict semantics
 
 The `expected_verdict` values match the literal names locked in
-[Contract v1](./contract-v1.md#verdict-semantics) (renamed from
-`pass`/`fail` in Revision 3 — ADR-0029):
+[Contract v1](./contract-v1.md#verdict-semantics):
 
 - `"reproduced"` ⇒ the upstream bug **reproduces**.
 - `"unreproduced"` ⇒ the upstream bug **does not reproduce**.
@@ -223,5 +206,3 @@ schema on every push and pull request.
 - [Consumer workflow](./consumer-workflow.md) — the reusable
   GitHub Actions workflow consumers use to verify a manifest's
   declared image in their own CI.
-- ADR-0014 — Contract v1 publication precedent (private memo).
-- ADR-0015 — this manifest's stabilising decision (private memo).

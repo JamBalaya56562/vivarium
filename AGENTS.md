@@ -17,7 +17,7 @@
 - **Lifelong project.** Phases are measured in years, not sprints. Prefer
   durable decisions over quick wins.
 - **AI-delegated development.** Humans set direction and merge; AI agents
-  implement, review, and iterate. See [`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md).
+  implement, review, and iterate.
 - **Current phase: Phase 6 — Usability and visual layer.** Phases 0–5
   are closed (see [`docs/docs/roadmap.md`](docs/docs/roadmap.md) for
   what shipped). Phase 6 builds the interaction layer above the
@@ -75,7 +75,6 @@ If unsure whether an action crosses the line, stop and ask.
    dependency, required human action, missing credential, etc.), apply
    `status: blocked` with a comment summarising the blocker and the signal
    to watch for, then stop rather than inventing a partial implementation.
-   Full lifecycle in [`docs/docs/ai-workflow.md § 3.2`](docs/docs/ai-workflow.md).
 
 ## 4. Repository conventions
 
@@ -126,8 +125,7 @@ project publishes (npm / JSR packages, future CLI, etc.) live under
   `bun.lock`) sits at the top of `docs/`, and the markdown content
   itself lives one level deeper under `docs/docs/`. Every file under
   `docs/docs/` is something the project would be comfortable showing
-  an outside contributor (vision, architecture, roadmap, non-goals,
-  AI workflow).
+  an outside contributor (vision, architecture, roadmap, guide, spec).
 - `_context/` — gitignored. Private strategy memos, chat handoffs,
   half-formed drafts, and the project's Architecture Decision Records
   (`_context/decisions/`). AI agents may *read* these freely for
@@ -227,11 +225,10 @@ shell:
 gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"
 ```
 
-The label is a disclosure mechanism documented in
-[`docs/docs/ai-workflow.md § 4`](docs/docs/ai-workflow.md). It exists so
-reviewers and downstream readers can see at a glance which changes are
-AI-authored; missing it on an AI-authored PR is a defect, not a stylistic
-choice. If a historical PR is found without it (whether merged or open),
+The label is a disclosure mechanism. It exists so reviewers and
+downstream readers can see at a glance which changes are AI-authored;
+missing it on an AI-authored PR is a defect, not a stylistic choice. If
+a historical PR is found without it (whether merged or open),
 backfilling is a legitimate housekeeping task.
 
 ### 4.8 Organisation-level reusable workflows
@@ -402,7 +399,7 @@ is sequential and never re-used; superseded ADRs keep their original
 number with a `Status: Superseded by ADR-NNNN` note rather than being
 deleted. ADRs are gitignored — they are private working memos, not
 public docs. Reasoning that should be visitor-facing belongs in
-`docs/docs/` (vision, architecture, roadmap, non-goals, ai-workflow).
+`docs/docs/` (vision, architecture, roadmap, guide, spec).
 
 Write an ADR when:
 

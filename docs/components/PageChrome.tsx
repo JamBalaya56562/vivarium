@@ -27,7 +27,7 @@ export function PageHero({
 /**
  * Slugify a heading string for use as an HTML id (and #anchor target).
  * Mirrors the kebab-case scheme rspress's markdown extractor uses for
- * `## My Heading` so deep-links like `/vision#our-position` work the
+ * `## My Heading` so deep-links like `/overview#our-position` work the
  * same way regardless of whether the heading is rendered from markdown
  * or from this React component.
  */

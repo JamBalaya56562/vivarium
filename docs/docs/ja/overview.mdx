@@ -1,0 +1,118 @@
+---
+pageType: doc
+title: 概要
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  LayerCards,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// OVERVIEW"
+    title="Vivarium とは。"
+    sub="あらゆる言語・あらゆる環境のバグを、ブラウザのタブ 1 枚から再現する基盤。"
+  />
+
+  <Section
+    eyebrow="// 01 · 何を提供するか"
+    heading="バグ再現のためのプラットフォーム。"
+  >
+    <p>
+      Vivarium は <strong>バグ再現のためのプラットフォーム</strong>です。
+      以前報告されたバグが「いまでも再現するのか」「修正候補で本当に直っているのか」を、
+      ブラウザを開いてクリックするだけで確認できます。
+    </p>
+    <p>
+      アップストリームの実バグごとに 1 つの<strong>レシピ</strong>が用意されており、
+      各ページは <code>verdict.json v1</code> という共通仕様に従って
+      <code>reproduced</code>（バグ再現）または <code>unreproduced</code>（再現せず）の
+      判定を返します。実行結果はページに inline で表示され、コピー可能な
+      machine-readable 形式でも公開されます。
+    </p>
+    <Callout>
+      Vivarium は<strong>記事ではなく実行可能なアーティファクト</strong>として
+      バグを配布します。誰かが文章で「これがバグです」と書く代わりに、
+      ブラウザに開けば自分の目で動作を確認できる。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · 三層の実行サーフェス"
+    heading="バグの種類に合った実行環境を、レシピが選ぶ。"
+  >
+    <p>
+      バグは性質によって、必要となる環境が大きく異なります。Vivarium は再現技法を
+      三つのレイヤーに整理しており、ユーザーがレイヤーを意識する必要はありません——
+      レシピが自分に合った層を宣言します。
+    </p>
+
+    <LayerCards
+      layers={[
+        {
+          pill: 'L1',
+          accent: 'teal',
+          title: '瞬時起動、ブラウザネイティブ',
+          body: 'WebAssembly でブラウザ内に再現が直接実行されます。起動はミリ秒〜数秒。アルゴリズム、パーサ、データ処理、in-memory なデータベース操作など、完全な OS を必要としないバグに向きます。',
+          runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · PHP.wasm',
+        },
+        {
+          pill: 'L2',
+          accent: 'violet',
+          title: '完全忠実度、コンテナ実行',
+          body: 'Docker または microVM の中で再現が実行されます。起動は数秒〜分単位。実ファイルシステム、実プロセス、実ネットワークが必要なバグのための層です。',
+          runtimes: 'Docker · Firecracker · gVisor',
+        },
+        {
+          pill: 'L3',
+          accent: 'coral',
+          title: '第三の道',
+          body: 'Record-replay、決定論的シミュレーション、WASI Preview 3+、スナップショットベースの復元、そしてまだ発明されていない技法。L1 でも L2 でも届かない問題のために。',
+          runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 03 · プロジェクトの経緯"
+    heading="バグが本当に再現するか、どうやって安価に確かめるか。"
+  >
+    <p>
+      きっかけは AI が生成するバグレポートと修正 PR の急増でした。アップストリームの
+      メンテナーには「もっともらしいが誰も検証していない主張」が機械の速度で届くようになり、
+      コントリビューター側にも「自分の修正案が本当に直っているか」を確かめる手段が
+      ありません。
+    </p>
+    <p>
+      共通する根本原因は <strong>バグが実在するか・修正が効いているかを、
+      安価かつ普遍的に検証する仕組みが存在しない</strong>ことです。
+      Vivarium はその仕組みを提供します——「再現するのか／しないのか」を、
+      クリックひとつで返せる形に。
+    </p>
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      実際に動かしてみる{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="ブラウザのタブ 1 枚で 1 つのレシピを動かして verdict を読むのが、Vivarium を理解する一番速い道。"
+  primary={{ label: 'はじめての 5 分 →', href: '/vivarium/ja/guide/getting-started' }}
+  ghost={{ label: '再現一覧', href: '/vivarium/ja/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

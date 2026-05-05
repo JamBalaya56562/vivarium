@@ -22,13 +22,11 @@ import {
 
   <Section
     eyebrow="// 01 · 概要"
-    heading="バージョン管理されたサーフェス。移動するターゲットではない。"
+    heading="バージョン管理されたサーフェス。"
   >
     <p>
       Vivarium 仕様は、再現ページが自己宣言できるようにし、外部ツールが verdict を読めるようにし、
       外部リポジトリがカスタムのグルーなしで独自の再現を公開できるようにする小さなファイルセットだ。
-      <strong>v1</strong> はロックされている。v2 はランディング時に新しい仕様ページとして公開され、
-      後方互換コンシューマーのために v1 を読み続けられるようにする。
     </p>
 
     <Callout>
@@ -47,15 +45,15 @@ import {
       others={[
         {
           name: 'Contract v1',
-          tagline: 'verdict サーフェス（ランタイム）。Phase 1 から安定。',
+          tagline: 'verdict サーフェス（ランタイム）。',
         },
         {
           name: 'Manifest v1',
-          tagline: '公開サーフェス（TOML）。Phase 5 から安定。',
+          tagline: '公開サーフェス（TOML）。',
         },
         {
           name: 'Recipes index v1',
-          tagline: '機械可読カタログ。Phase 5。',
+          tagline: '機械可読カタログ。',
         },
       ]}
       highlight={{
@@ -69,7 +67,7 @@ import {
     <p>
       <a href="/vivarium/ja/spec/contract-v1">Contract v1</a> はすべての再現ページが約束することを定義する:
       <code>verdict</code> DOM バンド、<code>window.__VIVARIUM_RESULT__</code> 上の構造化結果エンベロープ、
-      そして三つのレイヤー全体で同じ pass / fail / pending セマンティクス。
+      そして三つのレイヤー全体で同じ reproduced / unreproduced / pending セマンティクス。
       Layer 2 / 3 の verdict スナップショットファイルは{' '}
       <a href="https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json">
         verdict.schema.json
@@ -109,7 +107,6 @@ import {
       <a href="/vivarium/ja/spec/consumer-workflow">Consumer workflow</a> —
       任意のリポジトリが <code>uses:</code> することで自分の CI 内で
       Vivarium ホスト型再現を検証できる再利用可能 GitHub Actions ワークフロー。
-      Phase 5 サブストリーム D。
     </p>
 
     <h3>Branch-fix verdict パイプライン</h3>
@@ -117,7 +114,7 @@ import {
       <a href="/vivarium/ja/spec/branch-fix-pipeline">Branch-fix verdict パイプライン</a>{' '}
       — コントリビューターが提供したブランチフィックス Docker イメージの verdict をキャプチャし、
       デプロイ済みの元の verdict と並べてサイドバイサイド比較を提供する
-      <code>workflow_dispatch</code> ワークフロー。Phase 6 サブストリーム R.2。
+      <code>workflow_dispatch</code> ワークフロー。
     </p>
   </Section>
 
@@ -129,13 +126,12 @@ import {
     <ul>
       <li><code>aletheia-works/vivarium</code> 以下の再現ページ（Layer 1、Layer 2、Layer 3）は meta タグと JSON エンベロープでコンフォーマンスを宣言する。</li>
       <li>外部ツール（CI、IDE プラグイン、AI レビュアー、サードパーティ再現定義）は同じサーフェスを読んでページが今日も再現するかを知る。</li>
-      <li>このリポジトリ外でホストされる将来の Vivarium 互換再現も同じ方法でコンフォーマンスを宣言できる。</li>
+      <li>このリポジトリ外でホストされる Vivarium 互換再現も同じ方法でコンフォーマンスを宣言できる。</li>
     </ul>
 
     <h3>この仕様が対象としないもの</h3>
     <ul>
       <li>完全な再現プロトコルではない——verdict サーフェスをカバーするのであり、再現自体の構築方法は対象外（それはレイヤーの README に記述された各レイヤーの規約）。</li>
-      <li>メジャーバージョン間で安定していない。v1 はロックされており、v2 はランディング時に新しい仕様ページとして公開される。</li>
     </ul>
   </Section>
 </Page>

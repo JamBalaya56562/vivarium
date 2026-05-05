@@ -25,7 +25,6 @@ name: Project field updates
 # The default GITHUB_TOKEN cannot mutate org-scoped Projects v2, so a
 # fine-grained PAT scoped to `aletheia-works` (Organization permissions
 # → Projects: Read and write) is read from the PROJECTS_TOKEN secret.
-# See docs/ai-workflow.md for the setup walkthrough.
 
 on:
   pull_request_target:

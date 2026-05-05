@@ -9,8 +9,7 @@ name: Claude implements assigned Issues
 # The workflow is deliberately single-shot:
 # - One `/claude` comment → one PR. Ready-for-review when Claude is
 #   confident the implementation meets the Issue's acceptance criteria;
-#   opened as draft only if work is genuinely incomplete (per
-#   docs/docs/ai-workflow.md § 3.3).
+#   opened as draft only if work is genuinely incomplete.
 # - Never merges, never pushes to `main`, never creates secrets.
 # - All guardrails in `AGENTS.md` § 2 apply unchanged; Claude is instructed
 #   to fail closed when a step would cross them.
@@ -20,8 +19,8 @@ name: Claude implements assigned Issues
 # - The commenter must have `write` or `admin` permission on the repo —
 #   anything looser (read, triage, none) is rejected. The check uses the
 #   authoritative GitHub permissions API, not membership heuristics.
-# - The Issue must NOT carry the `status: blocked` label. Per
-#   `docs/docs/ai-workflow.md` § 3.2, blocked Issues are off-limits to agents.
+# - The Issue must NOT carry the `status: blocked` label — blocked Issues
+#   are off-limits to agents (see AGENTS.md § 3.7).
 #
 # Prerequisites (one-time setup, tracked separately):
 # - `CLAUDE_CODE_OAUTH_TOKEN` repo secret (Claude Max subscription OAuth
@@ -97,7 +96,7 @@ jobs:
             } else if (isBlocked) {
               core.notice(
                 `Skipping /claude: Issue #${issueNumber} carries "${BLOCKED_LABEL}". ` +
-                `Blocked Issues are off-limits per docs/docs/ai-workflow.md § 3.2.`
+                `Blocked Issues are off-limits per AGENTS.md § 3.7.`
               );
               // React so the human sees the workflow noticed.
               await github.rest.reactions.createForIssueComment({
@@ -185,7 +184,7 @@ jobs:
                - Body that includes `Closes #${{ github.event.issue.number }}`.
                - The `ai: generated` label attached.
 
-               PR state follows `docs/docs/ai-workflow.md` § 3.3:
+               PR state policy:
                - **Ready for review** is the default when you are confident
                  the implementation meets the Issue's acceptance criteria
                  and there is nothing substantive left to change.

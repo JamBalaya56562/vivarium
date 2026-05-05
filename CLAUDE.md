@@ -77,15 +77,7 @@ If the loop reaches a natural stopping point (work complete, ambiguous
 decision, blocked on human action), end the loop rather than inventing
 filler tasks.
 
-## 6. Where the full cycle is defined
-
-The end-to-end Issue → implementation → review → merge flow — including how
-Claude Code (as both implementer and reviewer), Dosu, Dependabot, and
-GitHub Actions compose — is documented in
-[`docs/docs/ai-workflow.md`](docs/docs/ai-workflow.md). Defer to it for process
-questions.
-
-## 7. Pre-PR local validation (mandatory)
+## 6. Pre-PR local validation (mandatory)
 
 Before opening or force-pushing a PR branch, run the matching CI checks
 locally first — every workflow whose `paths:` filter matches the diff.
