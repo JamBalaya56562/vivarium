@@ -1,0 +1,193 @@
+---
+pageType: doc
+title: First five minutes
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · FIRST 5 MINUTES"
+    title="Open the site, run a recipe, read the verdict."
+    sub="The shortest path through Vivarium for someone arriving cold. No install, no account, no terminal — one browser tab."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT YOU'LL DO"
+    heading="Three steps."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Open the gallery.',
+          body: 'Click "Reproductions" in the top nav, or jump straight to /repro/. Layer 1 (in-browser WebAssembly) recipes are listed there.',
+        },
+        {
+          lead: 'Pick a recipe and hit "Open".',
+          body: 'A real upstream bug opens in a dedicated page. Pandas, NumPy, CPython, Ruby, PHP, or Rust regex — any one works.',
+        },
+        {
+          lead: 'Read the verdict.',
+          body: 'The badge at the top settles from pending to either reproduced or unreproduced. "Reproduced = the bug still reproduces". That single sentence is enough to start.',
+        },
+      ]}
+    />
+    <Callout>
+      The verdict literals point in a counter-intuitive direction; the{' '}
+      <a href="/vivarium/guide/glossary#verdict">verdict glossary entry</a>{' '}
+      explains why. A useful mental model: "reproduced is red, unreproduced is green."
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · OPEN THE GALLERY"
+    heading="Every recipe satisfies the same Contract v1."
+  >
+    <p>
+      The <a href="/vivarium/repro/">reproduction gallery</a> lists every
+      recipe. Each card maps to one upstream bug and shows the project,
+      issue number, layer, current verdict, and when that verdict was
+      captured.
+    </p>
+    <p>
+      Facets filter the list: language (python / ruby / php / rust),
+      symptom, severity, tag. To find a recipe by a concrete error
+      message, use{' '}
+      <a href="/vivarium/repro/match">match an error to a recipe</a>{' '}
+      — it scores recipes by lexical overlap and returns ranked candidates.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · RUN A RECIPE"
+    heading="One click. The browser does the rest."
+  >
+    <p>
+      Walk through it once with <code>pandas-56679</code> as the running
+      example. Hitting "Open" on the card pops a new tab at the recipe's
+      page, <a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer"><code>/repro/pandas/56679/</code></a>.
+    </p>
+    <p>
+      On load the page fetches Pyodide (CPython compiled to WebAssembly)
+      and pandas from the jsDelivr CDN. The verdict badge sits at{' '}
+      <code>pending</code> with "Loading runtime…" while that happens.
+    </p>
+    <p>
+      Once loaded, the embedded reproduction script runs and the verdict
+      settles. First load takes a few to a few-tens of seconds depending
+      on connection and cache state; subsequent visits hit the CDN cache
+      and open in milliseconds to a second.
+    </p>
+    <Callout>
+      Layer 1 means everything happens inside the browser — you don't
+      need Python or pandas locally. The three-layer model is in{' '}
+      <a href="/vivarium/architecture">architecture</a>.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · READ THE VERDICT"
+    heading="Three values. reproduced / unreproduced / pending."
+  >
+    <p>
+      <code>reproduced</code> means the upstream bug still reproduces.
+      <code>unreproduced</code> means it does not — typically because a
+      newer runtime build resolved the issue, or because the conditions
+      shifted. <code>pending</code> is the in-flight state while the
+      script is running or the runtime is still loading.
+    </p>
+    <p>
+      Open pandas-56679 and the verdict will settle to{' '}
+      <code>reproduced</code> or <code>unreproduced</code> depending on
+      what version of pandas Pyodide currently ships. Underneath the
+      badge you'll see the data the verdict was decided from — the
+      <code>series_dtype</code> vs <code>df_dtype</code> comparison.
+    </p>
+    <Callout>
+      Why "reproduced / unreproduced" instead of "pass / fail": pass and
+      fail flip meaning between teams. Vivarium pins the verb to one
+      thing — <em>did the bug reproduce</em>. Spec:{' '}
+      <a href="/vivarium/spec/contract-v1#verdict-semantics">contract v1 verdict semantics</a>.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · READ THE EVIDENCE"
+    heading="Not just the badge — the basis is on the same page."
+  >
+    <p>
+      Below the verdict badge sits an "Evidence" section bundling the
+      reproduction script's run: stdout, stderr, exit code, duration in
+      milliseconds. Contract v1 revision 2 (added in Phase 6 R.1) made
+      the basis for a verdict readable on-page rather than buried in a
+      separate file.
+    </p>
+    <p>
+      For pandas-56679, that includes the literal <code>series_dtype</code>
+      and <code>df_dtype</code> strings, the boolean for whether they
+      match, and the running pandas / Python versions — all serialised
+      as JSON. That bundle <em>is</em> the evidence.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · WHERE TO GO NEXT"
+    heading="Entry points by intent."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Get the vocabulary straight.',
+          body: 'The glossary (/guide/glossary) pins down every word Vivarium uses with a fixed meaning — recipe, verdict, evidence, Layer 1/2/3, manifest, contract.',
+        },
+        {
+          lead: 'Verify a branch fix.',
+          body: 'The compare page (/repro/compare) accepts before/after verdict bundles and shows whether reproduced flipped to unreproduced. Built for verifying AI-agent-authored patches.',
+        },
+        {
+          lead: 'Declare a Vivarium reproduction in your repo.',
+          body: 'Start with the Manifest v1 spec (/spec/manifest-v1) and the interactive scaffolder (/spec/manifest-create).',
+        },
+        {
+          lead: 'Drive Vivarium from an AI agent.',
+          body: 'The MCP server @aletheia-works/vivarium-mcp is on JSR and npm. Four tools — list_recipes, get_recipe, lookup_verdict, match_error.',
+        },
+        {
+          lead: 'Understand why this project exists.',
+          body: 'Read vision (/vision), architecture (/architecture), and roadmap (/roadmap) in that order to fix the skeleton in your head.',
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    If any step on this page didn't work, that's a bug in
+    getting-started — not a stylistic preference. Please file an issue.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the glossary{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="With something running in your head, five minutes on the glossary lets every other doc on this site read faster."
+  primary={{ label: 'Glossary →', href: '/vivarium/guide/glossary' }}
+  ghost={{ label: 'Back to gallery', href: '/vivarium/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM is part of ALETHEIA-WORKS · See the source on GitHub →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

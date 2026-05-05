@@ -58,6 +58,12 @@ if (!outputEl || !metaEl || !reproCodeEl) {
 }
 
 reproCodeEl.textContent = REPRO_SOURCE_HINT;
+fetch("./repro.highlighted.html")
+  .then((r) => (r.ok ? r.text() : null))
+  .then((html) => {
+    if (html) reproCodeEl.innerHTML = html;
+  })
+  .catch(() => {});
 
 const startedAt = new Date();
 

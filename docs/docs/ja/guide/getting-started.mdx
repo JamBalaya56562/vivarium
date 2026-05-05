@@ -1,0 +1,189 @@
+---
+pageType: doc
+title: はじめての 5 分
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · はじめての 5 分"
+    title="サイトを開いて、レシピを動かして、verdict を読む。"
+    sub="このページは Vivarium をはじめて触る人のための最短ルート。インストール不要、アカウント登録不要、ターミナル不要。ブラウザのタブ 1 枚で完結する。"
+  />
+
+  <Section
+    eyebrow="// 0 · 5 分でやること"
+    heading="3 ステップ。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'ギャラリーを開く。',
+          body: 'トップナビの「再現一覧」をクリックする。あるいは直接 /repro/ へ。Layer 1（ブラウザ内 WebAssembly）のレシピが並んでいる。',
+        },
+        {
+          lead: 'レシピを 1 つ選んで「Open」を押す。',
+          body: '本物のアップストリームバグが、別タブの専用ページで開く。pandas、numpy、CPython、Ruby、PHP、Rust regex のどれでもよい。',
+        },
+        {
+          lead: 'verdict を読む。',
+          body: '画面上部のバッジが pending → reproduced か unreproduced のどちらかに落ち着く。「reproduced ＝ バグが今でも再現する」。これだけ覚えれば最低限読める。',
+        },
+      ]}
+    />
+    <Callout>
+      verdict の値リテラルが直感に反する向きを持っている点は、用語集の{' '}
+      <a href="/vivarium/ja/guide/glossary#verdict">verdict</a> に詳しく書いた。
+      「reproduced は赤、unreproduced は緑」のメンタルモデルでよい。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · ギャラリーを開く"
+    heading="どのレシピも同じ Contract v1 を満たす。"
+  >
+    <p>
+      <a href="/vivarium/ja/repro/">再現一覧</a>{' '}
+      にレシピが一覧表示されている。各カードは 1 つのアップストリームバグに対応し、
+      対応プロジェクト、Issue 番号、Layer、現時点の verdict、いつキャプチャされた verdict かを示す。
+    </p>
+    <p>
+      ファセットでフィルタできる: 言語（python / ruby / php / rust）、症状、深刻度、タグ。
+      具体的なエラーメッセージから候補を絞りたい場合は{' '}
+      <a href="/vivarium/ja/repro/match">エラーからレシピを探す</a>{' '}
+      が使える（語句マッチでスコアリングして候補を返す）。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · レシピを動かす"
+    heading="クリック 1 回。後はブラウザがやる。"
+  >
+    <p>
+      初回は何が起きているのか分かりやすいように、<code>pandas-56679</code> を例に進める。
+      カードの「Open」ボタンを押すと別タブで{' '}
+      <a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer">
+        /repro/pandas/56679/
+      </a>{' '}
+      が開く。
+    </p>
+    <p>
+      ページが読み込まれると、まず Pyodide（CPython の WebAssembly ビルド）と pandas を
+      jsDelivr CDN からダウンロードする。verdict バッジは <code>pending</code> 状態で
+      「ランタイムを読み込み中」と表示される。
+    </p>
+    <p>
+      ロード完了後、ページに埋め込まれた再現スクリプトが実行され、verdict が確定する。
+      初回ロードは数秒〜十数秒（接続速度とブラウザのキャッシュ状態による）、
+      2 回目以降は CDN キャッシュが効いてミリ秒〜秒で開く。
+    </p>
+    <Callout>
+      Layer 1 はブラウザ完結。ローカルに Python も pandas も入れる必要はない。
+      Vivarium が宣言する 3 層アーキテクチャは{' '}
+      <a href="/vivarium/ja/architecture">アーキテクチャ</a> 参照。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · verdict を読む"
+    heading="reproduced / unreproduced / pending の 3 値だけ。"
+  >
+    <p>
+      <code>reproduced</code> はアップストリームバグが現在も再現することを示す。
+      <code>unreproduced</code> は再現しなかったこと——つまりランタイムの新しいビルドが
+      問題を解消した、あるいは再現条件が変わった——を示す。<code>pending</code> は
+      まだ実行中、もしくは初期化中の中間状態。
+    </p>
+    <p>
+      pandas-56679 を開いて少し待つと、現状（pandas が Pyodide で出荷している版で再現するかどうか）
+      に応じて値が <code>reproduced</code> か <code>unreproduced</code> に落ち着く。
+      verdict バッジの下に、その判定の根拠となった出力——<code>series_dtype</code> と
+      <code>df_dtype</code> の比較結果——も表示される。
+    </p>
+    <Callout>
+      「pass / fail」ではなく「reproduced / unreproduced」を使う理由: テスト用語の{' '}
+      pass / fail はチームによって意味が逆転する。Vivarium の動詞は
+      「<em>バグが再現したか</em>」一本に固定したい。詳細は{' '}
+      <a href="/vivarium/ja/spec/contract-v1#verdict-セマンティクス">contract v1 verdict セマンティクス</a>。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · evidence を読む"
+    heading="バッジだけではなく、その根拠も同じページに。"
+  >
+    <p>
+      verdict バッジの下に「Evidence」セクションがあり、再現スクリプトの実行結果が
+      まとまっている: stdout、stderr、終了コード、所要時間（ms）。Contract v1
+      リビジョン 2（Phase 6 R.1 で追加）により、verdict が出る根拠が
+      ページから直接読める。
+    </p>
+    <p>
+      たとえば pandas-56679 では、<code>series_dtype</code> と <code>df_dtype</code> の
+      文字列値、両者が一致しないかどうかの真偽値、pandas と Python のバージョンが
+      JSON で出力される。これがそのまま<strong>evidence</strong> として記録される。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · 次に何をするか"
+    heading="目的別の入口。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: '言葉を整理したい。',
+          body: '用語集 (/guide/glossary) に Vivarium が固定的な意味で使う単語をまとめてある。レシピ、verdict、evidence、Layer 1/2/3、manifest、contract など。',
+        },
+        {
+          lead: 'ブランチ修正が本当に効いているか確かめたい。',
+          body: '比較ページ (/repro/compare) に修正前後の verdict バンドルをドロップすると、reproduced → unreproduced に反転したかが横並びで見える。AI エージェントが書いたパッチの検証用に作られた surface。',
+        },
+        {
+          lead: '自分のリポジトリに Vivarium 再現を宣言したい。',
+          body: 'spec の Manifest v1 (/spec/manifest-v1) と、対話的なスキャフォールダ (/spec/manifest-create) から始める。',
+        },
+        {
+          lead: 'AI エージェントから呼びたい。',
+          body: 'MCP サーバ @aletheia-works/vivarium-mcp が JSR + npm に出ている。4 つのツール (list_recipes / get_recipe / lookup_verdict / match_error) でレシピを検索・取得できる。',
+        },
+        {
+          lead: 'なぜこのプロジェクトが存在するか知りたい。',
+          body: 'ビジョン (/vision)、アーキテクチャ (/architecture)、ロードマップ (/roadmap) を順に読むと骨格がつかめる。',
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    このページの手順がうまく動かないところがあれば、それは getting-started の
+    バグであり、スタイルの好みではない。Issue を立ててほしい。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      用語集を読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="動くものを見たあとは、Vivarium が固定的な意味で使う言葉を 5 分で押さえると、以後のドキュメントが速く読める。"
+  primary={{ label: '用語集 →', href: '/vivarium/ja/guide/glossary' }}
+  ghost={{ label: 'ギャラリーへ戻る', href: '/vivarium/ja/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
