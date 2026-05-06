@@ -397,6 +397,16 @@ jobs:
               echo "Staging Layer 2 shared module: ${shared_name} → ${dest}/${project}/${shared_name}"
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done
+            # Layer 2 pages reference `../_shared/style.css` for the
+            # shared chrome (header, code blocks, verdict pill). The
+            # styles physically live under src/layer1_wasm/_shared/ and
+            # are reused by Layer 2 — copy them into each Layer 2
+            # project so the relative path resolves under
+            # `<dest>/<project>/_shared/style.css` after deploy.
+            if [ -d "src/layer1_wasm/_shared" ]; then
+              echo "Staging Layer 1 _shared/ for Layer 2 project: ${dest}/${project}/_shared"
+              cp -R "src/layer1_wasm/_shared" "$dest/$project/_shared"
+            fi
           done
           # Bundle each individual Layer 2 recipe.
           for entry in src/layer2_docker/*/; do
@@ -422,6 +432,31 @@ jobs:
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
             cp -R "${entry}." "$dest/$rel/"
+            # Legacy slug-only URL `/repro/<slug>/` redirect. Before the
+            # hierarchical-URL move, Layer 2 pages were published at
+            # `<pages-base>/repro/<slug>/`; existing links in the wild
+            # need a meta-refresh to the new
+            # `<project>/<issue_path>/` location.
+            if [ "$rel" != "$slug" ]; then
+              mkdir -p "$dest/$slug"
+              cat > "$dest/$slug/index.html" <<HTML
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Vivarium · moved to /repro/${rel}/</title>
+              <meta http-equiv="refresh" content="0; url=../${rel}/" />
+              <link rel="canonical" href="../${rel}/" />
+              <meta name="robots" content="noindex" />
+            </head>
+            <body>
+              <p>This reproduction has moved to
+                <a href="../${rel}/">/repro/${rel}/</a>.
+                Updating in a moment…</p>
+            </body>
+          </html>
+          HTML
+            fi
           done
           ls -la "$dest" || true
 
