@@ -43,3 +43,15 @@ variable "repository_topics" {
     "open-source",
   ]
 }
+
+# Whether to create the project's Phase 0–N milestones on the
+# repository. The phase taxonomy is upstream-only context;
+# fork users running this configuration on their own copy do
+# not need them. Default: false (fork-friendly). The upstream
+# `aletheia-works/vivarium` repo sets this to `true` in its own
+# terraform.tfvars.
+variable "create_phase_milestones" {
+  description = "Whether to create the Vivarium Phase milestones (upstream only)"
+  type        = bool
+  default     = false
+}

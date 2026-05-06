@@ -385,7 +385,10 @@ locals {
 }
 
 resource "github_repository_milestone" "phases" {
-  for_each = local.milestones
+  # Phase milestones are upstream-only context. Forks running this
+  # configuration on their own copy of the repository skip them by
+  # default; the upstream tfvars sets `create_phase_milestones = true`.
+  for_each = var.create_phase_milestones ? local.milestones : {}
 
   owner       = var.github_owner
   repository  = github_repository.this.name

@@ -1,0 +1,240 @@
+---
+pageType: doc
+title: Run on your own fork
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · YOUR OWN FORK"
+    title="Run Vivarium on your own fork."
+    sub="Fork this repo, add your own bug reproductions, and publish them to your own GitHub Pages site. Without ever opening a PR upstream, you can curate a recipe collection of your own and share the URL."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT THIS GETS YOU"
+    heading="Your bugs at <user>.github.io/vivarium/."
+  >
+    <p>
+      In this flow you fork <code>aletheia-works/vivarium</code>, add and edit
+      reproduction recipes on your own copy, and publish your fork as your own
+      GitHub Pages site. You're not contributing upstream —{' '}
+      <strong>your fork itself is the destination</strong>.
+    </p>
+    <p>
+      Layer 1 (in-browser WASM) works end-to-end on your fork. Layer 2 / 3
+      (Docker, record-replay) ride on upstream's GHCR images and stay
+      upstream-only; on a fork, <strong>only Layer 1 is deployed</strong>.
+    </p>
+    <Callout>
+      The intended use case is a personal collection of reproductions, not
+      a mirror of upstream. To share, hand out{' '}
+      <code>https://&lt;you&gt;.github.io/vivarium/</code>.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · FORK THE REPO"
+    heading="One click in the GitHub UI."
+  >
+    <p>
+      Hit <strong>Fork</strong> on{' '}
+      <a href="https://github.com/aletheia-works/vivarium">aletheia-works/vivarium</a>{' '}
+      to copy it under your account or org. The repository name can stay as
+      <code>vivarium</code> or be renamed (in which case substitute your name
+      for <code>vivarium</code> below).
+    </p>
+    <p>Then clone it locally:</p>
+    <pre><code>{`git clone https://github.com/<you>/vivarium.git
+cd vivarium`}</code></pre>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · INSTALL THE TOOLCHAIN"
+    heading="mise wires it all up."
+  >
+    <p>
+      The project pins tool versions through{' '}
+      <a href="https://mise.jdx.dev/">mise</a>. From the clone root:
+    </p>
+    <pre><code>{`mise install`}</code></pre>
+    <p>
+      That installs <code>bun</code> (docs and the MCP server),{' '}
+      <code>opentofu</code> (Infrastructure-as-Code for the GitHub repo
+      settings), <code>uv</code> (native Python re-verification), and the
+      Layer 1 native interpreters. A Rust toolchain (<code>rustup</code>) is
+      also needed if you plan to add Rust recipes.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · ISSUE A FINE-GRAINED PAT"
+    heading="The token OpenTofu uses to read/write your fork's settings."
+  >
+    <p>
+      Create a token at{' '}
+      <a href="https://github.com/settings/personal-access-tokens/new">
+        Settings → Developer settings → Personal access tokens → Fine-grained
+      </a>{' '}
+      scoped to your fork.
+    </p>
+    <ul>
+      <li><strong>Resource owner</strong>: your account or org.</li>
+      <li><strong>Repository access</strong>: just the forked repo.</li>
+      <li><strong>Repository permissions</strong>: Administration (RW), Contents (RW), Metadata (R), Issues (RW), Pull requests (RW), Actions (RW), Workflows (RW), Variables (RW), Webhooks (RW).</li>
+    </ul>
+    <Callout>
+      Never commit token values. <code>terraform.tfvars</code> is in the
+      repo's <code>.gitignore</code> for the same reason.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · APPLY THE OPENTOFU CONFIG"
+    heading="Labels, Pages, branch protection in one go."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Create your tfvars.',
+          body: 'cp infra/github/terraform.tfvars.example infra/github/terraform.tfvars and set github_owner = "<you>". Leave create_phase_milestones at its default of false — phase milestones are upstream-only context and forks skip them.',
+        },
+        {
+          lead: 'Export the PAT.',
+          body: 'export GITHUB_TOKEN=github_pat_xxxxxxxx. Disappears when the shell exits.',
+        },
+        {
+          lead: 'Plan, then apply.',
+          body: 'cd infra/github && tofu init && tofu plan, then tofu apply once the diff looks right. Pages, labels, and branch protection roll out on your fork.',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 5 · ENABLE PAGES DEPLOY"
+    heading="One repository variable."
+  >
+    <p>
+      The <code>deploy-docs.yml</code> workflow ships{' '}
+      <strong>off by default on forks</strong> — its <code>if</code> guard
+      blocks the build for any owner other than upstream. To opt in on your
+      own fork, add a single repository variable.
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Open Settings → Secrets and variables → Actions.',
+          body: 'Pick the "Variables" tab (not "Secrets").',
+        },
+        {
+          lead: 'Click "New repository variable".',
+          body: 'Name: VIVARIUM_FORK_DEPLOY, value: true.',
+        },
+        {
+          lead: 'Push or run the workflow manually.',
+          body: 'The deploy fires on the next push to main, or from Actions → Deploy docs to GitHub Pages → Run workflow.',
+        },
+      ]}
+    />
+    <p>
+      Removing the variable later turns the deploy back off. Layer 2
+      (Docker / GHCR) cannot push from a fork's token, so fork deploys{' '}
+      <strong>automatically ship Layer 1 only</strong>.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · ADD A RECIPE"
+    heading="One directory under src/layer1_wasm/<slug>/."
+  >
+    <p>The minimum unit of a Layer 1 recipe is one directory per upstream bug:</p>
+    <ul>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/index.html</code> — the recipe page skeleton.</li>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/repro.ts</code> — runs the reproduction in Pyodide / Ruby.wasm / php-wasm / Rust and sets the verdict.</li>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/README.md</code> — what the recipe is.</li>
+    </ul>
+    <p>
+      The fastest path is to copy an existing recipe like{' '}
+      <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"><code>pandas-56679</code></a>{' '}
+      or{' '}
+      <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779"><code>regex-779</code></a>,
+      change the slug (<code>&lt;project&gt;-&lt;issue&gt;</code> is the convention),
+      and rewrite the reproduction script.
+    </p>
+    <Callout>
+      The contract a recipe satisfies is{' '}
+      <a href="/vivarium/spec/contract-v1">Contract v1</a>. Emit{' '}
+      <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code> and a{' '}
+      <code>#verdict</code> element with{' '}
+      <code>data-verdict="reproduced|unreproduced|pending"</code> and you're
+      conformant.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 7 · PUSH AND VERIFY"
+    heading="Open your Pages URL."
+  >
+    <p>
+      Push the recipe to <code>main</code>; with{' '}
+      <code>VIVARIUM_FORK_DEPLOY=true</code> set, the <code>deploy-docs</code>{' '}
+      workflow runs. Once green, the site is at:
+    </p>
+    <pre><code>{`https://<you>.github.io/vivarium/`}</code></pre>
+    <p>
+      Individual recipes land at{' '}
+      <code>/repro/&lt;project&gt;/&lt;issue&gt;/</code>. The URLs in
+      <code>recipes.json</code> are built from{' '}
+      <code>GITHUB_REPOSITORY_OWNER</code> and <code>GITHUB_REPOSITORY</code>{' '}
+      at deploy time, so a fork lands the right URLs without editing source.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 8 · SHARE"
+    heading="Hand out the URL."
+  >
+    <p>
+      Drop your fork URL{' '}
+      (<code>https://&lt;you&gt;.github.io/vivarium/</code>) in an issue, PR,
+      or chat — whoever opens it can confirm the reproduction in their browser.
+      Because every recipe satisfies Contract v1, third-party tooling, including
+      AI agents, can read the verdict mechanically.
+    </p>
+  </Section>
+
+  <Callout>
+    If you later want to upstream a recipe you built here, the directory you
+    created on the fork can be PR'd as-is into{' '}
+    <code>aletheia-works/vivarium</code>. The contract is the same; verdicts
+    captured on the fork carry over.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the glossary{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The terms that come up while adding recipes (slug, verdict, layer …) are pinned down in the guide's glossary."
+  primary={{ label: 'Glossary →', href: '/vivarium/guide/glossary' }}
+  ghost={{ label: 'Reproductions', href: '/vivarium/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM is part of ALETHEIA-WORKS · See the source on GitHub →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
