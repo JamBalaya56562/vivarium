@@ -33,4 +33,10 @@ jobs:
     uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github
+      # Phase milestones are upstream-only context (variables.tf comment).
+      # The caller-side `if: github.repository_owner == 'aletheia-works'`
+      # already gates this whole job to upstream, so opting in here is
+      # safe — fork applies never run this workflow.
+      tfvar_assignments: |
+        create_phase_milestones=true
     secrets: inherit
