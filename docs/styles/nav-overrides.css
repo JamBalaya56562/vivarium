@@ -2,9 +2,17 @@
  * Brand colour overrides — repaint rspress's default blue to the
  * Vivarium teal palette (#00d4aa / #33e5ba) so sidebars, outlines,
  * inline links, and active states all match the landing hero.
+ *
+ * Specificity note: rspress defines its tokens on `:root` (specificity
+ * 0,1,0) in a stylesheet that loads *after* this one. If we also use
+ * `:root` we tie on specificity and lose by load order, so we double
+ * the pseudo-class to `:root:root` (specificity 0,2,0). This is the
+ * smallest specificity bump that beats rspress without needing
+ * `!important`. The same trick is used below for layout vars and for
+ * the dark-mode block.
  * ────────────────────────────────────────────────────────────────── */
 
-:root {
+:root:root {
   --rp-c-brand: #00b894;
   --rp-c-brand-dark: #00d4aa;
   --rp-c-brand-darker: #007a63;
@@ -12,7 +20,7 @@
   --rp-c-brand-lighter: #66f0d0;
 }
 
-html.dark {
+html.dark:root {
   --rp-c-brand: #33e5ba;
   --rp-c-brand-dark: #00d4aa;
   --rp-c-brand-darker: #00b894;
@@ -31,15 +39,19 @@ html.dark {
  * so we lower rspress's threshold here to keep the docs nav consistent
  * with that pattern: from 960px upwards, GitHub + theme toggle live
  * directly in the nav, the hamburger is hidden.
+ *
+ * Specificity: rspress targets `.rp-nav__others` and `.rp-nav-hamburger`
+ * directly (0,1,0). We prepend the parent `.rp-nav` to lift our
+ * selectors to (0,2,0) so they win without `!important`.
  */
 
 @media (min-width: 960px) {
-  .rp-nav__others {
+  .rp-nav .rp-nav__others {
     display: flex;
   }
 
-  .rp-nav-hamburger,
-  .rp-nav-hamburger__md {
+  .rp-nav .rp-nav-hamburger,
+  .rp-nav .rp-nav-hamburger__md {
     display: none;
   }
 }
@@ -49,6 +61,11 @@ html.dark {
  * rspress's default sidebar is functional but plain; align it to the
  * Vivarium home / hero palette so the docs feel cohesive with the
  * landing.
+ *
+ * The selectors below already win specificity against rspress's
+ * single-class selectors (e.g. our `[class*="rp-sidebar"] a[class*="active"]`
+ * is 0,2,1; rspress's `.rp-sidebar-item--active` is 0,1,0), so no
+ * `!important` is needed here.
  * ────────────────────────────────────────────────────────────────── */
 
 /* Active sidebar item — teal accent strip + brighter text */
@@ -89,12 +106,12 @@ html.dark {
  * pre-sidebar pageType:custom layout. rspress's defaults give the
  * sidebars priority and squeeze the content; we flip the budget so
  * content always gets enough room and sidebars truncate text instead.
+ *
+ * Same `:root:root` doubling as the brand-colour block above so we
+ * win the cascade against rspress's `:root` defaults.
  * ────────────────────────────────────────────────────────────────── */
 
-/* CSS custom properties that rspress sets on :root with the same
- * specificity. We need !important to win the cascade because rspress's
- * stylesheet loads after this one. */
-:root {
+:root:root {
   --rp-sidebar-width: 232px;
   --rp-outline-width: 200px;
   --rp-content-max-width: 1100px;
