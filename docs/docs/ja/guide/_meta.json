@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "use-from-ai-agent",
+    "label": "AI エージェントから使う"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "自分のフォークで動かす"
   },

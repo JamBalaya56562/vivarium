@@ -1,0 +1,239 @@
+---
+pageType: doc
+title: AI エージェントから使う
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · AI エージェント"
+    title="Vivarium MCP サーバを Claude Code / Cursor / Cline から呼ぶ。"
+    sub="Vivarium は MCP（Model Context Protocol）サーバを同梱しており、4 つのツールでカタログ全体をエージェントから機械的に検索・取得できる。docs サイトを HTML スクレイプする必要はない。"
+  />
+
+  <Section
+    eyebrow="// 0 · このガイドが対象にするもの"
+    heading="MCP 経由でカタログにアクセスするエージェント設定。"
+  >
+    <p>
+      Vivarium MCP サーバ (<code>@aletheia-works/vivarium-mcp</code>) は{' '}
+      <a href="https://modelcontextprotocol.io">Model Context Protocol</a>{' '}
+      の stdio トランスポート経由で 4 つのツールを提供します:{' '}
+      <code>list_recipes</code>、<code>get_recipe</code>、
+      <code>lookup_verdict</code>、<code>match_error</code>。
+      エージェント側からカタログを検索し、特定レシピのメタデータを取得し、
+      Layer 2 / 3 の verdict スナップショットを読めます。
+    </p>
+    <Callout>
+      <strong>JSR / npm への初回公開は現時点で意図的に保留中</strong>です。
+      Vivarium 全体およびサーバ機能サーフェスがまだ熟していない段階で公開すると、
+      まだ動かしたいインタフェースを v1 として固定してしまうため。
+      公開時期は維持者が別途アナウンスします。それまでは{' '}
+      <strong>ローカルクローン経由</strong>で動かすパスが標準です。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · ローカルでビルドする"
+    heading="clone → bun install → bun run build。"
+  >
+    <pre><code>{`git clone https://github.com/aletheia-works/vivarium.git
+cd vivarium/packages/mcp-server
+bun install
+bun run build
+# → dist/index.js が出来る（クライアントが起動するエントリポイント）
+`}</code></pre>
+    <p>
+      <code>dist/index.js</code> の<strong>絶対パス</strong>を控えておきます。
+      MCP クライアント側の設定で、<code>node</code> 経由でこのファイルを起動する形になります。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · MCP クライアントに登録する"
+    heading="共通スキーマ: command + args。"
+  >
+    <p>
+      MCP サーバの登録は、どのクライアントでも本質的に「<code>command</code>{' '}
+      と <code>args</code> の組」を JSON で渡す形です:
+    </p>
+    <pre><code>{`{
+  "mcpServers": {
+    "vivarium": {
+      "command": "node",
+      "args": ["/abs/path/to/vivarium/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+`}</code></pre>
+    <p>
+      この snippet を貼る場所がクライアントごとに違うだけです:
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Claude Code（CLI）。',
+          body: <><code>claude mcp add vivarium node /abs/path/to/...dist/index.js</code> で対話的に登録できます。あるいは <code>~/.claude.json</code> の <code>mcpServers</code> キーに上の JSON を直接書いても等価です。</>,
+        },
+        {
+          lead: 'Cursor。',
+          body: <><code>~/.cursor/mcp.json</code>（プロジェクト局所なら <code>.cursor/mcp.json</code>）に上の JSON をそのまま置きます。</>,
+        },
+        {
+          lead: 'Cline（VS Code 拡張）。',
+          body: <>VS Code の Cline サイドバー → <code>MCP Servers</code> → <code>Configure MCP Servers</code> から JSON 編集 UI を開き、上のスキーマで追加します。</>,
+        },
+        {
+          lead: 'Continue。',
+          body: <><code>~/.continue/config.yaml</code> の <code>mcpServers</code> セクションで command+args を YAML 形式に転記します（YAML 表記は同じ意味）。</>,
+        },
+      ]}
+    />
+    <Callout>
+      MCP クライアント側の正典のドキュメントは
+      <a href="https://modelcontextprotocol.io/clients">{' '}modelcontextprotocol.io/clients{' '}</a>
+      にあります。各クライアントの設定ファイルパスは更新されることがあるので、
+      迷ったら本家を参照してください。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · ツール一覧"
+    heading="4 つすべて MCP の標準 stdio 経由で呼べる。"
+  >
+    <ul>
+      <li>
+        <strong><code>list_recipes(layer?, project?, q?)</code></strong> —
+        カタログをフィルタして列挙。<code>layer</code> は 1/2/3 の整数、
+        <code>project</code> は上流プロジェクト名（<code>"pandas"</code>等）、
+        <code>q</code> は slug / project / title 横断の部分文字列検索。
+      </li>
+      <li>
+        <strong><code>get_recipe(slug)</code></strong> — 1 つのレシピの全メタデータ
+        （title / project / issue / page URL / verdict snapshot URL / GitHub source URL）。
+        slug が見つからなければ <code>{`{ found: false, error }`}</code>。
+      </li>
+      <li>
+        <strong><code>lookup_verdict(slug)</code></strong> — Layer 1 は{' '}
+        <code>{`{ kind: "live", page_url, note }`}</code>（verdict はブラウザ実行時に出る）、
+        Layer 2 / 3 は <code>{`{ kind: "snapshot", snapshot: { verdict, exit_code, image_digest, stdout, stderr_tail, ... } }`}</code>。
+      </li>
+      <li>
+        <strong><code>match_error(text, limit?)</code></strong> — エラー文字列・スタックトレースから
+        機械的トークンマッチで候補レシピをスコア順で返す。LLM もファジーマッチも使わず、
+        symptom / tags / project / slug への完全一致で重みづけ。
+      </li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · サンプルプロンプト"
+    heading="3 つの典型的な使い方。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'エラー文を貼って候補レシピを探す。',
+          body: <>「<em>このスタックトレースに合いそうな Vivarium レシピを <code>match_error</code> で 5 件出して: ...貼り付け...</em>」 → エージェントが <code>match_error</code> を呼び、上位を表示。気になったものを <code>get_recipe</code> で詳細取得。</>,
+        },
+        {
+          lead: '今この瞬間に再現するか確認する。',
+          body: <>「<em><code>pandas-56679</code> の現在の verdict を <code>lookup_verdict</code> で見て</em>」→ Layer 1 は <code>kind: "live"</code> なので「ページを開いて確認するURLを返却」、Layer 2 / 3 はスナップショットの数値が直接出る。</>,
+        },
+        {
+          lead: '層・プロジェクトでフィルタして列挙。',
+          body: <>「<em><code>list_recipes</code> で Layer 2 のものだけ全部出して</em>」→ <code>{`{ layer: 2 }`}</code> 引数で呼ばれ、Layer 2 (Docker) レシピだけが返る。</>,
+        },
+      ]}
+    />
+    <Callout>
+      <code>match_error</code> のスコアリングは
+      <a href="/vivarium/ja/repro/match"> 「エラーからレシピを探す」</a>{' '}
+      ページとビット同一です。MCP 経由でも UI 経由でも同じ候補順が出ます。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · 詰まりやすい点"
+    heading="経験上、ここで止まる人が多い。"
+  >
+    <ul>
+      <li>
+        <strong><code>dist/index.js</code> が無い。</strong>
+        <code>bun run build</code> を流していない場合に起きる。
+        <code>packages/mcp-server</code> 直下で <code>bun install &amp;&amp; bun run build</code>{' '}
+        を 1 度走らせる必要があります。
+      </li>
+      <li>
+        <strong>絶対パスでないと一部クライアントが見つけられない。</strong>{' '}
+        ホームディレクトリ短縮表記や相対パスは展開されないことがあります。
+        <code>$HOME/code/vivarium/...</code> ではなく
+        <code>/Users/&lt;you&gt;/code/vivarium/.../dist/index.js</code>{' '}
+        のようにフルパスで書きます。
+      </li>
+      <li>
+        <strong>レシピが古い気がする。</strong> サーバは{' '}
+        <code>https://aletheia-works.github.io/vivarium/api/recipes.json</code>{' '}
+        を 5 分 TTL でキャッシュ、ネット切断時は build-time の snapshot にフォールバック。
+        最新を強制したいときは MCP サーバを再起動するのが早いです。
+      </li>
+      <li>
+        <strong>Layer 1 の verdict が「snapshot じゃない」と言われる。</strong>{' '}
+        Layer 1 はブラウザでの実行が確定の場で、サーバ側にスナップショットを置かない設計
+        （<a href="/vivarium/ja/spec/contract-v1">Contract v1</a>）。
+        エージェントには <code>kind: "live"</code> の page_url を提示して、
+        ブラウザで開いて確認させるのが正規ルートです。
+      </li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · この先"
+    heading="MCP 経由で次にできること。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: '自分のリポジトリの CI と組み合わせる。',
+          body: <><a href="/vivarium/ja/guide/integrate-with-your-repo">自分のリポジトリに統合する</a> でCI 側の verdict 監視が立ち、エージェント側からは MCP でカタログを検索する、という両方向の組み合わせができます。</>,
+        },
+        {
+          lead: 'ブランチ修正を verdict で検証する（B3 で予定）。',
+          body: <>修正候補が本当に reproduced → unreproduced を起こしたかをエージェントから一発で確認するためのフロー（B3、ADR-0028）が Phase 7 で予定されています。今は <a href="/vivarium/ja/repro/compare">比較ページ</a> を手動で使う形ですが、将来は MCP 経由で完結する見込みです。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    手順のどこかで詰まったら、それは use-from-ai-agent のバグです。
+    クライアント名・OS・詰まったステップ番号を Issue に残してください。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      自分のリポジトリに統合する{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="MCP からカタログが見える状態になったら、自分の CI 側でも verdict を監視するともう片側が閉じます。"
+  primary={{ label: '統合ガイド →', href: '/vivarium/ja/guide/integrate-with-your-repo' }}
+  ghost={{ label: '用語集', href: '/vivarium/ja/guide/glossary' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

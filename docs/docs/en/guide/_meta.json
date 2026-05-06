@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "use-from-ai-agent",
+    "label": "Use from your AI agent"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "Run on your own fork"
   },
