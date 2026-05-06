@@ -50,43 +50,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # The artifact lives in the upstream Terraform Apply run, not in
+      # this workflow's run. `actions/download-artifact` defaults to the
+      # current run, so an explicit `run-id` is required:
+      #   - workflow_run trigger → the apply run that triggered us
+      #   - schedule / workflow_dispatch → the latest apply run, recorded
+      #     in the LATEST_APPLY_RUN_ID repo variable by the upstream
+      #     reusable apply workflow.
+      # No `continue-on-error`: a missing artifact means the backup did
+      # not happen, and that must surface as a failed run rather than a
+      # silent no-op.
       - name: Download latest state artifact
-        id: download
-        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: terraform-state
           path: ./state-backup/
+          run-id: ${{ github.event.workflow_run.id || vars.LATEST_APPLY_RUN_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check state exists
+      - name: Verify state file present
         id: check
         run: |
-          if [ -f ./state-backup/terraform.tfstate ]; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            # Record state file size for release notes.
-            echo "state_size=$(stat -c%s ./state-backup/terraform.tfstate)" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "::warning::No state file found in artifacts. Skipping backup."
+          if [ ! -f ./state-backup/terraform.tfstate ]; then
+            echo "::error::Expected ./state-backup/terraform.tfstate after artifact download but the file is missing."
+            exit 1
           fi
+          echo "state_size=$(stat -c%s ./state-backup/terraform.tfstate)" >> $GITHUB_OUTPUT
 
       - name: Generate timestamp
         id: timestamp
-        if: steps.check.outputs.exists == 'true'
         run: |
           echo "date=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
           echo "datetime=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
           echo "tag=state-backup-$(date -u +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: Rename state file with timestamp
-        if: steps.check.outputs.exists == 'true'
         run: |
           mv ./state-backup/terraform.tfstate \
              ./state-backup/terraform-${{ steps.timestamp.outputs.date }}.tfstate
 
       - name: Create Release with state backup
-        if: steps.check.outputs.exists == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.timestamp.outputs.tag }}
@@ -124,7 +127,6 @@ jobs:
             --prerelease
 
       - name: Cleanup old backups (keep last 12)
-        if: steps.check.outputs.exists == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
