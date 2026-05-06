@@ -22,11 +22,43 @@ deployed verdict snapshots, without scraping the docs site.
 
 ## Install
 
-### npm (default for `npx`-based MCP launchers)
+> **Status (2026-05-06)**: not yet published to a registry. The
+> `mcp-server-v0.1.0` tag has not been pushed, so the `npx` and
+> `bunx jsr:` snippets below would 404 today. Until the first publish,
+> use the local-clone path. The
+> [`publish-mcp.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/publish-mcp.yml)
+> workflow handles dual JSR + npm release on tag push; the snippets
+> in the next two subsections will work once that runs for the first
+> time.
 
-Add the server to your client's MCP configuration. The exact file
-location varies by client (Claude Code: `~/.claude/mcp.json`; Cline:
-its VS Code settings; Cursor: `~/.cursor/mcp.json`). Snippet:
+### Local clone (works today)
+
+```bash
+git clone https://github.com/aletheia-works/vivarium.git
+cd vivarium/packages/mcp-server
+bun install
+bun run build
+```
+
+Then point your MCP client at the built entry point:
+
+```json
+{
+  "mcpServers": {
+    "vivarium": {
+      "command": "node",
+      "args": ["/absolute/path/to/vivarium/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+### npm (post-publish; default for `npx`-based MCP launchers)
+
+Once the server has been published, the configuration becomes a
+single-line `npx` invocation. The exact MCP-config file location
+varies by client (Claude Code: `~/.claude/mcp.json`; Cline: its VS
+Code settings; Cursor: `~/.cursor/mcp.json`). Snippet:
 
 ```json
 {
@@ -39,7 +71,7 @@ its VS Code settings; Cursor: `~/.cursor/mcp.json`). Snippet:
 }
 ```
 
-### JSR (Deno / Bun-native install)
+### JSR (post-publish; Deno / Bun-native install)
 
 For clients with native JSR support (Bun ≥ 1.1, Deno):
 
