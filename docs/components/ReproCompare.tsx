@@ -543,7 +543,20 @@ export function VerdictCompareLayout({
 
 /* ------------------------------ Drop / load ------------------------------ */
 
-const PAGES_BASE = 'https://aletheia-works.github.io/vivarium/repro';
+// Resolves the deployed Pages base for the *current* host (so fork
+// deploys at <user>.github.io/<repo>/ work without rebuild). Looks up
+// the URL path up to the `/repro` segment from window.location and
+// reuses the same origin. Falls back to upstream during SSR / pre-hydrate.
+function resolvePagesBase(): string {
+  if (typeof window === 'undefined') {
+    return 'https://aletheia-works.github.io/vivarium/repro';
+  }
+  const { origin, pathname } = window.location;
+  const idx = pathname.indexOf('/repro');
+  return idx >= 0 ? `${origin}${pathname.slice(0, idx)}/repro` : `${origin}/repro`;
+}
+
+const PAGES_BASE = resolvePagesBase();
 
 async function readZipEntries(
   file: File,

@@ -12,8 +12,25 @@
 # In GitHub Actions, tfvars are not used — values are injected via
 # environment variables and workflow inputs.
 
+# ─── Required ────────────────────────────────────────────────────────
+#
+# Set this to your own GitHub user or org if you forked the repo.
+# The upstream value is "aletheia-works".
 github_owner = "aletheia-works"
 
-# Defaults are usually fine. Override only when needed:
+
+# ─── Optional ────────────────────────────────────────────────────────
+#
+# Defaults are usually fine. Override only when needed.
+#
 # repository_name        = "vivarium"
 # repository_visibility  = "public"
+#
+# `create_phase_milestones` controls whether the Vivarium Phase 0–N
+# milestone set is materialised on the repository. Phase milestones are
+# upstream context (a roadmap shape this project happens to use); fork
+# users do not need them. Default: false.
+#
+# Upstream `aletheia-works/vivarium` overrides this to `true`:
+#
+# create_phase_milestones = true

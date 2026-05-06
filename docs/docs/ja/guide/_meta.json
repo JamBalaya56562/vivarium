@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "fork-your-own",
+    "label": "自分のフォークで動かす"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "用語集"
   }
