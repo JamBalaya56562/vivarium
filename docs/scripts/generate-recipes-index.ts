@@ -37,8 +37,15 @@ import { readdir, readFile, stat, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PAGES_BASE = 'https://aletheia-works.github.io/vivarium';
-const REPO_BASE = 'https://github.com/aletheia-works/vivarium';
+// Owner and repository name. Resolved from CI-provided env vars when
+// the script runs in GitHub Actions (so a fork's deploy bundles its
+// own URLs); falls back to the upstream values for local dev.
+const OWNER = process.env['GITHUB_REPOSITORY_OWNER'] ?? 'aletheia-works';
+const REPO_NAME =
+  process.env['GITHUB_REPOSITORY']?.split('/')[1] ?? 'vivarium';
+
+const PAGES_BASE = `https://${OWNER}.github.io/${REPO_NAME}`;
+const REPO_BASE = `https://github.com/${OWNER}/${REPO_NAME}`;
 
 type Layer = 1 | 2 | 3;
 

@@ -1,0 +1,234 @@
+---
+pageType: doc
+title: 自分のフォークで動かす
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · フォーク運用"
+    title="自分のフォークで Vivarium を動かす。"
+    sub="このリポジトリをフォークして、自分のバグ再現を自分の GitHub Pages に公開する手順。アップストリームに PR を投げなくても、自分自身のリポジトリで再現を整え、URL でシェアできる。"
+  />
+
+  <Section
+    eyebrow="// 0 · 何ができるか"
+    heading="自分の <user>.github.io/vivarium/ に自分のバグ再現を並べる。"
+  >
+    <p>
+      この使い方では、ユーザーは <code>aletheia-works/vivarium</code> をフォークし、
+      自分のフォークリポジトリの上で再現レシピを足したり編集したりして、
+      自分の GitHub Pages サイトとして公開します。アップストリームに
+      contribute するのではなく、<strong>自分のフォーク自体が公開先</strong>
+      になります。
+    </p>
+    <p>
+      Layer 1（ブラウザ内 WASM）は完全にあなたのフォーク側で完結します。
+      Layer 2 / 3（Docker・record-replay）はアップストリームの GHCR
+      イメージと統合された配信が前提なので、フォークでは <strong>Layer 1 のみ</strong>
+      が deploy されます。
+    </p>
+    <Callout>
+      アップストリームの再現一覧と並べる予定がない、自分専用の再現置き場として
+      使う運用を想定しています。共有したいときは <code>https://&lt;あなた&gt;.github.io/vivarium/</code>
+      の URL を渡すだけです。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · リポジトリをフォークする"
+    heading="GitHub の UI から 1 クリック。"
+  >
+    <p>
+      <a href="https://github.com/aletheia-works/vivarium">aletheia-works/vivarium</a> 右上の
+      <strong>Fork</strong> ボタンから自分のアカウント（または組織）配下にフォークします。
+      リポジトリ名は <code>vivarium</code> のままでも、別名でも構いません（別名にした場合は
+      この手順書の <code>vivarium</code> 部分を読み替えてください）。
+    </p>
+    <p>
+      その後ローカルにクローンします:
+    </p>
+    <pre><code>{`git clone https://github.com/<あなた>/vivarium.git
+cd vivarium`}</code></pre>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · ツールチェーンを揃える"
+    heading="mise が一括で入れる。"
+  >
+    <p>
+      このプロジェクトは <a href="https://mise.jdx.dev/">mise</a> でツールバージョンを管理しています。
+      クローン直下で:
+    </p>
+    <pre><code>{`mise install`}</code></pre>
+    <p>
+      これで <code>bun</code>（docs/MCP サーバ用）、<code>opentofu</code>（GitHub 設定の
+      Infrastructure-as-Code 用）、<code>uv</code>（Python ネイティブ再検証用）等が揃います。
+      レシピを追加する Layer / 言語によっては Rust ツールチェイン（<code>rustup</code>）も必要です。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · Fine-grained PAT を発行する"
+    heading="OpenTofu がフォークの設定を読み書きするためのトークン。"
+  >
+    <p>
+      <a href="https://github.com/settings/personal-access-tokens/new">
+      Settings → Developer settings → Personal access tokens → Fine-grained
+      </a>
+      から、自分のフォークリポジトリ宛のトークンを発行します。
+    </p>
+    <ul>
+      <li><strong>Resource owner</strong>: 自分のアカウント（または組織）</li>
+      <li><strong>Repository access</strong>: フォークしたリポジトリのみ</li>
+      <li><strong>Repository permissions</strong>: Administration (RW), Contents (RW), Metadata (R), Issues (RW), Pull requests (RW), Actions (RW), Workflows (RW), Variables (RW), Webhooks (RW)</li>
+    </ul>
+    <Callout>
+      トークン値は<strong>絶対にコミットしない</strong>でください。
+      <code>terraform.tfvars</code> もリポジトリの <code>.gitignore</code> に登録済みです。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · OpenTofu でフォーク側のリポジトリ設定を整える"
+    heading="ラベル、Pages、ブランチ保護を一括反映。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'tfvars を作成。',
+          body: 'cp infra/github/terraform.tfvars.example infra/github/terraform.tfvars してから、github_owner = "<あなた>" に書き換えます。create_phase_milestones は false（デフォルト）のままでよく、Phase マイルストーンはアップストリーム専用なのでフォークでは作成されません。',
+        },
+        {
+          lead: 'PAT を環境変数に。',
+          body: 'export GITHUB_TOKEN=github_pat_xxxxxxxx。シェルが閉じれば消えます。',
+        },
+        {
+          lead: 'plan して apply。',
+          body: 'cd infra/github && tofu init && tofu plan の出力を確認した上で tofu apply。Pages の有効化、ラベル、ブランチ保護がフォーク側に反映されます。',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 5 · GitHub Pages のデプロイを有効にする"
+    heading="リポジトリ変数を 1 つ足すだけ。"
+  >
+    <p>
+      フォークでは GitHub Pages へのデプロイは<strong>デフォルトで止めて</strong>あります
+      （<code>.github/workflows/deploy-docs.yml</code> の <code>if</code> 条件によるもの）。
+      フォークの所有者として deploy を有効化したい場合は、リポジトリ変数を 1 つ足します。
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'GitHub UI で Settings → Secrets and variables → Actions を開く。',
+          body: '"Variables" タブを選びます（"Secrets" ではありません）。',
+        },
+        {
+          lead: '"New repository variable" をクリック。',
+          body: 'Name: VIVARIUM_FORK_DEPLOY、Value: true。',
+        },
+        {
+          lead: '次の push、または手動実行で deploy が走る。',
+          body: 'Actions タブ → Deploy docs to GitHub Pages → Run workflow から手動でも起動できます。',
+        },
+      ]}
+    />
+    <p>
+      この変数を後で消せば、deploy は再びスキップされます。
+      Layer 2（Docker / GHCR）はフォークの権限ではプッシュできないため、
+      フォーク deploy では<strong>自動的に Layer 1 のみ</strong>がバンドルされます。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · 自分のレシピを追加する"
+    heading="src/layer1_wasm/<slug>/ にディレクトリを 1 つ。"
+  >
+    <p>
+      Layer 1 レシピの最小単位は、再現したい上流バグごとに 1 つのディレクトリです:
+    </p>
+    <ul>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/index.html</code> — レシピページの骨格</li>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/repro.ts</code> — Pyodide / Ruby.wasm / php-wasm / Rust などで再現スクリプトを実行し、verdict を設定</li>
+      <li><code>src/layer1_wasm/&lt;slug&gt;/README.md</code> — レシピの説明</li>
+    </ul>
+    <p>
+      既存の <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"><code>pandas-56679</code></a>
+      や <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779"><code>regex-779</code></a> を雛形にコピーして、
+      上流バグの slug（<code>&lt;project&gt;-&lt;issue&gt;</code> 推奨）と
+      再現スクリプトを書き換えるのが最短です。
+    </p>
+    <Callout>
+      レシピが satisfy するべき仕様は <a href="/vivarium/ja/spec/contract-v1">Contract v1</a>
+      に書かれています。<code>&lt;meta name="vivarium-contract" content="v1"&gt;</code> と
+      <code>data-verdict="reproduced|unreproduced|pending"</code> の <code>#verdict</code>
+      要素を出力すれば、自動的に整合します。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 7 · push して deploy を確認"
+    heading="自分の Pages URL でレシピを開く。"
+  >
+    <p>
+      レシピを <code>main</code> にプッシュすると、<code>VIVARIUM_FORK_DEPLOY=true</code>
+      が設定されたフォークでは <code>deploy-docs</code> ワークフローが走ります。完了後、
+      以下の URL でサイトが見えます:
+    </p>
+    <pre><code>{`https://<あなた>.github.io/vivarium/`}</code></pre>
+    <p>
+      個別レシピは <code>/repro/&lt;project&gt;/&lt;issue&gt;/</code> 以下に配置されます。
+      この URL は <code>recipes.json</code> 生成時に <code>GITHUB_REPOSITORY_OWNER</code> /
+      <code>GITHUB_REPOSITORY</code> から動的に組み立てられるため、フォークでも
+      ハードコード書き換えなしで正しい URL が出力されます。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 8 · 共有する"
+    heading="URL を渡すだけ。"
+  >
+    <p>
+      自分のフォーク URL（<code>https://&lt;あなた&gt;.github.io/vivarium/</code>）を Issue
+      / PR / 社内チャットで共有すれば、相手はブラウザを開くだけで再現を確認できます。
+      Vivarium のレシピは Contract v1 に従っているので、AI エージェントを含む第三者ツールが
+      verdict を機械的に読むこともできます。
+    </p>
+  </Section>
+
+  <Callout>
+    アップストリームに re-publish したくなったら、自分のフォークで作ったレシピディレクトリを
+    そのまま PR にして <code>aletheia-works/vivarium</code> に投げられます。仕様（Contract v1）
+    が同じなので、フォーク時代の verdict はそのまま意味を持ちます。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// 次のページ"
+  heading={
+    <>
+      用語集を読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="レシピ追加で出てくる用語（slug、verdict、layer など）はガイド配下の用語集にまとめてあります。"
+  primary={{ label: '用語集 →', href: '/vivarium/ja/guide/glossary' }}
+  ghost={{ label: '再現一覧', href: '/vivarium/ja/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

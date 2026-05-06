@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "fork-your-own",
+    "label": "Run on your own fork"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "Glossary"
   }
