@@ -60,6 +60,9 @@
         "noNonNullAssertion": "off",
         "noDescendingSpecificity": "off"
       },
+      "complexity": {
+        "noImportantStyles": "off"
+      },
       "suspicious": {
         "noArrayIndexKey": "off"
       },

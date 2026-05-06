@@ -35,12 +35,12 @@ html.dark {
 
 @media (min-width: 960px) {
   .rp-nav__others {
-    display: flex;
+    display: flex !important;
   }
 
   .rp-nav-hamburger,
   .rp-nav-hamburger__md {
-    display: none;
+    display: none !important;
   }
 }
 
@@ -56,8 +56,8 @@ html.dark {
 .rp-sidebar-section-header[class*="active"],
 [class*="rp-sidebar"] a[class*="active"],
 [class*="sidebar"] [class*="link-active"] {
-  color: var(--rp-c-brand);
-  font-weight: 600;
+  color: var(--rp-c-brand) !important;
+  font-weight: 600 !important;
   background: color-mix(in srgb, var(--rp-c-brand) 10%, transparent);
   border-left: 2px solid var(--rp-c-brand);
 }
@@ -65,14 +65,14 @@ html.dark {
 /* Hover state for sidebar links */
 [class*="rp-sidebar"] a:hover,
 [class*="sidebar"] [class*="link"]:hover {
-  color: var(--rp-c-brand);
+  color: var(--rp-c-brand) !important;
 }
 
 /* Outline (right TOC) active marker in teal */
 [class*="rp-outline"] [class*="active"],
 [class*="outline"] [class*="link-active"] {
-  color: var(--rp-c-brand);
-  border-color: var(--rp-c-brand);
+  color: var(--rp-c-brand) !important;
+  border-color: var(--rp-c-brand) !important;
 }
 
 /* Section eyebrows (mono "// ...") in our docs already use teal — make
@@ -81,7 +81,7 @@ html.dark {
 .v-section__eyebrow,
 .v-page-hero__eyebrow,
 .v-next-cta__eyebrow {
-  color: var(--rp-c-brand);
+  color: var(--rp-c-brand) !important;
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -95,9 +95,9 @@ html.dark {
  * specificity. We need !important to win the cascade because rspress's
  * stylesheet loads after this one. */
 :root {
-  --rp-sidebar-width: 232px;
-  --rp-outline-width: 200px;
-  --rp-content-max-width: 1100px;
+  --rp-sidebar-width: 232px !important;
+  --rp-outline-width: 200px !important;
+  --rp-content-max-width: 1100px !important;
 }
 
 /* Sidebar links wrap less aggressively; let single-line entries overflow
