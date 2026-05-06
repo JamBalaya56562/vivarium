@@ -4,6 +4,7 @@ title: Branch-fix comparison
 ---
 
 import { Page, PageHero } from '../../../components/PageChrome';
+import { VivariumCompareIntro } from '../../../components/VivariumCompareIntro';
 import { ReproCompareApp } from '../../../components/ReproCompare';
 
 <Page>
@@ -12,6 +13,8 @@ import { ReproCompareApp } from '../../../components/ReproCompare';
     title={<>branch-fix vs original.</>}
     sub="Drop a verdict bundle from branch-fix-verdict.yml and see your fix line up against the deployed snapshot. All parsing happens locally — your verdicts never leave this browser."
   />
+
+  <VivariumCompareIntro />
 
   <ReproCompareApp lang="en" />
 </Page>
