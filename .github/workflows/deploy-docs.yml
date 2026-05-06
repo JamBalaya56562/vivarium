@@ -62,12 +62,16 @@ concurrency:
 
 jobs:
   build:
-    # Skip on forks. The push trigger fires in any fork that has Actions
-    # enabled, but a fork's main has no Pages site to deploy to (and
-    # would fail at the `actions/deploy-pages` step on GHCR push without
-    # the org's GITHUB_TOKEN scope). The same fork-skip pattern is used
-    # by terraform-apply.yml and terraform-state-backup.yml.
-    if: github.repository_owner == 'aletheia-works'
+    # Runs unconditionally on the upstream `aletheia-works/vivarium` repo.
+    # Forks skip the build by default (the push trigger fires in every
+    # fork with Actions enabled, but most forks do not want Pages to
+    # deploy from this workflow). A fork user who DOES want their own
+    # `<owner>.github.io/<repo>/` site can opt in by setting a single
+    # repository variable: Settings → Secrets and variables → Actions
+    # → Variables → New repository variable, name `VIVARIUM_FORK_DEPLOY`,
+    # value `true`. Layer 2 image build/push remains gated below to
+    # `aletheia-works` only — fork deploys ship Layer 1 only.
+    if: github.repository_owner == 'aletheia-works' || vars.VIVARIUM_FORK_DEPLOY == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -148,6 +152,11 @@ jobs:
         # default `GITHUB_TOKEN`; the workflow's `packages: write`
         # permission lets us push to `ghcr.io/aletheia-works/*` without
         # a separately-rotated PAT.
+        #
+        # Fork users (running with VIVARIUM_FORK_DEPLOY=true) skip this
+        # step — fork deploys ship Layer 1 only because the GITHUB_TOKEN
+        # has no GHCR push scope into `ghcr.io/aletheia-works/*`.
+        if: github.repository_owner == 'aletheia-works'
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -170,6 +179,10 @@ jobs:
         # alongside the rest of the directory.
         #
         # Skipped silently if no Layer 2 reproductions exist.
+        #
+        # Fork users (running with VIVARIUM_FORK_DEPLOY=true) skip this
+        # step — Layer 2 deploy stays upstream-only.
+        if: github.repository_owner == 'aletheia-works'
         working-directory: ${{ github.workspace }}
         env:
           IMAGE_OWNER: aletheia-works
@@ -274,7 +287,10 @@ jobs:
             exit 0
           fi
           mkdir -p "$dest"
-          pages_prefix="https://aletheia-works.github.io/vivarium/repro/"
+          # Derived from the runtime context so fork deploys
+          # (VIVARIUM_FORK_DEPLOY=true) bundle correctly under the
+          # fork's own `<owner>.github.io/<repo>/repro/` URL.
+          pages_prefix="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY##*/}/repro/"
           # Stage shared scaffolding (`_shared/`, `_assets/`, ...) under
           # each Layer 1 project's directory so recipes' `../_shared/...`
           # refs resolve to `/repro/<project>/_shared/...`.
@@ -366,7 +382,10 @@ jobs:
           fi
           shopt -s nullglob
           mkdir -p "$dest"
-          pages_prefix="https://aletheia-works.github.io/vivarium/repro/"
+          # Derived from the runtime context so fork deploys
+          # (VIVARIUM_FORK_DEPLOY=true) bundle correctly under the
+          # fork's own `<owner>.github.io/<repo>/repro/` URL.
+          pages_prefix="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY##*/}/repro/"
           # Stage shared scaffolding under each Layer 2 project.
           layer2_projects="$(jq -r '.recipes[] | select(.layer == 2) | .project' \
             docs/public/api/recipes.json | sort -u)"
@@ -378,6 +397,16 @@ jobs:
               echo "Staging Layer 2 shared module: ${shared_name} → ${dest}/${project}/${shared_name}"
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done
+            # Layer 2 pages reference `../_shared/style.css` for the
+            # shared chrome (header, code blocks, verdict pill). The
+            # styles physically live under src/layer1_wasm/_shared/ and
+            # are reused by Layer 2 — copy them into each Layer 2
+            # project so the relative path resolves under
+            # `<dest>/<project>/_shared/style.css` after deploy.
+            if [ -d "src/layer1_wasm/_shared" ]; then
+              echo "Staging Layer 1 _shared/ for Layer 2 project: ${dest}/${project}/_shared"
+              cp -R "src/layer1_wasm/_shared" "$dest/$project/_shared"
+            fi
           done
           # Bundle each individual Layer 2 recipe.
           for entry in src/layer2_docker/*/; do
@@ -403,6 +432,31 @@ jobs:
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
             cp -R "${entry}." "$dest/$rel/"
+            # Legacy slug-only URL `/repro/<slug>/` redirect. Before the
+            # hierarchical-URL move, Layer 2 pages were published at
+            # `<pages-base>/repro/<slug>/`; existing links in the wild
+            # need a meta-refresh to the new
+            # `<project>/<issue_path>/` location.
+            if [ "$rel" != "$slug" ]; then
+              mkdir -p "$dest/$slug"
+              cat > "$dest/$slug/index.html" <<HTML
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>Vivarium · moved to /repro/${rel}/</title>
+              <meta http-equiv="refresh" content="0; url=../${rel}/" />
+              <link rel="canonical" href="../${rel}/" />
+              <meta name="robots" content="noindex" />
+            </head>
+            <body>
+              <p>This reproduction has moved to
+                <a href="../${rel}/">/repro/${rel}/</a>.
+                Updating in a moment…</p>
+            </body>
+          </html>
+          HTML
+            fi
           done
           ls -la "$dest" || true
 
