@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "integrate-with-your-repo",
+    "label": "Integrate with your own repo"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "Run on your own fork"
   },
