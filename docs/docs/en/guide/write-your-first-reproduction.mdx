@@ -1,0 +1,272 @@
+---
+pageType: doc
+title: Write your first reproduction
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · WRITE A RECIPE"
+    title="Author one Layer 1 recipe that runs in a browser tab."
+    sub="Copy the nearest existing recipe, swap the slug and the reproduction script, and you have a Vivarium-compatible reproduction page running locally. From there, the choice is upstream PR or self-publish on a fork."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT THIS GUIDE COVERS"
+    heading="A minimal Layer 1 (in-browser WASM) recipe."
+  >
+    <p>
+      Layer 1 pulls the upstream code into the browser via{' '}
+      <a href="https://pyodide.org/">Pyodide</a>,{' '}
+      <a href="https://ruby.wasm.ie/">Ruby.wasm</a>, php-wasm, or the Rust{' '}
+      <code>wasm32-wasip1</code> target, runs the reproduction script the
+      moment the page loads, and returns a verdict. No install, no server —
+      so a Layer 1 recipe is the lowest-cost first contribution to Vivarium.
+    </p>
+    <p>
+      Layer 2 (Docker) and Layer 3 (record-replay) have their own niches in{' '}
+      <a href="/vivarium/en/architecture">architecture</a>, but if you are
+      writing your first recipe, start at Layer 1.
+    </p>
+    <Callout>
+      This guide ends at "I have a working recipe locally." Where to
+      publish it is a separate two-way fork:{' '}
+      <a href="/vivarium/en/guide/fork-your-own">Run on your own fork</a>{' '}
+      or a PR to the upstream repo.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · PICK A BUG"
+    heading="Slug shape: <project>-<issue>."
+  >
+    <p>
+      If the upstream bug has an issue tracker entry, the slug is{' '}
+      <code>&lt;project&gt;-&lt;issue&gt;</code> (e.g.{' '}
+      <code>pandas-56679</code>). Otherwise, a descriptive kebab-case
+      string (e.g. <code>bash-local-shadows-exit</code>) works. The slug is
+      the directory name and also the Manifest v1 <code>slug</code> field.
+    </p>
+    <p>
+      A Layer 1-friendly bug usually has these properties:
+    </p>
+    <ul>
+      <li>No external I/O (no network, no filesystem, no subprocess).</li>
+      <li>The verdict collapses to <strong>one boolean</strong> (e.g. "are these two values equal?").</li>
+      <li>The required libraries ship inside the WASM build of the runtime (Pyodide / Ruby.wasm / php-wasm bundled package list).</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · CLONE AND COPY A TEMPLATE"
+    heading="Copying the closest existing recipe is the shortest path."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Pick a clone target.',
+          body: <>For an upstream PR, clone <code>aletheia-works/vivarium</code> directly. To self-publish, follow the <a href="/vivarium/en/guide/fork-your-own">fork guide</a> and clone your fork.</>,
+        },
+        {
+          lead: 'Set up the toolchain via mise.',
+          body: <><code>mise install</code> at the repo root pulls <code>bun</code> and the rest. For Layer 1 specifically, also run <code>bun install</code> from <code>src/layer1_wasm/</code>.</>,
+        },
+        {
+          lead: 'Copy the closest existing recipe.',
+          body: <>Pick one in the same language: Python → <code>src/layer1_wasm/pandas-56679/</code>, Ruby → <code>ruby-21709/</code>, PHP → <code>php-12167/</code>, Rust → <code>regex-779/</code>. Copy the whole directory: <code>cp -r src/layer1_wasm/pandas-56679 src/layer1_wasm/&lt;your-slug&gt;</code>.</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 3 · EDIT INDEX.HTML"
+    heading="Three swaps: title, heading, lede."
+  >
+    <p>
+      Keep the structure of the copied <code>index.html</code>; replace
+      these three to match the bug:
+    </p>
+    <ul>
+      <li><code>&lt;title&gt;</code> — tab title (e.g. <code>Vivarium · Reproducing &lt;project&gt;#&lt;issue&gt;</code>).</li>
+      <li><code>&lt;h1&gt;</code> — heading. Link to the upstream issue.</li>
+      <li><code>&lt;p class="lede"&gt;</code> — one-to-two-sentence summary.</li>
+    </ul>
+    <p>
+      <strong>Do not touch</strong>:{' '}
+      <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>, the{' '}
+      <code>#verdict</code> element, or the link to{' '}
+      <code>../_shared/style.css</code>. Those carry Contract v1, and
+      removing any of them breaks machine-readable verdict capture.
+    </p>
+    <Callout>
+      The authoritative spec lives at{' '}
+      <a href="/vivarium/en/spec/contract-v1">Contract v1</a>. The
+      allowed values for <code>data-verdict</code> and the schema for the{' '}
+      <code>__VIVARIUM_RESULT__</code> envelope come from there.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · EDIT REPRO.TS"
+    heading="Swap the reproduction logic; keep the helpers."
+  >
+    <p>
+      The copied <code>repro.ts</code> imports from{' '}
+      <code>../_shared/loader.js</code> and{' '}
+      <code>../_shared/verdict.js</code>. Leave that frame alone and
+      swap only the <strong>reproduction body</strong>. For a Python
+      recipe:
+    </p>
+    <pre><code>{`const REPRO_CODE = \`
+import pandas as pd
+# ↑ minimum code that exercises the upstream bug
+result = {
+  "left": ...,   # value 1
+  "right": ...,  # value 2
+  "mismatch": <left> != <right>,
+}
+result
+\`.trim();
+`}</code></pre>
+    <p>
+      The helpers handle the verdict wiring: if the comparison is{' '}
+      <code>true</code> (bug reproduced), call{' '}
+      <code>setVerdict("reproduced", "...")</code>; otherwise{' '}
+      <code>setVerdict("unreproduced", "...")</code>.{' '}
+      <code>setResult({`{ contract: "v1", bug, runtime, result, timing }`})</code>{' '}
+      writes the <code>__VIVARIUM_RESULT__</code> envelope.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · RUN IT LOCALLY"
+    heading="bun run build → static server → open in browser."
+  >
+    <pre><code>{`# from src/layer1_wasm/
+bun install
+bun run build         # repro.ts → repro.js
+
+# serve the recipe directory directly
+python -m http.server -d src/layer1_wasm/<your-slug> 8765
+# open http://localhost:8765/ in a browser
+`}</code></pre>
+    <p>
+      The page loads, the upstream library streams in from the CDN, and
+      the verdict badge moves from <code>pending</code> to either{' '}
+      <code>reproduced</code> or <code>unreproduced</code>. In DevTools,
+      check that <code>__VIVARIUM_VERDICT__</code> and{' '}
+      <code>__VIVARIUM_RESULT__</code> agree with the badge — that's
+      the Contract v1 surface.
+    </p>
+    <Callout>
+      Pyodide / Ruby.wasm / php-wasm are all configured to avoid{' '}
+      <code>SharedArrayBuffer</code>, so COOP/COEP headers are not
+      required. A plain static server (<code>python -m http.server</code>,{' '}
+      <code>bunx serve</code>) is enough.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · NATIVE RE-VERIFICATION (OPTIONAL)"
+    heading="Show the same bug reproduces outside the browser."
+  >
+    <p>
+      A reproduction observed via Pyodide / Ruby.wasm is more convincing
+      when it also reproduces on a native CPython / MRI Ruby. For Python,{' '}
+      <a href="https://docs.astral.sh/uv/">uv</a> + PEP 723 inline
+      metadata gives you a single-file companion:
+    </p>
+    <pre><code>{`# /// script
+# requires-python = ">=3.13"
+# dependencies = ["pandas==2.3.3"]
+# ///
+import pandas as pd
+# … same reproduction logic …
+`}</code></pre>
+    <p>
+      <code>mise exec uv -- uv run repro.py</code> spins up an
+      ephemeral venv and runs it. Ruby, PHP, and Rust use the same
+      pattern — existing recipes' <code>repro.rb</code> /{' '}
+      <code>repro.php</code> / <code>Cargo.toml</code> are good
+      starting points.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 7 · REGENERATE recipes.json"
+    heading="Get your recipe into the gallery."
+  >
+    <p>
+      <code>recipes.json</code>, which the gallery (<code>/repro/</code>)
+      and the MCP server consume, is generated from{' '}
+      <code>src/layer*/</code> at build time. To regenerate locally:
+    </p>
+    <pre><code>{`mise run recipes:index
+# or
+cd docs && bun run generate-index
+`}</code></pre>
+    <p>
+      Check that <code>docs/public/api/recipes.json</code> contains your
+      slug. With the docs site running locally, the new recipe shows up
+      as a card on the gallery:
+    </p>
+    <pre><code>{`cd docs && bun run dev
+# http://localhost:3000/vivarium/en/repro/`}</code></pre>
+  </Section>
+
+  <Section
+    eyebrow="// 8 · WHERE TO PUBLISH"
+    heading="Upstream PR, fork, or consumer integration."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Contribute to the upstream catalogue.',
+          body: <>Open a PR on aletheia-works/vivarium with a Conventional Commit such as <code>feat(layer1): add &lt;slug&gt; reproduction</code>. The CI gate is essentially Contract v1 conformance — anything that turns green is in.</>,
+        },
+        {
+          lead: 'Self-publish on your fork.',
+          body: <>Push the recipe to your own <code>vivarium</code> fork's main, enable deploy via the <a href="/vivarium/en/guide/fork-your-own">fork guide</a>, and the recipe appears at <code>&lt;you&gt;.github.io/vivarium/</code>. Sharing is just sharing the URL.</>,
+        },
+        {
+          lead: 'Track an existing recipe from your project repo.',
+          body: <>If you only want to <em>watch</em> a recipe (no new authoring), you don't need this guide — see <a href="/vivarium/en/guide/integrate-with-your-repo">Integrate with your own repo</a>, which uses Manifest v1 plus the reusable consumer-workflow.</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    If a step in this guide fails, that's a bug in this guide — file an
+    issue with the step number. Where readers stall sets the priority for
+    the next docs revision.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the glossary{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The terms used here — slug, verdict, contract, layer — are pinned to fixed meanings in the glossary."
+  primary={{ label: 'Glossary →', href: '/vivarium/en/guide/glossary' }}
+  ghost={{ label: 'Contract v1 spec', href: '/vivarium/en/spec/contract-v1' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · SEE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

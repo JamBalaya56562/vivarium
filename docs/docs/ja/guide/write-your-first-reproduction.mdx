@@ -1,0 +1,265 @@
+---
+pageType: doc
+title: はじめての再現を書く
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · 再現を書く"
+    title="ブラウザだけで動く Layer 1 レシピを 1 つ書く。"
+    sub="既存レシピをコピーしてスラッグと再現スクリプトを差し替えるだけで、Vivarium 互換の再現ページが手元で動く。完成したらアップストリームへ PR を送るか、自分のフォークに置き続けるかを選べる。"
+  />
+
+  <Section
+    eyebrow="// 0 · このガイドが対象にするもの"
+    heading="Layer 1（ブラウザ内 WASM）の最小レシピ。"
+  >
+    <p>
+      Layer 1 は <a href="https://pyodide.org/">Pyodide</a>、
+      <a href="https://ruby.wasm.ie/">Ruby.wasm</a>、php-wasm、
+      Rust の <code>wasm32-wasip1</code> ターゲットなどで上流コードを
+      ブラウザに持ち込み、ページが開いた瞬間に再現スクリプトを走らせて
+      verdict を返す層です。インストール不要・サーバー不要なので、
+      Vivarium に最初に追加するレシピとして最もコストが低いです。
+    </p>
+    <p>
+      Layer 2（Docker）と Layer 3（record-replay）はそれぞれ
+      <a href="/vivarium/ja/architecture">アーキテクチャ</a>{' '}
+      に役割が書かれていますが、書き始めるならまず Layer 1 一択です。
+    </p>
+    <Callout>
+      このガイドは<strong>レシピを書く</strong>ところまでを対象にします。
+      その先「どこに公開するか」は 2 分岐で、{' '}
+      <a href="/vivarium/ja/guide/fork-your-own">自分のフォークで動かす</a>{' '}
+      または上流リポジトリへの PR、のどちらかです。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · 再現したいバグを決める"
+    heading="スラッグは <project>-<issue> 形式。"
+  >
+    <p>
+      上流 Issue がある場合は <code>&lt;project&gt;-&lt;issue&gt;</code>
+      （例: <code>pandas-56679</code>）が標準。
+      ない場合は説明的なケバブケース（例: <code>bash-local-shadows-exit</code>）。
+      これがディレクトリ名でもあり、Manifest v1 の <code>slug</code> でもあります。
+    </p>
+    <p>
+      バグを選ぶときは、Layer 1 で完結するか確認するのがコツです:
+    </p>
+    <ul>
+      <li>外部 I/O（ネットワーク、ファイル、サブプロセス）を踏まない。</li>
+      <li>verdict が <strong>1 つの真偽値</strong>に落ちる（例: 「2 つの値が等しいか」）。</li>
+      <li>必要なライブラリが対象ランタイムの WASM ビルドに乗っている（Pyodide / Ruby.wasm / php-wasm の同梱パッケージ一覧）。</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · クローンして雛形をコピーする"
+    heading="一番近い既存レシピを丸ごとコピーするのが最短。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'リポジトリを用意する。',
+          body: <>アップストリームに PR したいなら <code>aletheia-works/vivarium</code> を直接クローン、自分のフォークに置きたいなら <a href="/vivarium/ja/guide/fork-your-own">フォーク手順</a> でフォークしてからクローンします。</>,
+        },
+        {
+          lead: 'mise でツールを揃える。',
+          body: <><code>mise install</code> でリポジトリ直下から <code>bun</code> など必要なツールが入ります。Layer 1 用には <code>cd src/layer1_wasm</code> 配下で <code>bun install</code> も走らせてください。</>,
+        },
+        {
+          lead: '一番近い既存レシピをコピーする。',
+          body: <>言語が同じレシピを丸ごとコピーするのが楽です。Python なら <code>src/layer1_wasm/pandas-56679/</code>、Ruby なら <code>ruby-21709/</code>、PHP なら <code>php-12167/</code>、Rust なら <code>regex-779/</code>。<code>cp -r src/layer1_wasm/pandas-56679 src/layer1_wasm/&lt;あなたの slug&gt;</code> でディレクトリごと複製。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 3 · index.html を書き換える"
+    heading="差し替えるのは title、見出し、lede の 3 か所。"
+  >
+    <p>
+      コピーした <code>index.html</code> の構造はそのまま使い、以下を上流バグに合わせて差し替えます:
+    </p>
+    <ul>
+      <li><code>&lt;title&gt;</code> — タブに出るタイトル（例: <code>Vivarium · Reproducing &lt;project&gt;#&lt;issue&gt;</code>）。</li>
+      <li><code>&lt;h1&gt;</code> — 見出し。上流 Issue へのリンクを含めます。</li>
+      <li><code>&lt;p class="lede"&gt;</code> — 1〜2 文でバグを説明する lede。</li>
+    </ul>
+    <p>
+      <strong>触ってはいけないもの</strong>: <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>、
+      <code>#verdict</code> 要素、<code>../_shared/style.css</code> へのリンク。
+      これらが Contract v1 を構成しているので、外すと verdict が機械的に読めなくなります。
+    </p>
+    <Callout>
+      Contract v1 の正典は{' '}
+      <a href="/vivarium/ja/spec/contract-v1">Contract v1</a> にあります。
+      <code>data-verdict</code> の取りうる値、<code>__VIVARIUM_RESULT__</code>{' '}
+      envelope のスキーマは spec ページが正です。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · repro.ts を書き換える"
+    heading="再現ロジックだけ差し替える。helper はそのまま。"
+  >
+    <p>
+      コピー元の <code>repro.ts</code> は <code>../_shared/loader.js</code> と{' '}
+      <code>../_shared/verdict.js</code> を import している部分が共通骨格です。
+      ここはそのまま残して、<strong>再現コード本体だけ</strong>差し替えます。
+      Python レシピなら以下のような形:
+    </p>
+    <pre><code>{`const REPRO_CODE = \`
+import pandas as pd
+# ↑ 上流バグを表す最小コード
+result = {
+  "left": ...,   # 比較する値 1
+  "right": ...,  # 比較する値 2
+  "mismatch": <left> != <right>,
+}
+result
+\`.trim();
+`}</code></pre>
+    <p>
+      verdict 設定は helper が面倒を見ます: 比較が <code>true</code>（バグが再現した）なら
+      <code>setVerdict("reproduced", "...")</code>、そうでなければ
+      <code>setVerdict("unreproduced", "...")</code>。
+      <code>setResult({`{ contract: "v1", bug, runtime, result, timing }`})</code>{' '}
+      で <code>__VIVARIUM_RESULT__</code> envelope も書き出されます。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · ローカルで動かす"
+    heading="bun run build → 静的サーバ → ブラウザで開く。"
+  >
+    <pre><code>{`# src/layer1_wasm/ から
+bun install
+bun run build         # repro.ts → repro.js を生成
+
+# レシピディレクトリを直接サーブ
+python -m http.server -d src/layer1_wasm/<あなたの slug> 8765
+# ブラウザで http://localhost:8765/ を開く
+`}</code></pre>
+    <p>
+      ページが開き、上流ライブラリが CDN からロードされ、
+      verdict バッジが <code>pending</code> →{' '}
+      <code>reproduced</code> / <code>unreproduced</code> のどちらかに落ちます。
+      DevTools コンソールで <code>__VIVARIUM_VERDICT__</code> と
+      <code>__VIVARIUM_RESULT__</code> も同じ値が入っていれば、
+      Contract v1 上は OK です。
+    </p>
+    <Callout>
+      Pyodide / Ruby.wasm / php-wasm はいずれも <code>SharedArrayBuffer</code>{' '}
+      を使わない構成にしてあるので、COOP/COEP ヘッダは不要です。
+      普通の静的サーバ（<code>python -m http.server</code> や{' '}
+      <code>bunx serve</code>）で動きます。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · ネイティブ再検証（任意）"
+    heading="ブラウザ外でも同じバグが出ることを 1 行で確かめる。"
+  >
+    <p>
+      Pyodide / Ruby.wasm 経由で観測できたバグが、本物の CPython /
+      MRI Ruby でも同じく再現することを示すと、レシピの説得力が上がります。
+      Python なら <a href="https://docs.astral.sh/uv/">uv</a> +{' '}
+      PEP 723 inline metadata で 1 ファイル完結に書けます:
+    </p>
+    <pre><code>{`# /// script
+# requires-python = ">=3.13"
+# dependencies = ["pandas==2.3.3"]
+# ///
+import pandas as pd
+# … 同じ再現ロジック …
+`}</code></pre>
+    <p>
+      <code>mise exec uv -- uv run repro.py</code> で ephemeral venv
+      が組まれて走ります。Ruby、PHP、Rust も同様で、既存レシピの
+      <code>repro.rb</code> / <code>repro.php</code> / <code>Cargo.toml</code>{' '}
+      が雛形になります。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 7 · recipes.json を再生成"
+    heading="ギャラリーに自分のレシピを並べる。"
+  >
+    <p>
+      ギャラリー（<code>/repro/</code>）と MCP サーバが読む
+      <code>recipes.json</code> は、ビルド時に
+      <code>src/layer*/</code> をスキャンして自動生成されます。
+      手元での確認用には:
+    </p>
+    <pre><code>{`mise run recipes:index
+# あるいは
+cd docs && bun run generate-index
+`}</code></pre>
+    <p>
+      生成された <code>docs/public/api/recipes.json</code> に
+      自分のスラッグが入っていれば成功です。
+      docs サイトをローカルで動かすと、ギャラリーにカードが現れます:
+    </p>
+    <pre><code>{`cd docs && bun run dev
+# http://localhost:3000/vivarium/ja/repro/`}</code></pre>
+  </Section>
+
+  <Section
+    eyebrow="// 8 · どこに公開するか"
+    heading="上流 PR か、自分のフォークか。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'アップストリーム カタログに contribute する。',
+          body: <>aletheia-works/vivarium 上で <code>feat(layer1): add &lt;slug&gt; reproduction</code> のような Conventional Commits で PR を立てます。レビュー基準は既存レシピを見れば分かりますが、最低限 Contract v1 に従っていれば CI が緑になります。</>,
+        },
+        {
+          lead: '自分のフォークに置く。',
+          body: <>レシピを自分の <code>vivarium</code> フォークの main に push し、<a href="/vivarium/ja/guide/fork-your-own">フォーク手順</a> の deploy 設定を有効化すると、自分の <code>&lt;you&gt;.github.io/vivarium/</code> に並びます。共有は URL を渡すだけ。</>,
+        },
+        {
+          lead: '自分のリポジトリに統合する。',
+          body: <>自分のプロジェクトリポジトリ側で「このレシピを CI で監視する」だけしたい場合は、レシピを書く必要はありません。<a href="/vivarium/ja/guide/integrate-with-your-repo">自分のリポジトリに統合する</a> に Manifest v1 と consumer-workflow.yml を使う最短手順があります。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    手順のどこかで詰まったら、それは write-your-first-reproduction
+    のバグです。詰まったステップ番号を Issue に残してください。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      用語集を読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="ここで出てきた slug / verdict / contract / Layer といった単語は、用語集に固定的な意味でまとめてあります。"
+  primary={{ label: '用語集 →', href: '/vivarium/ja/guide/glossary' }}
+  ghost={{ label: 'Contract v1 仕様', href: '/vivarium/ja/spec/contract-v1' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
