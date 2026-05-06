@@ -1,0 +1,236 @@
+---
+pageType: doc
+title: 自分のリポジトリに統合する
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · 統合"
+    title="自分のリポジトリで Vivarium 再現を宣言・検証する。"
+    sub="Vivarium 本体をフォークしなくても、自分のリポジトリのルートに 1 ファイルを置き、CI ジョブを 1 つ足すだけで「私たちはこのバグの再現をホストしている」と宣言できる。アップストリーム修正の到達も同じ仕組みで自動検知される。"
+  />
+
+  <Section
+    eyebrow="// 0 · 何が手に入るか"
+    heading="自分のリポジトリの CI に Vivarium verdict が乗る。"
+  >
+    <p>
+      この統合パスでは、自分のリポジトリ（フォークではなく、ふつうのプロジェクトリポジトリ）
+      に 2 つだけ追加します:
+    </p>
+    <ul>
+      <li>
+        <code>.vivarium/manifest.toml</code> — Vivarium 互換再現の宣言ファイル
+        （仕様: <a href="/vivarium/ja/spec/manifest-v1">Manifest v1</a>）。
+      </li>
+      <li>
+        <code>.github/workflows/check-bug.yml</code> —
+        <a href="/vivarium/ja/spec/consumer-workflow">再利用可能 verdict ワークフロー</a>
+        を <code>uses:</code> で呼ぶだけのジョブ。
+      </li>
+    </ul>
+    <p>
+      これだけで、対象のアップストリームバグが今でも再現するかどうかが、
+      自分の CI の green / red シグナルとして毎日（あるいは毎 PR で）勝手に検証されます。
+      アップストリームが修正を出荷した瞬間、CI が赤くなり、その瞬間が
+      「このバグはもう追跡しなくてよい」のシグナルになります。
+    </p>
+    <Callout>
+      Vivarium 本体のソースをコピーしません。再利用可能ワークフローが組織側で
+      保守されているので、こちらは <code>uses:</code> のリンクだけ持っておけば、
+      Vivarium 側の改善が自動で乗ります。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · 検証したいバグを選ぶ"
+    heading="既存のレシピなら、すぐ使えるスラッグを 1 つ控える。"
+  >
+    <p>
+      Vivarium カタログにすでに存在するバグなら、
+      そのスラッグ（<code>&lt;project&gt;-&lt;issue&gt;</code> 形式）を控えるだけで進めます。
+      たとえば:
+    </p>
+    <ul>
+      <li><code>bash-local-shadows-exit</code>（Layer 2 / bash）</li>
+      <li><code>pandas-56679</code>（Layer 1 / pandas）</li>
+    </ul>
+    <p>
+      <a href="/vivarium/ja/repro/">再現一覧</a> でファセット検索ができます。
+      自分が追跡しているエラーメッセージを起点にしたい場合は{' '}
+      <a href="/vivarium/ja/repro/match">エラーからレシピを探す</a> を使えば
+      候補がスコア順で出ます。
+    </p>
+    <Callout>
+      アップストリームでまだ再現が無いバグの場合は、自分のフォークでレシピ自体を作る
+      ルートになります。手順は{' '}
+      <a href="/vivarium/ja/guide/fork-your-own">自分のフォークで動かす</a>{' '}
+      に分けてあります。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · manifest.toml を作る"
+    heading="フォームに入れて生成、リポジトリにコピー。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'スキャフォールダで生成。',
+          body: <>対話的に埋められるフォームが <a href="/vivarium/ja/spec/manifest-create">マニフェスト作成</a> にあります。slug、layer、bug.project、bug.issue、bug.upstream_url を埋めて「生成」を押すと TOML がそのまま出ます。</>,
+        },
+        {
+          lead: 'リポジトリのルートに配置。',
+          body: <>生成された TOML を <code>.vivarium/manifest.toml</code>（リポジトリのルート直下に <code>.vivarium</code> ディレクトリを作る）として保存します。ファイル名・パス共に固定で、それ以外の場所では認識されません。</>,
+        },
+        {
+          lead: 'スキーマ補完を効かせる（任意）。',
+          body: <>TOML の先頭行に <code>{`#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json`}</code> が入っているはずです（スキャフォールダが付けます）。Taplo / Tombi など TOML LSP のあるエディタは、これだけで補完と検証が効きます。</>,
+        },
+      ]}
+    />
+    <Callout>
+      手書きしてもよく、スキャフォールダはあくまで<strong>典型形を出す道具</strong>
+      です。仕様の正典は <a href="/vivarium/ja/spec/manifest-v1">Manifest v1</a>{' '}
+      で、<code>verdict.schema.json</code> も公開済みなので CI でも検証できます。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · CI に verdict ジョブを 1 つ追加する"
+    heading="Layer 2 / 3 は再利用可能ワークフローを uses: するだけ。"
+  >
+    <p>
+      <code>.github/workflows/check-bug.yml</code> として以下を保存します
+      （<code>slug:</code> は手順 1 で控えたものに置き換えてください）:
+    </p>
+    <pre><code>{`name: vivarium-check
+on:
+  pull_request:
+  schedule:
+    - cron: '17 4 * * *'  # 毎日 1 回、UTC 04:17
+
+jobs:
+  bash-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: bash-local-shadows-exit
+`}</code></pre>
+    <p>
+      これで <code>ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest</code>{' '}
+      がプルされ、レシピが実行され、Contract v1 準拠の <code>verdict.json</code>{' '}
+      がキャプチャされ、JSON Schema で検証されます。
+      verdict が <code>expected_verdict</code>（デフォルト <code>"reproduced"</code>）と
+      一致しなければジョブが赤くなります。
+    </p>
+    <p>
+      追跡したいバグが複数ある場合は、ジョブを並べるだけ:
+    </p>
+    <pre><code>{`jobs:
+  bash-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: bash-local-shadows-exit
+  pandas-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: pandas-56679
+`}</code></pre>
+    <Callout>
+      Layer 1（ブラウザ内 WASM）の再現は、verdict が DOM / JavaScript ライブで決まるため、
+      この再利用可能ワークフローでは検証できません。Layer 1 のリグレッション検知は
+      Vivarium 本体の Playwright スイートが既に正式な仕組みとして担当しています。
+      Layer 1 をマニフェストで宣言するだけは可能で、その場合
+      <code>page_url</code> を貼り、検証はサイト側に任せる運用になります。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · 動作確認"
+    heading="緑が出れば「再現は今でも本物」。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'ブランチを作って push する。',
+          body: '上の 2 ファイル（manifest と check-bug.yml）を 1 commit にして PR を立てます。最低限のコミットメッセージは feat(ci): subscribe to bash-local-shadows-exit verdict のような形で十分です。',
+        },
+        {
+          lead: 'Actions タブで vivarium-check を確認。',
+          body: '初回は GHCR からのイメージプルがあるので 1〜2 分かかります。完了するとジョブのアーティファクトに verdict-<slug>-<run_id> が出ます。中身が verdict.schema.json に従う JSON です。',
+        },
+        {
+          lead: 'スケジューラの cron 行を残す。',
+          body: '毎日 1 回でも回しておくと、アップストリームが修正を出荷した日に CI が赤くなり、Slack / メール / GitHub の通知でその瞬間が分かります。これがアップストリーム修正検知シグナルそのものです。',
+        },
+      ]}
+    />
+    <Callout>
+      <strong>赤くなったら「壊れた」ではなく「修正された」</strong>。verdict セマンティクスが
+      テスト的な感覚と逆向きである点は、用語集の{' '}
+      <a href="/vivarium/ja/guide/glossary#verdict">verdict</a> と{' '}
+      <a href="/vivarium/ja/spec/contract-v1#verdict-セマンティクス">Contract v1</a>{' '}
+      で改めて固定しています。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · 次の選択肢"
+    heading="この surface から続く線。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: '修正候補が本当に効いているか確かめたい。',
+          body: <>ブランチで書いた fix を当てた後の verdict と、当てる前の verdict を横並びで比較する surface があります: <a href="/vivarium/ja/repro/compare">再現を比較する</a>。AI エージェントが書いたパッチの検証用に作られたページで、reproduced → unreproduced への反転がそのまま「修正は効いた」のシグナルになります。</>,
+        },
+        {
+          lead: '特定のイメージタグにピン留めしたい。',
+          body: <>再利用可能ワークフローの <code>image:</code> インプットでオーバーライドできます。git-sha 付きタグや、自分のフォークで Build した GHCR イメージを差し込めます。仕様: <a href="/vivarium/ja/spec/consumer-workflow">consumer workflow</a> のインプット表。</>,
+        },
+        {
+          lead: '宣言だけして CI 検証は手動で回したい。',
+          body: <>cron 行を消して <code>workflow_dispatch:</code> を足せば、Actions タブから手動実行のみになります。低頻度のレシピ（年単位で動かない上流）に向いた運用です。</>,
+        },
+        {
+          lead: 'カタログに無いバグを追加したい。',
+          body: <>レシピ自体を新しく書く話なので、<a href="/vivarium/ja/guide/fork-your-own">自分のフォークで動かす</a> の手順から入ります。Layer 1 だけならフォーク内で完結します。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    この手順がうまく動かなかった箇所は、それは integrate ガイドのバグです。
+    具体的にどのステップで詰まったかを Issue に残してください——
+    どこで詰まるかが、次のドキュメント版の優先順位を決めます。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      用語集を読む{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="manifest / verdict / Layer / slug などここで出てきた用語は、用語集に固定的な意味でまとめてあります。"
+  primary={{ label: '用語集 →', href: '/vivarium/ja/guide/glossary' }}
+  ghost={{ label: 'マニフェスト v1 仕様', href: '/vivarium/ja/spec/manifest-v1' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

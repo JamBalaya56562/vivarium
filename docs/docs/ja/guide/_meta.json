@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "integrate-with-your-repo",
+    "label": "自分のリポジトリに統合する"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "自分のフォークで動かす"
   },

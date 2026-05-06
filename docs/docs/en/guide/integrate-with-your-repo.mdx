@@ -1,0 +1,240 @@
+---
+pageType: doc
+title: Integrate with your own repo
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · INTEGRATION"
+    title="Declare and verify a Vivarium reproduction in your own repo."
+    sub="No fork required. Drop one file at the root of your project repo and add one CI job, and you have declared 'we host a reproduction for this bug.' Upstream-fix detection rides on the same wiring."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT YOU GET"
+    heading="A Vivarium verdict signal in your own CI."
+  >
+    <p>
+      In this flow your project repo (not a fork of Vivarium — your normal
+      product or library repo) gains exactly two additions:
+    </p>
+    <ul>
+      <li>
+        <code>.vivarium/manifest.toml</code> — a declaration that says
+        "Vivarium-compatible reproduction lives here"
+        (spec: <a href="/vivarium/en/spec/manifest-v1">Manifest v1</a>).
+      </li>
+      <li>
+        <code>.github/workflows/check-bug.yml</code> — a one-job CI workflow
+        that <code>uses:</code> the
+        {' '}<a href="/vivarium/en/spec/consumer-workflow">reusable verdict workflow</a>.
+      </li>
+    </ul>
+    <p>
+      That's enough to make "is this upstream bug still reproducing?" a green /
+      red signal in your own CI, on every PR or on a daily schedule. The day
+      upstream ships a fix, the workflow turns red — and that red is your
+      "we no longer need to track this bug" signal.
+    </p>
+    <Callout>
+      You don't copy any Vivarium source. The reusable workflow is maintained
+      org-side, so you only carry the <code>uses:</code> link — Vivarium-side
+      improvements ride along automatically.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · PICK A BUG TO TRACK"
+    heading="If it's already in the catalogue, just note one slug."
+  >
+    <p>
+      If the upstream bug is already in the Vivarium catalogue, jot down its
+      slug (<code>&lt;project&gt;-&lt;issue&gt;</code> shape) and you're done
+      with this step. For example:
+    </p>
+    <ul>
+      <li><code>bash-local-shadows-exit</code> (Layer 2 / bash)</li>
+      <li><code>pandas-56679</code> (Layer 1 / pandas)</li>
+    </ul>
+    <p>
+      The faceted{' '}<a href="/vivarium/en/repro/">recipe gallery</a>{' '}
+      is the way to browse. If you have a concrete error message in hand, the{' '}
+      <a href="/vivarium/en/repro/match">error → recipe matcher</a>{' '}
+      ranks candidates for you.
+    </p>
+    <Callout>
+      If the upstream bug isn't in the catalogue yet, you're in the "build a
+      new recipe" path instead, which is documented in{' '}
+      <a href="/vivarium/en/guide/fork-your-own">Run on your own fork</a>.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 2 · DROP A MANIFEST"
+    heading="Generate it from a form, copy it into your repo."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Generate via the scaffolder.',
+          body: <>An interactive form lives at <a href="/vivarium/en/spec/manifest-create">Create a manifest</a>. Fill in slug, layer, bug.project, bug.issue, bug.upstream_url, hit "Generate," and the TOML pops out.</>,
+        },
+        {
+          lead: 'Drop it at the repo root.',
+          body: <>Save the generated TOML as <code>.vivarium/manifest.toml</code> (create the <code>.vivarium</code> directory at the repo root). Both the directory and filename are fixed; nothing recognises the file at any other path.</>,
+        },
+        {
+          lead: 'Wire schema completion (optional).',
+          body: <>The first line of the TOML should be <code>{`#:schema https://aletheia-works.github.io/vivarium/spec/manifest.schema.json`}</code> (the scaffolder writes it for you). Editors with a TOML language server (Taplo, Tombi) pick this up automatically and give you completion plus inline validation.</>,
+        },
+      ]}
+    />
+    <Callout>
+      Hand-writing the manifest is fine — the scaffolder is just there to spit
+      out the canonical shape. The authoritative spec is{' '}
+      <a href="/vivarium/en/spec/manifest-v1">Manifest v1</a>, and
+      <code>verdict.schema.json</code> is published, so CI-side validation is
+      possible too.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · ADD A VERDICT JOB"
+    heading="Layer 2 / 3: just `uses:` the reusable workflow."
+  >
+    <p>
+      Save the following at <code>.github/workflows/check-bug.yml</code>{' '}
+      (replacing <code>slug:</code> with the one you noted in step 1):
+    </p>
+    <pre><code>{`name: vivarium-check
+on:
+  pull_request:
+  schedule:
+    - cron: '17 4 * * *'  # once a day at 04:17 UTC
+
+jobs:
+  bash-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: bash-local-shadows-exit
+`}</code></pre>
+    <p>
+      That pulls{' '}
+      <code>ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest</code>,
+      runs the recipe, captures a Contract v1 <code>verdict.json</code>,
+      validates it against the published JSON Schema, and asserts the captured
+      verdict matches <code>expected_verdict</code> (default{' '}
+      <code>"reproduced"</code>). Anything else turns the job red.
+    </p>
+    <p>
+      Tracking several bugs is a matter of stacking jobs:
+    </p>
+    <pre><code>{`jobs:
+  bash-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: bash-local-shadows-exit
+  pandas-issue:
+    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    with:
+      slug: pandas-56679
+`}</code></pre>
+    <Callout>
+      Layer 1 (in-browser WASM) recipes can't be verified through this reusable
+      workflow because their verdict is set live in DOM / JavaScript. The
+      Vivarium gallery's own Playwright suite is the canonical regression check
+      for Layer 1. You can still <em>declare</em> a Layer 1 manifest by
+      pointing <code>page_url</code> at the live page; the gallery side handles
+      verification.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · VERIFY"
+    heading="Green = the bug still reproduces today."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Push to a branch and open a PR.',
+          body: 'One commit holding both files (manifest plus check-bug.yml) is enough. A minimal commit message such as feat(ci): subscribe to bash-local-shadows-exit verdict is fine.',
+        },
+        {
+          lead: 'Check the Actions tab for vivarium-check.',
+          body: 'First run takes 1–2 minutes due to the GHCR image pull. On completion, the job artifact verdict-<slug>-<run_id> contains a JSON document that conforms to verdict.schema.json.',
+        },
+        {
+          lead: 'Keep the cron line.',
+          body: 'Even one run a day is enough — the day the upstream project ships a fix that no longer reproduces, your CI turns red, and that red is the upstream-fix detection signal.',
+        },
+      ]}
+    />
+    <Callout>
+      <strong>Red means "fixed," not "broken."</strong> The verdict semantics
+      flip the test-mindset direction; the glossary{' '}
+      <a href="/vivarium/en/guide/glossary#verdict">verdict</a> entry and the{' '}
+      <a href="/vivarium/en/spec/contract-v1#verdict-semantics">Contract v1</a>{' '}
+      page nail this down.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · WHERE TO GO NEXT"
+    heading="Lines that branch out from this surface."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Verify a candidate fix actually flips the verdict.',
+          body: <>The comparison surface lets you put the post-fix verdict next to the pre-fix one: <a href="/vivarium/en/repro/compare">Compare reproductions</a>. It's the page built for AI-generated patches — a reproduced → unreproduced flip is exactly the "the fix worked" signal.</>,
+        },
+        {
+          lead: 'Pin to a specific image tag.',
+          body: <>The reusable workflow takes an <code>image:</code> input that overrides the default. A git-sha-tagged image, a private fork build — anything in GHCR — is fair game. Reference: the input table in <a href="/vivarium/en/spec/consumer-workflow">consumer workflow</a>.</>,
+        },
+        {
+          lead: 'Declare without scheduled checks.',
+          body: <>Drop the cron line and add <code>workflow_dispatch:</code> for manual-only runs. A reasonable shape for slow-moving upstream bugs that don't reward daily polling.</>,
+        },
+        {
+          lead: 'The bug isn\'t in the catalogue yet.',
+          body: <>Then you're writing a new recipe, not consuming one. <a href="/vivarium/en/guide/fork-your-own">Run on your own fork</a> covers that flow. Layer 1 is fully self-contained inside a fork.</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    If a step in this guide didn't work, that's a bug in this guide — file an
+    issue with the exact step where you got stuck. Where readers get stuck
+    sets the priority for the next docs revision.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Read the glossary{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The terms used here — manifest, verdict, layer, slug — are pinned to fixed meanings in the glossary."
+  primary={{ label: 'Glossary →', href: '/vivarium/en/guide/glossary' }}
+  ghost={{ label: 'Manifest v1 spec', href: '/vivarium/en/spec/manifest-v1' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · SEE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
