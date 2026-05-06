@@ -94,18 +94,17 @@ const STRINGS: Record<Lang, Strings> = {
     open: '開く ↗',
     source: 'ソース',
     layerName: (layer) =>
-      layer === 1
-        ? 'L1 · WASM'
-        : layer === 2
-          ? 'L2 · Docker'
-          : 'L3 · 記録再生',
+      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 記録再生',
     unknownLanguage: '未指定',
   },
 };
 
 /* ----------------------------- Helpers --------------------------------- */
 
-function uniqueValues<T>(items: RecipeEntry[], pick: (r: RecipeEntry) => T | undefined): T[] {
+function uniqueValues<T>(
+  items: RecipeEntry[],
+  pick: (r: RecipeEntry) => T | undefined,
+): T[] {
   const seen = new Set<T>();
   for (const item of items) {
     const v = pick(item);
@@ -120,7 +119,7 @@ function matchesQuery(recipe: RecipeEntry, query: string): boolean {
   if (recipe.slug.toLowerCase().includes(q)) return true;
   if (recipe.project.toLowerCase().includes(q)) return true;
   if (recipe.title.toLowerCase().includes(q)) return true;
-  if (recipe.symptom && recipe.symptom.toLowerCase().includes(q)) return true;
+  if (recipe.symptom?.toLowerCase().includes(q)) return true;
   for (const tag of recipe.tags) {
     if (tag.toLowerCase().includes(q)) return true;
   }
@@ -189,22 +188,14 @@ function FacetGroup({
   );
 }
 
-function RecipeCard({
-  lang,
-  recipe,
-}: {
-  lang: Lang;
-  recipe: RecipeEntry;
-}) {
+function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
   const s = STRINGS[lang];
   const layerAccent =
     recipe.layer === 1 ? 'teal' : recipe.layer === 2 ? 'violet' : 'coral';
   return (
     <article className="v-rg__card">
       <header className="v-rg__card-head">
-        <span
-          className={`v-rg__layer-pill v-rg__layer-pill--${layerAccent}`}
-        >
+        <span className={`v-rg__layer-pill v-rg__layer-pill--${layerAccent}`}>
           {s.layerName(recipe.layer)}
         </span>
         <code className="v-rg__slug">{recipe.slug}</code>
@@ -276,16 +267,13 @@ export function RecipeGallery({ lang }: { lang: Lang }) {
 
   const allLayers = useMemo<(1 | 2 | 3)[]>(
     () => uniqueValues(all, (r) => r.layer).map((n) => n as 1 | 2 | 3),
-    [all],
+    [],
   );
   const allLanguages = useMemo(
     () => uniqueValues(all, (r) => r.language || undefined),
-    [all],
+    [],
   );
-  const allSeverities = useMemo(
-    () => uniqueValues(all, (r) => r.severity),
-    [all],
-  );
+  const allSeverities = useMemo(() => uniqueValues(all, (r) => r.severity), []);
 
   const toggleSet = <T,>(set: Set<T>, v: T): Set<T> => {
     const next = new Set(set);
@@ -299,10 +287,11 @@ export function RecipeGallery({ lang }: { lang: Lang }) {
       if (!matchesQuery(r, query)) return false;
       if (layers.size > 0 && !layers.has(r.layer)) return false;
       if (languages.size > 0 && !languages.has(r.language)) return false;
-      if (severities.size > 0 && (!r.severity || !severities.has(r.severity))) return false;
+      if (severities.size > 0 && (!r.severity || !severities.has(r.severity)))
+        return false;
       return true;
     });
-  }, [all, query, layers, languages, severities]);
+  }, [query, layers, languages, severities]);
 
   const hasFilters =
     query.length > 0 ||
@@ -361,11 +350,7 @@ export function RecipeGallery({ lang }: { lang: Lang }) {
           {s.resultsTemplate(filtered.length, all.length)}
         </span>
         {hasFilters ? (
-          <button
-            type="button"
-            className="v-rg__clear"
-            onClick={clearAll}
-          >
+          <button type="button" className="v-rg__clear" onClick={clearAll}>
             {s.clearFilters}
           </button>
         ) : null}

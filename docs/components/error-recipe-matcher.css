@@ -4,7 +4,8 @@
 
 .v-erm {
   margin: 1.25rem 0 2.5rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--vh-text);
 }
 
@@ -12,7 +13,7 @@
 .v-erm__results-eyebrow {
   display: block;
   margin: 0 0 0.6rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -27,7 +28,7 @@
 }
 
 .v-erm__field-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -41,7 +42,7 @@
   border: 1px solid var(--vh-hairline);
   border-radius: 6px;
   color: var(--vh-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.78rem;
   line-height: 1.5;
   resize: vertical;
@@ -66,7 +67,7 @@
   border-radius: 6px;
   background: var(--vh-card-bg);
   color: var(--vh-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 120ms ease;
@@ -106,7 +107,7 @@
 }
 
 .v-erm__tokens-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -122,7 +123,7 @@
   border-radius: 3px;
   background: var(--vh-card-bg-hover);
   color: var(--vh-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   border: 1px solid var(--vh-hairline);
 }
@@ -175,7 +176,7 @@
 }
 
 .v-erm__results-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   color: var(--vh-text-dim);
 }
@@ -189,7 +190,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
 }
 
@@ -201,7 +202,7 @@
 }
 
 .v-erm__score code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   background: var(--vh-card-bg-hover);
   color: var(--vh-accent-teal-bright);
   padding: 0.1rem 0.45rem;
@@ -219,7 +220,7 @@
 }
 
 .v-erm__matched-key {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.65rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -240,7 +241,7 @@
 
 .v-erm__empty-heading {
   margin: 0 0 0.5rem;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 1rem;
   color: var(--vh-text);
 }

@@ -75,7 +75,7 @@ function validateVerdict(raw: unknown): ValidationResult {
         ok: false,
         error: {
           path: `/${field}`,
-          message: `required field missing`,
+          message: 'required field missing',
         },
       };
     }
@@ -117,7 +117,12 @@ function validateVerdict(raw: unknown): ValidationResult {
       },
     };
   }
-  for (const field of ['image_digest', 'captured_at', 'stdout', 'stderr_tail'] as const) {
+  for (const field of [
+    'image_digest',
+    'captured_at',
+    'stdout',
+    'stderr_tail',
+  ] as const) {
     if (typeof obj[field] !== 'string') {
       return {
         ok: false,
@@ -224,8 +229,10 @@ const STRINGS: Record<Lang, Strings> = {
     slugHelp:
       'When set, the original side is fetched from the deployed gallery snapshot.',
     expectedLabel: 'Expected branch-fix verdict',
-    expectedFailDesc: 'unreproduced — bug does NOT reproduce on the fix (typical "fix works")',
-    expectedPassDesc: 'reproduced — bug still reproduces on the fix (regression check)',
+    expectedFailDesc:
+      'unreproduced — bug does NOT reproduce on the fix (typical "fix works")',
+    expectedPassDesc:
+      'reproduced — bug still reproduces on the fix (regression check)',
     loading: 'Loading…',
     fetchOriginal: 'Fetch deployed original',
     refetchOriginal: 'Re-fetch deployed original',
@@ -288,8 +295,10 @@ const STRINGS: Record<Lang, Strings> = {
     slugHelp:
       '指定するとオリジナル側はデプロイ済みギャラリースナップショットから取得される。',
     expectedLabel: '期待する branch-fix の verdict',
-    expectedFailDesc: 'unreproduced — 修正によりバグが再現しなくなる (典型的な「修正成立」)',
-    expectedPassDesc: 'reproduced — 修正後もバグが再現する (リグレッション確認)',
+    expectedFailDesc:
+      'unreproduced — 修正によりバグが再現しなくなる (典型的な「修正成立」)',
+    expectedPassDesc:
+      'reproduced — 修正後もバグが再現する (リグレッション確認)',
     loading: '読み込み中…',
     fetchOriginal: 'デプロイ済みオリジナルを取得',
     refetchOriginal: 'デプロイ済みオリジナルを再取得',
@@ -313,7 +322,8 @@ const STRINGS: Record<Lang, Strings> = {
     evidenceEmpty: '(空)',
     errorTitle: 'バリデーションエラー',
     errorAt: (path) => `${path} の位置で`,
-    fetchFailed: (url) => `${url} を取得できなかった。ペースト経由にフォールバック。`,
+    fetchFailed: (url) =>
+      `${url} を取得できなかった。ペースト経由にフォールバック。`,
     parseFailed: 'JSON のパースに失敗した。ペースト経由にフォールバック。',
     zipMissingFiles:
       'ドロップされた zip に branch-fix-verdict.json も original-verdict.json も含まれていなかった。',
@@ -494,7 +504,9 @@ export function VerdictCompareLayout({
   const verdictsDiverge =
     original != null && branch != null && original.verdict !== branch.verdict;
   const exitsDiverge =
-    original != null && branch != null && original.exit_code !== branch.exit_code;
+    original != null &&
+    branch != null &&
+    original.exit_code !== branch.exit_code;
 
   const matchClassName =
     branchMatchesExpected == null
@@ -553,14 +565,18 @@ function resolvePagesBase(): string {
   }
   const { origin, pathname } = window.location;
   const idx = pathname.indexOf('/repro');
-  return idx >= 0 ? `${origin}${pathname.slice(0, idx)}/repro` : `${origin}/repro`;
+  return idx >= 0
+    ? `${origin}${pathname.slice(0, idx)}/repro`
+    : `${origin}/repro`;
 }
 
 const PAGES_BASE = resolvePagesBase();
 
-async function readZipEntries(
-  file: File,
-): Promise<{ branch: VerdictV1 | null; original: VerdictV1 | null; rawErrors: ValidationError[] }> {
+async function readZipEntries(file: File): Promise<{
+  branch: VerdictV1 | null;
+  original: VerdictV1 | null;
+  rawErrors: ValidationError[];
+}> {
   // Lazy-load JSZip — only paid for when the user actually drops a zip.
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(file);
@@ -580,7 +596,11 @@ async function readZipEntries(
       if (parsed.ok) {
         const v = validateVerdict(parsed.data);
         if (v.ok) branch = v.data;
-        else rawErrors.push({ path: `branch:${v.error.path}`, message: v.error.message });
+        else
+          rawErrors.push({
+            path: `branch:${v.error.path}`,
+            message: v.error.message,
+          });
       } else {
         rawErrors.push({ path: 'branch:/', message: parsed.error });
       }
@@ -590,7 +610,11 @@ async function readZipEntries(
       if (parsed.ok) {
         const v = validateVerdict(parsed.data);
         if (v.ok) original = v.data;
-        else rawErrors.push({ path: `original:${v.error.path}`, message: v.error.message });
+        else
+          rawErrors.push({
+            path: `original:${v.error.path}`,
+            message: v.error.message,
+          });
       } else {
         rawErrors.push({ path: 'original:/', message: parsed.error });
       }
@@ -599,15 +623,22 @@ async function readZipEntries(
   return { branch, original, rawErrors };
 }
 
-function parseJsonSafe(text: string): { ok: true; data: unknown } | { ok: false; error: string } {
+function parseJsonSafe(
+  text: string,
+): { ok: true; data: unknown } | { ok: false; error: string } {
   try {
     return { ok: true, data: JSON.parse(text) };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
-async function fetchVerdictFromUrl(url: string): Promise<ValidationResult & { httpStatus?: number; networkError?: string }> {
+async function fetchVerdictFromUrl(
+  url: string,
+): Promise<ValidationResult & { httpStatus?: number; networkError?: string }> {
   let res: Response;
   try {
     res = await fetch(url, { mode: 'cors', credentials: 'omit' });
@@ -729,7 +760,7 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
     }
     // s only used for messages above; deps frozen at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [s.fetchFailed]);
 
   /* ----- File handling ----- */
 
@@ -739,11 +770,19 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
       const newErrors: SideError[] = [];
       try {
         if (file.name.toLowerCase().endsWith('.zip')) {
-          const { branch: b, original: o, rawErrors } = await readZipEntries(file);
+          const {
+            branch: b,
+            original: o,
+            rawErrors,
+          } = await readZipEntries(file);
           if (b) setBranch(b);
           if (o) setOriginal(o);
           if (b == null && o == null && rawErrors.length === 0) {
-            newErrors.push({ side: 'branch', path: '/', message: s.zipMissingFiles });
+            newErrors.push({
+              side: 'branch',
+              path: '/',
+              message: s.zipMissingFiles,
+            });
           }
           for (const e of rawErrors) {
             const [sidePart, ...pathParts] = e.path.split(':');
@@ -757,7 +796,11 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
           const text = await file.text();
           const parsed = parseJsonSafe(text);
           if (!parsed.ok) {
-            newErrors.push({ side: 'branch', path: '/', message: parsed.error });
+            newErrors.push({
+              side: 'branch',
+              path: '/',
+              message: parsed.error,
+            });
           } else {
             const v = validateVerdict(parsed.data);
             if (!v.ok) {
@@ -894,7 +937,11 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
               className="v-rc__field-input"
               value={expected}
               onChange={(e) =>
-                setExpected(e.target.value === 'reproduced' ? 'reproduced' : 'unreproduced')
+                setExpected(
+                  e.target.value === 'reproduced'
+                    ? 'reproduced'
+                    : 'unreproduced',
+                )
               }
             >
               <option value="unreproduced">{s.expectedFailDesc}</option>
@@ -903,6 +950,9 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
           </label>
         </div>
 
+        {/* biome-ignore lint/a11y/useSemanticElements: drop targets need to
+            be <div> to receive ondrop/ondragover; the role="button" + keyboard
+            handler keeps the click-to-pick interaction accessible. */}
         <div
           ref={dropRef}
           className="v-rc__drop"
@@ -942,11 +992,7 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
             onClick={fetchOriginalFromSlug}
             disabled={!slug || busy}
           >
-            {busy
-              ? s.loading
-              : original
-                ? s.refetchOriginal
-                : s.fetchOriginal}
+            {busy ? s.loading : original ? s.refetchOriginal : s.fetchOriginal}
           </button>
           <button
             type="button"

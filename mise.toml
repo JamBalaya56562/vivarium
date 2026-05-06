@@ -78,6 +78,30 @@ description = "Preview the built static docs site"
 dir = "docs"
 run = "bun run preview"
 
+[tasks."docs:fmt"]
+description = "Format docs/ JS/TS/CSS/JSON with Biome (in-place)"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun x --bun biome format --write ."
+
+[tasks."docs:lint"]
+description = "Lint docs/ with Biome (read-only, exits non-zero on errors)"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun x --bun biome lint ."
+
+[tasks."docs:check"]
+description = "Biome check (format + lint + import-organize, read-only)"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun x --bun biome check ."
+
+[tasks."docs:check:fix"]
+description = "Biome check + apply safe + unsafe auto-fixes"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun x --bun biome check --write --unsafe ."
+
 # ── Layer 1 — WASM reproduction sources ──────────────────────────────────
 
 [tasks."repro:install"]
@@ -268,6 +292,12 @@ bun install --frozen-lockfile
 bun run build
 '''
 
+[tasks."ci:docs-check"]
+description = "Local equivalent of test-docs-check.yml (Biome format + lint)"
+depends = ["docs:install"]
+dir = "docs"
+run = "bun x --bun biome check ."
+
 [tasks."ci:repro"]
 description = "Local equivalent of repro-regression.yml (typecheck + build + Playwright)"
 dir = "src/layer1_wasm"
@@ -294,5 +324,5 @@ description = "Lint the most recent commit message against Conventional Commits"
 run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 
 [tasks."ci:all"]
-description = "Run all local CI tasks (docs + mcp + repro + commitlint)"
-depends = ["ci:docs", "ci:mcp", "ci:repro", "ci:commitlint"]
+description = "Run all local CI tasks (docs + docs-check + mcp + repro + commitlint)"
+depends = ["ci:docs", "ci:docs-check", "ci:mcp", "ci:repro", "ci:commitlint"]

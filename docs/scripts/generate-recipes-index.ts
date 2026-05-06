@@ -33,16 +33,15 @@
 // ADR-0018's minor-revision policy: optional fields can be added without
 // bumping the literal; breaking changes require v2.
 
-import { readdir, readFile, stat, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Owner and repository name. Resolved from CI-provided env vars when
 // the script runs in GitHub Actions (so a fork's deploy bundles its
 // own URLs); falls back to the upstream values for local dev.
-const OWNER = process.env['GITHUB_REPOSITORY_OWNER'] ?? 'aletheia-works';
-const REPO_NAME =
-  process.env['GITHUB_REPOSITORY']?.split('/')[1] ?? 'vivarium';
+const OWNER = process.env.GITHUB_REPOSITORY_OWNER ?? 'aletheia-works';
+const REPO_NAME = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vivarium';
 
 const PAGES_BASE = `https://${OWNER}.github.io/${REPO_NAME}`;
 const REPO_BASE = `https://github.com/${OWNER}/${REPO_NAME}`;
@@ -198,7 +197,10 @@ function parseSlug(slug: string): {
   };
 }
 
-async function readTitle(readmePath: string, fallback: string): Promise<string> {
+async function readTitle(
+  readmePath: string,
+  fallback: string,
+): Promise<string> {
   try {
     const md = await readFile(readmePath, 'utf-8');
     const lines = md.split(/\r?\n/);
@@ -325,7 +327,9 @@ async function main(): Promise<void> {
     const layerDir = join(REPO_ROOT, dir);
     const slugs = await listRecipeSlugs(layerDir);
     for (const slug of slugs) {
-      recipes.push(await buildEntry(layer, slug, join(layerDir, slug), overlay));
+      recipes.push(
+        await buildEntry(layer, slug, join(layerDir, slug), overlay),
+      );
     }
   }
   const missingFacets = recipes
@@ -362,11 +366,11 @@ async function main(): Promise<void> {
   const outDir = join(__dirname, '..', 'public', 'api');
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, 'recipes.json');
-  await writeFile(outPath, JSON.stringify(out, null, 2) + '\n', 'utf-8');
+  await writeFile(outPath, `${JSON.stringify(out, null, 2)}\n`, 'utf-8');
   const projectsPath = join(outDir, 'projects.json');
   await writeFile(
     projectsPath,
-    JSON.stringify(projectsOut, null, 2) + '\n',
+    `${JSON.stringify(projectsOut, null, 2)}\n`,
     'utf-8',
   );
 
@@ -381,9 +385,7 @@ async function main(): Promise<void> {
     `Wrote ${recipes.length} recipe(s) to ${outPath} ` +
       `(layer 1: ${counts[1]}, layer 2: ${counts[2]}, layer 3: ${counts[3]})`,
   );
-  console.error(
-    `Wrote ${projects.length} project(s) to ${projectsPath}`,
-  );
+  console.error(`Wrote ${projects.length} project(s) to ${projectsPath}`);
 }
 
 main().catch((err) => {

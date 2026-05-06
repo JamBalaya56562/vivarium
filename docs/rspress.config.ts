@@ -56,8 +56,8 @@ const REPRO_MIME: Record<string, string> = {
 //      remaining segments are joined back onto the resolved disk slug as
 //      the asset path under that recipe directory (e.g. repro.wasm,
 //      verdict.json).
-function resolveReproFile(subpath: string): string | null {
-  if (!subpath) subpath = '';
+function resolveReproFile(rawSubpath: string): string | null {
+  const subpath = rawSubpath || '';
 
   // Trailing-slash directory URL → index.html lookup.
   let trailingFile = '';
@@ -73,7 +73,7 @@ function resolveReproFile(subpath: string): string | null {
   const candidates: string[] = [];
   if (segments.length === 0) {
     // Bare `/repro/` — fall through (no candidate).
-  } else if (segments[0]!.startsWith('_')) {
+  } else if (segments[0]?.startsWith('_')) {
     // Shared scaffolding — keep flat lookup.
     candidates.push(joinDisk(segments, trailingFile));
   } else if (segments.length === 1) {
@@ -294,10 +294,7 @@ export default defineConfig({
           // a SW's scope to its own directory unless the response sets
           // this header.
           if (filePath.endsWith('sw.js')) {
-            res.setHeader(
-              'Service-Worker-Allowed',
-              '/vivarium/repro/',
-            );
+            res.setHeader('Service-Worker-Allowed', '/vivarium/repro/');
           }
           createReadStream(filePath).pipe(res);
         });

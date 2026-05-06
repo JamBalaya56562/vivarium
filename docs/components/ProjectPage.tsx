@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import './project-page.css';
-import recipesIndex from '../public/api/recipes.json';
 import projectsIndex from '../public/api/projects.json';
+import recipesIndex from '../public/api/recipes.json';
 
 /* ============================================================================
  * Project landing page.
@@ -118,11 +118,7 @@ const STRINGS: Record<Lang, Strings> = {
     homepage: 'ホームページ ↗',
     upstream: 'アップストリーム ↗',
     layerName: (layer) =>
-      layer === 1
-        ? 'L1 · WASM'
-        : layer === 2
-          ? 'L2 · Docker'
-          : 'L3 · 記録再生',
+      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 記録再生',
     issueLabel: 'Issue',
     titleLabel: 'タイトル',
     layerLabel: 'レイヤー',
@@ -140,13 +136,7 @@ function LayerPill({ lang, layer }: { lang: Lang; layer: 1 | 2 | 3 }) {
   );
 }
 
-function IssueLabel({
-  lang,
-  recipe,
-}: {
-  lang: Lang;
-  recipe: RecipeEntry;
-}) {
+function IssueLabel({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
   if (recipe.issue > 0) {
     return <code>#{recipe.issue}</code>;
   }
@@ -187,7 +177,8 @@ export function ProjectPage({
   }
 
   const displayName = meta?.display_name ?? project;
-  const layers = meta?.layers ?? Array.from(new Set(recipes.map((r) => r.layer))).sort();
+  const layers =
+    meta?.layers ?? Array.from(new Set(recipes.map((r) => r.layer))).sort();
 
   return (
     <section className="v-pp">

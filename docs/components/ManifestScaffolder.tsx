@@ -50,7 +50,7 @@ function validate(state: FormState): FieldErrors {
   const errors: FieldErrors = {};
   if (!state.slug) errors.slug = 'required';
   else if (!SLUG_RE.test(state.slug))
-    errors.slug = "must match /^[a-z0-9]+(-[a-z0-9]+)*$/";
+    errors.slug = 'must match /^[a-z0-9]+(-[a-z0-9]+)*$/';
   if (state.layer == null) errors.layer = 'required';
   if (!state.bug.project) errors['bug.project'] = 'required';
   if (state.bug.issue !== '' && !/^\d+$/.test(state.bug.issue))
@@ -74,7 +74,10 @@ function validate(state: FormState): FieldErrors {
 /* ----------------------------- TOML emission ----------------------------- */
 
 function escapeTomlBasic(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\t/g, '\\t');
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\t/g, '\\t');
 }
 
 function emitTomlString(value: string): string {
@@ -100,7 +103,7 @@ function buildToml(state: FormState): string {
     lines.push(`description = ${emitTomlString(state.description)}`);
   }
   lines.push('');
-  lines.push(`[bug]`);
+  lines.push('[bug]');
   lines.push(`project = ${emitTomlString(state.bug.project)}`);
   const issue = state.bug.issue || '0';
   lines.push(`issue = ${issue}`);
@@ -108,7 +111,7 @@ function buildToml(state: FormState): string {
 
   if (state.layer === 1) {
     lines.push('');
-    lines.push(`[layer1]`);
+    lines.push('[layer1]');
     lines.push(`page_url = ${emitTomlString(state.layer1.page_url)}`);
     if (state.layer1.expected_verdict) {
       lines.push(
@@ -117,7 +120,7 @@ function buildToml(state: FormState): string {
     }
   } else if (state.layer === 2) {
     lines.push('');
-    lines.push(`[layer2]`);
+    lines.push('[layer2]');
     lines.push(`image = ${emitTomlString(state.layer2.image)}`);
     if (state.layer2.dockerfile) {
       lines.push(`dockerfile = ${emitTomlString(state.layer2.dockerfile)}`);
@@ -129,7 +132,7 @@ function buildToml(state: FormState): string {
     }
   } else if (state.layer === 3) {
     lines.push('');
-    lines.push(`[layer3]`);
+    lines.push('[layer3]');
     lines.push(`image = ${emitTomlString(state.layer3.image)}`);
     if (state.layer3.dockerfile) {
       lines.push(`dockerfile = ${emitTomlString(state.layer3.dockerfile)}`);
@@ -141,7 +144,7 @@ function buildToml(state: FormState): string {
     }
   }
 
-  return lines.join('\n') + '\n';
+  return `${lines.join('\n')}\n`;
 }
 
 /* --------------------------------- i18n ---------------------------------- */
@@ -210,7 +213,7 @@ const STRINGS: Record<Lang, Strings> = {
       'Long-form description. Markdown allowed; consumers may render it or display verbatim.',
     layerLabel: 'layer',
     layerHelp:
-      '1 = WASM in-browser, 2 = Docker, 3 = record-replay. Selecting a layer reveals that layer\'s required fields below.',
+      "1 = WASM in-browser, 2 = Docker, 3 = record-replay. Selecting a layer reveals that layer's required fields below.",
     layerOption: (n) =>
       n === 1 ? '1 · WASM' : n === 2 ? '2 · Docker' : '3 · record-replay',
     bugProjectLabel: 'bug.project',
@@ -287,7 +290,8 @@ const STRINGS: Record<Lang, Strings> = {
     copy: 'コピー',
     download: 'manifest.toml をダウンロード',
     reset: 'リセット',
-    noLayerYet: 'レイヤーを選ぶと、そのレイヤーに必要なフィールドが表示される。',
+    noLayerYet:
+      'レイヤーを選ぶと、そのレイヤーに必要なフィールドが表示される。',
     required: '必須',
     copied: 'コピー済 ✓',
     emptyOutput:
@@ -325,7 +329,8 @@ function Field({
   requiredText: string;
 }) {
   return (
-    <label className={'v-mfs__field' + (error ? ' v-mfs__field--err' : '')}>
+    // biome-ignore lint/a11y/noLabelWithoutControl: input is rendered via {children} at every call site (input/select/textarea), Biome cannot statically verify
+    <label className={`v-mfs__field${error ? ' v-mfs__field--err' : ''}`}>
       <span className="v-mfs__label">
         <span className="v-mfs__label-name">{label}</span>
         {required ? (
@@ -469,10 +474,7 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
               <button
                 key={n}
                 type="button"
-                className={
-                  'v-mfs__chip' +
-                  (state.layer === n ? ' v-mfs__chip--on' : '')
-                }
+                className={`v-mfs__chip${state.layer === n ? ' v-mfs__chip--on' : ''}`}
                 onClick={() => update('layer', state.layer === n ? null : n)}
                 aria-pressed={state.layer === n}
               >
@@ -551,7 +553,9 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 type="url"
                 className="v-mfs__input"
                 value={state.layer1.page_url}
-                onChange={(e) => updateLayer('layer1', 'page_url', e.target.value)}
+                onChange={(e) =>
+                  updateLayer('layer1', 'page_url', e.target.value)
+                }
                 placeholder="https://example.org/repro/"
               />
             </Field>
@@ -598,7 +602,9 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 type="text"
                 className="v-mfs__input"
                 value={state.layer2.dockerfile}
-                onChange={(e) => updateLayer('layer2', 'dockerfile', e.target.value)}
+                onChange={(e) =>
+                  updateLayer('layer2', 'dockerfile', e.target.value)
+                }
                 placeholder="./Dockerfile"
               />
             </Field>
@@ -645,7 +651,9 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 type="text"
                 className="v-mfs__input"
                 value={state.layer3.dockerfile}
-                onChange={(e) => updateLayer('layer3', 'dockerfile', e.target.value)}
+                onChange={(e) =>
+                  updateLayer('layer3', 'dockerfile', e.target.value)
+                }
                 placeholder="./Dockerfile"
               />
             </Field>

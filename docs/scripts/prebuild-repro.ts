@@ -46,7 +46,7 @@ if (!existsSync(LAYER1_DIR)) {
  */
 function tryBun(): boolean {
   const bunBin = process.argv0;
-  if (!bunBin || !bunBin.toLowerCase().includes('bun')) return false;
+  if (!bunBin?.toLowerCase().includes('bun')) return false;
 
   if (!existsSync(NODE_MODULES)) {
     console.log(`[prebuild-repro] bun install (in ${LAYER1_DIR})`);
@@ -97,9 +97,15 @@ if (!(tryBun() || tryTsc())) {
 
 function findCargo(): string | null {
   const candidates = [
-    process.env['CARGO_HOME'] ? join(process.env['CARGO_HOME']!, 'bin', IS_WIN ? 'cargo.exe' : 'cargo') : null,
-    process.env['HOME'] ? join(process.env['HOME']!, '.cargo', 'bin', IS_WIN ? 'cargo.exe' : 'cargo') : null,
-    process.env['USERPROFILE'] ? join(process.env['USERPROFILE'], '.cargo', 'bin', 'cargo.exe') : null,
+    process.env.CARGO_HOME
+      ? join(process.env.CARGO_HOME!, 'bin', IS_WIN ? 'cargo.exe' : 'cargo')
+      : null,
+    process.env.HOME
+      ? join(process.env.HOME!, '.cargo', 'bin', IS_WIN ? 'cargo.exe' : 'cargo')
+      : null,
+    process.env.USERPROFILE
+      ? join(process.env.USERPROFILE, '.cargo', 'bin', 'cargo.exe')
+      : null,
   ];
   for (const c of candidates) {
     if (c && existsSync(c)) return c;
@@ -110,7 +116,9 @@ function findCargo(): string | null {
 function tryRust(): void {
   const cargo = findCargo();
   if (!cargo) {
-    console.log('[prebuild-repro] Rust skipped — cargo not found. Rust repros will 404 in dev until cargo + wasm32-wasip1 are installed.');
+    console.log(
+      '[prebuild-repro] Rust skipped — cargo not found. Rust repros will 404 in dev until cargo + wasm32-wasip1 are installed.',
+    );
     return;
   }
 
@@ -118,7 +126,10 @@ function tryRust(): void {
   let crateDirs: string[] = [];
   try {
     crateDirs = readdirSync(LAYER1_DIR, { withFileTypes: true })
-      .filter((e) => e.isDirectory() && existsSync(join(LAYER1_DIR, e.name, 'Cargo.toml')))
+      .filter(
+        (e) =>
+          e.isDirectory() && existsSync(join(LAYER1_DIR, e.name, 'Cargo.toml')),
+      )
       .map((e) => join(LAYER1_DIR, e.name));
   } catch {
     return;
@@ -129,23 +140,36 @@ function tryRust(): void {
   const rustup = cargo.replace(/cargo(\.exe)?$/, 'rustup$1');
   if (existsSync(rustup)) {
     console.log('[prebuild-repro] ensuring wasm32-wasip1 target...');
-    spawnSync(rustup, ['target', 'add', 'wasm32-wasip1'], { stdio: 'inherit', shell: false });
+    spawnSync(rustup, ['target', 'add', 'wasm32-wasip1'], {
+      stdio: 'inherit',
+      shell: false,
+    });
   }
 
   for (const dir of crateDirs) {
-    console.log(`[prebuild-repro] cargo build --release --target wasm32-wasip1 (${dir})`);
+    console.log(
+      `[prebuild-repro] cargo build --release --target wasm32-wasip1 (${dir})`,
+    );
     const r = spawnSync(
       cargo,
       ['build', '--release', '--target', 'wasm32-wasip1'],
       { cwd: dir, stdio: 'inherit', shell: false },
     );
     if (r.status !== 0) {
-      console.warn(`  [warn] build failed for ${dir} — Rust repro will 404 in dev.`);
+      console.warn(
+        `  [warn] build failed for ${dir} — Rust repro will 404 in dev.`,
+      );
       continue;
     }
     // Copy the built wasm next to index.html (matches the deploy
     // pipeline's `cp` in .github/workflows/deploy-docs.yml).
-    const wasmFrom = join(dir, 'target', 'wasm32-wasip1', 'release', 'repro.wasm');
+    const wasmFrom = join(
+      dir,
+      'target',
+      'wasm32-wasip1',
+      'release',
+      'repro.wasm',
+    );
     const wasmTo = join(dir, 'repro.wasm');
     if (existsSync(wasmFrom)) {
       copyFileSync(wasmFrom, wasmTo);

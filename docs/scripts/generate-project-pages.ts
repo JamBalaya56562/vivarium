@@ -18,7 +18,7 @@
 // `bun run dev` / `bun run build` via the chained `prebuild-project-pages`
 // script in docs/package.json.
 
-import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
