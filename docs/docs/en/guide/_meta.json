@@ -6,8 +6,18 @@
   },
   {
     "type": "file",
+    "name": "integrate-with-your-repo",
+    "label": "Integrate with your own repo"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "Run on your own fork"
+  },
+  {
+    "type": "file",
+    "name": "write-your-first-reproduction",
+    "label": "Write your first reproduction"
   },
   {
     "type": "file",

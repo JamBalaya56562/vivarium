@@ -6,8 +6,18 @@
   },
   {
     "type": "file",
+    "name": "integrate-with-your-repo",
+    "label": "自分のリポジトリに統合する"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "自分のフォークで動かす"
+  },
+  {
+    "type": "file",
+    "name": "write-your-first-reproduction",
+    "label": "はじめての再現を書く"
   },
   {
     "type": "file",
