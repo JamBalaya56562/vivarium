@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "write-your-first-reproduction",
+    "label": "Write your first reproduction"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "Glossary"
   }

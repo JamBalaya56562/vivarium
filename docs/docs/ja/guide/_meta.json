@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "write-your-first-reproduction",
+    "label": "はじめての再現を書く"
+  },
+  {
+    "type": "file",
     "name": "glossary",
     "label": "用語集"
   }
