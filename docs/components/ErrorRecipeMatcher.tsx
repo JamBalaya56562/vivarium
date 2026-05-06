@@ -55,26 +55,90 @@ const MAX_INPUT_BYTES = 16 * 1024;
  * anyway, not full lexical coverage of any one language. */
 const STOPWORDS = new Set([
   // English
-  'the', 'and', 'for', 'with', 'from', 'that', 'this', 'have',
-  'has', 'are', 'was', 'were', 'will', 'not', 'but', 'all',
-  'error', 'errors', 'exception', 'failed', 'failure', 'trace',
-  'traceback', 'stack', 'line', 'file', 'most', 'recent', 'call',
+  'the',
+  'and',
+  'for',
+  'with',
+  'from',
+  'that',
+  'this',
+  'have',
+  'has',
+  'are',
+  'was',
+  'were',
+  'will',
+  'not',
+  'but',
+  'all',
+  'error',
+  'errors',
+  'exception',
+  'failed',
+  'failure',
+  'trace',
+  'traceback',
+  'stack',
+  'line',
+  'file',
+  'most',
+  'recent',
+  'call',
   // Japanese
-  'です', 'ます', 'した', 'する', 'これ', 'それ', 'その', 'この',
-  'エラー', '例外', '失敗', 'スタック',
+  'です',
+  'ます',
+  'した',
+  'する',
+  'これ',
+  'それ',
+  'その',
+  'この',
+  'エラー',
+  '例外',
+  '失敗',
+  'スタック',
   // German
-  'der', 'die', 'das', 'und', 'mit', 'von', 'für', 'fehler',
-  'ausnahme', 'aufgetreten',
+  'der',
+  'die',
+  'das',
+  'und',
+  'mit',
+  'von',
+  'für',
+  'fehler',
+  'ausnahme',
+  'aufgetreten',
   // Spanish
-  'que', 'por', 'una', 'los', 'las', 'del', 'con',
-  'excepción', 'fallo',
+  'que',
+  'por',
+  'una',
+  'los',
+  'las',
+  'del',
+  'con',
+  'excepción',
+  'fallo',
   // French
-  'pour', 'avec', 'sur', 'dans', 'erreur',
+  'pour',
+  'avec',
+  'sur',
+  'dans',
+  'erreur',
   'échec',
   // Chinese (Simplified + Traditional)
-  '错误', '异常', '失败', '堆栈', '錯誤', '異常', '失敗', '堆疊',
+  '错误',
+  '异常',
+  '失败',
+  '堆栈',
+  '錯誤',
+  '異常',
+  '失敗',
+  '堆疊',
   // Korean
-  '오류', '예외', '실패', '스택',
+  '오류',
+  '예외',
+  '실패',
+  '스택',
 ]);
 
 /* Synonym groups (Phase 7 A5). Within a group, any token in the
@@ -98,7 +162,10 @@ const SYNONYM_MAP: ReadonlyMap<string, ReadonlyArray<string>> = (() => {
   const m = new Map<string, ReadonlyArray<string>>();
   for (const group of SYNONYM_GROUPS) {
     for (const member of group) {
-      m.set(member, group.filter((g) => g !== member));
+      m.set(
+        member,
+        group.filter((g) => g !== member),
+      );
     }
   }
   return m;
@@ -334,8 +401,7 @@ const STRINGS: Record<Lang, Strings> = {
     clear: 'クリア',
     tokenisedAs: 'トークン化:',
     resultsHeading: '// ランク付き候補',
-    resultsCount: (n, total) =>
-      `${n} 件 (全 ${total} レシピ中)`,
+    resultsCount: (n, total) => `${n} 件 (全 ${total} レシピ中)`,
     emptyHeading: 'このトークンに該当するレシピがない。',
     emptyBody: (galleryHref) => (
       <>
@@ -351,11 +417,7 @@ const STRINGS: Record<Lang, Strings> = {
     open: '開く ↗',
     galleryLink: './',
     layerName: (layer) =>
-      layer === 1
-        ? 'L1 · WASM'
-        : layer === 2
-          ? 'L2 · Docker'
-          : 'L3 · 記録再生',
+      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 記録再生',
   },
 };
 
@@ -378,9 +440,7 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
   return (
     <article className="v-rg__card v-erm__card">
       <header className="v-rg__card-head">
-        <span
-          className={`v-rg__layer-pill v-rg__layer-pill--${layerAccent}`}
-        >
+        <span className={`v-rg__layer-pill v-rg__layer-pill--${layerAccent}`}>
           {s.layerName(r.layer)}
         </span>
         <span className="v-erm__score">
@@ -396,19 +456,21 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
       <div className="v-erm__matched">
         <span className="v-erm__matched-key">{s.matchedTokensLabel}:</span>
         {displayTokens.map((m, i) => {
-          const viaMark = m.via === 'fuzzy' ? '~' : m.via === 'synonym' ? '≡' : null;
-          const title = m.via && m.input
-            ? `${m.via} match (input: ${m.input})`
-            : undefined;
+          const viaMark =
+            m.via === 'fuzzy' ? '~' : m.via === 'synonym' ? '≡' : null;
+          const title =
+            m.via && m.input ? `${m.via} match (input: ${m.input})` : undefined;
           return (
             <span
               key={i}
-              className={`v-erm__token v-erm__token--${m.source}${m.via ? ' v-erm__token--' + m.via : ''}`}
+              className={`v-erm__token v-erm__token--${m.source}${m.via ? ` v-erm__token--${m.via}` : ''}`}
               title={title}
             >
               <span className="v-erm__token-source">{m.source[0]}</span>
               {m.token}
-              {viaMark ? <span className="v-erm__token-via">{viaMark}</span> : null}
+              {viaMark ? (
+                <span className="v-erm__token-via">{viaMark}</span>
+              ) : null}
             </span>
           );
         })}
@@ -446,7 +508,8 @@ export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
       .filter((s) => s.score > 0);
     scored.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      if (a.recipe.layer !== b.recipe.layer) return a.recipe.layer - b.recipe.layer;
+      if (a.recipe.layer !== b.recipe.layer)
+        return a.recipe.layer - b.recipe.layer;
       return a.recipe.slug.localeCompare(b.recipe.slug);
     });
     return scored;

@@ -6,14 +6,15 @@
 
 .v-pp {
   margin: 1.25rem 0 2.5rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--vh-text);
 }
 
 .v-pp__eyebrow {
   display: block;
   margin: 0 0 0.85rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -30,7 +31,7 @@
 
 .v-pp__title {
   margin: 0;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-family: "Space Grotesk", "Inter", sans-serif;
   font-size: 1.85rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -38,7 +39,7 @@
 
 .v-pp__tagline {
   margin: 0.55rem 0 0;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
   color: var(--vh-text-muted);
 }
@@ -66,7 +67,7 @@
   border: 1px solid var(--vh-hairline);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.04);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   color: var(--vh-text-muted);
 }
@@ -80,7 +81,7 @@ html.dark .v-pp__count-chip {
   align-items: center;
   padding: 0.18rem 0.55rem;
   border-radius: 999px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   border: 1px solid;
@@ -112,7 +113,7 @@ html.dark .v-pp__count-chip {
 }
 
 .v-pp__link {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.78rem;
   color: var(--vh-accent-teal);
   text-decoration: none;
@@ -128,7 +129,7 @@ html.dark .v-pp__count-chip {
 
 .v-pp__section-heading {
   margin: 1.6rem 0 0.6rem;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-family: "Space Grotesk", "Inter", sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
 }
@@ -143,7 +144,7 @@ html.dark .v-pp__count-chip {
   text-align: left;
   padding: 0.5rem 0.6rem;
   border-bottom: 1px solid var(--vh-hairline);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -170,7 +171,7 @@ html.dark .v-pp__count-chip {
 }
 
 .v-pp__row-symptom code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.78rem;
 }
 
@@ -190,7 +191,7 @@ html.dark .v-pp__count-chip {
   padding: 0.35rem 0.7rem;
   margin-left: 0.4rem;
   border-radius: 6px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   text-decoration: none;
   border: 1px solid var(--vh-hairline);
@@ -223,7 +224,7 @@ html.dark .v-pp__count-chip {
   padding: 1rem;
   border: 1px dashed var(--vh-hairline);
   border-radius: 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
   color: var(--vh-text-muted);
   background: rgba(0, 0, 0, 0.02);

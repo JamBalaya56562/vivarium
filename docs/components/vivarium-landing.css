@@ -1,0 +1,422 @@
+/* Vivarium landing — sections that sit below the existing hero.
+ *
+ * All tokens (--vh-bg, --vh-text, accents, hairline) come from
+ * vivarium-hero.css, which the hero ships into the page first. Both
+ * dark and light theme tokens are inherited automatically.
+ */
+
+/* ---------- Shared section primitives ---------- */
+
+.v-land-numbers,
+.v-land-layers,
+.v-land-personas,
+.v-land-cta {
+  width: 100%;
+  background-color: var(--vh-bg);
+  color: var(--vh-text);
+  font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.v-land-numbers__inner,
+.v-land-layers__inner,
+.v-land-personas__inner,
+.v-land-cta__inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+@media (min-width: 1024px) {
+  .v-land-numbers__inner,
+  .v-land-layers__inner,
+  .v-land-personas__inner,
+  .v-land-cta__inner {
+    padding: 5rem 4rem;
+  }
+}
+
+.v-land__eyebrow {
+  margin: 0 0 1.5rem;
+  font-family:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vh-accent-teal);
+}
+
+.v-land__heading {
+  margin: 0 0 0.75rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.625rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--vh-text);
+}
+
+.v-land__sub {
+  margin: 0 0 2.5rem;
+  max-width: 42rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--vh-text-muted);
+}
+
+/* ---------- Numbers strip ---------- */
+
+.v-land-numbers {
+  border-top: 1px solid var(--vh-hairline);
+  border-bottom: 1px solid var(--vh-hairline);
+}
+
+.v-land-numbers__inner {
+  /* tighter vertical for the numbers band */
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+@media (min-width: 1024px) {
+  .v-land-numbers__inner {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+.v-land-numbers__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .v-land-numbers__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.v-land-numbers__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.v-land-numbers__value {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--vh-accent-teal);
+}
+
+.v-land-numbers__label {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vh-text-dim);
+}
+
+/* ---------- Three-layer strip ---------- */
+
+.v-land-layers {
+  border-bottom: 1px solid var(--vh-hairline);
+}
+
+.v-land-layers__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .v-land-layers__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.v-land-layer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.75rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+:root:not(.dark) .v-land-layer {
+  background: rgba(4, 34, 28, 0.02);
+}
+
+.v-land-layer__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.25rem;
+}
+
+.v-land-layer__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+}
+
+.v-land-layer__icon--teal {
+  color: var(--vh-accent-teal-bright);
+}
+
+.v-land-layer__icon--violet {
+  color: var(--vh-accent-violet-bright);
+}
+
+.v-land-layer__icon--coral {
+  color: var(--vh-accent-coral);
+}
+
+.v-land-layer__pill {
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.v-land-layer__pill--teal {
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--vh-accent-teal-bright);
+  border: 1px solid rgba(0, 212, 170, 0.25);
+}
+
+.v-land-layer__pill--violet {
+  background: rgba(124, 92, 255, 0.12);
+  color: var(--vh-accent-violet-bright);
+  border: 1px solid rgba(124, 92, 255, 0.25);
+}
+
+.v-land-layer__pill--coral {
+  background: rgba(255, 113, 108, 0.12);
+  color: var(--vh-accent-coral);
+  border: 1px solid rgba(255, 113, 108, 0.25);
+}
+
+.v-land-layer__title {
+  margin: 0.25rem 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--vh-text);
+}
+
+.v-land-layer__body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--vh-text-muted);
+}
+
+.v-land-layer__runtimes {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--vh-text-dim);
+  word-break: break-word;
+}
+
+/* ---------- Persona grid ---------- */
+
+.v-land-personas {
+  border-bottom: 1px solid var(--vh-hairline);
+}
+
+.v-land-personas__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .v-land-personas__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .v-land-personas__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.v-land-persona {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+:root:not(.dark) .v-land-persona {
+  background: rgba(4, 34, 28, 0.02);
+}
+
+.v-land-persona:hover {
+  border-color: rgba(0, 212, 170, 0.4);
+  background: rgba(0, 212, 170, 0.04);
+}
+
+.v-land-persona__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.1rem;
+}
+
+.v-land-persona__icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+  color: var(--vh-accent-teal-bright);
+}
+
+.v-land-persona__micro {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vh-accent-teal);
+}
+
+.v-land-persona__title {
+  margin: 0.25rem 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--vh-text);
+}
+
+.v-land-persona__body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--vh-text-muted);
+}
+
+.v-land-persona__cta {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--vh-accent-teal-bright);
+}
+
+.v-land-persona__arrow {
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform 0.2s ease;
+}
+
+.v-land-persona:hover .v-land-persona__arrow {
+  transform: translateX(3px);
+}
+
+/* ---------- Secondary CTA band ---------- */
+
+.v-land-cta {
+  border-bottom: 1px solid var(--vh-hairline);
+  background:
+    radial-gradient(ellipse at top, rgba(0, 212, 170, 0.06), transparent 60%),
+    var(--vh-bg);
+}
+
+:root:not(.dark) .v-land-cta {
+  background:
+    radial-gradient(ellipse at top, rgba(0, 184, 148, 0.05), transparent 60%),
+    var(--vh-bg);
+}
+
+.v-land-cta__inner {
+  text-align: center;
+}
+
+.v-land-cta__heading {
+  margin: 0.25rem auto 0.75rem;
+  max-width: 50rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.625rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--vh-text);
+}
+
+.v-land-cta__sub {
+  margin: 0 auto 2rem;
+  max-width: 44rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--vh-text-muted);
+}
+
+.v-land-cta__buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.v-land-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 1.25rem;
+  border-radius: 9999px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.v-land-cta__btn--primary {
+  background: var(--vh-accent-teal);
+  color: #00110e;
+  border: 1px solid var(--vh-accent-teal);
+}
+
+.v-land-cta__btn--primary:hover {
+  background: var(--vh-accent-teal-bright);
+  border-color: var(--vh-accent-teal-bright);
+}
+
+.v-land-cta__btn--ghost {
+  background: transparent;
+  color: var(--vh-text);
+  border: 1px solid var(--vh-hairline);
+}
+
+.v-land-cta__btn--ghost:hover {
+  border-color: var(--vh-accent-teal);
+  color: var(--vh-accent-teal-bright);
+}

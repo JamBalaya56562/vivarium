@@ -7,20 +7,16 @@ const STRINGS = {
     legal:
       '© 2026 aletheia-works · Open Source under Apache 2.0 · Built for the modern web.',
     github: 'GitHub',
-    discord: 'Discord',
     changelog: 'Changelog',
     security: 'Security',
-    privacy: 'Privacy',
     changelogHref: '/vivarium/roadmap',
   },
   ja: {
     legal:
       '© 2026 aletheia-works · Apache 2.0 のもとでオープンソース · モダンウェブのために。',
     github: 'GitHub',
-    discord: 'Discord',
     changelog: '変更履歴',
     security: 'セキュリティ',
-    privacy: 'プライバシー',
     changelogHref: '/vivarium/ja/roadmap',
   },
 } as const;
@@ -43,9 +39,6 @@ export function VivariumFooter({ lang = 'en' }: { lang?: Lang } = {}) {
           >
             {s.github}
           </a>
-          <a className="v-footer__link" href="#">
-            {s.discord}
-          </a>
           <a className="v-footer__link" href={s.changelogHref}>
             {s.changelog}
           </a>
@@ -56,9 +49,6 @@ export function VivariumFooter({ lang = 'en' }: { lang?: Lang } = {}) {
             rel="noreferrer"
           >
             {s.security}
-          </a>
-          <a className="v-footer__link" href="#">
-            {s.privacy}
           </a>
         </div>
       </div>

@@ -1,0 +1,61 @@
+name: Test docs format + lint
+
+# Runs Biome (formatter + linter) over docs/ on every PR that touches
+# JS / TS / CSS / JSON inside docs/. The check is strict — any
+# unformatted file or remaining lint diagnostic fails the PR.
+#
+# Companion workflow: `biome-autofix.yml` heals what is mechanically
+# fixable (`biome check --write --unsafe`) by committing back to the
+# PR branch. This workflow only fails on what remains after that
+# autofix — i.e. issues a human has to think about.
+#
+# Local equivalent: `mise run ci:docs-check`. Authors can apply safe
+# auto-fixes with `mise run docs:check:fix` before re-pushing.
+#
+# Tooling: single-tool job (bun only). Mirrors test-docs-build.yml's
+# stance — no need for the rest of mise.toml since Biome is the only
+# moving piece here.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**/*.ts'
+      - 'docs/**/*.tsx'
+      - 'docs/**/*.js'
+      - 'docs/**/*.mjs'
+      - 'docs/**/*.cjs'
+      - 'docs/**/*.css'
+      - 'docs/**/*.json'
+      - 'docs/biome.json'
+      - 'docs/package.json'
+      - 'docs/bun.lock'
+      - '.github/workflows/test-docs-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-docs-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Biome check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Biome check (format + lint, read-only)
+        run: bun x --bun biome check .

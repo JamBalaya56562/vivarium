@@ -1,3 +1,4 @@
+import { ArrowRight, Lock } from 'lucide-react';
 import { useState } from 'react';
 import './vivarium-hero.css';
 
@@ -9,14 +10,12 @@ const STRINGS = {
   en: {
     kicker: '// CONTRACT v1 · OPEN SOURCE · APACHE-2.0',
     headline: ['Reproduce any bug.', 'Any language.', 'Any environment.'],
-    lede:
-      'Vivarium is a three-layer reproduction substrate. WebAssembly for milliseconds, Docker for fidelity, and a third layer for everything else. Problem first, technology second.',
+    lede: 'Vivarium is a three-layer reproduction substrate. WebAssembly for milliseconds, Docker for fidelity, and a third layer for everything else. Problem first, technology second.',
     ctaPrimary: 'Read the overview',
     ctaGhost: 'View on GitHub',
     visionHref: '/vivarium/overview',
     sectionAria: 'Vivarium hero',
     tabsAria: 'Reproduction examples',
-    activeAria: (label: string) => `${label} reproduction (active)`,
     bringFrontAria: (label: string) =>
       `Bring ${label} reproduction to the front`,
     tabs: {
@@ -35,8 +34,7 @@ const STRINGS = {
     postgres: {
       eyebrow: 'VIVARIUM · LAYER 2 · DOCKER · POSTGRESQL',
       title: 'Reproducing PostgreSQL lost-update under READ COMMITTED',
-      lede:
-        'Concurrent UPDATEs lose writes when a SELECT-then-UPDATE pattern omits row-level locks.',
+      lede: 'Concurrent UPDATEs lose writes when a SELECT-then-UPDATE pattern omits row-level locks.',
       verdictText: 'RUNNING — tx-1 ⨯ tx-2',
       tabRunning: 'running',
       pulling: '[docker] Pulling postgres:15-alpine',
@@ -46,25 +44,23 @@ const STRINGS = {
     ruby: {
       eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · UNICODE',
       title: 'Reproducing ruby/ruby#21709',
-      lede:
-        'String#unicode_normalize edge case for combining diacritics in NFD form.',
+      lede: 'String#unicode_normalize edge case for combining diacritics in NFD form.',
       verdictText: '✓ REPRODUCED — bug reproduced',
       tabVerified: 'verified',
       okLine: 'round-trip lost (RuntimeError raised as expected)',
-      verdictTrace: 'verdict: REPRODUCED — issue#21709 reproducible in ruby.wasm',
+      verdictTrace:
+        'verdict: REPRODUCED — issue#21709 reproducible in ruby.wasm',
     },
   },
   ja: {
     kicker: '// CONTRACT v1 · オープンソース · APACHE-2.0',
     headline: ['あらゆるバグを再現。', 'あらゆる言語で。', 'あらゆる環境で。'],
-    lede:
-      'Vivarium は三層の再現基盤。ミリ秒単位の WebAssembly、忠実度の Docker、そしてそれ以外すべてのための第三のレイヤー。問題が先、技術は後。',
+    lede: 'Vivarium は三層の再現基盤。ミリ秒単位の WebAssembly、忠実度の Docker、そしてそれ以外すべてのための第三のレイヤー。問題が先、技術は後。',
     ctaPrimary: '概要を読む',
     ctaGhost: 'GitHub で見る',
     visionHref: '/vivarium/ja/overview',
     sectionAria: 'Vivarium ヒーロー',
     tabsAria: '再現サンプル',
-    activeAria: (label: string) => `${label} 再現（アクティブ）`,
     bringFrontAria: (label: string) => `${label} 再現を前面に表示`,
     tabs: {
       cpython: { label: 'Python', sublabel: 'L1 · WASM' },
@@ -74,8 +70,7 @@ const STRINGS = {
     cpython: {
       eyebrow: 'VIVARIUM · LAYER 1 · PYODIDE · SQLITE3',
       title: 'python/cpython#137205 を再現',
-      lede:
-        'PRAGMA foreign_keys が autocommit=False 下でサイレントに無視される。',
+      lede: 'PRAGMA foreign_keys が autocommit=False 下でサイレントに無視される。',
       verdictText: 'fk_off ≠ fk_on',
       verdictPrefix: '✕ UNREPRODUCED',
       tabError: 'エラー 1 件',
@@ -83,8 +78,7 @@ const STRINGS = {
     postgres: {
       eyebrow: 'VIVARIUM · LAYER 2 · DOCKER · POSTGRESQL',
       title: 'READ COMMITTED 下での PostgreSQL lost-update を再現',
-      lede:
-        '並行 UPDATE が、SELECT 後に UPDATE するパターンで行ロックを省略すると書き込みを失う。',
+      lede: '並行 UPDATE が、SELECT 後に UPDATE するパターンで行ロックを省略すると書き込みを失う。',
       verdictText: '実行中 — tx-1 ⨯ tx-2',
       tabRunning: '実行中',
       pulling: '[docker] postgres:15-alpine をプル中',
@@ -94,50 +88,20 @@ const STRINGS = {
     ruby: {
       eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · UNICODE',
       title: 'ruby/ruby#21709 を再現',
-      lede:
-        'NFD 形式の結合ダイアクリティカル記号における String#unicode_normalize のエッジケース。',
+      lede: 'NFD 形式の結合ダイアクリティカル記号における String#unicode_normalize のエッジケース。',
       verdictText: '✓ REPRODUCED — バグ再現',
       tabVerified: '検証済み',
       okLine: 'round-trip lost (RuntimeError を期待通り raise)',
-      verdictTrace:
-        'verdict: REPRODUCED — issue#21709 が ruby.wasm で再現可能',
+      verdictTrace: 'verdict: REPRODUCED — issue#21709 が ruby.wasm で再現可能',
     },
   },
 } as const;
 
 /* ------------------------------- Icons ------------------------------- */
 
-const ArrowRight = () => (
-  <svg
-    className="v-hero__cta-arrow"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <line x1="5" y1="12" x2="19" y2="12" />
-    <polyline points="12 5 19 12 12 19" />
-  </svg>
-);
-
-const LockIcon = () => (
-  <svg
-    className="v-window__lock"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="4" y="11" width="16" height="11" rx="2" />
-    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-  </svg>
-);
+/* WasmGlyph + DockerGlyph stay inline because they are brand-evoking
+ * marks tied to specific runtimes, not generic UI icons. The two
+ * generic icons (cta arrow + URL-bar lock) come from lucide-react. */
 
 const WasmGlyph = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -180,7 +144,7 @@ const Chrome = ({ url, badge }: { url: string; badge: BadgeKind }) => (
       <span className="v-window__dot v-window__dot--green" />
     </div>
     <div className="v-window__url v-window__url--pill">
-      <LockIcon />
+      <Lock className="v-window__lock" strokeWidth={2.5} aria-hidden="true" />
       {url}
     </div>
     <ChromeBadge kind={badge} />
@@ -332,7 +296,9 @@ const RubyInner = ({ s }: { s: typeof STRINGS.en }) => (
       <span className="v-window__eyebrow">{s.ruby.eyebrow}</span>
       <h2 className="v-window__title">{s.ruby.title}</h2>
       <p className="v-window__lede">{s.ruby.lede}</p>
-      <span className="v-verdict v-verdict--reproduced">{s.ruby.verdictText}</span>
+      <span className="v-verdict v-verdict--reproduced">
+        {s.ruby.verdictText}
+      </span>
 
       <div className="v-code">
         <span className="v-code__comment"># repro.rb</span>
@@ -448,12 +414,13 @@ export function VivariumHero({ lang = 'en' }: { lang?: Lang } = {}) {
           <p className="v-hero__lede">{s.lede}</p>
 
           <div className="v-hero__ctas">
-            <a
-              className="v-hero__cta v-hero__cta--primary"
-              href={s.visionHref}
-            >
+            <a className="v-hero__cta v-hero__cta--primary" href={s.visionHref}>
               {s.ctaPrimary}
-              <ArrowRight />
+              <ArrowRight
+                className="v-hero__cta-arrow"
+                strokeWidth={2}
+                aria-hidden="true"
+              />
             </a>
             <a
               className="v-hero__cta v-hero__cta--ghost"
@@ -517,24 +484,29 @@ export function VivariumHero({ lang = 'en' }: { lang?: Lang } = {}) {
               const slot = slots[id];
               const isFront = slot === 'front';
               const tab = s.tabs[id];
+              const className = `v-window v-window--slot-${slot}`;
+              if (isFront) {
+                return (
+                  <div key={id} className={className}>
+                    {renderInner(id)}
+                  </div>
+                );
+              }
               return (
+                // biome-ignore lint/a11y/useSemanticElements: <button> can't legally contain the window's nested interactive content (chrome / code / console); div + role="button" + keyboard handler keeps the swap interaction accessible
                 <div
                   key={id}
-                  className={`v-window v-window--slot-${slot}`}
-                  onClick={() => !isFront && swapToFront(id)}
+                  className={className}
+                  onClick={() => swapToFront(id)}
                   onKeyDown={(e) => {
-                    if (!isFront && (e.key === 'Enter' || e.key === ' ')) {
+                    if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       swapToFront(id);
                     }
                   }}
-                  role={isFront ? undefined : 'button'}
-                  tabIndex={isFront ? -1 : 0}
-                  aria-label={
-                    isFront
-                      ? s.activeAria(tab.label)
-                      : s.bringFrontAria(tab.label)
-                  }
+                  role="button"
+                  tabIndex={0}
+                  aria-label={s.bringFrontAria(tab.label)}
                 >
                   {renderInner(id)}
                 </div>

@@ -4,14 +4,15 @@
 
 .v-rg {
   margin: 1.25rem 0 2.5rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--vh-text);
 }
 
 .v-rg__eyebrow {
   display: block;
   margin: 0 0 0.85rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -38,7 +39,7 @@
 
 .v-rg__search-label,
 .v-rg__group-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -51,7 +52,7 @@
   border: 1px solid var(--vh-hairline);
   border-radius: 6px;
   color: var(--vh-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
   outline: none;
 }
@@ -87,7 +88,7 @@ html.dark .v-rg__search-input {
   border-radius: 999px;
   background: transparent;
   color: var(--vh-text-muted);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -123,7 +124,7 @@ html.dark .v-rg__search-input {
   align-items: center;
   gap: 0.75rem;
   margin: 0.85rem 0 0.6rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   color: var(--vh-text-dim);
 }
@@ -185,7 +186,9 @@ html.dark .v-rg__search-input {
   background: var(--vh-card-bg);
   border: 1px solid var(--vh-hairline);
   border-radius: 8px;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 .v-rg__card:hover {
@@ -203,7 +206,7 @@ html.dark .v-rg__search-input {
 .v-rg__layer-pill {
   display: inline-block;
   padding: 0.15rem 0.5rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.65rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -230,7 +233,7 @@ html.dark .v-rg__search-input {
 }
 
 .v-rg__slug {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.7rem;
   color: var(--vh-text-dim);
   word-break: break-all;
@@ -240,7 +243,7 @@ html.dark .v-rg__search-input {
 
 .v-rg__title {
   margin: 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-size: 1rem;
   line-height: 1.3;
   color: var(--vh-text);
@@ -248,7 +251,7 @@ html.dark .v-rg__search-input {
 }
 
 .v-rg__title span {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-weight: 500;
   color: var(--vh-text-muted);
   font-size: 0.85em;
@@ -271,7 +274,7 @@ html.dark .v-rg__search-input {
 }
 
 .v-rg__meta-key {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-size: 0.65rem;
@@ -280,7 +283,7 @@ html.dark .v-rg__search-input {
 }
 
 .v-rg__meta-item code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.72rem;
   color: var(--vh-text);
   background: var(--vh-card-bg-hover);
@@ -299,7 +302,7 @@ html.dark .v-rg__search-input {
 }
 
 .v-rg__tag {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.65rem;
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
@@ -319,7 +322,7 @@ html.dark .v-rg__search-input {
   padding: 0.35rem 0.75rem;
   border: 1px solid var(--vh-hairline-strong);
   border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   text-decoration: none;
   transition: all 120ms ease;

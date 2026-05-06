@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import './page-chrome.css';
 
 /* ----------------------------- PageHero ----------------------------- */
@@ -81,7 +81,9 @@ export function KpiStrip({
     <div className="v-kpi-strip">
       {items.map((item, i) => (
         <div key={i}>
-          <div className={`v-kpi__value v-kpi__value--${item.accent ?? 'teal'}`}>
+          <div
+            className={`v-kpi__value v-kpi__value--${item.accent ?? 'teal'}`}
+          >
             {item.value}
           </div>
           <div className="v-kpi__label">{item.label}</div>
@@ -203,11 +205,17 @@ export function NextCta({
         <h2 className="v-next-cta__heading">{heading}</h2>
         <p className="v-next-cta__sub">{sub}</p>
         <div className="v-next-cta__buttons">
-          <a className="v-next-cta__btn v-next-cta__btn--primary" href={primary.href}>
+          <a
+            className="v-next-cta__btn v-next-cta__btn--primary"
+            href={primary.href}
+          >
             {primary.label}
           </a>
           {ghost ? (
-            <a className="v-next-cta__btn v-next-cta__btn--ghost" href={ghost.href}>
+            <a
+              className="v-next-cta__btn v-next-cta__btn--ghost"
+              href={ghost.href}
+            >
               {ghost.label}
             </a>
           ) : null}
@@ -219,20 +227,9 @@ export function NextCta({
 
 /* ----------------------------- BottomNote ----------------------------- */
 
-export function BottomNote({
-  text,
-  href,
-}: {
-  text: string;
-  href: string;
-}) {
+export function BottomNote({ text, href }: { text: string; href: string }) {
   return (
-    <a
-      className="v-bottom-note"
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-    >
+    <a className="v-bottom-note" href={href} target="_blank" rel="noreferrer">
       {text}
     </a>
   );
