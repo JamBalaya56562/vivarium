@@ -10,7 +10,7 @@ import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
   <PageHero
     eyebrow="// MATCH · ERROR → RECIPE"
     title={<>エラーを貼り付けて、候補レシピを探す。</>}
-    sub="レシピカタログに対する機械的なトークンオーバーラップマッチ。LLM 非依存、ファジーマッチ非対応——各レシピの symptom / tags / project / slug に対する正確な小文字トークン一致のみ。スコアリングはすべてローカルで実行される。"
+    sub="レシピカタログに対する機械的なトークンオーバーラップマッチ。LLM 非依存——各レシピの symptom / tags / project / slug に対する小文字トークン一致をスコア化する。Phase 7 A5 で同義語テーブル（dtype⇄datatype など）、Levenshtein 距離 1 のファジーマッチ（長さ 6 以上のトークン）、多言語ストップワードを追加。スコアリングはすべてローカルで実行される。"
   />
 
   <ErrorRecipeMatcher lang="ja" />

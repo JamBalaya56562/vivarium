@@ -224,4 +224,79 @@ describe('match_error', () => {
       assert.ok(tokens.includes('dtype') || tokens.includes('mismatch'));
     }
   });
+
+  // Phase 7 A5 — accuracy improvements (synonym, fuzzy, multi-lang stopwords).
+
+  it('expands "data type" → datatype → dtype via synonym table', async () => {
+    const r = await matchError({
+      text: 'pandas DataFrame has a data type mismatch',
+    });
+    assert.equal('ok' in r && r.ok, true);
+    if ('ok' in r && r.ok) {
+      assert.equal(r.matches[0]!.recipe.slug, 'pandas-56679');
+      const dtypeMatch = r.matches[0]!.matched.find(
+        (m) => m.token === 'dtype' && m.source === 'symptom',
+      );
+      assert.ok(dtypeMatch, 'expected dtype symptom match via synonym');
+      assert.equal(dtypeMatch!.via, 'synonym');
+      assert.equal(dtypeMatch!.input, 'datatype');
+    }
+  });
+
+  it('matches typos via fuzzy distance-1 (e.g. missmatch → mismatch)', async () => {
+    const r = await matchError({
+      text: 'pandas dtype missmatch error',
+    });
+    assert.equal('ok' in r && r.ok, true);
+    if ('ok' in r && r.ok) {
+      assert.equal(r.matches[0]!.recipe.slug, 'pandas-56679');
+      const fuzzyHit = r.matches[0]!.matched.find(
+        (m) => m.token === 'mismatch' && m.via === 'fuzzy',
+      );
+      assert.ok(fuzzyHit, 'expected fuzzy match for mismatch');
+      assert.equal(fuzzyHit!.input, 'missmatch');
+    }
+  });
+
+  it('does not fuzzy-match short tokens (length < 6)', async () => {
+    // 'dtype' is 5 chars, below FUZZY_MIN_LEN. A typo "dtyp" must NOT
+    // accidentally match — would be too noisy.
+    const r = await matchError({ text: 'pandas dtyp error' });
+    if ('ok' in r && r.ok && r.matches.length > 0) {
+      const dtypeFuzzy = r.matches[0]!.matched.find(
+        (m) => m.token === 'dtype' && m.via === 'fuzzy',
+      );
+      assert.equal(dtypeFuzzy, undefined);
+    }
+  });
+
+  it('drops German stopwords ("der", "fehler") so they cannot match accidentally', async () => {
+    // "fehler" is added to the German stopword set; it must not appear
+    // as a query token even though it would otherwise pass length / regex.
+    const r = await matchError({
+      text: 'der fehler ist ein dtype mismatch',
+    });
+    assert.equal('ok' in r && r.ok, true);
+    if ('ok' in r && r.ok) {
+      // Should still match pandas via the surviving tokens.
+      assert.equal(r.matches[0]!.recipe.slug, 'pandas-56679');
+      assert.ok(
+        r.matches[0]!.matched.every((m) => m.token !== 'fehler'),
+        'fehler should have been stopworded out',
+      );
+    }
+  });
+
+  it('marks exact matches without via (v1 wire-compat for non-fuzzy hits)', async () => {
+    const r = await matchError({ text: 'pandas dtype mismatch' });
+    if ('ok' in r && r.ok && r.matches.length > 0) {
+      const exactSymptom = r.matches[0]!.matched.find(
+        (m) => m.token === 'dtype' && m.source === 'symptom',
+      );
+      assert.ok(exactSymptom);
+      // Direct exact hit — `via` and `input` must be absent.
+      assert.equal(exactSymptom!.via, undefined);
+      assert.equal(exactSymptom!.input, undefined);
+    }
+  });
 });

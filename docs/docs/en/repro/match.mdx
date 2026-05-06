@@ -10,7 +10,7 @@ import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
   <PageHero
     eyebrow="// MATCH · ERROR → RECIPE"
     title={<>Paste an error, find a candidate.</>}
-    sub="Mechanical token-overlap match against the recipe catalogue. No LLM, no fuzzy match — exact lowercase tokens against each recipe's symptom, tags, project, and slug. All scoring runs locally."
+    sub="Mechanical token-overlap match against the recipe catalogue. No LLM — lowercase tokens are scored against each recipe's symptom, tags, project, and slug. Phase 7 A5 adds a synonym table (e.g. dtype⇄datatype), Levenshtein-1 fuzzy match for tokens of length ≥ 6, and multi-language stopwords. All scoring runs locally."
   />
 
   <ErrorRecipeMatcher lang="en" />

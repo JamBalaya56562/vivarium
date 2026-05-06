@@ -3,7 +3,7 @@ import './error-recipe-matcher.css';
 import recipesIndex from '../public/api/recipes.json';
 
 /* ============================================================================
- * Phase 6 S.2 — error → recipe matcher (mechanical, no LLM).
+ * Phase 6 S.2 → Phase 7 A5 — error → recipe matcher (mechanical, no LLM).
  *
  * Mechanical token-overlap scoring per ADR-0025:
  *   symptom segment match → +5
@@ -11,9 +11,19 @@ import recipesIndex from '../public/api/recipes.json';
  *   project / slug match  → +2
  * Recipes with score 0 are hidden. Ties broken by (layer asc, slug asc).
  *
- * No LLM, no fuzzy match, no synonym table. Visitors pasting an error
- * with no overlap to the overlay see the empty-state pointing at the
- * gallery (S.1).
+ * Phase 7 A5 (ADR-0028) extends v1 with three accuracy improvements that
+ * never change the weights above:
+ *   1. Adjacent-pair token expansion — "data type" also tries `datatype`.
+ *   2. Synonym groups — variants of the same concept (e.g. dtype⇄datatype).
+ *   3. Bounded fuzzy match — Levenshtein distance ≤ 1 for tokens of
+ *      length ≥ 6 (typo tolerance).
+ *   4. Multi-language stopwords — German, Spanish, French, Chinese,
+ *      Korean noise tokens drop alongside the English+Japanese set.
+ *
+ * **CRITICAL: keep in sync with `packages/mcp-server/src/tools/match_error.ts`.**
+ * The MCP X.2 server-side mirror is bit-identical with this file by ADR
+ * design. Diverging the scoring would surface as agent-vs-UI disagreement
+ * on identical input.
  * ========================================================================== */
 
 interface RecipeEntry {
@@ -40,35 +50,155 @@ const INDEX = recipesIndex as RecipesIndex;
 
 const MAX_INPUT_BYTES = 16 * 1024;
 
-/* English + Japanese stopwords. Kept short; the goal is to drop noise
- * tokens that would never sit in a recipe's overlay anyway, not to
- * provide full lexical coverage. */
+/* Multi-language stopword set (Phase 7 A5). The goal is dropping the
+ * frequent noise tokens that would never sit in a recipe overlay
+ * anyway, not full lexical coverage of any one language. */
 const STOPWORDS = new Set([
+  // English
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'have',
   'has', 'are', 'was', 'were', 'will', 'not', 'but', 'all',
   'error', 'errors', 'exception', 'failed', 'failure', 'trace',
   'traceback', 'stack', 'line', 'file', 'most', 'recent', 'call',
+  // Japanese
   'です', 'ます', 'した', 'する', 'これ', 'それ', 'その', 'この',
   'エラー', '例外', '失敗', 'スタック',
+  // German
+  'der', 'die', 'das', 'und', 'mit', 'von', 'für', 'fehler',
+  'ausnahme', 'aufgetreten',
+  // Spanish
+  'que', 'por', 'una', 'los', 'las', 'del', 'con',
+  'excepción', 'fallo',
+  // French
+  'pour', 'avec', 'sur', 'dans', 'erreur',
+  'échec',
+  // Chinese (Simplified + Traditional)
+  '错误', '异常', '失败', '堆栈', '錯誤', '異常', '失敗', '堆疊',
+  // Korean
+  '오류', '예외', '실패', '스택',
 ]);
 
-function tokenise(input: string): string[] {
+/* Synonym groups (Phase 7 A5). Within a group, any token in the
+ * user's input expands the input set to include all members.
+ * Conservative on purpose — false-positive pressure rises with table
+ * size. Add entries only when the mapping is unambiguous. */
+const SYNONYM_GROUPS: ReadonlyArray<readonly string[]> = [
+  ['dtype', 'datatype'],
+  ['nullptr', 'nullpointer', 'nilptr', 'nullpointerexception'],
+  ['segfault', 'sigsegv', 'segmentation'],
+  ['flock', 'filelock'],
+  ['deadlock', 'deadblock'],
+  ['datarace', 'racecondition'],
+  ['exitcode', 'exitstatus', 'returncode'],
+  ['oom', 'outofmemory'],
+  ['encoding', 'utf'],
+  ['mismatch', 'mismatched'],
+];
+
+const SYNONYM_MAP: ReadonlyMap<string, ReadonlyArray<string>> = (() => {
+  const m = new Map<string, ReadonlyArray<string>>();
+  for (const group of SYNONYM_GROUPS) {
+    for (const member of group) {
+      m.set(member, group.filter((g) => g !== member));
+    }
+  }
+  return m;
+})();
+
+/* Bounded fuzzy match (Phase 7 A5). Only tokens of length ≥
+ * FUZZY_MIN_LEN are eligible; only Levenshtein distance ≤ 1 is
+ * accepted. Same scoring weight as exact, but matched tokens
+ * record `via: 'fuzzy'` for client-side rendering. */
+const FUZZY_MIN_LEN = 6;
+
+function withinDistance1(a: string, b: string): boolean {
+  if (a === b) return true;
+  const lenA = a.length;
+  const lenB = b.length;
+  if (Math.abs(lenA - lenB) > 1) return false;
+  if (lenA === lenB) {
+    let diffs = 0;
+    for (let i = 0; i < lenA; i++) {
+      if (a[i] !== b[i]) {
+        diffs++;
+        if (diffs > 1) return false;
+      }
+    }
+    return diffs === 1;
+  }
+  const shorter = lenA < lenB ? a : b;
+  const longer = lenA < lenB ? b : a;
+  let i = 0;
+  let j = 0;
+  let diffs = 0;
+  while (i < shorter.length && j < longer.length) {
+    if (shorter[i] !== longer[j]) {
+      diffs++;
+      if (diffs > 1) return false;
+      j++;
+    } else {
+      i++;
+      j++;
+    }
+  }
+  return true;
+}
+
+interface TokenSet {
+  /** Direct tokens after splitting + stopword filter + adjacent-pair join. */
+  direct: ReadonlySet<string>;
+  /** Synonym-expanded tokens: catalogue-side variant → original input token. */
+  synonyms: ReadonlyMap<string, string>;
+  /** Direct tokens of length ≥ FUZZY_MIN_LEN, eligible for fuzzy matching. */
+  fuzzyCandidates: ReadonlyArray<string>;
+  /** Ordered display list (de-duplicated, no synonym/pair additions). */
+  displayOrder: ReadonlyArray<string>;
+}
+
+function tokenise(input: string): TokenSet {
   let trimmed = input;
   if (trimmed.length > MAX_INPUT_BYTES) {
     trimmed = trimmed.slice(trimmed.length - MAX_INPUT_BYTES);
   }
   const lower = trimmed.toLowerCase();
   const raw = lower.split(/[^a-z0-9_]+/);
-  const tokens: string[] = [];
-  const seen = new Set<string>();
+
+  // Stage 1: filter raw tokens (length ≥ 3, not stopword, dedup).
+  const ordered: string[] = [];
+  const seenRaw = new Set<string>();
   for (const t of raw) {
     if (t.length < 3) continue;
     if (STOPWORDS.has(t)) continue;
-    if (seen.has(t)) continue;
-    seen.add(t);
-    tokens.push(t);
+    if (seenRaw.has(t)) continue;
+    seenRaw.add(t);
+    ordered.push(t);
   }
-  return tokens;
+
+  // Stage 2: adjacent-pair expansion. Lets multi-word user input
+  // (e.g. "data type") match single-word catalogue terms (`dtype`)
+  // via the synonym table.
+  const direct = new Set<string>(ordered);
+  for (let i = 0; i < ordered.length - 1; i++) {
+    direct.add(ordered[i]! + ordered[i + 1]!);
+  }
+
+  // Stage 3: synonym expansion.
+  const synonyms = new Map<string, string>();
+  for (const t of direct) {
+    const partners = SYNONYM_MAP.get(t);
+    if (!partners) continue;
+    for (const p of partners) {
+      if (direct.has(p) || synonyms.has(p)) continue;
+      synonyms.set(p, t);
+    }
+  }
+
+  // Stage 4: fuzzy candidate set.
+  const fuzzyCandidates: string[] = [];
+  for (const t of direct) {
+    if (t.length >= FUZZY_MIN_LEN) fuzzyCandidates.push(t);
+  }
+
+  return { direct, synonyms, fuzzyCandidates, displayOrder: ordered };
 }
 
 function kebabSegments(value: string): string[] {
@@ -78,44 +208,67 @@ function kebabSegments(value: string): string[] {
     .filter((t) => t.length >= 3 && !STOPWORDS.has(t));
 }
 
+interface MatchedToken {
+  source: 'symptom' | 'tags' | 'project' | 'slug';
+  token: string;
+  via?: 'synonym' | 'fuzzy';
+  input?: string;
+}
+
 interface Score {
   recipe: RecipeEntry;
   score: number;
-  matched: { source: 'symptom' | 'tags' | 'project' | 'slug'; token: string }[];
+  matched: MatchedToken[];
 }
 
-function scoreRecipe(recipe: RecipeEntry, tokens: Set<string>): Score {
-  const matched: Score['matched'] = [];
+interface SegmentMatch {
+  matched: boolean;
+  via?: 'synonym' | 'fuzzy';
+  input?: string;
+}
+
+function matchSegment(seg: string, tokens: TokenSet): SegmentMatch {
+  if (tokens.direct.has(seg)) return { matched: true };
+  const synonymInput = tokens.synonyms.get(seg);
+  if (synonymInput !== undefined) {
+    return { matched: true, via: 'synonym', input: synonymInput };
+  }
+  if (seg.length >= FUZZY_MIN_LEN) {
+    for (const candidate of tokens.fuzzyCandidates) {
+      if (withinDistance1(seg, candidate)) {
+        return { matched: true, via: 'fuzzy', input: candidate };
+      }
+    }
+  }
+  return { matched: false };
+}
+
+function scoreRecipe(recipe: RecipeEntry, tokens: TokenSet): Score {
+  const matched: MatchedToken[] = [];
   let score = 0;
 
+  const apply = (
+    source: MatchedToken['source'],
+    weight: number,
+    seg: string,
+  ) => {
+    const m = matchSegment(seg, tokens);
+    if (!m.matched) return;
+    score += weight;
+    const entry: MatchedToken = { source, token: seg };
+    if (m.via) entry.via = m.via;
+    if (m.input !== undefined) entry.input = m.input;
+    matched.push(entry);
+  };
+
   if (recipe.symptom) {
-    for (const seg of kebabSegments(recipe.symptom)) {
-      if (tokens.has(seg)) {
-        score += 5;
-        matched.push({ source: 'symptom', token: seg });
-      }
-    }
+    for (const seg of kebabSegments(recipe.symptom)) apply('symptom', 5, seg);
   }
   for (const tag of recipe.tags) {
-    for (const seg of kebabSegments(tag)) {
-      if (tokens.has(seg)) {
-        score += 3;
-        matched.push({ source: 'tags', token: seg });
-      }
-    }
+    for (const seg of kebabSegments(tag)) apply('tags', 3, seg);
   }
-  for (const seg of kebabSegments(recipe.project)) {
-    if (tokens.has(seg)) {
-      score += 2;
-      matched.push({ source: 'project', token: seg });
-    }
-  }
-  for (const seg of kebabSegments(recipe.slug)) {
-    if (tokens.has(seg)) {
-      score += 2;
-      matched.push({ source: 'slug', token: seg });
-    }
-  }
+  for (const seg of kebabSegments(recipe.project)) apply('project', 2, seg);
+  for (const seg of kebabSegments(recipe.slug)) apply('slug', 2, seg);
 
   return { recipe, score, matched };
 }
@@ -215,12 +368,12 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
     r.layer === 1 ? 'teal' : r.layer === 2 ? 'violet' : 'coral';
   // Dedupe matched tokens for display while preserving first-seen order.
   const seen = new Set<string>();
-  const tokens: { token: string; source: string }[] = [];
+  const displayTokens: MatchedToken[] = [];
   for (const m of score.matched) {
-    const key = `${m.source}:${m.token}`;
+    const key = `${m.source}:${m.token}:${m.via ?? ''}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    tokens.push(m);
+    displayTokens.push(m);
   }
   return (
     <article className="v-rg__card v-erm__card">
@@ -242,12 +395,23 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
       <p className="v-rg__lede">{r.title}</p>
       <div className="v-erm__matched">
         <span className="v-erm__matched-key">{s.matchedTokensLabel}:</span>
-        {tokens.map((m, i) => (
-          <span key={i} className={`v-erm__token v-erm__token--${m.source}`}>
-            <span className="v-erm__token-source">{m.source[0]}</span>
-            {m.token}
-          </span>
-        ))}
+        {displayTokens.map((m, i) => {
+          const viaMark = m.via === 'fuzzy' ? '~' : m.via === 'synonym' ? '≡' : null;
+          const title = m.via && m.input
+            ? `${m.via} match (input: ${m.input})`
+            : undefined;
+          return (
+            <span
+              key={i}
+              className={`v-erm__token v-erm__token--${m.source}${m.via ? ' v-erm__token--' + m.via : ''}`}
+              title={title}
+            >
+              <span className="v-erm__token-source">{m.source[0]}</span>
+              {m.token}
+              {viaMark ? <span className="v-erm__token-via">{viaMark}</span> : null}
+            </span>
+          );
+        })}
       </div>
       <div className="v-rg__actions">
         <a
@@ -274,12 +438,11 @@ export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
   // has no other settings (layer/severity toggles etc.) so there is no
   // submit semantic to wait on. Clear button is the only escape hatch.
   const tokens = useMemo(() => tokenise(input), [input]);
-  const tokenSet = useMemo(() => new Set(tokens), [tokens]);
 
   const ranked = useMemo<Score[]>(() => {
-    if (tokens.length === 0) return [];
+    if (tokens.displayOrder.length === 0) return [];
     const scored = INDEX.recipes
-      .map((r) => scoreRecipe(r, tokenSet))
+      .map((r) => scoreRecipe(r, tokens))
       .filter((s) => s.score > 0);
     scored.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
@@ -287,7 +450,7 @@ export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
       return a.recipe.slug.localeCompare(b.recipe.slug);
     });
     return scored;
-  }, [tokens, tokenSet]);
+  }, [tokens]);
 
   const clear = () => setInput('');
 
@@ -321,10 +484,10 @@ export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
         </button>
       </div>
 
-      {hasInput && tokens.length > 0 ? (
+      {hasInput && tokens.displayOrder.length > 0 ? (
         <div className="v-erm__tokens">
           <span className="v-erm__tokens-label">{s.tokenisedAs}</span>
-          {tokens.map((t) => (
+          {tokens.displayOrder.map((t) => (
             <span key={t} className="v-erm__token v-erm__token--input">
               {t}
             </span>
