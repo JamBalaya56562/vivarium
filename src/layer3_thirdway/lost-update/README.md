@@ -16,7 +16,7 @@ unprotected `counter++` (which compiles to a non-atomic
 load-add-store) interleaves between the threads, and a varying
 number of increments are silently lost.
 
-```
+```text
 Thread A                Thread B
 ─────────────────────────────────────
 load  counter → r0
@@ -138,7 +138,7 @@ context switches add a few hundred milliseconds at replay time).
 
 **Expected output:**
 
-```
+```text
 Replaying trace at: /trace/repro-0
 counter = 11272759, expected = 20000000, lost = 8727241
 reproduced: lost-update race observed in recorded trace
@@ -166,7 +166,7 @@ docker run --rm -it \
 
 This drops you into `rr` + `gdb`. From the `(rr)` prompt:
 
-```
+```text
 (rr) break worker
 (rr) continue
 (rr) print counter
@@ -222,7 +222,7 @@ gh release create lost-update-trace-vN out/lost-update-trace.tar.zst \
 Image is built and pushed to GHCR by `deploy-docs.yml` on push to
 `main` (mirroring Layer 2):
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-lost-update:latest
 ghcr.io/aletheia-works/vivarium-lost-update:<git-sha>
 ```

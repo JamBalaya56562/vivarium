@@ -7,7 +7,7 @@
 
 ## 🚧 Status
 
-**Phase 6 — Usability and visual layer (in flight)**
+## Phase 6 — Usability and visual layer (in flight)
 
 Phases 0–5 closed between 2026-04-26 and 2026-04-29. Layer 1 ships six
 WASM verticals (Python via Pyodide, Ruby.wasm, php-wasm, Rust on
@@ -78,7 +78,7 @@ The project eats its own dog food:
 
 ## Repository Structure
 
-```
+```text
 vivarium/
 ├── README.md                 # This file
 ├── AGENTS.md                 # Standing instructions for AI coding agents

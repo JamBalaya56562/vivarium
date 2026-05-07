@@ -29,7 +29,9 @@ use serde_json::json;
 const REGEX_CRATE_VERSION: &str = "1.8.4";
 
 fn matches(re: &Regex, haystack: &str) -> Vec<(usize, usize)> {
-    re.find_iter(haystack).map(|m| (m.start(), m.end())).collect()
+    re.find_iter(haystack)
+        .map(|m| (m.start(), m.end()))
+        .collect()
 }
 
 fn main() {
@@ -54,17 +56,16 @@ fn main() {
         "reproduced": reproduced,
     });
 
-    println!("{}", serde_json::to_string(&result).expect("serialise result"));
+    println!(
+        "{}",
+        serde_json::to_string(&result).expect("serialise result")
+    );
 
     if reproduced {
-        eprintln!(
-            "verdict=reproduced — `(re)+` and `(re)(re)*` disagree on this haystack"
-        );
+        eprintln!("verdict=reproduced — `(re)+` and `(re)(re)*` disagree on this haystack");
         std::process::exit(0);
     } else {
-        eprintln!(
-            "verdict=unreproduced — `(re)+` and `(re)(re)*` agree (likely fixed upstream)"
-        );
+        eprintln!("verdict=unreproduced — `(re)+` and `(re)(re)*` agree (likely fixed upstream)");
         std::process::exit(1);
     }
 }
