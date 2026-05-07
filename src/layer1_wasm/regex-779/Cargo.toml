@@ -31,7 +31,7 @@ serde_json = "1.0.117"
 # the reproduction does ~3 regex matches against a 7-byte haystack.
 [profile.release]
 opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
 strip = true
+lto = true
+panic = "abort"
+codegen-units = 1

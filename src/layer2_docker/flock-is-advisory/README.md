@@ -80,7 +80,7 @@ Run time: ~2.5 seconds (the lock-holder sleeps 2 s).
 **Verified output** (run on WSL2 kernel 6.6 / `util-linux
 2.39.3`, prior to first CI run):
 
-```
+```text
 {
   "kernel_version": "6.6.114.1-microsoft-standard-WSL2",
   "flock_version": "flock from util-linux 2.39.3",
@@ -118,7 +118,7 @@ docker run --rm vivarium-flock-is-advisory:dev
 
 Image is built and pushed to GHCR by `deploy-docs.yml` on push to `main`:
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-flock-is-advisory:latest
 ghcr.io/aletheia-works/vivarium-flock-is-advisory:<git-sha>
 ```

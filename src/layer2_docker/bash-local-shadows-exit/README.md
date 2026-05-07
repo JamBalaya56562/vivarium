@@ -101,7 +101,7 @@ under a second.
 
 **Expected output (snippet):**
 
-```
+```text
 Runtime: GNU bash, version 5.2.x …
 
 === Demo 1: bare assignment ===
@@ -148,7 +148,7 @@ docker run --rm vivarium-bash-local-shadows-exit:dev
 
 Image is built and pushed to GHCR by `deploy-docs.yml` on push to `main`:
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:latest
 ghcr.io/aletheia-works/vivarium-bash-local-shadows-exit:<git-sha>
 ```

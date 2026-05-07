@@ -1,4 +1,5 @@
 <?php
+
 // Vivarium Layer 1 reproduction — php/php-src#12167, native variant.
 //
 // Mirrors the script that runs in `repro.ts` (under php-wasm) so a
@@ -15,30 +16,35 @@
 
 $xml = '<?xml version="1.0"?><foo><bar><?stylesheet hello ?></bar></foo>';
 $sxe = simplexml_load_string($xml);
-$pis = $sxe->xpath("//processing-instruction()");
+$pis = $sxe->xpath('//processing-instruction()');
 $pi_text = isset($pis[0]) ? (string) $pis[0] : null;
 
 $result = [
-    "php_version"   => PHP_VERSION,
-    "xpath_count"   => count($pis ?: []),
-    "pi_text"       => $pi_text,
-    "pi_text_empty" => $pi_text === "",
+    'php_version' => PHP_VERSION,
+    'xpath_count' => count($pis ?: []),
+    'pi_text' => $pi_text,
+    'pi_text_empty' => $pi_text === '',
 ];
 
-$reproduced = $result["xpath_count"] === 1 && $result["pi_text_empty"];
+$reproduced = $result['xpath_count'] === 1 && $result['pi_text_empty'];
 
 echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n";
 
 if ($reproduced) {
     fwrite(STDOUT, "verdict=reproduced — bug reproduces on this interpreter\n");
     exit(0);
-} elseif ($result["xpath_count"] === 1 && !$result["pi_text_empty"]) {
-    fwrite(STDOUT, "verdict=unreproduced — SimpleXML now returns the PI content (likely fixed upstream)\n");
+} elseif ($result['xpath_count'] === 1 && !$result['pi_text_empty']) {
+    fwrite(
+        STDOUT,
+        "verdict=unreproduced — SimpleXML now returns the PI content (likely fixed upstream)\n",
+    );
     exit(1);
 } else {
     fwrite(
         STDOUT,
-        "verdict=unreproduced — unexpected outcome (xpath_count={$result['xpath_count']}, pi_text=" . json_encode($result["pi_text"]) . ")\n",
+        "verdict=unreproduced — unexpected outcome (xpath_count={$result['xpath_count']}, pi_text="
+        . json_encode($result['pi_text'])
+        . ")\n",
     );
     exit(1);
 }

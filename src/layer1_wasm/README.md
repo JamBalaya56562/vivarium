@@ -39,8 +39,8 @@ here.
 
 ## Phase 0 scope
 
-First vertical is **Pyodide + a hand-picked pandas bug** ([Issue
-#13](https://github.com/aletheia-works/vivarium/issues/13)).
+First vertical is **Pyodide + a hand-picked pandas bug**
+([Issue #13](https://github.com/aletheia-works/vivarium/issues/13)).
 
 ### What is here
 
