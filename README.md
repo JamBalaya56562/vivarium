@@ -78,7 +78,7 @@ The project eats its own dog food:
 
 ## Repository Structure
 
-```
+```text
 vivarium/
 ├── README.md                 # This file
 ├── AGENTS.md                 # Standing instructions for AI coding agents
