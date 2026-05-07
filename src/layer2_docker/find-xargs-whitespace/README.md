@@ -83,7 +83,7 @@ takes well under a second.
 **Verified output** (run on Docker Desktop / WSL2, GNU
 findutils 4.9.0, prior to first CI run):
 
-```
+```text
 {
   "find_version": "find (GNU findutils) 4.9.0",
   "xargs_version": "xargs (GNU findutils) 4.9.0",
@@ -118,7 +118,7 @@ with 123 to flag them.
 
 Image is built and pushed to GHCR by `deploy-docs.yml`:
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-find-xargs-whitespace:latest
 ghcr.io/aletheia-works/vivarium-find-xargs-whitespace:<git-sha>
 ```

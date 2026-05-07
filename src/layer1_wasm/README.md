@@ -40,7 +40,8 @@ here.
 ## Phase 0 scope
 
 First vertical is **Pyodide + a hand-picked pandas bug** ([Issue
-#13](https://github.com/aletheia-works/vivarium/issues/13)).
+
+## 13](https://github.com/aletheia-works/vivarium/issues/13))
 
 ### What is here
 
@@ -49,7 +50,7 @@ First vertical is **Pyodide + a hand-picked pandas bug** ([Issue
   end-to-end in Pyodide. Static HTML; deployed under
   `/vivarium/poc/pandas-56679/` by the `deploy-docs` workflow.
 
-### Conventions for new PoCs
+#### Conventions for new PoCs
 
 Each new Layer 1 PoC is its own immediate subdirectory of this folder
 (e.g. `numpy-12345/`, `pandas-56679/`). The directory is required to
@@ -57,7 +58,7 @@ contain an `index.html`; the deploy workflow publishes any directory
 matching this shape under `/vivarium/poc/<slug>/`. Companion files
 (`repro.mjs`, `style.css`, `README.md`, fixtures) live alongside.
 
-## Verdict surface
+### Verdict surface
 
 Every Layer 1 reproduction emits its verdict via the in-page surface
 defined by [Vivarium Contract v1](../../docs/docs/spec/contract-v1.md)

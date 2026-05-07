@@ -1,0 +1,60 @@
+# rumdl — Rust-based Markdown linter (https://github.com/rvben/rumdl).
+# Phase 7 follow-up. Mirrors the Biome / Mago / Ruff / Taplo posture.
+#
+# Local: `mise run markdown:check` / `mise run markdown:check:fix`
+# CI:    `.github/workflows/test-markdown-check.yml` (strict),
+#        `.github/workflows/rumdl-autofix.yml` (heals fixable diagnostics).
+
+[global]
+# Scope to pure markdown only — MDX files (`docs/docs/**/*.mdx`) embed
+# JSX components (Page, Section, Callout, etc.) and would trigger
+# MD033 (inline-html) for every component invocation. Biome already
+# covers MDX as a JSX dialect.
+include = [
+  "docs/docs/**/*.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "README.md",
+  "**/*.md",
+]
+
+exclude = [
+  ".git",
+  ".github",
+  "node_modules",
+  "vendor",
+  "dist",
+  "build",
+  "doc_build",
+  ".venv",
+  "target",
+  "_context",
+  "src/**/node_modules/**",
+  "**/CHANGELOG.md",
+  "**/LICENSE.md",
+  # rspress / Layer 1 npm packages bundle markdown in node_modules;
+  # gitignore handles most of it but be explicit.
+  "**/node_modules/**",
+]
+
+# Disable rules that don't fit this project's house style:
+# - MD013 (line-length): the project's prose pages routinely run past
+#   100 columns (e.g. AGENTS.md cross-reference paragraphs); auto-
+#   wrapping them would shred git blame for no real readability gain.
+# - MD033 (inline-html): MDX usage is intentional; even pure .md spec
+#   pages occasionally embed <details> / <summary> blocks for collapsed
+#   appendices.
+# - MD041 (first-line-h1): YAML frontmatter precedes the first H1 in
+#   rspress pages, which trips MD041 even though the rendered page is
+#   well-formed.
+# - MD057 (relative-link-exists): false positives in this repo because
+#   we link `.md` paths that resolve to `.mdx` files in rspress, and
+#   to filenames that exist in `_context/` (gitignored from rumdl's
+#   POV).
+disable = ["MD013", "MD033", "MD041", "MD057"]
+
+respect-gitignore = true
+
+# Use GitHub Flavored Markdown so tables, task lists, and fenced code
+# blocks parse correctly.
+flavor = "gfm"

@@ -1,0 +1,145 @@
+name: Test polyglot lint
+
+# Runs the polyglot Rust-based formatter / linter toolchain
+# (Mago for PHP, Ruff for Python, Taplo for TOML, rumdl for
+# Markdown, cargo fmt + clippy for Rust) over the project on every PR
+# that touches the relevant surfaces. The check is strict — any
+# unformatted file or remaining lint diagnostic fails the PR.
+#
+# Companion workflow: `lint-autofix.yml` heals what is mechanically
+# fixable by committing back to the PR branch. This workflow only
+# fails on what remains after that autofix — i.e. issues a human has
+# to think about.
+#
+# Local equivalent: `mise run ci:lint`. Authors can apply safe
+# auto-fixes with `mise run lint:all:fix` before re-pushing.
+#
+# Tooling: each tool installed by direct GitHub-release binary download
+# so the version is auditable from this YAML alone (AGENTS.md §4.10).
+# Versions converge with `mise.toml` but bump independently.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/layer1_wasm/**/*.php'
+      - 'src/layer1_wasm/**/*.py'
+      - 'src/layer1_wasm/**/*.rs'
+      - 'src/layer1_wasm/**/Cargo.toml'
+      - 'src/layer1_wasm/**/Cargo.lock'
+      - 'docs/scripts/**/*.py'
+      - '**/*.toml'
+      - '**/*.md'
+      - 'mago.toml'
+      - 'ruff.toml'
+      - 'taplo.toml'
+      - '.rumdl.toml'
+      - 'mise.toml'
+      - '.github/workflows/test-lint-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-lint-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Polyglot lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # ── Mago (PHP) — direct GitHub-release download ──────────────────
+      - name: Install Mago
+        env:
+          MAGO_VERSION: '1.26.0'
+        run: |
+          set -euo pipefail
+          curl -fL -o mago.tar.gz \
+            "https://github.com/carthage-software/mago/releases/download/${MAGO_VERSION}/mago-${MAGO_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar xzf mago.tar.gz
+          sudo install -m 755 mago/mago /usr/local/bin/mago
+          mago --version
+
+      # ── Ruff (Python) — official setup-uv-style action ───────────────
+      - name: Install Ruff
+        uses: astral-sh/ruff-action@0ce1b0bf8b818ef400413f810f8a11cdbda0034b # v4.0.0
+        with:
+          version: '0.15.12'
+
+      # ── Tombi (TOML) — direct GitHub-release download ────────────────
+      - name: Install Tombi
+        env:
+          TOMBI_VERSION: '0.10.6'
+        run: |
+          set -euo pipefail
+          curl -fL -o tombi.tar.gz \
+            "https://github.com/tombi-toml/tombi/releases/download/v${TOMBI_VERSION}/tombi-cli-${TOMBI_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          tar xzf tombi.tar.gz
+          sudo install -m 755 tombi /usr/local/bin/tombi
+          tombi --version
+
+      # ── rumdl (Markdown) — direct GitHub-release download ────────────
+      - name: Install rumdl
+        env:
+          RUMDL_VERSION: '0.1.90'
+        run: |
+          set -euo pipefail
+          curl -fL -o rumdl.tar.gz \
+            "https://github.com/rvben/rumdl/releases/download/v${RUMDL_VERSION}/rumdl-v${RUMDL_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar xzf rumdl.tar.gz
+          sudo install -m 755 rumdl /usr/local/bin/rumdl
+          rumdl --version
+
+      # ── Rust toolchain (cargo fmt + clippy) ──────────────────────────
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable (1.84.0+)
+        with:
+          toolchain: '1.84.0'
+          targets: wasm32-wasip1
+          components: rustfmt, clippy
+
+      # Cache cargo registry / target dir so subsequent runs reuse the
+      # crates compiled by `repro-regression.yml`.
+      - name: Cache cargo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/layer1_wasm/*/target
+          key: lint-cargo-${{ runner.os }}-${{ hashFiles('src/layer1_wasm/**/Cargo.lock', 'src/layer1_wasm/**/Cargo.toml') }}
+          restore-keys: |
+            lint-cargo-${{ runner.os }}-
+
+      # ── Checks (each tool's strict / read-only invocation) ───────────
+      - name: PHP — Mago format check + lint
+        run: |
+          mago format --check
+          mago lint
+
+      - name: Python — Ruff format check + lint
+        run: |
+          ruff format --check
+          ruff check
+
+      - name: TOML — Tombi format check + lint
+        run: |
+          tombi format --check
+          tombi lint
+
+      - name: Markdown — rumdl check
+        run: rumdl check .
+
+      - name: Rust — cargo fmt --check + clippy --deny warnings
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+            echo "==> cargo fmt --check + clippy ${cargo_toml}"
+            cargo fmt --manifest-path "${cargo_toml}" --check
+            cargo clippy --manifest-path "${cargo_toml}" --target wasm32-wasip1 --release -- -D warnings
+          done
+        shell: bash
