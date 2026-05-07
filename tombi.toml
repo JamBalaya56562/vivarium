@@ -1,0 +1,30 @@
+# Tombi — TOML formatter, linter, and LSP (https://tombi-toml.github.io/tombi/).
+# Phase 7 follow-up. Single Rust binary; replaced Taplo (which has been
+# release-stalled since 2025-05) per the maintainer's 2026-05-07 direction.
+#
+# Local: `mise run toml:check` / `mise run toml:check:fix`
+# CI:    `.github/workflows/test-lint-check.yml` (strict),
+#        `.github/workflows/lint-autofix.yml` (heals fixable diagnostics).
+
+# Pin to TOML v1.0.0. Future Tombi releases that move the default to
+# v1.1.0 will then be a deliberate, reviewable change rather than a
+# silent semantic shift.
+toml-version = "v1.0.0"
+
+[files]
+include = ["**/*.toml"]
+exclude = [
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/target/**",
+  "**/doc_build/**",
+  "**/.venv/**",
+  ".sl/**",
+]
+
+[schema]
+# Tombi auto-resolves JSON Schemas for known TOML files (Cargo.toml,
+# pyproject.toml, etc.). Keep enabled — it gives us free validation
+# of `regex-779/Cargo.toml` against the cargo schema without extra
+# config.
+enabled = true

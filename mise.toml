@@ -2,6 +2,16 @@
 bun = "latest"
 opentofu = "latest"
 uv = "latest"
+# Polyglot Rust-based formatter/linter toolchain (Phase 7 follow-up).
+# Each tool is a single-binary Rust artefact; mise pulls them straight
+# from upstream releases. Versions stay at "latest" because every entry
+# here is recently-released-and-still-iterating (rumdl, mago) — pinning
+# now would create churn without buying reproducibility for tools that
+# are not yet shipping breaking changes.
+mago = "latest"  # PHP fmt + lint + static analysis (carthage-software/mago)
+ruff = "latest"  # Python fmt + lint + import sort (astral-sh/ruff)
+tombi = "latest"  # TOML fmt + lint + LSP (tombi-toml/tombi)
+rumdl = "latest"  # Markdown lint (rvben/rumdl)
 # Per-language interpreters (Python, Ruby, Rust, PHP) are intentionally
 # NOT pinned at this top level. Each task / command declares the version
 # it needs next to where it is invoked, so different recipes can use
@@ -181,7 +191,7 @@ depends = [
   "repro:native:python",
   "repro:native:ruby",
   "repro:native:php",
-  "repro:native:rust",
+  "repro:native:rust"
 ]
 
 # ── Layer 2 — Docker reproduction images ─────────────────────────────────
@@ -326,3 +336,111 @@ run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 [tasks."ci:all"]
 description = "Run all local CI tasks (docs + docs-check + mcp + repro + commitlint)"
 depends = ["ci:docs", "ci:docs-check", "ci:mcp", "ci:repro", "ci:commitlint"]
+
+# ── Polyglot Rust-based formatters and linters ───────────────────────────
+# Mago (PHP), Ruff (Python), Taplo (TOML), rumdl (Markdown), clippy (Rust).
+# Each language has `*:check` (read-only, used by CI) and `*:check:fix`
+# (autofix-and-write, used by contributors locally and by the CI autofix
+# workflows). The umbrella task `lint:all` runs every check sequentially.
+
+[tasks."php:check"]
+description = "Mago — PHP format check + lint (read-only)"
+run = "mago format --check && mago lint"
+
+[tasks."php:check:fix"]
+description = "Mago — apply PHP format + lint --fix --unsafe (in-place)"
+run = "mago format && mago lint --fix --unsafe"
+
+[tasks."python:check"]
+description = "Ruff — Python format check + lint (read-only)"
+run = "ruff format --check && ruff check"
+
+[tasks."python:check:fix"]
+description = "Ruff — apply Python format + lint --fix (in-place)"
+run = "ruff format && ruff check --fix"
+
+[tasks."toml:check"]
+description = "Tombi — TOML format check + lint (read-only)"
+run = "tombi format --check && tombi lint"
+
+[tasks."toml:check:fix"]
+description = "Tombi — apply TOML format (in-place)"
+run = "tombi format"
+
+[tasks."markdown:check"]
+description = "rumdl — Markdown lint (read-only)"
+run = "rumdl check ."
+
+[tasks."markdown:check:fix"]
+description = "rumdl — apply Markdown autofix (in-place)"
+run = "rumdl fmt ."
+
+[tasks."rust:check"]
+description = "cargo fmt --check + cargo clippy --deny warnings on Layer 1 Rust crates"
+tools = { rust = "1.84.0" }
+shell = "bash -c"
+run = '''
+set -euo pipefail
+# mise's Rust backend installs rustc + cargo but not the rustfmt /
+# clippy components; add them idempotently before running.
+rustup component add rustfmt clippy --toolchain 1.84.0-$(rustc -vV | sed -n 's/host: //p') >/dev/null 2>&1 || rustup component add rustfmt clippy >/dev/null 2>&1 || true
+rustup target add wasm32-wasip1 >/dev/null 2>&1 || true
+shopt -s nullglob
+for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+  echo "==> cargo fmt --check + clippy $cargo_toml"
+  cargo fmt --manifest-path "$cargo_toml" --check
+  cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release -- -D warnings
+done
+'''
+
+[tasks."rust:check:fix"]
+description = "cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
+tools = { rust = "1.84.0" }
+shell = "bash -c"
+run = '''
+set -euo pipefail
+# mise's Rust backend installs rustc + cargo but not the rustfmt /
+# clippy components; add them idempotently before running.
+rustup component add rustfmt clippy >/dev/null 2>&1 || true
+rustup target add wasm32-wasip1 >/dev/null 2>&1 || true
+shopt -s nullglob
+# `--allow-no-vcs` is needed because Sapling (.sl/) isn't recognised by
+# cargo as a VCS — cargo fix would otherwise refuse to write changes.
+for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+  echo "==> cargo fmt + clippy --fix $cargo_toml"
+  cargo fmt --manifest-path "$cargo_toml"
+  cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release --fix --allow-no-vcs --allow-dirty --allow-staged
+done
+'''
+
+[tasks."lint:all"]
+description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust"
+depends = [
+  "docs:check",
+  "php:check",
+  "python:check",
+  "toml:check",
+  "markdown:check",
+  "rust:check"
+]
+
+[tasks."lint:all:fix"]
+description = "Apply all autofixes (in-place) across every language"
+depends = [
+  "docs:check:fix",
+  "php:check:fix",
+  "python:check:fix",
+  "toml:check:fix",
+  "markdown:check:fix",
+  "rust:check:fix",
+]
+
+[tasks."ci:lint"]
+description = "Local equivalent of test-lint-check.yml (Mago + Ruff + Taplo + rumdl + Rust)"
+depends = [
+  "php:check",
+  "python:check",
+  "toml:check",
+  "markdown:check",
+  "rust:check"
+]

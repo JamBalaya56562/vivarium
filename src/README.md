@@ -23,7 +23,7 @@ on its own terms — see [`AGENTS.md § 5`](../AGENTS.md) and the eventual
 
 ## Layout
 
-```
+```text
 src/
 ├── layer1_wasm/      # browser-native, ms–s startup
 ├── layer2_docker/    # container-backed, s–min startup

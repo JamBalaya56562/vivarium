@@ -24,7 +24,7 @@ OpenTofu configuration that manages this repository's settings declaratively.
 ### 1. Create a Fine-grained PAT
 
 Create a Fine-grained personal access token at
-https://github.com/settings/personal-access-tokens/new with:
+<https://github.com/settings/personal-access-tokens/new> with:
 
 - **Resource owner**: the organization that owns this repository
 - **Repository access**: this repository only
@@ -70,7 +70,7 @@ avoid concurrent writes; there is no true distributed lock, so avoid running
 
 ## File layout
 
-```
+```text
 infra/github/
 ├── versions.tf                 # OpenTofu and provider versions
 ├── providers.tf                # GitHub provider config
