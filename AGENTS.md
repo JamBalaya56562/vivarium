@@ -80,7 +80,7 @@ If unsure whether an action crosses the line, stop and ask.
 
 ### 4.1 Layout
 
-```
+```text
 vivarium/
 ├── AGENTS.md              # this file — standing AI instructions
 ├── CLAUDE.md              # Claude Code-specific addenda
@@ -268,7 +268,7 @@ merge — strictly more expensive.
 are mutable — `actions/checkout@v6` points at whatever commit the
 action's maintainer last decided should be `v6`. The GitHub
 security-hardening guide
-(https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions)
+(<https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions>)
 states explicitly that *"pinning an action to a full length commit
 SHA is currently the only way to use an action as an immutable
 release."* Always pin to the full 40-char commit SHA, with the
@@ -307,17 +307,29 @@ Local development tool versions are pinned in
 [`mise.toml`](mise.toml) at the repo root. After cloning, run
 `mise install` to materialise everything declared there. Currently
 pinned: `bun` (the primary JS runtime — docs site and
-`packages/mcp-server`), `opentofu` (infrastructure-as-code), `python`
-+ `uv` (Layer 1 native re-verification, Phase 5 manifest validation
-toolchain), and the Layer 1 native interpreters (`php`, `ruby`, plus
-`rust` for `wasm32-wasip1` artefacts).
+`packages/mcp-server`), `opentofu` (infrastructure-as-code), `uv`
+(Layer 1 native re-verification, Phase 5 manifest validation
+toolchain), the Layer 1 native interpreters (`php`, `ruby`, plus
+`rust` for `wasm32-wasip1` artefacts), and the polyglot Rust-based
+formatter / linter toolchain (`mago` for PHP, `ruff` for Python,
+`tombi` for TOML, `rumdl` for Markdown).
 
-CI does **not** use mise — workflow steps spell out
-`oven-sh/setup-bun@…`, `actions/setup-node@…`, etc. directly so the
-runtime is auditable from the workflow YAML alone. Versions in
-`mise.toml` and CI workflows should converge but are independently
-maintained: a CI bump and a `mise.toml` bump can land in separate
-PRs.
+CI does **not** use mise for runtime versions (Bun, Node, Python,
+Rust, etc.) — workflow steps spell out `oven-sh/setup-bun@…`,
+`actions/setup-node@…`, etc. directly so each runtime is auditable
+from the workflow YAML alone. Versions in `mise.toml` and CI
+workflows should converge but are independently maintained: a CI
+bump and a `mise.toml` bump can land in separate PRs.
+
+**Documented exception — `test-lint-check.yml` and
+`lint-autofix.yml`.** The polyglot Rust-based lint toolchain (Mago,
+Ruff, Tombi, rumdl, plus the Rust toolchain for cargo fmt + clippy)
+is installed in CI via `jdx/mise-action`, not by spelling out 5
+per-tool actions. Justification: each tool would otherwise need an
+independent third-party-action allowlist registration at the org
+level; `jdx/mise-action` collapses that to one. Tool versions stay
+auditable because `mise.toml` is in the repo and pins them
+explicitly. The rule above still applies to runtimes.
 
 When adding a new tool to the project, pin it in `mise.toml` first;
 that establishes a single source of truth before any script or
@@ -430,8 +442,17 @@ canonical local entry points and mirror the workflows job-for-job:
 - `mise run ci:docs` — `test-docs-build.yml`
 - `mise run ci:repro` — `repro-regression.yml` (typecheck + build +
   Playwright; needs Linux for the Playwright browser fixture)
+- `mise run ci:lint` — `test-lint-check.yml` (Mago + Ruff + Tombi +
+  rumdl + cargo fmt + clippy across the whole repo)
 - `mise run ci:commitlint` — commitlint on the latest commit
-- `mise run ci:all` — the union of the above
+- `mise run ci:all` — the union of the above (excluding `ci:lint`,
+  which has its own runner)
+
+For one-off autofix passes during development, the matching
+`*:check:fix` tasks (`mise run lint:all:fix`, or any per-language
+variant like `mise run python:check:fix`) apply every safe fix in
+place; CI's `lint-autofix.yml` runs the same set on each PR and
+commits any residual fixes back to the branch.
 
 If a `ci:*` task is missing for the workflow you triggered, transcribe
 its `run:` steps from the YAML and execute them by hand — do **not**

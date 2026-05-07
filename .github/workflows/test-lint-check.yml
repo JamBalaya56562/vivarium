@@ -1,0 +1,72 @@
+name: Test polyglot lint
+
+# Runs the polyglot Rust-based formatter / linter toolchain
+# (Mago for PHP, Ruff for Python, Tombi for TOML, rumdl for
+# Markdown, cargo fmt + clippy for Rust) over the project on every PR
+# that touches the relevant surfaces. The check is strict — any
+# unformatted file or remaining lint diagnostic fails the PR.
+#
+# Companion workflow: `lint-autofix.yml` heals what is mechanically
+# fixable by committing back to the PR branch.
+#
+# Local equivalent: `mise run ci:lint`. Authors can apply safe
+# auto-fixes with `mise run lint:all:fix` before re-pushing.
+#
+# Tooling: this workflow IS the documented exception to AGENTS.md
+# §4.10's "CI does not use mise" rule. Justification: 5 lint tools
+# from 5 different upstreams would otherwise need 5 third-party
+# GitHub Actions, each requiring an org-allowlist registration. A
+# single `jdx/mise-action` entry installs all of them from
+# `mise.toml`. Tool versions stay auditable because `mise.toml` is
+# in the repo and pins exact versions.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/layer1_wasm/**/*.php'
+      - 'src/layer1_wasm/**/*.py'
+      - 'src/layer1_wasm/**/*.rs'
+      - 'src/layer1_wasm/**/Cargo.toml'
+      - 'src/layer1_wasm/**/Cargo.lock'
+      - 'docs/scripts/**/*.py'
+      - '**/*.toml'
+      - '**/*.md'
+      - 'mago.toml'
+      - 'ruff.toml'
+      - 'tombi.toml'
+      - '.rumdl.toml'
+      - 'mise.toml'
+      - '.github/workflows/test-lint-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-lint-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Polyglot lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Single-step install of every lint tool plus the Rust toolchain
+      # via mise. `mise install` reads `mise.toml`, materialises every
+      # entry, and adds them to PATH. Versions in mise.toml are the
+      # source of truth; a tool bump = one mise.toml edit.
+      - name: Setup mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: '2026.5.1'
+          install: true
+          cache: true
+          experimental: true
+
+      # `mise run ci:lint` chains php:check, python:check, toml:check,
+      # markdown:check, rust:check (cargo fmt --check + clippy -D
+      # warnings). Any failure is reported as a CI error.
+      - name: Run polyglot lint
+        run: mise run ci:lint

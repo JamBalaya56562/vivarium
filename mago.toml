@@ -1,0 +1,57 @@
+# Mago — PHP formatter, linter, and static analyzer (https://mago.carthage.software)
+# Phase 7 follow-up: adopt a Rust-based PHP toolchain in line with the
+# Biome / Ruff / Taplo posture used elsewhere in this repo. Mago is a
+# single binary covering format + lint + analyze; we use only the
+# format and lint surfaces here (analyze is heavier and adds noise on
+# what is currently a 1-file PHP surface).
+#
+# Local: `mise run php:check` / `mise run php:check:fix`
+# CI:    `.github/workflows/test-php-check.yml` (strict),
+#        `.github/workflows/mago-autofix.yml` (heals fixable diagnostics).
+
+version = "1"
+
+# Pyodide / php-wasm @ 0.0.8 ships PHP 8.2.11; pin to 8.2 so Mago
+# only flags features available in the runtime the recipe page loads.
+php-version = "8.2"
+
+[source]
+# The PHP surface in this repo is a single Layer 1 reproduction
+# (php/php-src#12167). Other layers ship Docker images, not PHP source,
+# so widening the path glob would make Mago re-scan every node_modules
+# entry without adding coverage.
+paths = ["src/layer1_wasm/php-12167"]
+
+[formatter]
+# Slightly tighter than Mago's 120-column default — diffs on
+# reproduction scripts read better at ~100.
+print-width = 100
+
+[linter.rules]
+# Disabled rules — these are valid Mago opinions but conflict with the
+# "reproduction script must mirror real-world bug code" goal of
+# `src/layer1_wasm/*/repro.{php,rb,py}`.
+#
+# strict-types: requires `declare(strict_types=1);` on every file.
+#   Recipe scripts are deliberately minimal echoes of upstream bug
+#   reports; adding a strict-types directive isn't part of the bug.
+strict-types = { enabled = false }
+#
+# no-isset: forbids `isset()`. PHP's `isset()` is idiomatic and used
+#   in the recipe to mirror the upstream issue's terse style.
+no-isset = { enabled = false }
+#
+# no-shorthand-ternary: forbids `$a ?: $b`. Same reproduction-fidelity
+#   reason — recipe code should look like the kind of code that
+#   produces the bug.
+no-shorthand-ternary = { enabled = false }
+#
+# no-else-clause: forbids `else`/`elseif` after early returns. The
+#   recipe's three-branch verdict logic reads more clearly with
+#   explicit elseif than restructured guard clauses.
+no-else-clause = { enabled = false }
+#
+# literal-named-argument: warns when literal arguments aren't
+#   passed as named arguments. Useful in application code; noise in
+#   small print/echo calls in a one-file reproduction.
+literal-named-argument = { enabled = false }
