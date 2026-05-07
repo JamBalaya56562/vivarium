@@ -14,7 +14,7 @@ separately in [Contract v1](./contract-v1.md).
 A repo declares a Vivarium-compatible reproduction by shipping a
 single TOML file at:
 
-```
+```text
 <repo-root>/.vivarium/manifest.toml
 ```
 

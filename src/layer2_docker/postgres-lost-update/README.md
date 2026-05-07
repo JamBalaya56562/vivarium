@@ -14,7 +14,7 @@ The textbook **lost update anomaly**: under PostgreSQL's default
 "read-then-write" transactions can silently lose one of the
 writes.
 
-```
+```text
 Tx1                                  Tx2
 ─────────────────────────────────────────────────────────────
 BEGIN
@@ -145,7 +145,7 @@ isolation change, we widen the sleep budget.
 Image is built and pushed to GHCR by `deploy-docs.yml` on
 push to `main`:
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-postgres-lost-update:latest
 ghcr.io/aletheia-works/vivarium-postgres-lost-update:<git-sha>
 ```

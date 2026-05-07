@@ -13,7 +13,7 @@
 リポジトリは以下の場所に単一の TOML ファイルを置くことで
 Vivarium 互換の再現を宣言できる:
 
-```
+```text
 <repo-root>/.vivarium/manifest.toml
 ```
 

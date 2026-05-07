@@ -119,7 +119,7 @@ are recorded in ADR-0011 (private memo).
 CI builds and pushes one image per page on every push that touches the
 directory:
 
-```
+```text
 ghcr.io/aletheia-works/vivarium-<slug>:latest      # tracks main
 ghcr.io/aletheia-works/vivarium-<slug>:<git-sha>   # immutable per-commit
 ```

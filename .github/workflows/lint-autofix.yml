@@ -1,0 +1,120 @@
+name: Polyglot lint autofix
+
+# Runs the polyglot formatter / linter toolchain — Biome (JS/TS/CSS/
+# JSON in docs/), Mago for PHP, Ruff for Python, Tombi for TOML,
+# rumdl for Markdown, cargo fmt for Rust — in autofix mode and pushes
+# any resulting changes back to the PR branch so contributors don't
+# have to fix formatting / lint by hand.
+#
+# Pattern mirrors `biome-autofix.yml` / `tofu-fmt-autofix.yml`. Inline
+# for now (first instance of polyglot autofix in vivarium); flag for
+# promotion to `aletheia-works/.github/.github/workflows/` when a
+# second repo in the org needs the same logic, per AGENTS.md §4.8.
+#
+# `pull_request_target` so fork PRs see autofix run too — `pull_request`
+# from a fork ships with read-only GITHUB_TOKEN, which can't push back.
+# Same TF_TOKEN_GITHUB PAT as biome / tofu autofix; that PAT has
+# write access to the maintainer's personal forks where `sl pr submit`
+# lands every PR.
+#
+# SECURITY NOTE: combined with `secrets: inherit`, fork-PR PHP / Python /
+# TOML / Markdown / Rust source is touched with an org-scoped PAT.
+# Acceptable because each tool here is a textual formatter / linter
+# (no code execution from PR sources during the workflow). Same posture
+# as biome-autofix.yml.
+#
+# Tooling: like `test-lint-check.yml`, this is the documented exception
+# to AGENTS.md §4.10's "CI does not use mise" rule. A single
+# `jdx/mise-action` allowlist entry replaces 5 per-tool action
+# registrations.
+
+on:
+  pull_request_target:
+    paths:
+      # Biome (docs/) — JS/TS/CSS/JSON
+      - 'docs/**/*.ts'
+      - 'docs/**/*.tsx'
+      - 'docs/**/*.js'
+      - 'docs/**/*.mjs'
+      - 'docs/**/*.cjs'
+      - 'docs/**/*.css'
+      - 'docs/**/*.json'
+      - 'docs/biome.json'
+      - 'docs/package.json'
+      - 'docs/bun.lock'
+      # Per-language sources for Mago / Ruff / cargo
+      - 'src/layer1_wasm/**/*.php'
+      - 'src/layer1_wasm/**/*.py'
+      - 'src/layer1_wasm/**/*.rs'
+      - 'src/layer1_wasm/**/Cargo.toml'
+      - 'src/layer1_wasm/**/Cargo.lock'
+      - 'docs/scripts/**/*.py'
+      # Catch-alls for Tombi / rumdl
+      - '**/*.toml'
+      - '**/*.md'
+      # Tooling configs
+      - 'mago.toml'
+      - 'ruff.toml'
+      - 'tombi.toml'
+      - '.rumdl.toml'
+      - 'mise.toml'
+      - '.github/workflows/lint-autofix.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: lint-autofix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autofix:
+    name: Polyglot lint autofix
+    if: github.repository_owner == 'aletheia-works'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.TF_TOKEN_GITHUB }}
+          persist-credentials: true
+
+      # Install every lint tool + the Rust toolchain in one step via
+      # mise. See test-lint-check.yml for the AGENTS.md §4.10
+      # exception rationale.
+      - name: Setup mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: '2026.5.1'
+          install: true
+          cache: true
+          experimental: true
+
+      # `mise run lint:all:fix` chains the autofix variant of every
+      # tool (mago format, mago lint --fix --unsafe, ruff format,
+      # ruff check --fix, tombi format, rumdl fmt, cargo fmt). Each
+      # step writes in place. Genuine remaining diagnostics stay as
+      # diagnostics — those will fail test-lint-check.yml and need
+      # human attention. We deliberately tolerate non-zero exit
+      # because some tools exit non-zero when residual issues remain
+      # after autofix.
+      - name: Run polyglot lint autofix
+        run: mise run lint:all:fix || true
+
+      # Commit & push only when something actually changed.
+      - name: Commit and push fixes
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet; then
+            echo "No autofix changes to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: polyglot lint autofix (biome/mago/ruff/tombi/rumdl/cargo-fmt)"
+          git push origin "HEAD:${PR_HEAD_REF}"
