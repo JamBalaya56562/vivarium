@@ -557,3 +557,243 @@ main > footer code {
 .vh-footer__msg a:hover {
   border-bottom-color: var(--vh-accent-teal);
 }
+
+/* ---------- Path A — Layer 1 source-substitution branch-fix panel ----------
+ *
+ * Mounted by `_shared/path_a.ts` into a `<section id="path-a-mount">` that
+ * recipes opt into. Shares the same teal/violet token language as the rest
+ * of the recipe page chrome.
+ */
+
+.vh-path-a {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 8px;
+  background: var(--vh-card-bg);
+}
+
+.vh-path-a__eyebrow {
+  margin: 0 0 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--vh-accent-teal);
+}
+
+.vh-path-a__heading {
+  margin: 0 0 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+}
+
+.vh-path-a__lead {
+  margin: 0 0 1.25rem;
+  color: var(--vh-text-muted);
+  font-size: 0.95rem;
+}
+
+.vh-path-a__field {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.vh-path-a__field-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--vh-text-muted);
+}
+
+.vh-path-a__textarea,
+.vh-path-a__input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 6px;
+  background: var(--vh-bg-deep);
+  color: var(--vh-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.vh-path-a__textarea {
+  min-height: 12rem;
+  resize: vertical;
+}
+
+.vh-path-a__textarea:focus,
+.vh-path-a__input:focus {
+  outline: 2px solid var(--vh-accent-teal);
+  outline-offset: -1px;
+}
+
+.vh-path-a__file {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: var(--vh-text-muted);
+}
+
+.vh-path-a__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.vh-path-a__btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.vh-path-a__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vh-path-a__btn--primary {
+  border: 0;
+  background: var(--vh-accent-teal);
+  color: #00110e;
+}
+
+.vh-path-a__btn--primary:not(:disabled):hover {
+  background: var(--vh-accent-teal-bright);
+}
+
+.vh-path-a__btn--ghost {
+  border: 1px solid var(--vh-hairline);
+  background: transparent;
+  color: var(--vh-text);
+}
+
+.vh-path-a__btn--ghost:not(:disabled):hover {
+  background: color-mix(in srgb, var(--vh-text) 8%, transparent);
+}
+
+.vh-path-a__status {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+}
+
+.vh-path-a__status--info {
+  color: var(--vh-text-muted);
+}
+
+.vh-path-a__status--ok {
+  color: var(--vh-reproduced-fg);
+}
+
+.vh-path-a__status--error {
+  color: var(--vh-unreproduced-fg);
+}
+
+.vh-path-a__result-heading {
+  margin: 1.5rem 0 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--vh-text-muted);
+}
+
+.vh-path-a__downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vh-path-a__download-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--vh-hairline);
+  border-radius: 6px;
+  background: var(--vh-bg-deep);
+  flex-wrap: wrap;
+}
+
+.vh-path-a__download-side {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--vh-text-muted);
+  min-width: 12rem;
+}
+
+.vh-path-a__verdict {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.vh-path-a__verdict--reproduced {
+  background: var(--vh-reproduced-bg);
+  color: var(--vh-reproduced-fg);
+  border-color: var(--vh-reproduced-border);
+}
+
+.vh-path-a__verdict--unreproduced {
+  background: var(--vh-unreproduced-bg);
+  color: var(--vh-unreproduced-fg);
+  border-color: var(--vh-unreproduced-border);
+}
+
+.vh-path-a__download-link {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--vh-accent-teal);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+.vh-path-a__download-link:hover {
+  border-bottom-color: var(--vh-accent-teal);
+}
+
+.vh-path-a__compare-link {
+  margin: 0.75rem 0 0;
+}
+
+.vh-path-a__compare-anchor {
+  font-size: 0.9rem;
+  color: var(--vh-accent-teal);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+.vh-path-a__compare-anchor:hover {
+  border-bottom-color: var(--vh-accent-teal);
+}
+
+.vh-path-a__semantics {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--vh-hairline);
+}
+
+.vh-path-a__semantics-heading {
+  margin: 0 0 0.35rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  color: var(--vh-text-muted);
+}
+
+.vh-path-a__semantics-body {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--vh-text-muted);
+}

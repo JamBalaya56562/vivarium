@@ -1,0 +1,291 @@
+---
+pageType: doc
+title: Verify a branch-fix
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · BRANCH-FIX"
+    title="Test a candidate fix end-to-end."
+    sub="Vivarium pairs a recipe (the bug) with a comparison surface (your fix) and a verdict that flips when the fix actually steers around the broken code path. This guide walks the loop end-to-end — Layer 1 (in-browser) and Layer 2/3 (Docker)."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT THIS LOOP IS FOR"
+    heading="AI-slop verification — does this fix actually work?"
+  >
+    <p>
+      An AI agent (Claude Code, Cursor, Cline, Continue, …) hands you a
+      candidate fix for an upstream bug. The honest question is "did it
+      actually fix the bug, or does it just look like a fix?" Vivarium's
+      branch-fix loop answers that with a <strong>mechanical verdict
+      flip</strong>: feed the fix through the recipe's runtime and check
+      whether the bug still triggers.
+    </p>
+    <Callout>
+      <strong>Verdict semantics.</strong> <code>reproduced</code> = the
+      bug still triggers (your fix did not avoid it).{' '}
+      <code>unreproduced</code> = the bug did not trigger (your fix steered
+      around the broken code path). A working fix flips the verdict from{' '}
+      <code>reproduced</code> to <code>unreproduced</code>.
+    </Callout>
+    <p>
+      Two paths share the same wire shape (Contract v1) and the same
+      comparison surface (<a href="/vivarium/repro/compare">/repro/compare</a>):
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Path A — Layer 1 (in-browser source substitution).',
+          body: <>You paste an alternative reproduction script onto the recipe page. The recipe's WASM runtime (php-wasm, ruby.wasm, Pyodide) re-runs it in your tab and captures a verdict. No CI required, no Docker required.</>,
+        },
+        {
+          lead: 'Path B — Layer 2/3 (Docker image rebuild).',
+          body: <>You build and push a branch-fix Docker image. A GitHub Actions workflow pulls the image, runs it, captures a verdict, and publishes the artefact bundle for /repro/compare to render.</>,
+        },
+      ]}
+    />
+    <p>
+      Layer dispatch is automatic — the recipe's catalogue entry already
+      knows which layer it is, and the MCP <code>verify_branch_fix</code>{' '}
+      tool returns the right scaffolding for both.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · PICK A RECIPE"
+    heading="Find the bug in the catalogue."
+  >
+    <p>
+      Two ways in, depending on whether you start from a known recipe or
+      from a paste of the error:
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'I know the recipe.',
+          body: <>Browse <a href="/vivarium/repro/">the gallery</a> and click through to the recipe page. Note the slug (e.g. <code>php-12167</code>).</>,
+        },
+        {
+          lead: 'I have an error message — find the recipe for me.',
+          body: <>Use <a href="/vivarium/repro/match"><code>/repro/match</code></a> (paste the error, get ranked candidates) — or call <code>match_error</code> from your AI agent (same scoring, same surface).</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 2 · PATH A — LAYER 1"
+    heading="Paste a fix on the recipe page; capture the verdict."
+  >
+    <p>
+      Layer 1 recipes that opt into Path A render a <strong>"Try a
+      fix"</strong> panel underneath the baseline output. Today this is
+      shipped on <a href="/vivarium/repro/php-12167/"><code>php-12167</code></a>;
+      others follow as the shape proves out.
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Open the recipe page.',
+          body: <>The recipe runs the baseline reproduction first; the panel renders once the original verdict is captured (typically <code>reproduced</code>).</>,
+        },
+        {
+          lead: 'Provide the fix source.',
+          body: <>Three modes: (a) paste the fix into the textarea, (b) supply a publicly fetchable URL (raw GitHub / Gist), or (c) pick a file from disk. CORS errors on URL fetch fall back to paste.</>,
+        },
+        {
+          lead: 'Click Run.',
+          body: <>The recipe's already-loaded WASM runtime executes the substituted source. The panel captures a Contract v1 verdict bundle: <code>branch-fix-verdict.json</code> + <code>original-verdict.json</code>.</>,
+        },
+        {
+          lead: 'Download both verdicts.',
+          body: <>The panel renders one download link per side. Both files conform to <a href="/vivarium/spec/contract-v1">Contract v1</a> — same shape <code>/repro/compare</code> consumes from a Layer 2/3 workflow run.</>,
+        },
+        {
+          lead: 'Drop them on /repro/compare.',
+          body: <>Open <a href="/vivarium/repro/compare">/repro/compare</a> and drag both JSON files onto the drop zone. The page renders side-by-side evidence with the divergent fields highlighted.</>,
+        },
+      ]}
+    />
+    <Callout>
+      <strong>Agent-driven shortcut.</strong> If you call{' '}
+      <code>verify_branch_fix(slug, fix_url)</code> from your AI agent,
+      the tool returns a <code>compare_url</code> with <code>?fix_url=</code>{' '}
+      pre-loaded — open that URL and the recipe page auto-runs the fix.
+      Same for <code>verify_branch_fix(slug, fix_source)</code>{' '}
+      (≤4 KiB inline; longer fixes go via <code>fix_url</code>).
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · PATH B — LAYER 2 / 3"
+    heading="Build an image; run a workflow; drop the artefact."
+  >
+    <p>
+      Layer 2 (Docker catalogue) and Layer 3 (record-replay) recipes can't
+      run in a browser tab — the bug needs a real OS, real sockets, real
+      filesystem. Path B shifts the build to your own infrastructure and
+      uses a GitHub Actions workflow to capture the verdict against your
+      pushed image.
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Build and push your branch-fix image.',
+          body: <>Apply the AI's candidate fix to your fork, build a Docker image with the recipe's <code>Dockerfile</code>, and push to a registry the GitHub Actions runner can pull from (a public ghcr.io / Docker Hub repo). The image-as-input boundary is the contract — Vivarium does not build your source, you do.</>,
+        },
+        {
+          lead: 'Trigger the comparison workflow.',
+          body: <>Run <code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code>. The workflow pulls your image, runs the reproduction inside it, captures a Contract v1 verdict, and uploads <code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> as an artefact.</>,
+        },
+        {
+          lead: 'Download the artefact zip.',
+          body: <>From the workflow run page, grab the artefact zip. It contains <code>branch-fix-verdict.json</code> and (when a deployed snapshot exists) <code>original-verdict.json</code>.</>,
+        },
+        {
+          lead: 'Drop the zip on /repro/compare.',
+          body: <>The page parses the zip client-side, validates both verdicts against the Contract v1 schema, and renders side-by-side evidence.</>,
+        },
+      ]}
+    />
+    <Callout>
+      <strong>Agent-driven shortcut.</strong>{' '}
+      <code>verify_branch_fix(slug)</code> on a Layer 2/3 slug returns
+      the <code>gh_command</code> ready to copy-paste. The agent still
+      needs <code>gh</code> auth and registry access to actually run it
+      — but the command itself is constructed for you.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · READ THE VERDICT"
+    heading="What `reproduced` and `unreproduced` mean here."
+  >
+    <p>
+      The branch-fix verdict tells you exactly one thing: did the bug
+      trigger when the fix was in place?
+    </p>
+    <ul>
+      <li>
+        <strong>Original = <code>reproduced</code>, branch-fix ={' '}
+        <code>unreproduced</code>.</strong> The fix avoided the bug. This
+        is the typical "fix works" outcome.
+      </li>
+      <li>
+        <strong>Original = <code>reproduced</code>, branch-fix ={' '}
+        <code>reproduced</code>.</strong> The fix is slop — it did not
+        change the outcome. Iterate on the fix and re-run.
+      </li>
+      <li>
+        <strong>Original = <code>unreproduced</code>, branch-fix ={' '}
+        <code>reproduced</code>.</strong> Regression — your change
+        introduced the bug. Reverse the diff or check what you changed.
+      </li>
+      <li>
+        <strong>Original = <code>unreproduced</code>, branch-fix ={' '}
+        <code>unreproduced</code>.</strong> No change either way. Either
+        the recipe is inactive (upstream already fixed it), or your fix
+        is a no-op against the current runtime.
+      </li>
+    </ul>
+    <Callout>
+      Path A is testing whether your <em>userland</em> fix sidesteps the
+      buggy code path — it is not patching the upstream interpreter.
+      Path B is testing whether your <em>fully-rebuilt image</em> fixes
+      the bug at the binary level. Different weight, same wire format.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · EDGE CASES"
+    heading="When the loop doesn't go to plan."
+  >
+    <ul>
+      <li>
+        <strong>The runtime errored before producing a verdict.</strong>{' '}
+        On Path A, this surfaces as the panel's status line going red
+        with the runtime error text. Common cause: a syntax error in the
+        pasted fix. Fix the syntax and click Run again.
+      </li>
+      <li>
+        <strong>The schema rejected the verdict shape.</strong> /repro/compare
+        validates each verdict against <code>verdict.schema.json</code>{' '}
+        (Contract v1 rev3). The error region shows the JSON path of the
+        bad field. Path A produces well-formed verdicts by construction;
+        if you see this, you are likely dropping a hand-edited file.
+      </li>
+      <li>
+        <strong>CORS blocked the URL fetch.</strong> Public raw GitHub
+        and Gist URLs return CORS-friendly headers. Self-hosted URLs
+        often don't. Fall back to paste mode in that case.
+      </li>
+      <li>
+        <strong>Path B private-registry image.</strong> The runner pulls
+        unauthenticated; private registries are out of scope for v1. Push
+        to a public ref or wait for the pull-credential follow-up.
+      </li>
+      <li>
+        <strong>The fix is so long it doesn't fit in <code>?fix=</code>.</strong>{' '}
+        The inline URL-param cap is 4 KiB. Use <code>?fix_url=</code>{' '}
+        with a Gist or fork URL instead.
+      </li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · WHAT'S NEXT"
+    heading="The agent loop you can build on top of this."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'Loop the agent end-to-end.',
+          body: <>Pipeline: <code>match_error</code> → narrow to a slug → <code>verify_branch_fix</code> → open the compare_url → read the verdict. If <code>reproduced</code>, ask the agent for another candidate. If <code>unreproduced</code>, ship.</>,
+        },
+        {
+          lead: 'Add the recipe for your bug.',
+          body: <>If your bug isn't in the catalogue yet, <a href="/vivarium/guide/write-your-first-reproduction">write the recipe</a>. Path A then opts in with a one-liner.</>,
+        },
+        {
+          lead: 'Wire the verdict into your CI.',
+          body: <>The <a href="/vivarium/guide/integrate-with-your-repo">integrate-with-your-repo</a> path catches verdict drift on every push, not just on demand.</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    Stuck somewhere in the loop? That's a bug in this guide. File an
+    issue with the slug, the layer, the path (A or B), and the step
+    number you got stuck on.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Glossary{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The vocabulary the rest of these guides assume — Layer, manifest, contract, verdict, evidence, slug — in one place."
+  primary={{ label: 'Glossary →', href: '/vivarium/guide/glossary' }}
+  ghost={{ label: 'Comparison page', href: '/vivarium/repro/compare' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · SEE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

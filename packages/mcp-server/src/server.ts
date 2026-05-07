@@ -6,6 +6,10 @@
 //   match_error                                 — Phase 6 X.2, mirrors the
 //                                                 docs S.2 matcher
 //                                                 (ADR-0025 §Neutral).
+//   verify_branch_fix                           — Phase 7 B3, deep-link
+//                                                 helper for the AI-slop
+//                                                 verification loop
+//                                                 (ADR-0030).
 //
 // See ADR-0019 §1 for the stdio-transport choice.
 
@@ -31,11 +35,20 @@ import {
   matchError,
   type MatchErrorArgs,
 } from './tools/match_error.js';
+import {
+  VERIFY_BRANCH_FIX_TOOL,
+  verifyBranchFix,
+  type VerifyBranchFixArgs,
+} from './tools/verify_branch_fix.js';
 
 const SERVER_NAME = 'vivarium-mcp';
 // Keep in sync with package.json + jsr.json. Updated by the publish
 // workflow on tag push; unsynced values produce a confusing client
 // experience (the MCP `initialize` response carries this string).
+// Stays at 0.1.0 across the Phase 7 A5 + B3 tool additions because
+// the package has not been published to JSR / npm yet — bumping a
+// pre-publish version literal only confuses clients that ever see
+// a development build.
 const SERVER_VERSION = '0.1.0';
 
 export function createServer(): Server {
@@ -50,6 +63,7 @@ export function createServer(): Server {
       GET_RECIPE_TOOL,
       LOOKUP_VERDICT_TOOL,
       MATCH_ERROR_TOOL,
+      VERIFY_BRANCH_FIX_TOOL,
     ],
   }));
 
@@ -71,6 +85,11 @@ export function createServer(): Server {
           break;
         case 'match_error':
           payload = await matchError(args as unknown as MatchErrorArgs);
+          break;
+        case 'verify_branch_fix':
+          payload = await verifyBranchFix(
+            args as unknown as VerifyBranchFixArgs,
+          );
           break;
         default:
           return {
