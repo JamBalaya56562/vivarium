@@ -19,6 +19,8 @@ deployed verdict snapshots, without scraping the docs site.
 | `list_recipes(layer?, project?, q?)` | Filtered list of catalogue entries. | All layers (1, 2, 3). |
 | `get_recipe(slug)` | Full metadata for one recipe (title, project, issue, page URL, verdict snapshot URL, GitHub source URL). | All layers. |
 | `lookup_verdict(slug)` | Layer 1 → `kind: "live"` + page URL (verdicts run in the browser). Layer 2/3 → `kind: "snapshot"` with the deployed `verdict.json` contents (verdict, exit code, image digest, stdout, stderr tail). | All layers (Layer 1 returns a stub). |
+| `match_error(text, limit?)` | Mechanical token-overlap ranking of recipes against a pasted error message or stack trace. Synonym table + bounded fuzzy match + multi-language stopwords (Phase 7 A5). | All layers. |
+| `verify_branch_fix(slug, fix_url? \| fix_source?)` | Scaffolding helper for the AI-slop verification loop. Layer 1 → Path A: a recipe-page `compare_url` with the fix pre-loaded. Layer 2/3 → Path B: a `/repro/compare` deep-link plus the `gh workflow run branch-fix-verdict.yml` command. NOT an execution engine — actual reproduction runs in the visitor's browser (Path A) or in GitHub Actions (Path B). | All layers. |
 
 ## Install
 
