@@ -17,7 +17,7 @@ import {
   <PageHero
     eyebrow="// GUIDE · AI エージェント"
     title="Vivarium MCP サーバを Claude Code / Cursor / Cline から呼ぶ。"
-    sub="Vivarium は MCP（Model Context Protocol）サーバを同梱しており、4 つのツールでカタログ全体をエージェントから機械的に検索・取得できる。docs サイトを HTML スクレイプする必要はない。"
+    sub="Vivarium は MCP（Model Context Protocol）サーバを同梱しており、5 つのツールでカタログ全体をエージェントから機械的に検索・取得・branch-fix 検証できる。docs サイトを HTML スクレイプする必要はない。"
   />
 
   <Section
@@ -27,11 +27,13 @@ import {
     <p>
       Vivarium MCP サーバ (<code>@aletheia-works/vivarium-mcp</code>) は{' '}
       <a href="https://modelcontextprotocol.io">Model Context Protocol</a>{' '}
-      の stdio トランスポート経由で 4 つのツールを提供します:{' '}
+      の stdio トランスポート経由で 5 つのツールを提供します:{' '}
       <code>list_recipes</code>、<code>get_recipe</code>、
-      <code>lookup_verdict</code>、<code>match_error</code>。
+      <code>lookup_verdict</code>、<code>match_error</code>、
+      <code>verify_branch_fix</code>。
       エージェント側からカタログを検索し、特定レシピのメタデータを取得し、
-      Layer 2 / 3 の verdict スナップショットを読めます。
+      Layer 2 / 3 の verdict スナップショットを読み、候補修正の検証フローを
+      組み立てられます。
     </p>
     <Callout>
       <strong>JSR / npm への初回公開は現時点で意図的に保留中</strong>です。
@@ -108,7 +110,7 @@ bun run build
 
   <Section
     eyebrow="// 3 · ツール一覧"
-    heading="4 つすべて MCP の標準 stdio 経由で呼べる。"
+    heading="5 つすべて MCP の標準 stdio 経由で呼べる。"
   >
     <ul>
       <li>
@@ -131,6 +133,15 @@ bun run build
         <strong><code>match_error(text, limit?)</code></strong> — エラー文字列・スタックトレースから
         機械的トークンマッチで候補レシピをスコア順で返す。LLM もファジーマッチも使わず、
         symptom / tags / project / slug への完全一致で重みづけ。
+      </li>
+      <li>
+        <strong><code>verify_branch_fix(slug, fix_url? | fix_source?)</code></strong> —
+        候補修正を検証するための足場ヘルパー（実行エンジンではない）。
+        Layer 1 は Path A — レシピページに <code>?fix_url=</code> / <code>?fix=</code> を
+        事前読み込みした <code>compare_url</code> を返す。Layer 2 / 3 は Path B —
+        <code>gh workflow run branch-fix-verdict.yml</code> コマンドと
+        <code>/repro/compare</code> deep-link を返す。フルウォークスルーは{' '}
+        <a href="/vivarium/ja/guide/compare-branch-fix">「ブランチ修正を検証する」</a>。
       </li>
     </ul>
   </Section>
@@ -207,8 +218,8 @@ bun run build
           body: <><a href="/vivarium/ja/guide/integrate-with-your-repo">自分のリポジトリに統合する</a> でCI 側の verdict 監視が立ち、エージェント側からは MCP でカタログを検索する、という両方向の組み合わせができます。</>,
         },
         {
-          lead: 'ブランチ修正を verdict で検証する（B3 で予定）。',
-          body: <>修正候補が本当に reproduced → unreproduced を起こしたかをエージェントから一発で確認するためのフロー（B3、ADR-0028）が Phase 7 で予定されています。今は <a href="/vivarium/ja/repro/compare">比較ページ</a> を手動で使う形ですが、将来は MCP 経由で完結する見込みです。</>,
+          lead: 'ブランチ修正を verdict で検証する。',
+          body: <>修正候補が本当に reproduced → unreproduced を起こしたかをエージェントから一発で確認するフローは <code>verify_branch_fix</code>（Phase 7 B3 で出荷）に集約されました。フル手順は <a href="/vivarium/ja/guide/compare-branch-fix">「ブランチ修正を検証する」</a>を参照。</>,
         },
       ]}
     />

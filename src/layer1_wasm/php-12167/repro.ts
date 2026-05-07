@@ -14,8 +14,17 @@
 //   - "reproduced" — the bug REPRODUCES (PI string cast is empty).
 //   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
+//
+// Phase 7 B3 (ADR-0030) — this recipe is the PoC for R.2 Path A
+// (Layer 1 source-substitution branch-fix). After the baseline run
+// captures the original verdict, we opt into the shared Path A panel
+// so visitors can paste an alternative reproduction script (typically a
+// userland fix proposed by an AI agent) and re-run it through the same
+// php-wasm runtime. The panel produces a Contract v1 verdict bundle
+// the visitor drops on /repro/compare for side-by-side review.
 
-import { loadVivariumPhp } from "../_shared/php_loader.js";
+import { enablePathA, type PathACapturedRun } from "../_shared/path_a.js";
+import { loadVivariumPhp, type PhpRunner } from "../_shared/php_loader.js";
 import {
   setResult,
   setVerdict,
@@ -46,6 +55,7 @@ interface ReproOutput {
 const outputEl = document.getElementById("output");
 const metaEl = document.getElementById("meta");
 const reproCodeEl = document.getElementById("repro-code");
+const pathAMountEl = document.getElementById("path-a-mount");
 
 if (!outputEl || !metaEl || !reproCodeEl) {
   throw new Error(
@@ -61,6 +71,70 @@ fetch("./repro.highlighted.html")
   })
   .catch(() => {});
 
+function evaluate(result: ReproOutput): {
+  verdict: "reproduced" | "unreproduced";
+  message: string;
+} {
+  // Bug reproduces iff xpath finds the PI node (count === 1) but
+  // string-casting it yields an empty string.
+  const reproduced = result.xpath_count === 1 && result.pi_text_empty;
+  if (reproduced) {
+    return {
+      verdict: "reproduced",
+      message:
+        "bug reproduced — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.",
+    };
+  }
+  if (
+    result.xpath_count === 1 &&
+    !result.pi_text_empty &&
+    result.pi_text !== null
+  ) {
+    return {
+      verdict: "unreproduced",
+      message:
+        "bug not reproduced — SimpleXML now returns the PI content correctly (likely fixed upstream).",
+    };
+  }
+  return {
+    verdict: "unreproduced",
+    message: `bug not reproduced — unexpected outcome (xpath_count=${result.xpath_count}, pi_text=${JSON.stringify(result.pi_text)}).`,
+  };
+}
+
+async function captureRun(
+  php: PhpRunner,
+  source: string,
+): Promise<PathACapturedRun> {
+  const { exitCode, stdout } = await php.run(source);
+  if (exitCode !== 0) {
+    return {
+      exitCode,
+      verdict: "unreproduced",
+      message: `php-wasm exited non-zero (code=${exitCode}); stdout=${stdout}`,
+      stdout,
+    };
+  }
+  let parsed: ReproOutput;
+  try {
+    parsed = JSON.parse(stdout) as ReproOutput;
+  } catch (err: unknown) {
+    return {
+      exitCode,
+      verdict: "unreproduced",
+      message: `bug not reproduced — fix output was not valid JSON (${err instanceof Error ? err.message : String(err)})`,
+      stdout,
+    };
+  }
+  const ev = evaluate(parsed);
+  return {
+    exitCode,
+    verdict: ev.verdict,
+    message: ev.message,
+    stdout: JSON.stringify(parsed, null, 2),
+  };
+}
+
 const startedAt = new Date();
 
 try {
@@ -69,42 +143,22 @@ try {
   });
 
   setVerdict("pending", "Running reproduction script…");
-  const { exitCode, stdout } = await php.run(REPRO_CODE);
-  if (exitCode !== 0) {
+  const baseline = await captureRun(php, REPRO_CODE);
+
+  let baselineResult: ReproOutput;
+  try {
+    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
+  } catch {
     throw new Error(
-      `php-wasm exited non-zero (code=${exitCode}); stdout=${stdout}`,
+      `php-12167: baseline run produced unparseable stdout: ${baseline.stdout}`,
     );
   }
-  const result = JSON.parse(stdout) as ReproOutput;
 
   metaEl.textContent =
-    `PHP ${result.php_version} via php-wasm v${phpWasmVersion}.`;
-  outputEl.textContent = JSON.stringify(result, null, 2);
+    `PHP ${baselineResult.php_version} via php-wasm v${phpWasmVersion}.`;
+  outputEl.textContent = JSON.stringify(baselineResult, null, 2);
 
-  // Bug reproduces iff xpath finds the PI node (count === 1) but
-  // string-casting it yields an empty string.
-  const reproduced = result.xpath_count === 1 && result.pi_text_empty;
-
-  if (reproduced) {
-    setVerdict(
-      "reproduced",
-      "bug reproduced — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.",
-    );
-  } else if (
-    result.xpath_count === 1 &&
-    !result.pi_text_empty &&
-    result.pi_text !== null
-  ) {
-    setVerdict(
-      "unreproduced",
-      "bug not reproduced — SimpleXML now returns the PI content correctly (likely fixed upstream).",
-    );
-  } else {
-    setVerdict(
-      "unreproduced",
-      `bug not reproduced — unexpected outcome (xpath_count=${result.xpath_count}, pi_text=${JSON.stringify(result.pi_text)}).`,
-    );
-  }
+  setVerdict(baseline.verdict, baseline.message);
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -118,14 +172,14 @@ try {
       name: "php-wasm",
       version: phpWasmVersion,
       extras: {
-        php: result.php_version,
+        php: baselineResult.php_version,
       },
     },
     result: {
-      xpath_count: result.xpath_count,
-      pi_text: result.pi_text,
-      pi_text_empty: result.pi_text_empty,
-      reproduced,
+      xpath_count: baselineResult.xpath_count,
+      pi_text: baselineResult.pi_text,
+      pi_text_empty: baselineResult.pi_text_empty,
+      reproduced: baseline.verdict === "reproduced",
     },
     timing: {
       started_at: startedAt.toISOString(),
@@ -134,6 +188,19 @@ try {
     },
   };
   setResult(envelope);
+
+  // Phase 7 B3 — opt into Path A. The mount-point lives in the page
+  // markup (`<section id="path-a-mount" hidden>`); reveal it before
+  // mounting so the panel transitions from hidden to populated atomically.
+  if (pathAMountEl) {
+    pathAMountEl.removeAttribute("hidden");
+    void enablePathA({
+      slug: "php-12167",
+      baselineSource: REPRO_CODE,
+      baseline,
+      runFix: (source) => captureRun(php, source),
+    });
+  }
 } catch (err: unknown) {
   console.error(err);
   const errAny = err as { stack?: string; message?: string } | null;

@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "compare-branch-fix",
+    "label": "Verify a branch-fix"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "Run on your own fork"
   },

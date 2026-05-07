@@ -9,6 +9,7 @@ import { getRecipe } from '../src/tools/get_recipe.ts';
 import { listRecipes } from '../src/tools/list_recipes.ts';
 import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
 import { matchError } from '../src/tools/match_error.ts';
+import { verifyBranchFix } from '../src/tools/verify_branch_fix.ts';
 
 const FIXTURE_INDEX = {
   index: 'v1',
@@ -297,6 +298,110 @@ describe('match_error', () => {
       // Direct exact hit — `via` and `input` must be absent.
       assert.equal(exactSymptom!.via, undefined);
       assert.equal(exactSymptom!.input, undefined);
+    }
+  });
+});
+
+describe('verify_branch_fix', () => {
+  it('returns ok:false on missing slug', async () => {
+    const r = await verifyBranchFix({ slug: '' });
+    assert.equal(r.ok, false);
+  });
+
+  it('returns ok:false on unknown slug', async () => {
+    const r = await verifyBranchFix({ slug: 'nonexistent-recipe' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /not found/);
+  });
+
+  it('rejects fix_url + fix_source supplied together', async () => {
+    const r = await verifyBranchFix({
+      slug: 'pandas-56679',
+      fix_url: 'https://example.invalid/fix.py',
+      fix_source: 'print("fix")',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /mutually exclusive/);
+  });
+
+  it('rejects fix_source larger than 4 KiB', async () => {
+    const big = 'x'.repeat(5000);
+    const r = await verifyBranchFix({ slug: 'pandas-56679', fix_source: big });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /4096-byte inline limit/);
+  });
+
+  it('Layer 1 → path A, no fix supplied → notes the manual paste flow', async () => {
+    const r = await verifyBranchFix({ slug: 'pandas-56679' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.path, 'A');
+      assert.equal(r.layer, 1);
+      assert.equal(r.compare_url, 'https://example.invalid/repro/pandas-56679/');
+      assert.equal(r.gh_command, undefined);
+      assert.match(r.instructions, /paste the candidate fix/);
+      assert.ok(
+        r.notes.some((n) => /no fix_url or fix_source supplied/.test(n)),
+      );
+    }
+  });
+
+  it('Layer 1 → path A with fix_url embeds it in compare_url', async () => {
+    const r = await verifyBranchFix({
+      slug: 'pandas-56679',
+      fix_url: 'https://raw.githubusercontent.com/user/fork/branch/repro.py',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.match(r.compare_url, /[?&]fix_url=https/);
+      assert.match(r.instructions, /pre-loaded/);
+    }
+  });
+
+  it('Layer 1 → path A with fix_source base64url-encodes it as ?fix=', async () => {
+    const r = await verifyBranchFix({
+      slug: 'pandas-56679',
+      fix_source: 'print("fixed")',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      const u = new URL(r.compare_url);
+      const fix = u.searchParams.get('fix');
+      assert.ok(fix, 'fix param should be present');
+      // Decode and check.
+      const padded = fix!.replace(/-/g, '+').replace(/_/g, '/');
+      const padLen = (4 - (padded.length % 4)) % 4;
+      const b64 = padded + '='.repeat(padLen);
+      const decoded = Buffer.from(b64, 'base64').toString('utf-8');
+      assert.equal(decoded, 'print("fixed")');
+    }
+  });
+
+  it('Layer 2 → path B returns gh_command and ignores fix_source', async () => {
+    const r = await verifyBranchFix({
+      slug: 'bash-local-shadows-exit',
+      fix_source: 'echo not used on layer 2',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.path, 'B');
+      assert.equal(r.layer, 2);
+      assert.match(r.gh_command!, /gh workflow run branch-fix-verdict\.yml/);
+      assert.match(r.gh_command!, /-f slug=bash-local-shadows-exit/);
+      assert.match(r.compare_url, /\/repro\/compare\?slug=bash-local-shadows-exit/);
+      assert.ok(
+        r.notes.some((n) => /ignored for Layer 2\/3/.test(n)),
+      );
+    }
+  });
+
+  it('Layer 3 → path B', async () => {
+    const r = await verifyBranchFix({ slug: 'lost-update' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.path, 'B');
+      assert.equal(r.layer, 3);
+      assert.match(r.gh_command!, /-f slug=lost-update/);
     }
   });
 });

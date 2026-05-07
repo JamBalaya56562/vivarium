@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "compare-branch-fix",
+    "label": "ブランチ修正を検証する"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "自分のフォークで動かす"
   },
