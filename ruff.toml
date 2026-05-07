@@ -1,0 +1,50 @@
+# Ruff — Python formatter, linter, and import sorter (https://docs.astral.sh/ruff/)
+# Phase 7 follow-up. Single Rust binary covering format + lint + isort,
+# matching the Biome / Mago / Taplo posture used elsewhere in this repo.
+#
+# Local: `mise run python:check` / `mise run python:check:fix`
+# CI:    `.github/workflows/test-python-check.yml` (strict),
+#        `.github/workflows/ruff-autofix.yml` (heals fixable diagnostics).
+
+# Pyodide v0.29.3 bundles CPython 3.13; pin Ruff to that target so it
+# only flags constructs available in the runtime the recipe pages load.
+target-version = "py313"
+
+# 100 columns matches the Mago / Biome conventions in this repo.
+line-length = 100
+
+# Repo's Python surface lives only under src/layer1_wasm/<slug>/repro.py
+# (and any future Python recipes / scripts). Excluding everything else
+# keeps Ruff fast and keeps generated dirs out of the lint surface.
+include = ["src/layer1_wasm/*/repro.py", "docs/scripts/**/*.py"]
+extend-exclude = [
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/target/**",
+  "**/doc_build/**",
+  "**/.venv/**",
+]
+
+[lint]
+# Enable a focused-but-broader-than-default rule set:
+# - E, W      : pycodestyle errors + warnings
+# - F         : pyflakes (unused imports, undefined names — load-bearing)
+# - I         : isort (import ordering)
+# - UP        : pyupgrade (modern Python idioms; safe under target=py313)
+# - B         : flake8-bugbear (real-world bug patterns)
+# - SIM       : flake8-simplify (idiom cleanups, mostly autofixable)
+# - RUF       : Ruff-specific rules (string-quote consistency, etc.)
+# Default rule set is conservative; this is a moderate expansion that
+# stays safe-by-default for reproduction scripts.
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  # E501 (line too long) is handled by the formatter; the lint version
+  # double-reports.
+  "E501",
+]
+
+[format]
+# Ruff format is Black-compatible by default — we keep that. Quote
+# style stays at the Black default ("double") so Ruff doesn't rewrite
+# every string literal in the recipe scripts on first run.
+quote-style = "double"

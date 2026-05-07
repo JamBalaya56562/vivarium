@@ -1,0 +1,37 @@
+# Taplo — TOML formatter, linter, and LSP (https://taplo.tamasfe.dev/).
+# Phase 7 follow-up. Single Rust binary; we use only the formatter
+# surface here.
+#
+# Local: `mise run toml:check` / `mise run toml:check:fix`
+# CI:    `.github/workflows/test-toml-check.yml` (strict),
+#        `.github/workflows/taplo-autofix.yml` (heals fixable diagnostics).
+
+include = [
+  "mise.toml",
+  "**/Cargo.toml",
+  "**/manifest.toml",
+  "mago.toml",
+  "ruff.toml",
+  "taplo.toml",
+  "rumdl.toml",
+]
+
+exclude = [
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/target/**",
+  "**/doc_build/**",
+  "**/.venv/**",
+  ".sl/**",
+]
+
+[formatting]
+# Tighter than Taplo's 80-column default — diffs read better at 100,
+# matching the Mago / Ruff print-width convention in this repo.
+column_width = 100
+# Order array elements that are typed as arrays-of-tables predictably
+# (e.g. workflow `paths:` lists). Default is no reorder; we keep that
+# explicit so the diff is auditable.
+reorder_arrays = false
+# Group keys related to the same table together (Cargo.toml-style).
+align_entries = false
