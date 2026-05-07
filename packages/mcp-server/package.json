@@ -1,7 +1,7 @@
 {
   "name": "@aletheia-works/vivarium-mcp",
-  "version": "0.1.0",
-  "description": "MCP server exposing the Vivarium reproduction catalogue (list_recipes, get_recipe, lookup_verdict) to AI agent clients (Claude Code, Cline, Cursor, Continue, etc.).",
+  "version": "0.2.0",
+  "description": "MCP server exposing the Vivarium reproduction catalogue (list_recipes, get_recipe, lookup_verdict, match_error, verify_branch_fix) to AI agent clients (Claude Code, Cline, Cursor, Continue, etc.).",
   "license": "Apache-2.0",
   "homepage": "https://github.com/aletheia-works/vivarium/tree/main/packages/mcp-server",
   "bugs": {

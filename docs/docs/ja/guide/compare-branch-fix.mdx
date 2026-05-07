@@ -1,0 +1,291 @@
+---
+pageType: doc
+title: ブランチ修正を検証する
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · BRANCH-FIX"
+    title="候補の修正を end-to-end でテストする。"
+    sub="Vivarium はレシピ（バグ）と比較サーフェス（あなたの修正）と、修正が壊れた code path を実際に回避したときに反転する verdict を組み合わせている。本ガイドはそのループを Layer 1（ブラウザ内）と Layer 2/3（Docker）の両方で end-to-end に歩く。"
+  />
+
+  <Section
+    eyebrow="// 0 · このループの目的"
+    heading="AI-slop 検証 — その修正、本当に動く?"
+  >
+    <p>
+      AI エージェント（Claude Code、Cursor、Cline、Continue、…）が
+      アップストリームのバグに対する候補の修正を提案してきた。素直な問いは
+      「本当にバグを直したのか、それとも修正に見えるだけか?」。Vivarium の
+      branch-fix ループはこれに <strong>機械的な verdict 反転</strong>{' '}
+      で答える: 修正をレシピのランタイムに通し、バグがまだ trigger するか
+      を見るだけ。
+    </p>
+    <Callout>
+      <strong>verdict のセマンティクス。</strong> <code>reproduced</code> は
+      「バグが trigger する（修正は回避できていない）」、{' '}
+      <code>unreproduced</code> は「バグが trigger しない（修正が壊れた
+      code path を回避できた）」。動く修正は verdict を{' '}
+      <code>reproduced</code> から <code>unreproduced</code> に反転させる。
+    </Callout>
+    <p>
+      2 つのパスは同じワイヤ形（Contract v1）と同じ比較サーフェス
+      （<a href="/vivarium/ja/repro/compare">/repro/compare</a>）を共有する:
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'Path A — Layer 1（ブラウザ内ソース置換）。',
+          body: <>レシピページに代替版の再現スクリプトをペーストする。レシピの WASM ランタイム（php-wasm、ruby.wasm、Pyodide）が同じタブで再走させ、verdict をキャプチャする。CI 不要、Docker 不要。</>,
+        },
+        {
+          lead: 'Path B — Layer 2/3（Docker イメージ再ビルド）。',
+          body: <>branch-fix Docker イメージを自分でビルドして push する。GitHub Actions ワークフローがそのイメージを pull して走らせ、verdict をキャプチャ、/repro/compare が描画するアーティファクトバンドルを公開する。</>,
+        },
+      ]}
+    />
+    <p>
+      Layer ディスパッチは自動 — レシピのカタログエントリが既にどの Layer
+      かを知っているし、MCP の <code>verify_branch_fix</code> ツールは両方に
+      正しい足場を返す。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · レシピを選ぶ"
+    heading="カタログでバグを探す。"
+  >
+    <p>
+      既知のレシピから入るか、エラー文から入るかで 2 通り:
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'レシピが既に分かっている。',
+          body: <><a href="/vivarium/ja/repro/">ギャラリー</a>を眺めて該当レシピのページに入る。slug をメモする（例: <code>php-12167</code>）。</>,
+        },
+        {
+          lead: 'エラー文があるのでレシピを探したい。',
+          body: <><a href="/vivarium/ja/repro/match"><code>/repro/match</code></a>（エラーをペーストして候補をスコア順に表示）を使うか、AI エージェントから <code>match_error</code> を呼ぶ（同じスコアリング、同じサーフェス）。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 2 · PATH A — LAYER 1"
+    heading="レシピページに修正をペースト、verdict をキャプチャ。"
+  >
+    <p>
+      Path A に opt-in した Layer 1 レシピは、ベースライン出力の下に{' '}
+      <strong>「Try a fix」</strong> パネルを描画する。現時点では
+      <a href="/vivarium/ja/repro/php-12167/"><code>php-12167</code></a>{' '}
+      に出荷済み、形が proven したら他のレシピも続く。
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'レシピページを開く。',
+          body: <>ベースラインの再現が先に走り、オリジナルの verdict（典型的には <code>reproduced</code>）がキャプチャされたあとパネルが描画される。</>,
+        },
+        {
+          lead: '修正ソースを供給する。',
+          body: <>3 つのモード: (a) textarea にペースト、(b) 公開取得可能 URL（raw GitHub / Gist）を指定、(c) ディスクからファイル選択。URL 取得時の CORS エラーはペーストへフォールバック。</>,
+        },
+        {
+          lead: '実行をクリック。',
+          body: <>レシピが既にロード済みの WASM ランタイムが置換ソースを実行する。パネルは Contract v1 形の verdict バンドルをキャプチャする: <code>branch-fix-verdict.json</code> + <code>original-verdict.json</code>。</>,
+        },
+        {
+          lead: '両方の verdict をダウンロード。',
+          body: <>パネルは side ごとに 1 つずつダウンロードリンクを描画する。両ファイルは <a href="/vivarium/ja/spec/contract-v1">Contract v1</a> に準拠 — Layer 2/3 のワークフロー実行から /repro/compare が消費するのと同じ形。</>,
+        },
+        {
+          lead: '/repro/compare にドロップ。',
+          body: <><a href="/vivarium/ja/repro/compare">/repro/compare</a> を開いて両方の JSON ファイルをドロップゾーンにドラッグする。ページは side-by-side で evidence を描画し、divergent なフィールドをハイライトする。</>,
+        },
+      ]}
+    />
+    <Callout>
+      <strong>エージェント駆動のショートカット。</strong> AI エージェントから
+      <code>verify_branch_fix(slug, fix_url)</code> を呼ぶと、ツールは
+      <code>?fix_url=</code> 事前読み込み済みの <code>compare_url</code>{' '}
+      を返す — その URL を開けばレシピページが自動で fix を走らせる。
+      <code>verify_branch_fix(slug, fix_source)</code> も同様
+      （≤4 KiB inline、長い fix は <code>fix_url</code> 経由）。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · PATH B — LAYER 2 / 3"
+    heading="イメージをビルド、ワークフローを実行、アーティファクトをドロップ。"
+  >
+    <p>
+      Layer 2（Docker カタログ）と Layer 3（record-replay）はブラウザ
+      タブでは走らせられない — バグは本物の OS、本物のソケット、
+      本物のファイルシステムを要求する。Path B はビルドをあなた自身の
+      インフラに移し、push したイメージに対する verdict を GitHub Actions
+      ワークフローでキャプチャする。
+    </p>
+    <NumberedList
+      items={[
+        {
+          lead: 'branch-fix イメージをビルドして push する。',
+          body: <>AI の候補修正を fork に当て、レシピの <code>Dockerfile</code> で Docker イメージをビルドし、GitHub Actions ランナーが pull できるレジストリ（公開 ghcr.io / Docker Hub repo）に push する。image-as-input の境界は contract — Vivarium はあなたのソースをビルドしない、あなたが行う。</>,
+        },
+        {
+          lead: '比較ワークフローを trigger する。',
+          body: <><code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code> を実行する。ワークフローはあなたのイメージを pull、その中で再現を走らせ、Contract v1 verdict をキャプチャ、<code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> をアーティファクトとしてアップロードする。</>,
+        },
+        {
+          lead: 'アーティファクト zip をダウンロード。',
+          body: <>ワークフロー実行ページからアーティファクト zip を取得する。<code>branch-fix-verdict.json</code> と（デプロイ済みスナップショットがあれば）<code>original-verdict.json</code> が含まれる。</>,
+        },
+        {
+          lead: 'zip を /repro/compare にドロップ。',
+          body: <>ページは zip をクライアントサイドでパースし、両 verdict を Contract v1 スキーマに照らして検証、side-by-side で evidence を描画する。</>,
+        },
+      ]}
+    />
+    <Callout>
+      <strong>エージェント駆動のショートカット。</strong> Layer 2/3 の slug に対する
+      <code>verify_branch_fix(slug)</code> は、コピペ可能な
+      <code>gh_command</code> を返す。エージェントが実際にそれを走らせるには
+      <code>gh</code> 認証とレジストリアクセスが必要 — だがコマンド自体は
+      組み立て済み。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · VERDICT を読む"
+    heading="ここでの `reproduced` と `unreproduced` の意味。"
+  >
+    <p>
+      branch-fix の verdict が伝えるのはちょうど 1 つ: 修正が当たった状態で
+      バグは trigger したか?
+    </p>
+    <ul>
+      <li>
+        <strong>オリジナル = <code>reproduced</code>、branch-fix ={' '}
+        <code>unreproduced</code>。</strong> 修正がバグを回避した。典型的な
+        「修正が動いた」結果。
+      </li>
+      <li>
+        <strong>オリジナル = <code>reproduced</code>、branch-fix ={' '}
+        <code>reproduced</code>。</strong> 修正は slop — outcome を変えていない。
+        修正を反復して再走させる。
+      </li>
+      <li>
+        <strong>オリジナル = <code>unreproduced</code>、branch-fix ={' '}
+        <code>reproduced</code>。</strong> リグレッション — あなたの変更が
+        バグを導入した。diff を巻き戻すか、何を変えたかを確認する。
+      </li>
+      <li>
+        <strong>オリジナル = <code>unreproduced</code>、branch-fix ={' '}
+        <code>unreproduced</code>。</strong> どちらも変化なし。レシピが
+        非アクティブ（アップストリームが既に修正済み）か、現在のランタイム
+        に対してあなたの修正が no-op。
+      </li>
+    </ul>
+    <Callout>
+      Path A は <em>ユーザーランド</em> の修正が壊れた code path を回避するか
+      をテストする — アップストリームのインタプリタにパッチを当てる
+      わけではない。Path B は <em>完全に再ビルドしたイメージ</em>{' '}
+      がバイナリレベルでバグを直すかをテストする。重みは違う、ワイヤ形は同じ。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · エッジケース"
+    heading="ループが計画通り進まないとき。"
+  >
+    <ul>
+      <li>
+        <strong>ランタイムが verdict 生成前にエラーした。</strong>
+        Path A ではパネルのステータスラインが赤になり、ランタイムエラー
+        テキストが出る。よくある原因: ペーストした修正の構文エラー。
+        構文を直して Run をもう一度クリック。
+      </li>
+      <li>
+        <strong>スキーマが verdict 形を reject した。</strong>{' '}
+        /repro/compare は各 verdict を <code>verdict.schema.json</code>{' '}
+        （Contract v1 rev3）に照らして検証する。エラーリージョンは
+        bad フィールドの JSON path を表示する。Path A は構造的に
+        well-formed な verdict を生成するので、これが見えるなら
+        手編集ファイルをドロップしている可能性が高い。
+      </li>
+      <li>
+        <strong>CORS で URL 取得がブロックされた。</strong> 公開 raw GitHub
+        と Gist URL は CORS 対応ヘッダを返す。セルフホスト URL はしばしば
+        返さない。その場合はペーストモードへフォールバック。
+      </li>
+      <li>
+        <strong>Path B のプライベートレジストリイメージ。</strong>{' '}
+        ランナーは認証なしで pull する。プライベートレジストリは v1 の
+        スコープ外。public ref に push するか、pull 認証情報フォロー
+        アップを待つ。
+      </li>
+      <li>
+        <strong>修正が長すぎて <code>?fix=</code> に入らない。</strong>{' '}
+        インライン URL パラメータの上限は 4 KiB。Gist や fork URL を
+        使った <code>?fix_url=</code> を使う。
+      </li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 6 · この先"
+    heading="このループの上に組めるエージェントループ。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'エージェントループを end-to-end に閉じる。',
+          body: <>パイプライン: <code>match_error</code> → slug に絞り込み → <code>verify_branch_fix</code> → compare_url を開く → verdict を読む。<code>reproduced</code> ならエージェントに別の候補を頼む。<code>unreproduced</code> ならマージへ。</>,
+        },
+        {
+          lead: '自分のバグのレシピを足す。',
+          body: <>カタログにまだあなたのバグが無いなら、<a href="/vivarium/ja/guide/write-your-first-reproduction">レシピを書く</a>。Path A は 1 行で opt-in できる。</>,
+        },
+        {
+          lead: 'verdict を自分の CI と組み合わせる。',
+          body: <><a href="/vivarium/ja/guide/integrate-with-your-repo">自分のリポジトリに統合する</a> パスは push のたびに verdict ドリフトを検出する — オンデマンドだけではない。</>,
+        },
+      ]}
+    />
+  </Section>
+
+  <Callout>
+    どこかで詰まったら、それは本ガイドのバグです。slug、Layer、path（A か B）、
+    詰まったステップ番号を Issue に残してください。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      用語集{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="残りのガイドが前提にしている語彙 — Layer、manifest、contract、verdict、evidence、slug — を 1 ページにまとめてある。"
+  primary={{ label: '用語集 →', href: '/vivarium/ja/guide/glossary' }}
+  ghost={{ label: '比較ページ', href: '/vivarium/ja/repro/compare' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>

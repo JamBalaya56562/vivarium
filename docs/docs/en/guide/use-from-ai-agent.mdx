@@ -17,7 +17,7 @@ import {
   <PageHero
     eyebrow="// GUIDE · AI AGENT"
     title="Drive the Vivarium MCP server from Claude Code, Cursor, or Cline."
-    sub="Vivarium ships an MCP (Model Context Protocol) server with four tools that let an agent search and read the entire catalogue programmatically. No HTML scraping of the docs site required."
+    sub="Vivarium ships an MCP (Model Context Protocol) server with five tools that let an agent search the catalogue, read verdict snapshots, and scaffold branch-fix verification end-to-end. No HTML scraping of the docs site required."
   />
 
   <Section
@@ -28,11 +28,12 @@ import {
       The Vivarium MCP server (<code>@aletheia-works/vivarium-mcp</code>)
       speaks{' '}
       <a href="https://modelcontextprotocol.io">Model Context Protocol</a>{' '}
-      over stdio and exposes four tools:{' '}
+      over stdio and exposes five tools:{' '}
       <code>list_recipes</code>, <code>get_recipe</code>,{' '}
-      <code>lookup_verdict</code>, and <code>match_error</code>. An agent
-      can browse the catalogue, fetch metadata for a given recipe, and
-      pull deployed Layer 2 / 3 verdict snapshots through them.
+      <code>lookup_verdict</code>, <code>match_error</code>, and{' '}
+      <code>verify_branch_fix</code>. An agent can browse the catalogue,
+      fetch metadata for a given recipe, pull deployed Layer 2 / 3 verdict
+      snapshots, and scaffold the AI-slop verification loop end-to-end.
     </p>
     <Callout>
       <strong>The first JSR / npm publish is intentionally on hold</strong>.
@@ -139,6 +140,17 @@ bun run build
         token hits against symptom / tags / project / slug, weighted
         per source.
       </li>
+      <li>
+        <strong><code>verify_branch_fix(slug, fix_url? | fix_source?)</code></strong> —
+        scaffolding helper for the AI-slop verification loop (NOT an
+        execution engine). Layer 1 returns Path A: a recipe-page{' '}
+        <code>compare_url</code> with the fix pre-loaded via{' '}
+        <code>?fix_url=</code> or <code>?fix=&lt;base64url&gt;</code>.
+        Layer 2 / 3 returns Path B: a <code>/repro/compare</code> deep-link
+        plus the <code>gh workflow run branch-fix-verdict.yml</code>{' '}
+        command the contributor runs. Full walkthrough:{' '}
+        <a href="/vivarium/en/guide/compare-branch-fix">Verify a branch-fix</a>.
+      </li>
     </ul>
   </Section>
 
@@ -214,8 +226,8 @@ bun run build
           body: <><a href="/vivarium/en/guide/integrate-with-your-repo">Integrate with your own repo</a> sets up the verdict-watch side from your own CI. The two sides — agent + CI — close the loop.</>,
         },
         {
-          lead: 'Verify a branch fix end-to-end (planned in B3).',
-          body: <>Confirming "did my candidate fix flip reproduced → unreproduced?" through the agent in one shot is what Phase 7's B3 sub-stream (ADR-0028) is meant to wire up. For now the <a href="/vivarium/en/repro/compare">comparison page</a> is the manual surface; B3 will let the agent drive it.</>,
+          lead: 'Verify a branch fix end-to-end.',
+          body: <>Confirming "did my candidate fix flip reproduced → unreproduced?" through the agent in one shot is wired up via <code>verify_branch_fix</code> (Phase 7 B3). Full walkthrough: <a href="/vivarium/en/guide/compare-branch-fix">Verify a branch-fix</a>.</>,
         },
       ]}
     />
