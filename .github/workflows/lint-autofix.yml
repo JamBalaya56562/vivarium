@@ -93,6 +93,18 @@ jobs:
           cache: true
           experimental: true
 
+      # `cargo fmt` needs the rustfmt component and `cargo clippy`
+      # needs the wasm32-wasip1 target — both declared in mise.toml
+      # but not preserved by `jdx/mise-action`'s cache (it caches
+      # `~/.local/share/mise/installs`, not `~/.rustup`). See
+      # test-lint-check.yml for the full rationale; the same guard
+      # applies here so cache-hit autofix runs do not silently skip
+      # the cargo fmt / clippy steps.
+      - name: Ensure Rust components and target (mise post-install)
+        run: |
+          rustup component add rustfmt clippy
+          rustup target add wasm32-wasip1
+
       # `mise run lint:all:fix` chains the autofix variant of every
       # tool (mago format, mago lint --fix --unsafe, ruff format,
       # ruff check --fix, tombi format, rumdl fmt, cargo fmt). Each
