@@ -293,6 +293,115 @@ export function LayerSection({
   );
 }
 
+/* ----------------------------- StatusBadge ----------------------------- */
+
+export type PhaseStatus = 'closed' | 'active' | 'planned';
+
+/**
+ * Visual chip for a phase's lifecycle state. Independent component
+ * (rather than a CSS modifier on the layer pill) so other pages —
+ * roadmap, recipe-status footers, glossary entries — can share the
+ * same visual vocabulary without copy-pasting the inline styling.
+ *
+ * `closed` = teal (shipped); `active` = coral (in flight, attention-
+ * pulling); `planned` = neutral grey-on-card (queued, low salience).
+ */
+export function StatusBadge({
+  status,
+  label,
+}: {
+  status: PhaseStatus;
+  label: string;
+}) {
+  return (
+    <span className={`v-status-badge v-status-badge--${status}`}>{label}</span>
+  );
+}
+
+/* ----------------------------- RoadmapTimeline ----------------------------- */
+
+/**
+ * Vertical phase-by-phase timeline for the roadmap page. Each phase
+ * appears as a card on a vertical rail; the active phase is rendered
+ * with stronger emphasis (border accent + halo) so the reader can
+ * scan "where are we right now?" without reading body copy.
+ *
+ * Renders the recipient's locale labels for the status chips; the
+ * caller knows whether `closed` should read as "CLOSED" or "出荷済"
+ * and similar.
+ */
+export function RoadmapTimeline({
+  phases,
+  statusLabels,
+  shippedHeading,
+  remainingHeading,
+}: {
+  phases: {
+    number: string;
+    title: ReactNode;
+    status: PhaseStatus;
+    statusNote?: string;
+    lead: ReactNode;
+    /** What this phase shipped — rendered as a bullet list. */
+    shipped?: ReactNode[];
+    /** For the active phase: what is still left. Optional. */
+    remaining?: ReactNode[];
+  }[];
+  statusLabels: Record<PhaseStatus, string>;
+  shippedHeading: string;
+  remainingHeading: string;
+}) {
+  return (
+    <ol className="v-roadmap-timeline">
+      {phases.map((phase, i) => (
+        <li
+          key={i}
+          className={`v-roadmap-phase v-roadmap-phase--${phase.status}`}
+        >
+          <span className="v-roadmap-phase__marker" aria-hidden="true" />
+          <div className="v-roadmap-phase__head">
+            <span className="v-roadmap-phase__num">{phase.number}</span>
+            <h3 className="v-roadmap-phase__title">{phase.title}</h3>
+            <StatusBadge
+              status={phase.status}
+              label={
+                phase.statusNote
+                  ? `${statusLabels[phase.status]} · ${phase.statusNote}`
+                  : statusLabels[phase.status]
+              }
+            />
+          </div>
+          <p className="v-roadmap-phase__lead">{phase.lead}</p>
+          {phase.shipped && phase.shipped.length > 0 ? (
+            <div className="v-roadmap-phase__detail">
+              <h4 className="v-roadmap-phase__detail-heading">
+                {shippedHeading}
+              </h4>
+              <ul className="v-roadmap-phase__detail-list">
+                {phase.shipped.map((item, j) => (
+                  <li key={j}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {phase.remaining && phase.remaining.length > 0 ? (
+            <div className="v-roadmap-phase__detail v-roadmap-phase__detail--remaining">
+              <h4 className="v-roadmap-phase__detail-heading">
+                {remainingHeading}
+              </h4>
+              <ul className="v-roadmap-phase__detail-list">
+                {phase.remaining.map((item, j) => (
+                  <li key={j}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /* ----------------------------- NumberedList ----------------------------- */
 
 export function NumberedList({
