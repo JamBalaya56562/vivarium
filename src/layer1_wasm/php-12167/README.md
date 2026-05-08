@@ -109,5 +109,5 @@ mise on a Linux runner.
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/php-12167/` by the
+`https://aletheia-works.github.io/vivarium/repro/php/12167/` by the
 `deploy-docs` workflow.

@@ -45,7 +45,18 @@
 
       <section>
         <h2>Reproduction script</h2>
-        <pre><code id="repro-code"></code></pre>
+        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">&#x3C;?</span><span style="color:#79B8FF">php</span></span>
+<span class="line"><span style="color:#E1E4E8">$xml </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> '&#x3C;?xml version="1.0"?>&#x3C;foo>&#x3C;bar>&#x3C;?stylesheet hello ?>&#x3C;/bar>&#x3C;/foo>'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">$sxe </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> simplexml_load_string</span><span style="color:#E1E4E8">($xml);</span></span>
+<span class="line"><span style="color:#E1E4E8">$pis </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> $sxe</span><span style="color:#F97583">-></span><span style="color:#B392F0">xpath</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"//processing-instruction()"</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">$pi_text </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> isset</span><span style="color:#E1E4E8">($pis[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">]) </span><span style="color:#F97583">?</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">string</span><span style="color:#E1E4E8">) $pis[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">:</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">echo</span><span style="color:#79B8FF"> json_encode</span><span style="color:#E1E4E8">([</span></span>
+<span class="line"><span style="color:#9ECBFF">  "php_version"</span><span style="color:#F97583"> =></span><span style="color:#79B8FF"> PHP_VERSION</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">  "xpath_count"</span><span style="color:#F97583"> =></span><span style="color:#79B8FF"> count</span><span style="color:#E1E4E8">($pis </span><span style="color:#F97583">?:</span><span style="color:#E1E4E8"> []),</span></span>
+<span class="line"><span style="color:#9ECBFF">  "pi_text"</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> $pi_text,</span></span>
+<span class="line"><span style="color:#9ECBFF">  "pi_text_empty"</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> $pi_text </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> ""</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">]);</span></span></code></pre>
       </section>
 
       <section>

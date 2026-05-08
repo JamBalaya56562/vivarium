@@ -328,13 +328,32 @@ bun install --frozen-lockfile
 bun run test
 '''
 
+[tasks."ci:docs-unit"]
+description = "Local equivalent of test-docs-e2e.yml unit lane (resolveReproFile etc.)"
+dir = "docs"
+run = '''
+bun install --frozen-lockfile
+bun run test:unit
+'''
+
+[tasks."ci:docs-e2e"]
+description = "Local equivalent of test-docs-e2e.yml E2E lane (Playwright against rspress preview, Chromium + Firefox + WebKit)"
+dir = "docs"
+shell = "bash -c"  # need `set -o pipefail`
+run = '''
+set -euo pipefail
+bun install --frozen-lockfile
+bunx playwright install --with-deps chromium firefox webkit
+bun run test:e2e
+'''
+
 [tasks."ci:commitlint"]
 description = "Lint the most recent commit message against Conventional Commits"
 run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 
 [tasks."ci:all"]
-description = "Run all local CI tasks (docs + lint + mcp + repro + commitlint)"
-depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:commitlint"]
+description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e + commitlint)"
+depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e", "ci:commitlint"]
 
 # ── Polyglot Rust-based formatters and linters ───────────────────────────
 # Mago (PHP), Ruff (Python), Taplo (TOML), rumdl (Markdown), clippy (Rust).
