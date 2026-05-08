@@ -79,6 +79,26 @@ jobs:
           cache: true
           experimental: true
 
+      # mise.toml declares `components = "rustfmt,clippy"` and
+      # `targets = "wasm32-wasip1"` for the rust toolchain, but
+      # `jdx/mise-action`'s cache only persists
+      # `~/.local/share/mise/installs`, not `~/.rustup`. On a cache
+      # miss, mise install runs `rustup component add` / `rustup
+      # target add` per the mise.toml directives and they land in
+      # `~/.rustup`. On a cache hit, mise install is a no-op (the
+      # rust symlink is already present), so the components AND
+      # the wasm target are absent — `cargo fmt` fails with
+      # `'cargo-fmt' is not installed for the toolchain '1.84.0'`,
+      # and `cargo clippy --target wasm32-wasip1` fails with
+      # `can't find crate for 'core' — the wasm32-wasip1 target may
+      # not be installed`. Re-add both explicitly so cache-hit and
+      # cache-miss runs converge. `RUSTUP_TOOLCHAIN=1.84.0` is
+      # already exported by the mise setup step.
+      - name: Ensure Rust components and target (mise post-install)
+        run: |
+          rustup component add rustfmt clippy
+          rustup target add wasm32-wasip1
+
       # `mise run ci:lint` chains php:check, python:check, toml:check,
       # markdown:check, rust:check (cargo fmt --check + clippy -D
       # warnings). Any failure is reported as a CI error.
