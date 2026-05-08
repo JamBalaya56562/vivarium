@@ -88,6 +88,14 @@ src/layer1_wasm/playwright-report/
 src/layer1_wasm/test-results/
 src/layer1_wasm/blob-report/
 src/layer1_wasm/.last-run.json
+# Same artefacts for the docs-site E2E suite (`docs/playwright.config.ts`,
+# added in PR #189). Generated under docs/ on every `bun run test:e2e`
+# run; CI uploads playwright-report/ as a workflow artifact on failure
+# but neither directory is meant to live in version control.
+docs/playwright-report/
+docs/test-results/
+docs/blob-report/
+docs/.last-run.json
 
 # ─── rspress ─────────────────────────────────
 doc_build/
