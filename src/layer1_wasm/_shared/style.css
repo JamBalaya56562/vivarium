@@ -797,3 +797,75 @@ main > footer code {
   font-size: 0.85rem;
   color: var(--vh-text-muted);
 }
+
+/* ---------- Phase 8 V″ — desktop layout (class-based opt-in) ----------
+ *
+ * Recipes opt into the desktop layout by adding `class="vh-desktop-layout"`
+ * to their `<main>` and wrapping their existing children into the four
+ * slot containers below. Below 1024 px the recipe falls back to the
+ * existing single-column stack — V″ is additive, not a replacement.
+ *
+ * Slots:
+ *   .vh-desktop-layout__header  — kicker / h1 / lede block (full width)
+ *   .vh-desktop-layout__main    — reproduction script + output (left)
+ *   .vh-desktop-layout__side    — verdict pill + meta + runtime info (right, sticky)
+ *   .vh-desktop-layout__footer  — page footer (full width)
+ *
+ * See ADR-0033 (`_context/decisions/0033-phase8-vpp-poc-regex779.md`)
+ * for the boundary decisions (PoC recipe choice, breakpoint, sidebar
+ * width, sticky offset).
+ */
+
+@media (min-width: 1024px) {
+  main.vh-desktop-layout {
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-areas:
+      "header header"
+      "main   side"
+      "footer footer";
+    column-gap: 2rem;
+    row-gap: 1.5rem;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__header {
+    grid-area: header;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__main {
+    grid-area: main;
+    /* keep section spacing inside the slot at the existing rhythm */
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__main > section {
+    /* the slot's flex gap replaces the per-section margin-bottom */
+    margin-bottom: 0;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__side {
+    grid-area: side;
+    /* sticky offset clears rspress's 60px top nav plus a breathing line */
+    position: sticky;
+    top: calc(60px + 1rem);
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__side > section {
+    margin-bottom: 0;
+  }
+
+  main.vh-desktop-layout > .vh-desktop-layout__footer {
+    grid-area: footer;
+    /* footer keeps its existing top-border treatment from `main > footer`
+     * — the selector still matches because <footer> is still a direct
+     * child of <main> in the slot wrapper structure. */
+  }
+}
+

@@ -21,8 +21,8 @@
     <link rel="stylesheet" href="../_shared/style.css" />
   </head>
   <body>
-    <main>
-      <header>
+    <main class="vh-desktop-layout">
+      <header class="vh-desktop-layout__header">
         <p class="kicker">Vivarium · Layer 1 · Rust (wasm32-wasip1)</p>
         <h1>Reproducing <a href="https://github.com/rust-lang/regex/issues/779">rust-lang/regex#779</a></h1>
         <p class="lede">
@@ -38,25 +38,29 @@
         </p>
       </header>
 
-      <section>
-        <h2>Verdict</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
-          Loading Rust wasm32-wasip1 artefact via WASI shim…
-        </div>
-        <p class="meta" id="meta"></p>
-      </section>
+      <div class="vh-desktop-layout__main">
+        <section>
+          <h2>Reproduction script (Rust)</h2>
+          <pre><code id="repro-code"></code></pre>
+        </section>
 
-      <section>
-        <h2>Reproduction script (Rust)</h2>
-        <pre><code id="repro-code"></code></pre>
-      </section>
+        <section>
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
 
-      <section>
-        <h2>Output</h2>
-        <pre id="output">(running)</pre>
-      </section>
+      <aside class="vh-desktop-layout__side">
+        <section>
+          <h2>Verdict</h2>
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Rust wasm32-wasip1 artefact via WASI shim…
+          </div>
+          <p class="meta" id="meta"></p>
+        </section>
+      </aside>
 
-      <footer>
+      <footer class="vh-desktop-layout__footer">
         <p class="meta">
           Runtime:
           Rust crate compiled to <code>wasm32-wasip1</code>, instantiated in-browser via
