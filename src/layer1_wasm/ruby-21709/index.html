@@ -48,7 +48,34 @@
 
       <section>
         <h2>Reproduction script</h2>
-        <pre><code id="repro-code"></code></pre>
+        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">require</span><span style="color:#9ECBFF"> "json"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FFAB70">result</span><span style="color:#E1E4E8"> = { </span><span style="color:#79B8FF">ruby_version:</span><span style="color:#79B8FF"> RUBY_VERSION</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FFAB70">prefix</span><span style="color:#E1E4E8"> = </span><span style="color:#9ECBFF">'\p{In_Arabic}'</span></span>
+<span class="line"><span style="color:#FFAB70">suffix</span><span style="color:#E1E4E8"> = </span><span style="color:#9ECBFF">'\p{In_Arabic}'</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">encode</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'US-ASCII'</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">begin</span></span>
+<span class="line"><span style="color:#FFAB70">  re</span><span style="color:#E1E4E8"> = </span><span style="color:#DBEDFF">/</span><span style="color:#DBEDFF">#{prefix}#{suffix}</span><span style="color:#DBEDFF">/</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:regexp_built</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:regexp_raised</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> nil</span></span>
+<span class="line"><span style="color:#F97583">rescue</span><span style="color:#E1E4E8"> => e</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:regexp_built</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:regexp_raised</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> e.</span><span style="color:#B392F0">class</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">name</span></span>
+<span class="line"><span style="color:#F97583">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">begin</span></span>
+<span class="line"><span style="color:#FFAB70">  s</span><span style="color:#E1E4E8"> = </span><span style="color:#9ECBFF">"</span><span style="color:#9ECBFF">#{prefix}#{suffix}</span><span style="color:#9ECBFF">"</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_built</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_encoding</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> s.</span><span style="color:#B392F0">encoding</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">name</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_raised</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> nil</span></span>
+<span class="line"><span style="color:#F97583">rescue</span><span style="color:#E1E4E8"> => e</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_built</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_encoding</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> nil</span></span>
+<span class="line"><span style="color:#E1E4E8">  result[</span><span style="color:#79B8FF">:string_raised</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> e.</span><span style="color:#B392F0">class</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">name</span></span>
+<span class="line"><span style="color:#F97583">end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">dump</span><span style="color:#E1E4E8">(result)</span></span></code></pre>
       </section>
 
       <section>

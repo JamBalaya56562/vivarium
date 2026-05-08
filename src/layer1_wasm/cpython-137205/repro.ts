@@ -70,13 +70,19 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-reproCodeEl.textContent = REPRO_CODE;
-fetch("./repro.highlighted.html")
-  .then((r) => (r.ok ? r.text() : null))
-  .then((html) => {
-    if (html) reproCodeEl.innerHTML = html;
-  })
-  .catch(() => {});
+// Build-time inlining (`scripts/highlight-repros.ts`) populates this
+// element in `index.html` with the syntax-highlighted source spans,
+// so the page paints the code at HTML-parse time. The runtime
+// fallback below kicks in only when the placeholder is still empty.
+if (!reproCodeEl.firstChild) {
+  reproCodeEl.textContent = REPRO_CODE;
+  fetch("./repro.highlighted.html")
+    .then((r) => (r.ok ? r.text() : null))
+    .then((html) => {
+      if (html) reproCodeEl.innerHTML = html;
+    })
+    .catch(() => {});
+}
 
 const startedAt = new Date();
 

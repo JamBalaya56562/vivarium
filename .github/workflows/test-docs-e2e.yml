@@ -1,0 +1,134 @@
+name: Test docs site (E2E + unit)
+
+# Smoke + regression tests for the rspress docs site under `docs/`.
+# Two lanes:
+#
+#   1. Unit lane — `bun test scripts/__tests__` validates pure functions
+#      that the dev middleware uses (resolveReproFile etc.). No browser
+#      needed; runs in seconds.
+#
+#   2. E2E lane — Playwright runs against `bunx rspress preview`,
+#      asserting that every tracked page (EN + JA, 68 total) renders
+#      with a non-empty <h1>, the rspress nav, and the footer; that the
+#      EN ↔ JA file tree is symmetric and the locale switcher round-
+#      trips; and that recipe pages reach their documented verdict
+#      while exposing the loading-UX surface (vh-progress, vh-output
+#      reveal) that previously regressed silently. The lane fans out
+#      via a browser-engine matrix (Chromium / Firefox / WebKit) so
+#      the three engines run in parallel runners — wall-clock time
+#      stays at ~ one-engine cost, and per-engine failures appear as
+#      separate red checks for fast triage.
+#
+# Why this workflow exists (per the docs E2E PR notes): the rspress
+# docs site has no PR-time test gate today. Past PRs accidentally
+# broke component renders / nav / loading UX, and the regression
+# only surfaced when a maintainer browsed the deploy and noticed.
+# This workflow turns that class of breakage into a CI failure.
+#
+# Triggers:
+# - `pull_request` touching docs/ or this workflow — fast feedback.
+# - `push` to main on the same paths — catches anything that lands
+#   despite a green PR (rare, but the cost of finding out post-merge
+#   is much higher).
+# - `workflow_dispatch` — manual re-run from the Actions tab.
+#
+# Fork-PR safe: uses `pull_request` (NOT `pull_request_target`). No
+# secrets are needed; tests are read-only and produce no external
+# side effects.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/test-docs-e2e.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/test-docs-e2e.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel in-flight runs when a PR receives a new commit; save Actions
+# minutes.
+concurrency:
+  group: test-docs-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit (resolveReproFile)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install + unit test
+        run: |
+          bun install --frozen-lockfile
+          bun run test:unit
+
+  e2e:
+    # Playwright matrix strategy — one runner per browser engine, run
+    # in parallel. Versus a single-runner serial sweep this keeps
+    # wall-clock time at ~ one-engine cost (still ~1 min) instead of
+    # ~3× the cost (~3 min), and makes per-engine failures visible as
+    # separate red checks rather than a single conflated one.
+    #
+    # `fail-fast: false` lets each browser run to completion even if a
+    # sibling fails — when WebKit catches a regression Chromium misses,
+    # the maintainer wants to see Firefox's verdict too rather than
+    # starting another round of fixes blind.
+    #
+    # Each runner installs **only its own browser** (not the full
+    # chromium+firefox+webkit triplet), trimming runner setup time by
+    # ~2/3. The per-engine `--with-deps` pulls the matching OS-level
+    # libraries that engine needs.
+    name: E2E (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: bunx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Playwright suite (${{ matrix.browser }})
+        # `--project=<name>` matches the project entry in
+        # docs/playwright.config.ts (one per engine), so this runner
+        # exercises only the engine matching its matrix slot.
+        run: bun run test:e2e -- --project=${{ matrix.browser }}
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@84480863f228bb9747b473957fcc9e309aa96097 # v4.4.2
+        with:
+          # Per-engine report name avoids artefact-upload collisions
+          # when multiple matrix slots fail in the same run.
+          name: playwright-report-${{ matrix.browser }}
+          path: docs/playwright-report/
+          retention-days: 7
