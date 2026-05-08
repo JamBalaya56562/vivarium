@@ -12,9 +12,24 @@
 // This script extracts that template literal at build time, runs it
 // through Shiki (the same highlighter rspress uses for MDX code
 // blocks), and writes the rendered token HTML to
-// `<slug>/repro.highlighted.html`. The recipe page upgrades from
-// plain text to highlighted HTML asynchronously after first paint —
-// see the `fetch('./repro.highlighted.html')` hook in each repro.ts.
+// `<slug>/repro.highlighted.html`. It also **inlines the same
+// highlighted HTML directly into `<slug>/index.html`** by replacing
+// the empty `<code id="repro-code"></code>` placeholder with
+// `<code id="repro-code">${innerHighlighted}</code>`. Inlining at
+// build time means the recipe page renders syntax-highlighted source
+// at HTML-parse time, before any module script runs and before the
+// `fetch('./repro.highlighted.html')` async upgrade — visitors no
+// longer see an empty code block during the WASM cold load.
+//
+// The inline write is **idempotent**: the script reads the existing
+// inner of the placeholder, regenerates the highlighted content from
+// the live `REPRO_CODE` / `REPRO_SOURCE_HINT` template literal, and
+// only writes when the two differ. Shiki's output is deterministic
+// for a given (code, lang, theme) tuple, so re-running the script
+// against an already-inlined index.html is a no-op (no spurious
+// `sl status` diff). The `repro.highlighted.html` sidecar is kept
+// for the runtime fallback path in case future template-literal
+// edits drift between the inlined source and what the page expects.
 //
 // Wiring: invoked via `bun run build` (see this directory's
 // package.json) before tsc compiles repro.ts. CI deploy reaches it
@@ -152,6 +167,36 @@ for (const slug of slugs) {
   writeFileSync(outPath, inner, 'utf-8');
   written += 1;
   console.log(`[highlight-repros] ${slug} (${lang}) -> repro.highlighted.html`);
+
+  // Inline the highlighted block into the recipe's index.html so the
+  // code is visible at HTML-parse time (no module-script wait, no
+  // network round-trip). The outer `<code id="repro-code">` element
+  // stays as-is; only its inner content is replaced. The substitution
+  // is idempotent: if the inner content already matches the freshly
+  // generated highlighted HTML, no write occurs (no `sl status`
+  // diff on subsequent builds).
+  const indexPath = join(LAYER1_DIR, slug, 'index.html');
+  if (!existsSync(indexPath)) continue;
+  const indexHtml = readFileSync(indexPath, 'utf-8');
+  // Strip Shiki's inner `<code>...</code>` wrapper to get just the
+  // span tree — the recipe HTML's existing `<code id="repro-code">`
+  // is the wrapper.
+  const innerSpans = inner
+    .replace(/^<code[^>]*>/, '')
+    .replace(/<\/code>\s*$/, '');
+  const placeholderRe = /(<code id="repro-code"[^>]*>)([\s\S]*?)(<\/code>)/;
+  const m = indexHtml.match(placeholderRe);
+  if (!m) {
+    console.warn(`[highlight-repros] no <code id="repro-code"> placeholder in ${slug}/index.html; skipping inline.`);
+    continue;
+  }
+  if (m[2] === innerSpans) {
+    // Already inlined and matches — idempotent no-op.
+    continue;
+  }
+  const updated = indexHtml.replace(placeholderRe, `$1${innerSpans}$3`);
+  writeFileSync(indexPath, updated, 'utf-8');
+  console.log(`[highlight-repros] ${slug} -> inlined into index.html`);
 }
 
 console.log(`[highlight-repros] done. ${written} written, ${skipped} skipped.`);
