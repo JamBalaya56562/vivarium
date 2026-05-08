@@ -47,7 +47,25 @@
 
       <section>
         <h2>Reproduction script</h2>
-        <pre><code id="repro-code"></code></pre>
+        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> numpy </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">x </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> np.timedelta64(</span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"ms"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">y </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> np.timedelta64(</span><span style="color:#79B8FF">2</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">z </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> np.timedelta64(</span><span style="color:#79B8FF">5</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"ns"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">x_lt_y </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> bool</span><span style="color:#E1E4E8">(x </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> y)</span></span>
+<span class="line"><span style="color:#E1E4E8">y_lt_z </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> bool</span><span style="color:#E1E4E8">(y </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> z)</span></span>
+<span class="line"><span style="color:#E1E4E8">x_lt_z </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> bool</span><span style="color:#E1E4E8">(x </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> z)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#9ECBFF">    "numpy_version"</span><span style="color:#E1E4E8">: np.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "x_lt_y"</span><span style="color:#E1E4E8">: x_lt_y,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "y_lt_z"</span><span style="color:#E1E4E8">: y_lt_z,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "x_lt_z"</span><span style="color:#E1E4E8">: x_lt_z,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "transitivity_violated"</span><span style="color:#E1E4E8">: x_lt_y </span><span style="color:#F97583">and</span><span style="color:#E1E4E8"> y_lt_z </span><span style="color:#F97583">and</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> x_lt_z,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
       </section>
 
       <section>
