@@ -6,8 +6,8 @@ title: Roadmap
 import {
   Page,
   PageHero,
+  KpiStrip,
   Section,
-  NumberedList,
   Callout,
   NextCta,
   BottomNote,
@@ -15,91 +15,71 @@ import {
 
 <Page>
   <PageHero
-    eyebrow="// ROADMAP · v1"
-    title="Phases, not deadlines."
-    sub="The per-phase plan — what a visitor should expect to see land, in what order, framed in terms of the reproduction primitive."
+    eyebrow="// ROADMAP"
+    title="What's working now, and what's next."
+    sub="A coarse map of what Vivarium currently provides toward the goal of reproducing bugs in a browser. The forward-looking direction is being written up separately and will land here later."
+  />
+
+  <KpiStrip
+    items={[
+      { value: '11', label: 'Recipes shipped', accent: 'teal' },
+      { value: '3', label: 'Execution layers', accent: 'violet' },
+      { value: '5', label: 'MCP tools', accent: 'coral' },
+      { value: '2', label: 'Locales (EN / JA)', accent: 'teal' },
+    ]}
   />
 
   <Section
-    eyebrow="// 00 · A NOTE ON DATES"
-    heading="No due-date column."
+    eyebrow="// 01 · NOW"
+    heading="What's working today."
   >
     <p>
-      Phase durations on this project are directional — months to years — not
-      commitments. Inventing calendar targets for a lifelong project would
-      trade honesty for the appearance of progress, and would drive every later
-      decision toward hitting a number rather than reproducing bugs correctly.
+      Roughly in the order features were added. Each works independently — the fastest way to try something is to open the Reproductions, Guide, or Spec pages.
     </p>
+
+    <h3>Three execution layers</h3>
+    <ul>
+      <li><strong>Layer 1 — in-browser WebAssembly</strong>. Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1). No account, no install — open the page and it runs.</li>
+      <li><strong>Layer 2 — Docker catalogue</strong>. Pinned Dockerfile + GHCR-published image. Visitor reproduces locally with one <code>docker run</code>.</li>
+      <li><strong>Layer 3 — record-replay</strong>. Self-contained GHCR images with the <code>rr</code> trace baked in. <code>rr replay</code> rewinds deterministically.</li>
+    </ul>
+
+    <h3>Reproduction catalogue</h3>
+    <ul>
+      <li>11 recipes shipped across the three layers (pandas / numpy / cpython / regex / ruby / php / postgres / flock / find-xargs / bash / pthread).</li>
+      <li>Faceted gallery, paste-an-error candidate matcher, project-level landing pages.</li>
+    </ul>
+
+    <h3>Public spec + CI integration</h3>
+    <ul>
+      <li><strong>Contract v1</strong> — the verdict.json wire shape published as JSON Schema.</li>
+      <li><strong>Manifest v1</strong> — TOML manifest letting an external repo declare a Vivarium-runnable reproduction with one <code>.vivarium/manifest.toml</code> file.</li>
+      <li>Reusable verdict-capture GitHub Actions workflow, weekly cron drift detection, interactive manifest scaffolder.</li>
+    </ul>
+
+    <h3>AI agent integration</h3>
+    <ul>
+      <li><strong>Vivarium MCP server</strong> — five tools (<code>list_recipes</code> / <code>get_recipe</code> / <code>lookup_verdict</code> / <code>match_error</code> / <code>verify_branch_fix</code>).</li>
+      <li><strong>AI-slop verification flow</strong> — match the error → open a recipe → paste a candidate fix → re-run → compare verdicts side-by-side, end-to-end.</li>
+    </ul>
+
+    <h3>User interface</h3>
+    <ul>
+      <li>Full EN ⇄ JA i18n with a symmetric URL tree and locale switcher.</li>
+      <li>Persona-route guide (5 minutes / repo integration / AI agent / write a reproduction / verify a branch fix / run on a fork / glossary).</li>
+      <li>Branch-fix verdict capture pipeline + side-by-side comparison page.</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · NEXT"
+    heading="What's next."
+  >
     <Callout>
-      When a phase acquires a real deadline, the date will land alongside the
-      phase, explained. Until then, the ordering and the "what shipped"
-      signals are the roadmap.
+      The forward-looking direction is being written up by the maintainer; details will land here at a separate moment.
     </Callout>
     <p>
-      Phase titles mirror the GitHub Milestones; the Milestones are the
-      canonical planning surface, and this page is the user-facing translation.
-    </p>
-  </Section>
-
-  <Section
-    eyebrow="// PHASES"
-    heading="What has shipped, what is shipping, what is queued."
-  >
-    <NumberedList
-      items={[
-        {
-          lead: 'Phase 0 — Bootstrap. CLOSED 2026-04-26.',
-          body: 'Infrastructure-as-Code foundations (GitHub Settings, labels, milestones, branch protection). The AI-delegated development workflow. Vision, architecture stub, roadmap. Initial src/ tree representing the three-layer architecture — scaffolding only, no product code.',
-        },
-        {
-          lead: 'Phase 1 — Layer 1: data processing.',
-          body: 'The first real reproduction vertical: Python + SQLite over WebAssembly via Pyodide. A handful of hand-picked upstream bugs (pandas / numpy / sqlite behavioural regressions) reproducible from a single browser tab. Bug description → linked reproduction page → click → pass/fail verdict.',
-        },
-        {
-          lead: 'Phase 2 — Layer 1: multi-language.',
-          body: 'Layer 1 broadens: Rust (wasm32-wasi), JavaScript/TypeScript, Ruby (Ruby.wasm), PHP (php-wasm). Common browser-side scaffolding extracted so adding a language is a small per-runtime adapter, not a greenfield rewrite.',
-        },
-        {
-          lead: 'Phase 3 — Layer 2: Docker.',
-          body: 'Full-fidelity container-based reproduction for bugs needing real fork, real sockets, real filesystems. Catalogue model (not hosted execution): pinned Dockerfile + repro.sh + GHCR-published image. Visitor reproduces locally with one `docker run`, optionally one-click via "Open in Codespaces". CI-snapshot verdict on each gallery page.',
-        },
-        {
-          lead: 'Phase 4 — Layer 3: record-replay & deterministic. CLOSED 2026-04-28.',
-          body: 'Third layer for bugs Layers 1 and 2 cannot reach: record-replay (rr) and deterministic simulation (Antithesis-style). Trace-shipped catalogue: trace baked into a GHCR image, replayed on the visitor’s machine. One recipe shipped (lost-update data race); further entries deferred until a concrete bug forces them.',
-        },
-        {
-          lead: 'Phase 5 — Ecosystem. CLOSED 2026-04-29.',
-          body: 'Contract v1 published as an external standard with JSON Schema and CI enforcement. Manifest v1 + three reference TOML manifests so external repos can declare a Vivarium-runnable reproduction with a single .vivarium/manifest.toml. Reusable verdict-capture GitHub Actions workflow. Verdict drift detection on the weekly cron. Issue-triage tooling deferred without adoption.',
-        },
-        {
-          lead: 'Phase 6 — Usability and visual layer. CLOSED 2026-05-02.',
-          body: 'Visual redesign + reusable component library landed (Stitch-driven mocks substituting for Claude Design after quota constraints). Full Japanese ⇄ English i18n with symmetric URL trees and translated spec pages. Reproduction comparison: Contract v1 evidence surface, branch-fix verdict capture pipeline, side-by-side comparison page. Faceted recipe gallery + paste-an-error → ranked-candidates matcher. Interactive manifest scaffolder. Vivarium MCP server with four tools (list_recipes, get_recipe, lookup_verdict, match_error). All six sub-streams (V, R, S, M, X, L) shipped at v1 scope; the closure rule (V + R + ≥1 of S/M/X/L) was satisfied four-times-over.',
-        },
-        {
-          lead: 'Phase 7 — First-30-minutes onboarding. ACTIVE.',
-          body: 'Turn "primitives are usable" (Phase 6) into "a stranger can pick this up cold". UI brush-up (V′ — information design, layout flow, visual-token revisit, component graduation) and onboarding documentation (D — getting started, integration guide, AI-agent setup, glossary) are co-defined: where the docs hit a wall, the UI is wrong. AI-slop verification (B3) wires the existing R.2 Path A + R.3 comparison + MCP match_error into one end-to-end walkthrough so an AI agent can drive "did my candidate fix actually work?" cold. A-tail clears Phase 6 leftovers: ajv-standalone migration for the verdict + manifest validators, and match_error v2 (synonym table, fuzzy match, language-specific stopwords). Phase closes when V′ + D + B3 ship; the A-tail is optional.',
-        },
-      ]}
-    />
-  </Section>
-
-  <Section
-    eyebrow="// MEASUREMENT"
-    heading="Closure rule: partial completion is acceptable."
-  >
-    <p>
-      Phase closure on this project follows a deliberate pattern set by the
-      Phase 4 close ADR (ADR-0012). When the shape of the phase is{' '}
-      <strong>proven by partial completion</strong> — one Layer 3 recipe,
-      one MCP tool, one external adopter — the phase closes and remaining work
-      is requeued. This protects the lifelong project from the slow-creep of
-      incomplete phases that never close.
-    </p>
-    <p>
-      The decisions that did <em>not</em> ship are recorded with the same care
-      as the ones that did. Public phase-close briefs cite the private ADRs
-      that captured the trade-offs, so future contributors understand{' '}
-      <em>why</em> a path was rejected, not just <em>that</em> it was.
+      For now this page captures "what's been built so far." If you have a use case or a "this is how I'd want to use it" request, drop it on <a href="https://github.com/aletheia-works/vivarium/issues">GitHub Issues</a> — those become the inputs when the forward map gets drawn up.
     </p>
   </Section>
 </Page>
@@ -112,12 +92,12 @@ import {
       <span className="v-next-cta__heading-arrow">→</span>
     </>
   }
-  sub="Once the phase shape is clear, the fastest way forward is to open one recipe in a browser tab and read the verdict."
+  sub="Opening one recipe in a browser tab and reading the verdict is the fastest way to see how Vivarium feels."
   primary={{ label: 'First five minutes →', href: '/vivarium/guide/getting-started' }}
-  ghost={{ label: 'Architecture', href: '/vivarium/architecture' }}
+  ghost={{ label: 'Reproductions', href: '/vivarium/repro/' }}
 />
 
 <BottomNote
-  text="VIVARIUM IS PART OF ALETHEIA-WORKS · OPEN THE SOURCE ON GITHUB →"
+  text="VIVARIUM is part of ALETHEIA-WORKS · See the source on GitHub →"
   href="https://github.com/aletheia-works/vivarium"
 />

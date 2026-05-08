@@ -6,8 +6,8 @@ title: ロードマップ
 import {
   Page,
   PageHero,
+  KpiStrip,
   Section,
-  NumberedList,
   Callout,
   NextCta,
   BottomNote,
@@ -15,89 +15,71 @@ import {
 
 <Page>
   <PageHero
-    eyebrow="// ROADMAP · v1"
-    title="締め切りではなく、フェーズで。"
-    sub="フェーズごとの計画——何がいつ、どのような順序でリリースされるか。再現プリミティブという観点で語る。"
+    eyebrow="// ROADMAP"
+    title="いま動いているもの、これから。"
+    sub="ブラウザでバグを再現するという目標に対して、いま提供できているもののざっくりした地図。将来の方向性は別途整理して追記する予定です。"
+  />
+
+  <KpiStrip
+    items={[
+      { value: '11', label: 'Recipes shipped', accent: 'teal' },
+      { value: '3', label: 'Execution layers', accent: 'violet' },
+      { value: '5', label: 'MCP tools', accent: 'coral' },
+      { value: '2', label: 'Locales (EN / JA)', accent: 'teal' },
+    ]}
   />
 
   <Section
-    eyebrow="// 00 · 日付についての注記"
-    heading="期限の列はない。"
+    eyebrow="// 01 · NOW"
+    heading="いま動いているもの。"
   >
     <p>
-      このプロジェクトのフェーズ期間は方向性を示すもの——数ヶ月〜数年——であり、
-      コミットメントではない。終わりのないプロジェクトにカレンダー上の目標を設定することは、
-      正直さを犠牲にして進捗の外観を作るだけであり、以降のあらゆる決断を
-      「正しくバグを再現する」ではなく「数字を達成する」方向に歪める。
+      おおむね機能が積み上がった順。それぞれは独立に触れます——「再現一覧」「ガイド」「仕様」のページから入って試すのが一番速いです。
     </p>
+
+    <h3>3 つの実行レイヤー</h3>
+    <ul>
+      <li><strong>Layer 1 — ブラウザ内 WebAssembly</strong>。Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1)。アカウント不要、ページを開けば動く。</li>
+      <li><strong>Layer 2 — Docker カタログ</strong>。ピン留めされた Dockerfile + GHCR 公開イメージ。訪問者の <code>docker run</code> でローカル再現。</li>
+      <li><strong>Layer 3 — record-replay</strong>。<code>rr</code> トレースを焼き込んだ自己完結 GHCR イメージ。<code>rr replay</code> だけで決定論的に巻き戻る。</li>
+    </ul>
+
+    <h3>再現カタログ</h3>
+    <ul>
+      <li>11 件のレシピを 3 つのレイヤーにわたって出荷（pandas / numpy / cpython / regex / ruby / php / postgres / flock / find-xargs / bash / pthread）。</li>
+      <li>ファセット付きギャラリー、エラーメッセージ貼付による候補レシピ検索、プロジェクト別ランディングページ。</li>
+    </ul>
+
+    <h3>公開仕様 + CI 連携</h3>
+    <ul>
+      <li><strong>Contract v1</strong> — verdict.json の wire shape を JSON Schema として公開。</li>
+      <li><strong>Manifest v1</strong> — 外部リポジトリが <code>.vivarium/manifest.toml</code> 1 ファイルで再現を宣言できる TOML マニフェスト。</li>
+      <li>再利用可能な verdict キャプチャ用 GitHub Actions ワークフロー、週次 cron による drift 検知、対話的なマニフェストスキャフォルダー。</li>
+    </ul>
+
+    <h3>AI エージェント連携</h3>
+    <ul>
+      <li><strong>Vivarium MCP サーバ</strong> — 5 つのツール (<code>list_recipes</code> / <code>get_recipe</code> / <code>lookup_verdict</code> / <code>match_error</code> / <code>verify_branch_fix</code>)。</li>
+      <li><strong>AI-slop 検証フロー</strong> — エラーをマッチ → レシピを開く → 修正候補を貼って再実行 → verdict をサイドバイサイドで比較するエンドツーエンドの動線。</li>
+    </ul>
+
+    <h3>ユーザーインターフェース</h3>
+    <ul>
+      <li>EN ⇄ JA 完全 i18n。対称な URL ツリー + ロケール切替。</li>
+      <li>ペルソナ別ガイド（最初の 5 分 / リポ統合 / AI エージェントから / 再現を書く / branch-fix 検証 / フォークで動かす / 用語集）。</li>
+      <li>branch-fix verdict キャプチャパイプライン + サイドバイサイド比較ページ。</li>
+    </ul>
+  </Section>
+
+  <Section
+    eyebrow="// 02 · NEXT"
+    heading="これから。"
+  >
     <Callout>
-      フェーズに本当の締め切りが生まれたとき、日付はフェーズとともに説明付きで掲載される。
-      それまでは、順序と「出荷した内容」のシグナルがロードマップだ。
+      将来的に何を目指していくかは、メンテナーが現在整理中。詳細は別タイミングで追記します。
     </Callout>
     <p>
-      フェーズタイトルは GitHub Milestones に対応する。Milestones が正式な計画サーフェスであり、
-      このページはユーザー向けの翻訳だ。
-    </p>
-  </Section>
-
-  <Section
-    eyebrow="// フェーズ"
-    heading="出荷済み、出荷中、キューにあるもの。"
-  >
-    <NumberedList
-      items={[
-        {
-          lead: 'Phase 0 — Bootstrap。2026-04-26 CLOSED。',
-          body: 'Infrastructure-as-Code の基盤（GitHub 設定、ラベル、マイルストーン、ブランチ保護）。AI 委譲開発ワークフロー。ビジョン、アーキテクチャスタブ、ロードマップ。三層アーキテクチャを表す初期 src/ ツリー——製品コードなし、スキャフォールドのみ。',
-        },
-        {
-          lead: 'Phase 1 — Layer 1: データ処理。',
-          body: '初の本格的な再現実装: Pyodide による Python + SQLite over WebAssembly。手選びのアップストリームバグ数件（pandas / numpy / sqlite の動作リグレッション）が、ブラウザのタブ 1 枚から再現可能になる。バグの説明 → リンク先の再現ページ → クリック → pass/fail verdict。',
-        },
-        {
-          lead: 'Phase 2 — Layer 1: 多言語。',
-          body: 'Layer 1 の拡張: Rust (wasm32-wasi)、JavaScript/TypeScript、Ruby (Ruby.wasm)、PHP (php-wasm)。言語を追加する作業がゼロからの書き直しではなく小さなランタイムアダプタになるよう、共通のブラウザサイドスキャフォールドを抽出。',
-        },
-        {
-          lead: 'Phase 3 — Layer 2: Docker。',
-          body: '本物の fork、本物のソケット、本物のファイルシステムが必要なバグのための完全忠実度コンテナ再現。カタログモデル（ホスト実行ではない）: ピン留めされた Dockerfile + repro.sh + GHCR 公開イメージ。訪問者は 1 回の `docker run` でローカル再現。必要に応じて「Open in Codespaces」でワンクリック。CI スナップショット verdict が各ギャラリーページに掲載。',
-        },
-        {
-          lead: 'Phase 4 — Layer 3: record-replay & deterministic。2026-04-28 CLOSED。',
-          body: 'Layer 1 と Layer 2 では届かないバグのための第三のレイヤー: record-replay (rr) と決定論的シミュレーション (Antithesis スタイル)。トレース同梱カタログ: トレースを GHCR イメージに焼き込み、訪問者のマシン上で replay。1 つのレシピ出荷（lost-update データレース）。以降のエントリは具体的なバグが生まれるまで保留。',
-        },
-        {
-          lead: 'Phase 5 — Ecosystem。2026-04-29 CLOSED。',
-          body: 'Contract v1 を JSON Schema と CI 強制付きの外部標準として公開。Manifest v1 と 3 つのリファレンス TOML マニフェストにより、外部リポジトリが `.vivarium/manifest.toml` 1 ファイルで Vivarium 実行可能な再現を宣言できるようになった。再利用可能な verdict キャプチャ用 GitHub Actions ワークフロー。週次 cron による verdict ドリフト検出。Issue トリアージツールは採用がないため保留。',
-        },
-        {
-          lead: 'Phase 6 — ユーザビリティとビジュアルレイヤー。2026-05-02 CLOSED。',
-          body: 'ビジュアルリデザイン + 再利用可能コンポーネントライブラリ出荷（Claude Design の利用枠制限を回避するため Stitch 駆動のモックで代替）。対称 URL ツリーと翻訳済み仕様ページを伴う完全な日本語 ⇄ 英語 i18n。再現比較: Contract v1 evidence サーフェス、branch-fix verdict キャプチャパイプライン、横並び比較ページ。ファセット付きレシピギャラリー + エラーを貼り付けると候補レシピがランク順に出るマッチャー。対話的なマニフェストスキャフォルダー。Vivarium MCP サーバには 4 つのツール（list_recipes、get_recipe、lookup_verdict、match_error）。6 つすべてのサブストリーム（V, R, S, M, X, L）が v1 スコープで出荷され、クローズルール（V + R + S/M/X/L のうち少なくとも 1 つ）は 4 重に充足された。',
-        },
-        {
-          lead: 'Phase 7 — はじめの 30 分のオンボーディング。ACTIVE。',
-          body: 'Phase 6 の「プリミティブは使える」状態を「初見の人が冷めた状態から拾える」状態へ引き上げる。UI ブラッシュアップ（V′ — 情報設計、レイアウト動線、ビジュアルトークン磨き込み、コンポーネント graduation）とオンボーディングドキュメント（D — getting started、統合ガイド、AI エージェント設定、用語集）は表裏一体: ドキュメントが壁に当たるところは UI が間違っている証拠。AI-slop 検証（B3）は既存の R.2 Path A + R.3 比較ページ + MCP match_error を一本のエンドツーエンドウォークスルーに繋ぎ、AI エージェントが「自分の候補修正は本当に機能しているのか?」を冷めた状態から駆動できるようにする。A-tail は Phase 6 の残作業を片付ける: verdict + manifest validator の ajv-standalone マイグレ、および match_error v2（同義語テーブル、ファジーマッチ、言語別 stopword）。V′ + D + B3 が出荷したらクローズ。A-tail は optional。',
-        },
-      ]}
-    />
-  </Section>
-
-  <Section
-    eyebrow="// 計測"
-    heading="クローズルール: 部分的な完成でよい。"
-  >
-    <p>
-      このプロジェクトのフェーズクローズは、Phase 4 クローズ ADR (ADR-0012) で定めた
-      意図的なパターンに従う。フェーズの輪郭が
-      <strong>部分的な完成によって証明</strong>されたとき——1 つの Layer 3 レシピ、
-      1 つの MCP ツール、1 人の外部採用者——フェーズはクローズし、
-      残作業は再キューイングされる。これにより、いつまでも閉じない「未完フェーズ」が
-      じわじわと累積していく事態からプロジェクトを守っている。
-    </p>
-    <p>
-      出荷しなかった決断も、出荷した決断と同じ丁寧さで記録される。
-      公開のフェーズクローズ要約は、トレードオフを捉えたプライベート ADR を参照しているため、
-      将来のコントリビューターは「なぜそのパスが却下されたのか」まで理解できるようになっている。
+      現段階では「ここまで来た」を共有できる段階で、その先の方向性は別の場でまとめる予定です。気になることや「こう使いたい」というユースケースがあれば、<a href="https://github.com/aletheia-works/vivarium/issues">GitHub Issues</a> にリクエストや提案として残しておいてください。先の地図を描くときの材料になります。
     </p>
   </Section>
 </Page>
@@ -110,9 +92,9 @@ import {
       <span className="v-next-cta__heading-arrow">→</span>
     </>
   }
-  sub="フェーズの全体像を把握したら、ブラウザのタブ 1 枚で 1 つのレシピを動かして verdict を読むのが一番速い。"
+  sub="ブラウザのタブ 1 枚で 1 つのレシピを動かして verdict を読むのが、一番速い「触ってみる」。"
   primary={{ label: 'はじめての 5 分 →', href: '/vivarium/ja/guide/getting-started' }}
-  ghost={{ label: 'アーキテクチャ', href: '/vivarium/ja/architecture' }}
+  ghost={{ label: '再現一覧', href: '/vivarium/ja/repro/' }}
 />
 
 <BottomNote
