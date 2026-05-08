@@ -93,6 +93,15 @@ jobs:
           cache: true
           experimental: true
 
+      # `cargo fmt` needs the rustfmt component, which mise.toml
+      # declares but `jdx/mise-action`'s cache does not persist (it
+      # caches `~/.local/share/mise/installs`, not `~/.rustup`). See
+      # test-lint-check.yml for the full rationale; the same guard
+      # applies here so cache-hit autofix runs do not silently skip
+      # the cargo fmt step.
+      - name: Ensure Rust components (mise post-install)
+        run: rustup component add rustfmt clippy
+
       # `mise run lint:all:fix` chains the autofix variant of every
       # tool (mago format, mago lint --fix --unsafe, ruff format,
       # ruff check --fix, tombi format, rumdl fmt, cargo fmt). Each
