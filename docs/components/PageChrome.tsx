@@ -293,6 +293,73 @@ export function LayerSection({
   );
 }
 
+/* ----------------------------- RouteCards ----------------------------- */
+
+/**
+ * 3-(or 4-)card grid for "what you came here to do" persona routes.
+ * Used on the overview page to land "first 5 minutes" / "integrate
+ * with your repo" / "use from your AI agent" / "contribute" inside
+ * one scannable strip — distinct from `LayerCards` (which is about
+ * the three execution layers, not reader intent).
+ *
+ * Each card carries a kicker, a short tagline, and a primary link.
+ * On wide screens the row stretches to 3 / 4 columns; on mobile it
+ * collapses to one column so each card stays comfortably tappable.
+ */
+export function RouteCards({
+  cards,
+}: {
+  cards: { kicker: string; title: string; body: ReactNode; href: string }[];
+}) {
+  return (
+    <div
+      className="v-routes"
+      style={
+        {
+          '--v-routes-cols': cards.length,
+        } as CSSProperties
+      }
+    >
+      {cards.map((card, i) => (
+        <a key={i} className="v-routes__card" href={card.href}>
+          <span className="v-routes__kicker">{card.kicker}</span>
+          <h3 className="v-routes__title">{card.title}</h3>
+          <p className="v-routes__body">{card.body}</p>
+          <span className="v-routes__cta" aria-hidden="true">
+            →
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* ----------------------------- InlineCta ----------------------------- */
+
+/**
+ * Short inline CTA designed to sit between two sections of the same
+ * page — lighter weight than `NextCta` (which closes the page) and
+ * narrower than the full-width `Callout`. Used to nudge readers from
+ * the deep-dive content above to the live example below without
+ * forcing them to scroll to the page footer.
+ */
+export function InlineCta({
+  text,
+  link,
+}: {
+  text: ReactNode;
+  link: { label: ReactNode; href: string };
+}) {
+  return (
+    <p className="v-inline-cta">
+      <span className="v-inline-cta__text">{text}</span>
+      <a className="v-inline-cta__link" href={link.href}>
+        {link.label} <span aria-hidden="true">→</span>
+      </a>
+    </p>
+  );
+}
+
 /* ----------------------------- NumberedList ----------------------------- */
 
 export function NumberedList({
