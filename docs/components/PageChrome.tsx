@@ -133,12 +133,22 @@ export function LayerCards({
     title: string;
     body: ReactNode;
     runtimes: string;
+    /** Optional pictographic icon shown above the pill (e.g. a lucide-react icon). */
+    icon?: ReactNode;
   }[];
 }) {
   return (
     <div className="v-layers">
       {layers.map((layer, i) => (
-        <article key={i} className="v-layer">
+        <article key={i} className={`v-layer v-layer--${layer.accent}`}>
+          {layer.icon ? (
+            <div
+              className={`v-layer__icon v-layer__icon--${layer.accent}`}
+              aria-hidden="true"
+            >
+              {layer.icon}
+            </div>
+          ) : null}
           <span className={`v-layer__pill v-layer__pill--${layer.accent}`}>
             {layer.pill}
           </span>
@@ -290,6 +300,93 @@ export function LayerSection({
         </div>
       </div>
     </section>
+  );
+}
+
+/* ----------------------------- RouteCards ----------------------------- */
+
+/**
+ * Persona-route grid for "what you came here to do" cards. Used on
+ * the overview / guide-map / spec pages — distinct from `LayerCards`
+ * (which is about the three execution layers, not reader intent).
+ *
+ * Layout:
+ *   - 1 column on mobile.
+ *   - For 3 cards on desktop: 1×3 strip.
+ *   - For 4 cards on desktop: 2×2 grid (1×4 squeezes the cards too
+ *     narrow inside the rspress doc-content max-width).
+ *
+ * Each card optionally carries a pictographic icon (`icon`, e.g. a
+ * lucide-react icon) so the visual scan can pick up the route without
+ * reading the kicker.
+ */
+export function RouteCards({
+  cards,
+}: {
+  cards: {
+    kicker: string;
+    title: string;
+    body: ReactNode;
+    href: string;
+    /** Optional pictographic icon (e.g. a lucide-react icon). */
+    icon?: ReactNode;
+  }[];
+}) {
+  // 4-card layouts use a 2-column grid (rendered 2×2). 3-card and
+  // smaller stay at their natural column count. Larger counts fall
+  // back to the natural count too — a future caller can revisit.
+  const desktopCols = cards.length === 4 ? 2 : cards.length;
+  return (
+    <div
+      className="v-routes"
+      style={
+        {
+          '--v-routes-cols': desktopCols,
+        } as CSSProperties
+      }
+    >
+      {cards.map((card, i) => (
+        <a key={i} className="v-routes__card" href={card.href}>
+          {card.icon ? (
+            <div className="v-routes__icon" aria-hidden="true">
+              {card.icon}
+            </div>
+          ) : null}
+          <span className="v-routes__kicker">{card.kicker}</span>
+          <h3 className="v-routes__title">{card.title}</h3>
+          <p className="v-routes__body">{card.body}</p>
+          <span className="v-routes__cta" aria-hidden="true">
+            →
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/* ----------------------------- InlineCta ----------------------------- */
+
+/**
+ * Short inline CTA designed to sit between two sections of the same
+ * page — lighter weight than `NextCta` (which closes the page) and
+ * narrower than the full-width `Callout`. Used to nudge readers from
+ * the deep-dive content above to the live example below without
+ * forcing them to scroll to the page footer.
+ */
+export function InlineCta({
+  text,
+  link,
+}: {
+  text: ReactNode;
+  link: { label: ReactNode; href: string };
+}) {
+  return (
+    <p className="v-inline-cta">
+      <span className="v-inline-cta__text">{text}</span>
+      <a className="v-inline-cta__link" href={link.href}>
+        {link.label} <span aria-hidden="true">→</span>
+      </a>
+    </p>
   );
 }
 

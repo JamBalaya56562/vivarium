@@ -8,10 +8,21 @@ import {
   PageHero,
   Section,
   LayerCards,
+  RouteCards,
+  InlineCta,
   Callout,
   NextCta,
   BottomNote,
 } from '../../components/PageChrome';
+import {
+  Bot,
+  Code2,
+  Container,
+  GitBranch,
+  Globe,
+  History,
+  Zap,
+} from 'lucide-react';
 
 <Page>
   <PageHero
@@ -25,22 +36,17 @@ import {
     heading="バグ再現のためのプラットフォーム。"
   >
     <p>
-      Vivarium は <strong>バグ再現のためのプラットフォーム</strong>です。
-      以前報告されたバグが「いまでも再現するのか」「修正候補で本当に直っているのか」を、
-      ブラウザを開いてクリックするだけで確認できます。
+      Vivarium は <strong>バグ再現のためのプラットフォーム</strong>です。以前報告されたバグが「いまでも再現するのか」「修正候補で本当に直っているのか」を、ブラウザを開いてクリックするだけで確認できます。
     </p>
     <p>
-      アップストリームの実バグごとに 1 つの<strong>レシピ</strong>が用意されており、
-      各ページは <code>verdict.json v1</code> という共通仕様に従って
-      <code>reproduced</code>（バグ再現）または <code>unreproduced</code>（再現せず）の
-      判定を返します。実行結果はページに inline で表示され、コピー可能な
-      machine-readable 形式でも公開されます。
+      アップストリームの実バグごとに 1 つの<strong>レシピ</strong>が用意されており、各ページは <code>verdict.json v1</code> という共通仕様に従って <code>reproduced</code>（バグ再現）または <code>unreproduced</code>（再現せず）の判定を返します。実行結果はページに inline で表示され、コピー可能な machine-readable 形式でも公開されます。
     </p>
     <Callout>
-      Vivarium は<strong>記事ではなく実行可能なアーティファクト</strong>として
-      バグを配布します。誰かが文章で「これがバグです」と書く代わりに、
-      ブラウザに開けば自分の目で動作を確認できる。
+      Vivarium は<strong>記事ではなく実行可能なアーティファクト</strong>としてバグを配布します。誰かが文章で「これがバグです」と書く代わりに、ブラウザに開けば自分の目で動作を確認できる。
     </Callout>
+    <p>
+      きっかけは AI 生成のバグレポートと修正 PR の急増でした。アップストリームには「もっともらしいが誰も検証していない主張」が機械の速度で届くようになり、コントリビューター側にも「自分の修正案が本当に直っているか」を確かめる手段がない——その共通の根本原因に対処するのが Vivarium です。
+    </p>
   </Section>
 
   <Section
@@ -48,9 +54,7 @@ import {
     heading="バグの種類に合った実行環境を、レシピが選ぶ。"
   >
     <p>
-      バグは性質によって、必要となる環境が大きく異なります。Vivarium は再現技法を
-      三つのレイヤーに整理しており、ユーザーがレイヤーを意識する必要はありません——
-      レシピが自分に合った層を宣言します。
+      バグは性質によって、必要となる環境が大きく異なります。Vivarium は再現技法を三つのレイヤーに整理しており、ユーザーがレイヤーを意識する必要はありません——レシピが自分に合った層を宣言します。
     </p>
 
     <LayerCards
@@ -58,6 +62,7 @@ import {
         {
           pill: 'L1',
           accent: 'teal',
+          icon: <Globe />,
           title: '瞬時起動、ブラウザネイティブ',
           body: 'WebAssembly でブラウザ内に再現が直接実行されます。起動はミリ秒〜数秒。アルゴリズム、パーサ、データ処理、in-memory なデータベース操作など、完全な OS を必要としないバグに向きます。',
           runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · PHP.wasm',
@@ -65,6 +70,7 @@ import {
         {
           pill: 'L2',
           accent: 'violet',
+          icon: <Container />,
           title: '完全忠実度、コンテナ実行',
           body: 'Docker または microVM の中で再現が実行されます。起動は数秒〜分単位。実ファイルシステム、実プロセス、実ネットワークが必要なバグのための層です。',
           runtimes: 'Docker · Firecracker · gVisor',
@@ -72,30 +78,64 @@ import {
         {
           pill: 'L3',
           accent: 'coral',
+          icon: <History />,
           title: '第三の道',
           body: 'Record-replay、決定論的シミュレーション、WASI Preview 3+、スナップショットベースの復元、そしてまだ発明されていない技法。L1 でも L2 でも届かない問題のために。',
           runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
         },
       ]}
     />
+
+    <InlineCta
+      text={
+        <>
+          <strong>3 つのレイヤーがそれぞれ動くところを見る。</strong>{' '}
+          ギャラリーには L1 / L2 / L3 のレシピがファセット付きで並んでいて、レイヤーをタブ切替で 1 クリック比較できます。
+        </>
+      }
+      link={{ label: '再現一覧', href: '/vivarium/ja/repro/' }}
+    />
   </Section>
 
   <Section
-    eyebrow="// 03 · プロジェクトの経緯"
-    heading="バグが本当に再現するか、どうやって安価に確かめるか。"
+    eyebrow="// 03 · どの入口を選ぶか"
+    heading="あなたの目的にあわせて、最初の 1 ページを。"
   >
     <p>
-      きっかけは AI が生成するバグレポートと修正 PR の急増でした。アップストリームの
-      メンテナーには「もっともらしいが誰も検証していない主張」が機械の速度で届くようになり、
-      コントリビューター側にも「自分の修正案が本当に直っているか」を確かめる手段が
-      ありません。
+      Vivarium は読み手によって入口が異なります。下のカードはペルソナ別の最短ルート——どのカードからでも、5〜30 分以内に「自分の目で動かす」段階まで辿り着けるよう設計されています。
     </p>
-    <p>
-      共通する根本原因は <strong>バグが実在するか・修正が効いているかを、
-      安価かつ普遍的に検証する仕組みが存在しない</strong>ことです。
-      Vivarium はその仕組みを提供します——「再現するのか／しないのか」を、
-      クリックひとつで返せる形に。
-    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '01 · 5 MIN',
+          icon: <Zap />,
+          title: '最初の 5 分',
+          body: 'ブラウザを開いて 1 つのレシピをクリック、verdict を読む。インストール不要・登録不要、いま試す。',
+          href: '/vivarium/ja/guide/getting-started',
+        },
+        {
+          kicker: '02 · INTEGRATE',
+          icon: <GitBranch />,
+          title: '自分のリポジトリに統合',
+          body: '`.vivarium/manifest.toml` 1 ファイル + 再利用可能 workflow で、自分のリポからの再現を Vivarium に登録できます。',
+          href: '/vivarium/ja/guide/integrate-with-your-repo',
+        },
+        {
+          kicker: '03 · AI AGENT',
+          icon: <Bot />,
+          title: 'AI エージェントから使う',
+          body: 'Claude Code / Aider / Cline から `@aletheia-works/vivarium-mcp` で 5 つの MCP ツールを呼び出します。',
+          href: '/vivarium/ja/guide/use-from-ai-agent',
+        },
+        {
+          kicker: '04 · CONTRIBUTE',
+          icon: <Code2 />,
+          title: 'はじめての再現を書く',
+          body: '`src/layer1_wasm/<slug>/` 以下に 1 つのレシピを足すだけ。共通 scaffolding が大半の配線を引き受けます。',
+          href: '/vivarium/ja/guide/write-your-first-reproduction',
+        },
+      ]}
+    />
   </Section>
 </Page>
 
