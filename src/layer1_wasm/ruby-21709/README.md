@@ -109,5 +109,5 @@ runner.
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/ruby-21709/` by the
+`https://aletheia-works.github.io/vivarium/repro/ruby/21709/` by the
 `deploy-docs` workflow.

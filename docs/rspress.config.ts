@@ -34,15 +34,23 @@ const REPRO_MIME: Record<string, string> = {
 // src/layer{1,2,3}_*. Supports trailing-slash to index.html and
 // extension-based MIME type. Returns null if no match.
 //
-// URL to disk-slug mapping for the <project>/<issue_path>/... URL shape:
+// URL to disk-slug mapping for the canonical <project>/<issue_path>/...
+// URL shape (PR #159 — flat slug `<project>-<issue>` URLs were
+// deprecated then; the resolver enforces the migration so any
+// remaining flat URL surfaces as a 404 instead of silently serving):
 //
 //   1. Underscore-prefixed first segment (e.g. _shared/sw.js,
 //      _layer2-shared/...) is looked up as-is, since shared scaffolding
 //      lives flat under each src/layer{N}_*/ and never had project /
 //      issue segmentation.
 //
-//   2. Single-segment lookups (e.g. just compare, no recipe assets) are
-//      tried as-is so unaffected static files keep resolving.
+//   2. Single-segment lookups: covers project-landing assets and
+//      shared single-segment files (legacy `/repro/foo.js` etc.).
+//      Legacy flat slug directory URLs like `/repro/regex-779/` are
+//      explicitly excluded — they match the flat-slug regex and fall
+//      through to rspress, which 404s. Without this guard the disk
+//      lookup happens to find `regex-779/index.html` and serves the
+//      deprecated URL, defeating the migration.
 //
 //   3. Multi-segment lookups: first segment is the project, second
 //      segment is the issue_path. The recipe directory on disk is one of:
@@ -56,7 +64,17 @@ const REPRO_MIME: Record<string, string> = {
 //      remaining segments are joined back onto the resolved disk slug as
 //      the asset path under that recipe directory (e.g. repro.wasm,
 //      verdict.json).
-function resolveReproFile(rawSubpath: string): string | null {
+//
+// Exported so the docs/scripts/__tests__/resolveReproFile.test.ts unit
+// suite can verify each branch without spinning up the dev middleware.
+
+// Legacy flat slug shape: `<project>-<issue>` (one or more lowercase
+// dash-separated word segments followed by a trailing decimal issue
+// number). Used to suppress flat-URL directory lookups in the
+// single-segment branch so the deprecated form 404s cleanly.
+const LEGACY_FLAT_SLUG_RE = /^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*-\d+$/;
+
+export function resolveReproFile(rawSubpath: string): string | null {
   const subpath = rawSubpath || '';
 
   // Trailing-slash directory URL → index.html lookup.
@@ -77,10 +95,18 @@ function resolveReproFile(rawSubpath: string): string | null {
     // Shared scaffolding — keep flat lookup.
     candidates.push(joinDisk(segments, trailingFile));
   } else if (segments.length === 1) {
-    // Single segment — could be a project landing (no on-disk match) or a
-    // legacy flat asset. Try as-is; if it doesn't exist on disk, the
-    // caller falls through to rspress.
-    candidates.push(joinDisk(segments, trailingFile));
+    const single = segments[0]!;
+    if (trailingFile === 'index.html' && LEGACY_FLAT_SLUG_RE.test(single)) {
+      // Legacy flat slug directory URL (e.g. `/repro/regex-779/`).
+      // Deprecated by PR #159 — fall through, rspress 404s.
+    } else {
+      // Project landing (`/repro/<project>/`) or legacy asset
+      // (`/repro/foo.js`) — try as-is. Project landings have no
+      // disk match and fall through to rspress for the rspress
+      // page; asset URLs that exist on disk under one of the layer
+      // roots get served.
+      candidates.push(joinDisk(segments, trailingFile));
+    }
   } else {
     // Multi-segment — try the prefix-style slug first, then the
     // override-style slug.
