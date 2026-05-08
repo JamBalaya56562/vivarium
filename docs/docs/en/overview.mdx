@@ -8,6 +8,8 @@ import {
   PageHero,
   Section,
   LayerCards,
+  RouteCards,
+  InlineCta,
   Callout,
   NextCta,
   BottomNote,
@@ -25,22 +27,17 @@ import {
     heading="A platform for bug reproduction."
   >
     <p>
-      Vivarium is <strong>a platform for reproducing bugs</strong>. Open a
-      page, click once, and find out whether a previously-reported bug
-      still reproduces — or whether a candidate fix actually fixes it.
+      Vivarium is <strong>a platform for reproducing bugs</strong>. Open a page, click once, and find out whether a previously-reported bug still reproduces — or whether a candidate fix actually fixes it.
     </p>
     <p>
-      For each upstream bug, the catalogue holds one <strong>recipe</strong>.
-      Every recipe satisfies the same <code>verdict.json v1</code> contract,
-      so each page returns either <code>reproduced</code> (the bug
-      reproduces) or <code>unreproduced</code> (it does not). Results show
-      inline on the page and are also exposed as machine-readable JSON.
+      For each upstream bug, the catalogue holds one <strong>recipe</strong>. Every recipe satisfies the same <code>verdict.json v1</code> contract, so each page returns either <code>reproduced</code> (the bug reproduces) or <code>unreproduced</code> (it does not). Results show inline on the page and are also exposed as machine-readable JSON.
     </p>
     <Callout>
-      Vivarium ships bugs as <strong>runnable artefacts, not write-ups</strong>.
-      Instead of someone telling you "this is a bug," you open it in your
-      browser and watch.
+      Vivarium ships bugs as <strong>runnable artefacts, not write-ups</strong>. Instead of someone telling you "this is a bug," you open it in your browser and watch.
     </Callout>
+    <p>
+      The trigger was the surge of AI-generated bug reports and pull requests. Maintainers were drowning in plausible-but-unverified claims arriving at machine speed, and contributors had no way to check whether their own AI-drafted fixes actually worked. The shared root cause — no cheap, universal way to verify whether a bug is real or whether a fix actually fixes it — is what Vivarium addresses.
+    </p>
   </Section>
 
   <Section
@@ -48,9 +45,7 @@ import {
     heading="Each recipe declares the layer that fits the bug."
   >
     <p>
-      Bugs differ wildly in what environment they need. Vivarium organises
-      reproduction techniques into three layers, and you don't pick the
-      layer — the recipe declares it for you.
+      Bugs differ wildly in what environment they need. Vivarium organises reproduction techniques into three layers, and you don't pick the layer — the recipe declares it for you.
     </p>
 
     <LayerCards
@@ -59,7 +54,7 @@ import {
           pill: 'L1',
           accent: 'teal',
           title: 'Instant start, browser-native',
-          body: 'The reproduction runs directly in your browser via WebAssembly. Startup is milliseconds to a few seconds. Right for algorithms, parsers, data processing, and in-memory database operations — bugs that don\'t need a full OS.',
+          body: "The reproduction runs directly in your browser via WebAssembly. Startup is milliseconds to a few seconds. Right for algorithms, parsers, data processing, and in-memory database operations — bugs that don't need a full OS.",
           runtimes: 'Pyodide · sqlite-wasm · wasm32-wasi · Ruby.wasm · PHP.wasm',
         },
         {
@@ -73,29 +68,58 @@ import {
           pill: 'L3',
           accent: 'coral',
           title: 'Third way',
-          body: 'Record-replay, deterministic simulation, WASI Preview 3+, snapshot-based restore — and techniques that don\'t exist yet. For bugs that L1 and L2 can\'t reach.',
+          body: "Record-replay, deterministic simulation, WASI Preview 3+, snapshot-based restore — and techniques that don't exist yet. For bugs that L1 and L2 can't reach.",
           runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
         },
       ]}
     />
+
+    <InlineCta
+      text={
+        <>
+          <strong>See all three layers in action.</strong>{' '}
+          The gallery shows L1 / L2 / L3 recipes side-by-side with facet filters, so you can compare layers in one click.
+        </>
+      }
+      link={{ label: 'Reproductions', href: '/vivarium/repro/' }}
+    />
   </Section>
 
   <Section
-    eyebrow="// 03 · HOW WE GOT HERE"
-    heading="The cheap-verification gap."
+    eyebrow="// 03 · WHERE TO START"
+    heading="One first page per audience."
   >
     <p>
-      The trigger was the surge of AI-generated bug reports and pull
-      requests. Maintainers were drowning in plausible-but-unverified
-      claims arriving at machine speed; contributors had no way to check
-      whether their own AI-drafted fixes actually worked.
+      Vivarium has different entry points for different readers. The cards below are persona-route shortcuts — each one lands you at a "see it work yourself" surface within 5–30 minutes.
     </p>
-    <p>
-      The shared root cause is that <strong>there is no cheap, universal
-      way to verify whether a bug is real or whether a fix actually fixes
-      it</strong>. Vivarium provides one — "does this reproduce?" reduced
-      to a single click.
-    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '01 · 5 MIN',
+          title: 'First five minutes',
+          body: 'Open a recipe in your browser, click once, read the verdict. No install, no account — try it now.',
+          href: '/vivarium/guide/getting-started',
+        },
+        {
+          kicker: '02 · INTEGRATE',
+          title: 'Integrate with your repo',
+          body: "One `.vivarium/manifest.toml` plus a reusable workflow registers a reproduction from your own repository.",
+          href: '/vivarium/guide/integrate-with-your-repo',
+        },
+        {
+          kicker: '03 · AI AGENT',
+          title: 'Use from your AI agent',
+          body: 'Drive the five MCP tools from Claude Code / Aider / Cline via `@aletheia-works/vivarium-mcp`.',
+          href: '/vivarium/guide/use-from-ai-agent',
+        },
+        {
+          kicker: '04 · CONTRIBUTE',
+          title: 'Write your first reproduction',
+          body: 'Add one recipe under `src/layer1_wasm/<slug>/` — the shared scaffolding handles most of the wiring.',
+          href: '/vivarium/guide/write-your-first-reproduction',
+        },
+      ]}
+    />
   </Section>
 </Page>
 

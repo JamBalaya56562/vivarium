@@ -3,15 +3,35 @@ pageType: doc
 title: エラーからレシピを探す
 ---
 
-import { Page, PageHero } from '../../../components/PageChrome';
+import { Page, PageHero, Section } from '../../../components/PageChrome';
 import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
 
 <Page>
   <PageHero
     eyebrow="// MATCH · ERROR → RECIPE"
-    title={<>エラーを貼り付けて、候補レシピを探す。</>}
-    sub="レシピカタログに対する機械的なトークンオーバーラップマッチ。LLM 非依存——各レシピの symptom / tags / project / slug に対する小文字トークン一致をスコア化する。Phase 7 A5 で同義語テーブル（dtype⇄datatype など）、Levenshtein 距離 1 のファジーマッチ（長さ 6 以上のトークン）、多言語ストップワードを追加。スコアリングはすべてローカルで実行される。"
+    title={<>エラーを貼って、候補レシピを返す。</>}
+    sub="ローカル完結のスコアリング。LLM 非依存——機械的なトークン照合だけ。"
   />
 
   <ErrorRecipeMatcher lang="ja" />
+
+  <Section
+    eyebrow="// 03 · 効きどころ"
+    heading="マッチが拾うパターン、3 つ。"
+  >
+    <h3>1. 同義語に強い（synonym table）</h3>
+    <p>
+      「<code>dtype mismatch</code>」を貼ると「datatype」「dtypes」「numpy.dtype」を含むレシピも候補に上がります。Phase 7 A5 の同義語テーブルが <code>dtype⇄datatype</code>、<code>regex⇄regexp</code>、<code>fork⇄spawn</code> といった派生形を 1 つのキーに正規化するため、書きかたゆれを心配せずに貼り付けて構いません。
+    </p>
+
+    <h3>2. typo に強い（fuzzy match）</h3>
+    <p>
+      「<code>recursoin depth exceeded</code>」のような 1 文字 typo は Levenshtein 距離 1 で吸収されます（長さ 6 以上のトークンに限定。短いトークンは false-positive を避けるため厳密一致）。「php json_encode で再帰深さでこけた」がなぜか候補に出ない、という事故が減ります。
+    </p>
+
+    <h3>3. 日本語と英語が混じってもよい（multi-language stopwords）</h3>
+    <p>
+      「<code>pandas で empty DataFrame の dtype が変わる</code>」のように日本語のメタテキストと英語の技術用語を混ぜて貼っても、「で」「の」「が」のような日本語ストップワードと「the」「a」「is」のような英語ストップワードがどちらも除外されます。スタックトレースをそのまま貼っても候補が見つかります。
+    </p>
+  </Section>
 </Page>
