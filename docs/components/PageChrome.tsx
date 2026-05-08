@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect } from 'react';
+import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import './page-chrome.css';
 
 /* ----------------------------- PageHero ----------------------------- */
@@ -148,6 +148,148 @@ export function LayerCards({
         </article>
       ))}
     </div>
+  );
+}
+
+/* ----------------------------- LayerMatrix ----------------------------- */
+
+/**
+ * Architecture-page comparison strip. Each column is one of the three
+ * execution layers; each row is one attribute (起動 / 向くバグ / 届かない
+ * こと / ランタイム). Optimised for at-a-glance comparison — narrower than
+ * the deep-dive Sections that follow it on the architecture page.
+ *
+ * Distinct from LayerCards (overview page): LayerCards is a tagline-level
+ * 3-card row, LayerMatrix is a row-per-attribute scannable grid that pays
+ * off when the reader has already decided to compare in detail.
+ */
+export function LayerMatrix({
+  rowLabels,
+  layers,
+}: {
+  /** Row label for each attribute, top-to-bottom (length must match layers[*].cells). */
+  rowLabels: string[];
+  /** One column per layer. Cells align positionally with rowLabels. */
+  layers: {
+    pill: string;
+    accent: LayerAccent;
+    title: string;
+    cells: ReactNode[];
+  }[];
+}) {
+  return (
+    <div
+      className="v-layer-matrix"
+      style={
+        {
+          '--v-layer-matrix-cols': layers.length,
+        } as CSSProperties
+      }
+    >
+      <div className="v-layer-matrix__head">
+        <div className="v-layer-matrix__row-label" aria-hidden="true" />
+        {layers.map((layer, i) => (
+          <div key={i} className="v-layer-matrix__col-head">
+            <span className={`v-layer__pill v-layer__pill--${layer.accent}`}>
+              {layer.pill}
+            </span>
+            <h3 className="v-layer-matrix__col-title">{layer.title}</h3>
+          </div>
+        ))}
+      </div>
+      {rowLabels.map((rowLabel, r) => (
+        <div key={r} className="v-layer-matrix__row">
+          <div className="v-layer-matrix__row-label">{rowLabel}</div>
+          {layers.map((layer, c) => (
+            <div key={c} className="v-layer-matrix__cell">
+              {layer.cells[r]}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ----------------------------- LayerSection ----------------------------- */
+
+/**
+ * Architecture-page deep-dive section for a single layer. Replaces the
+ * Section + h3 hand-rolling that the architecture page previously did
+ * per layer; gives every layer the same 4-row structure
+ * (向くバグ / 起動 or 使い方 / 届かないこと / ランタイム or 例) so the
+ * reader can compare in parallel without re-orienting.
+ *
+ * Two-column on wide screens (left = explanation, right = examples /
+ * runtimes), single-column on mobile.
+ */
+export function LayerSection({
+  pill,
+  accent,
+  eyebrow,
+  heading,
+  intro,
+  cellLabels,
+  fits,
+  startup,
+  cantReach,
+  runtimes,
+}: {
+  pill: string;
+  accent: LayerAccent;
+  eyebrow: string;
+  heading: ReactNode;
+  intro: ReactNode;
+  /** Locale-specific labels for the four cells, top-left → bottom-right. */
+  cellLabels: {
+    fits: string;
+    startup: string;
+    cantReach: string;
+    runtimes: string;
+  };
+  fits: ReactNode;
+  /** "Startup time" for L1; "How to use it" prose for L2/L3 — same slot. */
+  startup: ReactNode;
+  cantReach: ReactNode;
+  /** "Supported runtimes" or "Examples in the catalogue" — same slot. */
+  runtimes: ReactNode;
+}) {
+  const headingId = slugifyHeading(heading);
+  return (
+    <section className={`v-layer-section v-layer-section--${accent}`}>
+      <div className="v-layer-section__head">
+        <span className={`v-layer__pill v-layer__pill--${accent}`}>{pill}</span>
+        <p className="v-layer-section__eyebrow">{eyebrow}</p>
+        <h2 id={headingId} className="v-layer-section__heading rp-toc-include">
+          {heading}
+        </h2>
+        <div className="v-layer-section__intro">{intro}</div>
+      </div>
+      <div className="v-layer-section__grid">
+        <div className="v-layer-section__cell">
+          <h3 className="v-layer-section__cell-heading">{cellLabels.fits}</h3>
+          <div className="v-layer-section__cell-body">{fits}</div>
+        </div>
+        <div className="v-layer-section__cell">
+          <h3 className="v-layer-section__cell-heading">
+            {cellLabels.startup}
+          </h3>
+          <div className="v-layer-section__cell-body">{startup}</div>
+        </div>
+        <div className="v-layer-section__cell">
+          <h3 className="v-layer-section__cell-heading">
+            {cellLabels.cantReach}
+          </h3>
+          <div className="v-layer-section__cell-body">{cantReach}</div>
+        </div>
+        <div className="v-layer-section__cell">
+          <h3 className="v-layer-section__cell-heading">
+            {cellLabels.runtimes}
+          </h3>
+          <div className="v-layer-section__cell-body">{runtimes}</div>
+        </div>
+      </div>
+    </section>
   );
 }
 
