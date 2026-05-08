@@ -79,6 +79,20 @@ jobs:
           cache: true
           experimental: true
 
+      # mise.toml declares `components = "rustfmt,clippy"` for the
+      # rust toolchain, but `jdx/mise-action`'s cache only persists
+      # `~/.local/share/mise/installs`, not `~/.rustup`. On a cache
+      # miss, mise install runs `rustup component add rustfmt clippy`
+      # and the components land in `~/.rustup`. On a cache hit, mise
+      # install is a no-op (the rust symlink is already present), so
+      # the components are absent and `cargo fmt` fails with
+      # `'cargo-fmt' is not installed for the toolchain '1.84.0'`.
+      # Re-add explicitly so cache-hit and cache-miss runs converge.
+      # `RUSTUP_TOOLCHAIN=1.84.0` is already exported by the mise
+      # setup step.
+      - name: Ensure Rust components (mise post-install)
+        run: rustup component add rustfmt clippy
+
       # `mise run ci:lint` chains php:check, python:check, toml:check,
       # markdown:check, rust:check (cargo fmt --check + clippy -D
       # warnings). Any failure is reported as a CI error.
