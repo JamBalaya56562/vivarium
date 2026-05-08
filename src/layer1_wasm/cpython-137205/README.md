@@ -100,5 +100,5 @@ mise exec uv -- uv run src/layer1_wasm/cpython-137205/repro.py
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/cpython-137205/` by
+`https://aletheia-works.github.io/vivarium/repro/cpython/137205/` by
 the `deploy-docs` workflow.

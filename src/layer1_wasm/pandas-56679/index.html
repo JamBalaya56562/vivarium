@@ -44,7 +44,19 @@
 
       <section>
         <h2>Reproduction script</h2>
-        <pre><code id="repro-code"></code></pre>
+        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> pandas </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> pd</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">series_dtype </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(pd.Series([]).dtype)</span></span>
+<span class="line"><span style="color:#E1E4E8">df_dtype </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(pd.DataFrame({</span><span style="color:#9ECBFF">'a'</span><span style="color:#E1E4E8">: []})[</span><span style="color:#9ECBFF">'a'</span><span style="color:#E1E4E8">].dtype)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#9ECBFF">    "pandas_version"</span><span style="color:#E1E4E8">: pd.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "series_dtype"</span><span style="color:#E1E4E8">: series_dtype,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "df_dtype"</span><span style="color:#E1E4E8">: df_dtype,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "mismatch"</span><span style="color:#E1E4E8">: series_dtype </span><span style="color:#F97583">!=</span><span style="color:#E1E4E8"> df_dtype,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
       </section>
 
       <section>
