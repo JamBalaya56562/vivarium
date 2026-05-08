@@ -46,7 +46,26 @@
 
       <section>
         <h2>Reproduction script</h2>
-        <pre><code id="repro-code"></code></pre>
+        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sqlite3</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">off </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> sqlite3.connect(</span><span style="color:#9ECBFF">":memory:"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">autocommit</span><span style="color:#F97583">=</span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">off.execute(</span><span style="color:#9ECBFF">"PRAGMA foreign_keys = ON"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">off.commit()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">on </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> sqlite3.connect(</span><span style="color:#9ECBFF">":memory:"</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">autocommit</span><span style="color:#F97583">=</span><span style="color:#79B8FF">True</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">on.execute(</span><span style="color:#9ECBFF">"PRAGMA foreign_keys = ON"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">off_value </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> off.execute(</span><span style="color:#9ECBFF">"PRAGMA foreign_keys"</span><span style="color:#E1E4E8">).fetchone()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">on_value </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> on.execute(</span><span style="color:#9ECBFF">"PRAGMA foreign_keys"</span><span style="color:#E1E4E8">).fetchone()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "sqlite_version"</span><span style="color:#E1E4E8">: sqlite3.sqlite_version,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "off_autocommit_fk"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">(off_value),</span></span>
+<span class="line"><span style="color:#9ECBFF">    "on_autocommit_fk"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">(on_value),</span></span>
+<span class="line"><span style="color:#9ECBFF">    "fk_disagreement"</span><span style="color:#E1E4E8">: off_value </span><span style="color:#F97583">!=</span><span style="color:#E1E4E8"> on_value,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
       </section>
 
       <section>
