@@ -97,7 +97,7 @@ mise exec uv -- uv run src/layer1_wasm/numpy-28287/repro.py
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/numpy-28287/` by the
+`https://aletheia-works.github.io/vivarium/repro/numpy/28287/` by the
 `deploy-docs` workflow. The workflow runs `bun install` + `bun run
 build` in `src/layer1_wasm/` first so the compiled `repro.js` exists
 when the bundling step copies the directory into the Pages artefact.

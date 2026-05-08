@@ -21,7 +21,7 @@ const FIXTURE_INDEX = {
       project: 'pandas',
       issue: 56679,
       title: 'pandas-dev/pandas#56679',
-      page_url: 'https://example.invalid/repro/pandas-56679/',
+      page_url: 'https://example.invalid/repro/pandas/56679/',
       source_url: 'https://example.invalid/src/pandas-56679',
       language: 'python',
       symptom: 'dtype-mismatch',
@@ -144,7 +144,7 @@ describe('lookup_verdict', () => {
     const r = await lookupVerdict({ slug: 'pandas-56679' });
     assert.equal(r.kind, 'live');
     if (r.kind === 'live') {
-      assert.match(r.page_url, /pandas-56679/);
+      assert.match(r.page_url, /pandas\/56679/);
     }
   });
 
@@ -337,7 +337,7 @@ describe('verify_branch_fix', () => {
     if (r.ok) {
       assert.equal(r.path, 'A');
       assert.equal(r.layer, 1);
-      assert.equal(r.compare_url, 'https://example.invalid/repro/pandas-56679/');
+      assert.equal(r.compare_url, 'https://example.invalid/repro/pandas/56679/');
       assert.equal(r.gh_command, undefined);
       assert.match(r.instructions, /paste the candidate fix/);
       assert.ok(

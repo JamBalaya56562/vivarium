@@ -52,7 +52,7 @@ describe('catalogue', () => {
               project: 'pandas',
               issue: 56679,
               title: 'pandas-dev/pandas#56679',
-              page_url: 'https://example.invalid/repro/pandas-56679/',
+              page_url: 'https://example.invalid/repro/pandas/56679/',
               source_url: 'https://example.invalid/src/pandas-56679',
             },
           ],
