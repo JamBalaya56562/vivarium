@@ -3,15 +3,35 @@ pageType: doc
 title: Match an error
 ---
 
-import { Page, PageHero } from '../../../components/PageChrome';
+import { Page, PageHero, Section } from '../../../components/PageChrome';
 import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
 
 <Page>
   <PageHero
     eyebrow="// MATCH · ERROR → RECIPE"
     title={<>Paste an error, find a candidate.</>}
-    sub="Mechanical token-overlap match against the recipe catalogue. No LLM — lowercase tokens are scored against each recipe's symptom, tags, project, and slug. Phase 7 A5 adds a synonym table (e.g. dtype⇄datatype), Levenshtein-1 fuzzy match for tokens of length ≥ 6, and multi-language stopwords. All scoring runs locally."
+    sub="Local scoring. No LLM — mechanical token overlap only."
   />
 
   <ErrorRecipeMatcher lang="en" />
+
+  <Section
+    eyebrow="// 03 · WHERE IT WORKS"
+    heading="Three patterns the matcher catches."
+  >
+    <h3>1. Robust to synonyms</h3>
+    <p>
+      Paste "<code>dtype mismatch</code>" and recipes mentioning "datatype", "dtypes", or "numpy.dtype" surface as candidates too. Phase 7 A5's synonym table normalises pairs like <code>dtype⇄datatype</code>, <code>regex⇄regexp</code>, and <code>fork⇄spawn</code> to a single key — you don't have to guess the project's preferred spelling.
+    </p>
+
+    <h3>2. Robust to typos (fuzzy match)</h3>
+    <p>
+      A single-character typo like "<code>recursoin depth exceeded</code>" is absorbed via Levenshtein distance 1 (limited to tokens of length ≥ 6 to avoid false positives on short tokens, which stay strict). Fewer "I know there's a recipe for this but it isn't matching" surprises.
+    </p>
+
+    <h3>3. Mixed-language input is fine (multi-language stopwords)</h3>
+    <p>
+      Pasting "<code>pandas で empty DataFrame の dtype が変わる</code>" — Japanese meta-text mixed with English technical terms — works because Japanese stopwords ("で", "の", "が") and English stopwords ("the", "a", "is") are both stripped. Stack-traced log lines paste in as-is.
+    </p>
+  </Section>
 </Page>
