@@ -6,13 +6,13 @@
   },
   {
     "type": "dir",
-    "name": "guide",
-    "label": "Guide"
+    "name": "repro",
+    "label": "Reproductions"
   },
   {
     "type": "dir",
-    "name": "repro",
-    "label": "Reproductions"
+    "name": "guide",
+    "label": "Guide"
   },
   {
     "type": "file",

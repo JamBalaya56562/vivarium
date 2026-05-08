@@ -6,13 +6,13 @@
   },
   {
     "type": "dir",
-    "name": "guide",
-    "label": "ガイド"
+    "name": "repro",
+    "label": "再現一覧"
   },
   {
     "type": "dir",
-    "name": "repro",
-    "label": "再現一覧"
+    "name": "guide",
+    "label": "ガイド"
   },
   {
     "type": "file",
