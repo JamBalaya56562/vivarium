@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "index",
+    "label": "ガイド地図"
+  },
+  {
+    "type": "file",
     "name": "getting-started",
     "label": "はじめての 5 分"
   },

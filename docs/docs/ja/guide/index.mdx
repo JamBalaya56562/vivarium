@@ -1,0 +1,126 @@
+---
+pageType: doc
+title: ガイド
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  RouteCards,
+  InlineCta,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+import {
+  Bot,
+  Code2,
+  GitBranch,
+  GitCompareArrows,
+  GitFork,
+  Zap,
+} from 'lucide-react';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · MAP"
+    title="目的別ガイド地図。"
+    sub="あなたが Vivarium で何をしようとしているかで、最初に読むページが変わります。下のカードから 1 枚選べば、5〜30 分で「自分の目で動かす」段階まで到達できます。"
+  />
+
+  <Section
+    eyebrow="// 01 · 主要ルート"
+    heading="4 つのペルソナルート。"
+  >
+    <p>
+      最も典型的な 4 つの入口です。Vivarium の触りかたを「いま試す」「自分のレポに統合する」「AI エージェントから使う」「再現を 1 つ書いて貢献する」の 4 つに分解しています。
+    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '01 · 5 MIN',
+          icon: <Zap />,
+          title: 'はじめての 5 分',
+          body: 'ブラウザでレシピを 1 つ動かして verdict を読む。インストール不要・登録不要、いま試す。',
+          href: '/vivarium/ja/guide/getting-started',
+        },
+        {
+          kicker: '02 · INTEGRATE',
+          icon: <GitBranch />,
+          title: '自分のリポジトリに統合する',
+          body: '`.vivarium/manifest.toml` 1 ファイル + 再利用可能 workflow で、自分のレポからの再現を Vivarium に登録できます。',
+          href: '/vivarium/ja/guide/integrate-with-your-repo',
+        },
+        {
+          kicker: '03 · AI AGENT',
+          icon: <Bot />,
+          title: 'AI エージェントから使う',
+          body: 'Claude Code / Aider / Cline から `@aletheia-works/vivarium-mcp` で 5 つの MCP ツールを呼び出します。',
+          href: '/vivarium/ja/guide/use-from-ai-agent',
+        },
+        {
+          kicker: '04 · CONTRIBUTE',
+          icon: <Code2 />,
+          title: 'はじめての再現を書く',
+          body: '`src/layer1_wasm/<slug>/` 以下に 1 つのレシピを足すだけ。共通 scaffolding が大半の配線を引き受けます。',
+          href: '/vivarium/ja/guide/write-your-first-reproduction',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 02 · 高度なワークフロー"
+    heading="一歩進んだ使いかた。"
+  >
+    <p>
+      主要ルートを抜けたあと、特定の目的のために必要になるガイドです。
+    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '05 · BRANCH FIX',
+          icon: <GitCompareArrows />,
+          title: 'ブランチ修正を検証する',
+          body: 'AI エージェントが提案した修正候補を、Vivarium のレシピに対して検証する end-to-end フロー。`verify_branch_fix` MCP ツールも併用可。',
+          href: '/vivarium/ja/guide/compare-branch-fix',
+        },
+        {
+          kicker: '06 · FORK',
+          icon: <GitFork />,
+          title: '自分のフォークで動かす',
+          body: '組織内の private なバグレシピを管理したい場合や、独自のチューニングを試したい場合に。GitHub Pages デプロイ込み。',
+          href: '/vivarium/ja/guide/fork-your-own',
+        },
+      ]}
+    />
+
+    <InlineCta
+      text={
+        <>
+          <strong>用語が分からなくなったら。</strong>{' '}
+          Layer 1/2/3、verdict、manifest、contract、recipe、slug などのキーワードは用語集に集約されています。
+        </>
+      }
+      link={{ label: '用語集', href: '/vivarium/ja/guide/glossary' }}
+    />
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// 次のページ"
+  heading={
+    <>
+      まずは 5 分で動かす{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="どのルートを選んでも、最短は「ブラウザで 1 つレシピを動かす」ことから始めるのが速い。"
+  primary={{ label: 'はじめての 5 分 →', href: '/vivarium/ja/guide/getting-started' }}
+  ghost={{ label: '再現一覧', href: '/vivarium/ja/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM は ALETHEIA-WORKS の一部 · GitHub でソースを見る →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
