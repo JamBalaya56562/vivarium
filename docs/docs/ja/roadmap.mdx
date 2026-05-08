@@ -6,8 +6,9 @@ title: ロードマップ
 import {
   Page,
   PageHero,
+  KpiStrip,
+  RoadmapTimeline,
   Section,
-  NumberedList,
   Callout,
   NextCta,
   BottomNote,
@@ -17,7 +18,16 @@ import {
   <PageHero
     eyebrow="// ROADMAP · v1"
     title="締め切りではなく、フェーズで。"
-    sub="フェーズごとの計画——何がいつ、どのような順序でリリースされるか。再現プリミティブという観点で語る。"
+    sub="Phase 0 から Phase 7 まで、出荷した順に並べる。各フェーズは「再現プリミティブ」を 1 段ずつ積み上げる単位——カレンダー目標ではなく、輪郭の証明だ。"
+  />
+
+  <KpiStrip
+    items={[
+      { value: '8', label: 'Phases queued', accent: 'teal' },
+      { value: '7', label: 'Phases closed', accent: 'teal' },
+      { value: '11', label: 'Recipes shipped', accent: 'violet' },
+      { value: '5', label: 'MCP tools', accent: 'coral' },
+    ]}
   />
 
   <Section
@@ -25,18 +35,13 @@ import {
     heading="期限の列はない。"
   >
     <p>
-      このプロジェクトのフェーズ期間は方向性を示すもの——数ヶ月〜数年——であり、
-      コミットメントではない。終わりのないプロジェクトにカレンダー上の目標を設定することは、
-      正直さを犠牲にして進捗の外観を作るだけであり、以降のあらゆる決断を
-      「正しくバグを再現する」ではなく「数字を達成する」方向に歪める。
+      このプロジェクトのフェーズ期間は方向性を示すもの——数ヶ月〜数年——であり、コミットメントではない。終わりのないプロジェクトにカレンダー上の目標を設定することは、正直さを犠牲にして進捗の外観を作るだけであり、以降のあらゆる決断を「正しくバグを再現する」ではなく「数字を達成する」方向に歪める。
     </p>
     <Callout>
-      フェーズに本当の締め切りが生まれたとき、日付はフェーズとともに説明付きで掲載される。
-      それまでは、順序と「出荷した内容」のシグナルがロードマップだ。
+      フェーズに本当の締め切りが生まれたとき、日付はフェーズとともに説明付きで掲載される。それまでは、順序と「出荷した内容」のシグナルがロードマップだ。
     </Callout>
     <p>
-      フェーズタイトルは GitHub Milestones に対応する。Milestones が正式な計画サーフェスであり、
-      このページはユーザー向けの翻訳だ。
+      フェーズタイトルは GitHub Milestones に対応する。Milestones が正式な計画サーフェスであり、このページはユーザー向けの翻訳だ。
     </p>
   </Section>
 
@@ -44,39 +49,109 @@ import {
     eyebrow="// フェーズ"
     heading="出荷済み、出荷中、キューにあるもの。"
   >
-    <NumberedList
-      items={[
+    <RoadmapTimeline
+      statusLabels={{ closed: 'CLOSED', active: 'ACTIVE', planned: 'PLANNED' }}
+      shippedHeading="出荷した内容"
+      remainingHeading="残作業"
+      phases={[
         {
-          lead: 'Phase 0 — Bootstrap。2026-04-26 CLOSED。',
-          body: 'Infrastructure-as-Code の基盤（GitHub 設定、ラベル、マイルストーン、ブランチ保護）。AI 委譲開発ワークフロー。ビジョン、アーキテクチャスタブ、ロードマップ。三層アーキテクチャを表す初期 src/ ツリー——製品コードなし、スキャフォールドのみ。',
+          number: '00',
+          title: 'Bootstrap',
+          status: 'closed',
+          statusNote: '2026-04-26',
+          lead: 'Infrastructure-as-Code の基盤、AI 委譲開発ワークフロー、ビジョン / アーキテクチャ / ロードマップの初期スタブ。製品コードはなく、スキャフォールドのみ。',
+          shipped: [
+            'GitHub 設定、ラベル、マイルストーン、ブランチ保護をすべて OpenTofu で IaC 化',
+            'AI コミット + 人間レビューのワークフローを CLAUDE.md / AGENTS.md に固定',
+            '三層アーキテクチャを表す src/ ツリー（layer1_wasm / layer2_docker / layer3_thirdway）',
+          ],
         },
         {
-          lead: 'Phase 1 — Layer 1: データ処理。',
-          body: '初の本格的な再現実装: Pyodide による Python + SQLite over WebAssembly。手選びのアップストリームバグ数件（pandas / numpy / sqlite の動作リグレッション）が、ブラウザのタブ 1 枚から再現可能になる。バグの説明 → リンク先の再現ページ → クリック → pass/fail verdict。',
+          number: '01',
+          title: 'Layer 1 — データ処理',
+          status: 'closed',
+          lead: '初の本格的な再現実装: Pyodide 上の Python + SQLite over WebAssembly。バグの説明 → 再現ページ → クリック → pass/fail verdict。',
+          shipped: [
+            'pandas / numpy / cpython の動作リグレッションをブラウザのタブ 1 枚から再現可能に',
+            '再現ページ → verdict.json の Page Contract v1 を確立',
+            '_shared/ の loader と verdict envelope ヘルパで以降のレシピが瞬時にスケール可能に',
+          ],
         },
         {
-          lead: 'Phase 2 — Layer 1: 多言語。',
-          body: 'Layer 1 の拡張: Rust (wasm32-wasi)、JavaScript/TypeScript、Ruby (Ruby.wasm)、PHP (php-wasm)。言語を追加する作業がゼロからの書き直しではなく小さなランタイムアダプタになるよう、共通のブラウザサイドスキャフォールドを抽出。',
+          number: '02',
+          title: 'Layer 1 — 多言語',
+          status: 'closed',
+          lead: 'Layer 1 の拡張: Rust (wasm32-wasip1)、Ruby.wasm、php-wasm。言語追加が「ランタイムアダプタを 1 個書く」までに分解されるよう共通スキャフォールドを抽出。',
+          shipped: [
+            'regex#779 (Rust) / ruby#21709 / php#12167 を出荷',
+            'php_loader.ts / ruby_loader.ts / rust_loader.ts を共通化、新規ランタイム追加コストを最小化',
+          ],
         },
         {
-          lead: 'Phase 3 — Layer 2: Docker。',
-          body: '本物の fork、本物のソケット、本物のファイルシステムが必要なバグのための完全忠実度コンテナ再現。カタログモデル（ホスト実行ではない）: ピン留めされた Dockerfile + repro.sh + GHCR 公開イメージ。訪問者は 1 回の `docker run` でローカル再現。必要に応じて「Open in Codespaces」でワンクリック。CI スナップショット verdict が各ギャラリーページに掲載。',
+          number: '03',
+          title: 'Layer 2 — Docker',
+          status: 'closed',
+          lead: '本物の fork / ソケット / FS が必要なバグの完全忠実度層。Vivarium はホストせず、訪問者の `docker run` で動かすカタログモデル。',
+          shipped: [
+            '4 つの Layer 2 レシピ (postgres-lost-update / flock-is-advisory / find-xargs-whitespace / bash-local-shadows-exit)',
+            'GHCR にビルド済イメージを公開、CI スナップショット verdict をギャラリーに同梱',
+            '「Open in Codespaces」ワンクリック起動の確立',
+          ],
         },
         {
-          lead: 'Phase 4 — Layer 3: record-replay & deterministic。2026-04-28 CLOSED。',
-          body: 'Layer 1 と Layer 2 では届かないバグのための第三のレイヤー: record-replay (rr) と決定論的シミュレーション (Antithesis スタイル)。トレース同梱カタログ: トレースを GHCR イメージに焼き込み、訪問者のマシン上で replay。1 つのレシピ出荷（lost-update データレース）。以降のエントリは具体的なバグが生まれるまで保留。',
+          number: '04',
+          title: 'Layer 3 — record-replay',
+          status: 'closed',
+          statusNote: '2026-04-28',
+          lead: 'L1 / L2 で届かない真のハイゼンバグ層。トレースを GHCR イメージに焼き込み、訪問者は `rr replay` だけで巻き戻す。',
+          shipped: [
+            'pthread lost-update を 1 件出荷（並列マージソートのインターリーブ依存）',
+            '録音は PMU 必須のオフライン作業として確立、訪問者と CI の再生はコモディティ Linux で動作',
+          ],
         },
         {
-          lead: 'Phase 5 — Ecosystem。2026-04-29 CLOSED。',
-          body: 'Contract v1 を JSON Schema と CI 強制付きの外部標準として公開。Manifest v1 と 3 つのリファレンス TOML マニフェストにより、外部リポジトリが `.vivarium/manifest.toml` 1 ファイルで Vivarium 実行可能な再現を宣言できるようになった。再利用可能な verdict キャプチャ用 GitHub Actions ワークフロー。週次 cron による verdict ドリフト検出。Issue トリアージツールは採用がないため保留。',
+          number: '05',
+          title: 'Ecosystem',
+          status: 'closed',
+          statusNote: '2026-04-29',
+          lead: 'Contract v1 / Manifest v1 を JSON Schema + CI 強制つきの外部標準として公開。Vivarium が「公開仕様」を持つフェーズ。',
+          shipped: [
+            'Contract v1（verdict.json の wire shape）を JSON Schema として公開',
+            'Manifest v1 + 3 つの参照 TOML、再現の宣言が 1 ファイルで完了',
+            '再利用可能な verdict キャプチャ用 reusable workflow + 週次 cron による drift 検知',
+          ],
         },
         {
-          lead: 'Phase 6 — ユーザビリティとビジュアルレイヤー。2026-05-02 CLOSED。',
-          body: 'ビジュアルリデザイン + 再利用可能コンポーネントライブラリ出荷（Claude Design の利用枠制限を回避するため Stitch 駆動のモックで代替）。対称 URL ツリーと翻訳済み仕様ページを伴う完全な日本語 ⇄ 英語 i18n。再現比較: Contract v1 evidence サーフェス、branch-fix verdict キャプチャパイプライン、横並び比較ページ。ファセット付きレシピギャラリー + エラーを貼り付けると候補レシピがランク順に出るマッチャー。対話的なマニフェストスキャフォルダー。Vivarium MCP サーバには 4 つのツール（list_recipes、get_recipe、lookup_verdict、match_error）。6 つすべてのサブストリーム（V, R, S, M, X, L）が v1 スコープで出荷され、クローズルール（V + R + S/M/X/L のうち少なくとも 1 つ）は 4 重に充足された。',
+          number: '06',
+          title: 'ユーザビリティとビジュアルレイヤー',
+          status: 'closed',
+          statusNote: '2026-05-02',
+          lead: 'プリミティブの上に「人が触れるインタラクション層」を作るフェーズ。V/R/S/M/X/L の 6 サブストリームすべてが v1 スコープで出荷、closure rule を 4 重に充足。',
+          shipped: [
+            'Stitch 駆動のビジュアルリデザイン + 再利用可能コンポーネントライブラリ',
+            'EN ⇄ JA 完全 i18n（対称ツリー + locale switcher）',
+            'Contract v1 evidence サーフェス + branch-fix verdict キャプチャパイプライン + 比較ページ',
+            'ファセット付きギャラリー + エラー貼付マッチャー + 対話的マニフェストスキャフォルダー',
+            'Vivarium MCP サーバ（list_recipes / get_recipe / lookup_verdict / match_error）',
+          ],
         },
         {
-          lead: 'Phase 7 — はじめの 30 分のオンボーディング。ACTIVE。',
-          body: 'Phase 6 の「プリミティブは使える」状態を「初見の人が冷めた状態から拾える」状態へ引き上げる。UI ブラッシュアップ（V′ — 情報設計、レイアウト動線、ビジュアルトークン磨き込み、コンポーネント graduation）とオンボーディングドキュメント（D — getting started、統合ガイド、AI エージェント設定、用語集）は表裏一体: ドキュメントが壁に当たるところは UI が間違っている証拠。AI-slop 検証（B3）は既存の R.2 Path A + R.3 比較ページ + MCP match_error を一本のエンドツーエンドウォークスルーに繋ぎ、AI エージェントが「自分の候補修正は本当に機能しているのか?」を冷めた状態から駆動できるようにする。A-tail は Phase 6 の残作業を片付ける: verdict + manifest validator の ajv-standalone マイグレ、および match_error v2（同義語テーブル、ファジーマッチ、言語別 stopword）。V′ + D + B3 が出荷したらクローズ。A-tail は optional。',
+          number: '07',
+          title: 'はじめの 30 分のオンボーディング',
+          status: 'active',
+          lead: 'プリミティブを「使える」から「初見の人が冷めた状態から拾える」へ引き上げるフェーズ。V′（UI 磨き込み）と D（ドキュメント）が表裏一体——ドキュメントが壁に当たるところは UI が間違っている証拠。closure rule は permissive: V′ + D + B3 でクローズ。',
+          shipped: [
+            'D — getting-started / write-your-first-reproduction / integrate-with-your-repo / use-from-ai-agent / compare-branch-fix / glossary + bonus fork-your-own (EN+JA 7 ページ)',
+            'B3 — R.2 Path A on php-12167 + 5 番目の MCP ツール `verify_branch_fix` + AI-slop 検証ウォークスルー',
+            'A5 — match_error v2（同義語 / fuzzy / 多言語 stopword）',
+            'A6 — recipes-index / branch-fix-pipeline / recipes.schema の editorial follow-up',
+            'V′ — ランディング / /repro/ / /repro/compare / アーキテクチャ ページの再設計 (進行中)',
+          ],
+          remaining: [
+            'V′ 残作業: ロードマップ（このページ）/ 概要・仕様・マッチ / guide/index 新設 + nav 順序変更',
+            'コンポーネント graduation — VerdictBadge / LayerPill の独立 export',
+            'A3 — ajv-standalone マイグレーション（trigger 待ち、optional）',
+          ],
         },
       ]}
     />
@@ -87,17 +162,10 @@ import {
     heading="クローズルール: 部分的な完成でよい。"
   >
     <p>
-      このプロジェクトのフェーズクローズは、Phase 4 クローズ ADR (ADR-0012) で定めた
-      意図的なパターンに従う。フェーズの輪郭が
-      <strong>部分的な完成によって証明</strong>されたとき——1 つの Layer 3 レシピ、
-      1 つの MCP ツール、1 人の外部採用者——フェーズはクローズし、
-      残作業は再キューイングされる。これにより、いつまでも閉じない「未完フェーズ」が
-      じわじわと累積していく事態からプロジェクトを守っている。
+      このプロジェクトのフェーズクローズは、Phase 4 クローズ ADR (ADR-0012) で定めた意図的なパターンに従う。フェーズの輪郭が<strong>部分的な完成によって証明</strong>されたとき——1 つの Layer 3 レシピ、1 つの MCP ツール、1 人の外部採用者——フェーズはクローズし、残作業は再キューイングされる。これにより、いつまでも閉じない「未完フェーズ」がじわじわと累積していく事態からプロジェクトを守っている。
     </p>
     <p>
-      出荷しなかった決断も、出荷した決断と同じ丁寧さで記録される。
-      公開のフェーズクローズ要約は、トレードオフを捉えたプライベート ADR を参照しているため、
-      将来のコントリビューターは「なぜそのパスが却下されたのか」まで理解できるようになっている。
+      出荷しなかった決断も、出荷した決断と同じ丁寧さで記録される。公開のフェーズクローズ要約は、トレードオフを捉えたプライベート ADR を参照しているため、将来のコントリビューターは「なぜそのパスが却下されたのか」まで理解できるようになっている。
     </p>
   </Section>
 </Page>
