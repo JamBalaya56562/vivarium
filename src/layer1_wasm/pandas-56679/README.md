@@ -108,7 +108,7 @@ mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/pandas-56679/` by the
+`https://aletheia-works.github.io/vivarium/repro/pandas/56679/` by the
 `deploy-docs` workflow. The workflow runs `bun install` + `bun run
 build` in `src/layer1_wasm/` first so the compiled `repro.js` exists
 when the bundling step copies the directory into the Pages artefact.

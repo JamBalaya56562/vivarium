@@ -137,5 +137,5 @@ python -m http.server -d . 8767
 ## Deployment
 
 Published to GitHub Pages at
-`https://aletheia-works.github.io/vivarium/repro/regex-779/` by the
+`https://aletheia-works.github.io/vivarium/repro/regex/779/` by the
 `deploy-docs` workflow.
