@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "index",
+    "label": "Guide map"
+  },
+  {
+    "type": "file",
     "name": "getting-started",
     "label": "First five minutes"
   },
