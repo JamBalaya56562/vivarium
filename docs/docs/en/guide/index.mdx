@@ -1,0 +1,112 @@
+---
+pageType: doc
+title: Guide
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  RouteCards,
+  InlineCta,
+  NextCta,
+  BottomNote,
+} from '../../../components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · MAP"
+    title="A reading map by audience."
+    sub="What you read first depends on what you're trying to do with Vivarium. Pick one card below and you're 5–30 minutes from running something yourself."
+  />
+
+  <Section
+    eyebrow="// 01 · MAIN ROUTES"
+    heading="Four persona routes."
+  >
+    <p>
+      The four most common entry points: try it now, integrate it with your repo, drive it from an AI agent, or contribute one reproduction.
+    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '01 · 5 MIN',
+          title: 'First five minutes',
+          body: 'Open one recipe in your browser, click once, read the verdict. No install, no account — try it now.',
+          href: '/vivarium/guide/getting-started',
+        },
+        {
+          kicker: '02 · INTEGRATE',
+          title: 'Integrate with your own repo',
+          body: "One `.vivarium/manifest.toml` plus a reusable workflow registers a reproduction from your own repository.",
+          href: '/vivarium/guide/integrate-with-your-repo',
+        },
+        {
+          kicker: '03 · AI AGENT',
+          title: 'Use from your AI agent',
+          body: 'Drive the five MCP tools from Claude Code / Aider / Cline via `@aletheia-works/vivarium-mcp`.',
+          href: '/vivarium/guide/use-from-ai-agent',
+        },
+        {
+          kicker: '04 · CONTRIBUTE',
+          title: 'Write your first reproduction',
+          body: 'Add one recipe under `src/layer1_wasm/<slug>/` — the shared scaffolding handles most of the wiring.',
+          href: '/vivarium/guide/write-your-first-reproduction',
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 02 · ADVANCED"
+    heading="One step past the main routes."
+  >
+    <p>
+      Guides for specific intents that build on the four main routes.
+    </p>
+    <RouteCards
+      cards={[
+        {
+          kicker: '05 · BRANCH FIX',
+          title: 'Verify a branch fix',
+          body: "End-to-end flow for verifying an AI agent's candidate fix against a Vivarium recipe. The `verify_branch_fix` MCP tool integrates with this.",
+          href: '/vivarium/guide/compare-branch-fix',
+        },
+        {
+          kicker: '06 · FORK',
+          title: 'Run on your own fork',
+          body: 'For managing private bug recipes inside your org, or trying your own tuning. Includes the GitHub Pages deploy.',
+          href: '/vivarium/guide/fork-your-own',
+        },
+      ]}
+    />
+
+    <InlineCta
+      text={
+        <>
+          <strong>Lost on a term?</strong>{' '}
+          Layer 1/2/3, verdict, manifest, contract, recipe, slug — all collected in the glossary.
+        </>
+      }
+      link={{ label: 'Glossary', href: '/vivarium/guide/glossary' }}
+    />
+  </Section>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Run something in 5 minutes{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="Whichever route you pick, the fastest first step is running one recipe in your browser."
+  primary={{ label: 'First five minutes →', href: '/vivarium/guide/getting-started' }}
+  ghost={{ label: 'Reproductions', href: '/vivarium/repro/' }}
+/>
+
+<BottomNote
+  text="VIVARIUM is part of ALETHEIA-WORKS · See the source on GitHub →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
