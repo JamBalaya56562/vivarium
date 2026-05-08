@@ -10,11 +10,16 @@
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
     "dev": "bun run generate-index && bun run generate-project-pages && bun run prebuild-repro && rspress dev",
     "build": "bun run generate-index && bun run generate-project-pages && rspress build",
-    "preview": "rspress preview"
+    "preview": "rspress preview",
+    "test:e2e": "playwright test",
+    "test:unit": "bun test scripts/__tests__"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
+    "@playwright/test": "^1.49.1",
     "@rspress/core": "^2.0.9",
+    "@types/bun": "^1.2.0",
+    "@types/node": "^22.10.5",
     "jszip": "^3.10.1"
   },
   "dependencies": {

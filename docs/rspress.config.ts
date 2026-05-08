@@ -41,8 +41,9 @@ const REPRO_MIME: Record<string, string> = {
 //      lives flat under each src/layer{N}_*/ and never had project /
 //      issue segmentation.
 //
-//   2. Single-segment lookups (e.g. just compare, no recipe assets) are
-//      tried as-is so unaffected static files keep resolving.
+//   2. Single-segment lookups: try as-is for legacy flat slugs that
+//      still exist on disk (e.g. lost-update/) and for project-landing
+//      page assets that fall through to rspress.
 //
 //   3. Multi-segment lookups: first segment is the project, second
 //      segment is the issue_path. The recipe directory on disk is one of:
@@ -56,7 +57,21 @@ const REPRO_MIME: Record<string, string> = {
 //      remaining segments are joined back onto the resolved disk slug as
 //      the asset path under that recipe directory (e.g. repro.wasm,
 //      verdict.json).
-function resolveReproFile(rawSubpath: string): string | null {
+//
+//   4. Legacy flat-slug fallback (added 2026-05-08 alongside the
+//      docs-site E2E suite): if multi-segment resolution fails AND the
+//      first segment is a known prefix-style disk slug (e.g.
+//      `regex-779/repro.js`), try `<segments[0]>/<rest>` so legacy URLs
+//      that pre-date the hierarchical-URL migration (PR #159) still
+//      reach their assets. Without this branch, parent HTML at
+//      `/repro/<slug>/` returns 200 from the directory-shaped lookup
+//      while sibling assets (`repro.js` etc.) silently 404, leaving
+//      visitors with `(running)` plain text and no JS-driven UX.
+//
+// Exported so the docs/scripts/__tests__/resolveReproFile.test.ts unit
+// suite can verify all four branches without spinning up the dev
+// middleware.
+export function resolveReproFile(rawSubpath: string): string | null {
   const subpath = rawSubpath || '';
 
   // Trailing-slash directory URL → index.html lookup.
@@ -91,6 +106,14 @@ function resolveReproFile(rawSubpath: string): string | null {
     candidates.push(joinDisk([prefixSlug, ...rest], trailingFile));
     const overrideSlug = issuePath;
     candidates.push(joinDisk([overrideSlug, ...rest], trailingFile));
+
+    // Legacy flat-slug fallback. If the URL matches the legacy shape
+    // `/repro/<slug>/<asset>` (e.g. `/repro/regex-779/repro.js` after a
+    // page authored against the pre-#159 URL convention is opened),
+    // the multi-segment branches above will miss because `regex-779`
+    // is the whole disk slug, not `regex` + `779`. Treating segments
+    // as a flat disk path falls through to the existing recipe dir.
+    candidates.push(joinDisk(segments, trailingFile));
   }
 
   for (const candidate of candidates) {
