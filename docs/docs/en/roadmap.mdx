@@ -6,8 +6,9 @@ title: Roadmap
 import {
   Page,
   PageHero,
+  KpiStrip,
+  RoadmapTimeline,
   Section,
-  NumberedList,
   Callout,
   NextCta,
   BottomNote,
@@ -17,7 +18,16 @@ import {
   <PageHero
     eyebrow="// ROADMAP · v1"
     title="Phases, not deadlines."
-    sub="The per-phase plan — what a visitor should expect to see land, in what order, framed in terms of the reproduction primitive."
+    sub="From Phase 0 to Phase 7, ordered by what shipped — each phase is a unit of reproduction primitive added on top of the previous, not a calendar target."
+  />
+
+  <KpiStrip
+    items={[
+      { value: '8', label: 'Phases queued', accent: 'teal' },
+      { value: '7', label: 'Phases closed', accent: 'teal' },
+      { value: '11', label: 'Recipes shipped', accent: 'violet' },
+      { value: '5', label: 'MCP tools', accent: 'coral' },
+    ]}
   />
 
   <Section
@@ -25,19 +35,13 @@ import {
     heading="No due-date column."
   >
     <p>
-      Phase durations on this project are directional — months to years — not
-      commitments. Inventing calendar targets for a lifelong project would
-      trade honesty for the appearance of progress, and would drive every later
-      decision toward hitting a number rather than reproducing bugs correctly.
+      Phase durations on this project are directional — months to years — not commitments. Inventing calendar targets for a lifelong project would trade honesty for the appearance of progress, and would drive every later decision toward hitting a number rather than reproducing bugs correctly.
     </p>
     <Callout>
-      When a phase acquires a real deadline, the date will land alongside the
-      phase, explained. Until then, the ordering and the "what shipped"
-      signals are the roadmap.
+      When a phase acquires a real deadline, the date will land alongside the phase, explained. Until then, the ordering and the "what shipped" signals are the roadmap.
     </Callout>
     <p>
-      Phase titles mirror the GitHub Milestones; the Milestones are the
-      canonical planning surface, and this page is the user-facing translation.
+      Phase titles mirror the GitHub Milestones; the Milestones are the canonical planning surface, and this page is the user-facing translation.
     </p>
   </Section>
 
@@ -45,39 +49,109 @@ import {
     eyebrow="// PHASES"
     heading="What has shipped, what is shipping, what is queued."
   >
-    <NumberedList
-      items={[
+    <RoadmapTimeline
+      statusLabels={{ closed: 'CLOSED', active: 'ACTIVE', planned: 'PLANNED' }}
+      shippedHeading="What shipped"
+      remainingHeading="What's left"
+      phases={[
         {
-          lead: 'Phase 0 — Bootstrap. CLOSED 2026-04-26.',
-          body: 'Infrastructure-as-Code foundations (GitHub Settings, labels, milestones, branch protection). The AI-delegated development workflow. Vision, architecture stub, roadmap. Initial src/ tree representing the three-layer architecture — scaffolding only, no product code.',
+          number: '00',
+          title: 'Bootstrap',
+          status: 'closed',
+          statusNote: '2026-04-26',
+          lead: "Infrastructure-as-Code foundations, the AI-delegated development workflow, and the initial vision / architecture / roadmap stubs. Scaffolding only — no product code yet.",
+          shipped: [
+            'GitHub settings, labels, milestones, branch protection — all under OpenTofu',
+            'AI-commit + human-review workflow codified in CLAUDE.md / AGENTS.md',
+            'Three-layer src/ tree (layer1_wasm / layer2_docker / layer3_thirdway)',
+          ],
         },
         {
-          lead: 'Phase 1 — Layer 1: data processing.',
-          body: 'The first real reproduction vertical: Python + SQLite over WebAssembly via Pyodide. A handful of hand-picked upstream bugs (pandas / numpy / sqlite behavioural regressions) reproducible from a single browser tab. Bug description → linked reproduction page → click → pass/fail verdict.',
+          number: '01',
+          title: 'Layer 1 — data processing',
+          status: 'closed',
+          lead: 'The first real reproduction vertical: Python + SQLite over WebAssembly via Pyodide. Bug description → reproduction page → click → pass/fail verdict.',
+          shipped: [
+            'pandas / numpy / cpython behavioural regressions reproducible from a single browser tab',
+            'Established the Page Contract v1 (verdict.json wire shape)',
+            'Common loader + verdict-envelope helpers under _shared/ so later recipes scale instantly',
+          ],
         },
         {
-          lead: 'Phase 2 — Layer 1: multi-language.',
-          body: 'Layer 1 broadens: Rust (wasm32-wasi), JavaScript/TypeScript, Ruby (Ruby.wasm), PHP (php-wasm). Common browser-side scaffolding extracted so adding a language is a small per-runtime adapter, not a greenfield rewrite.',
+          number: '02',
+          title: 'Layer 1 — multi-language',
+          status: 'closed',
+          lead: 'Layer 1 broadens: Rust (wasm32-wasip1), Ruby.wasm, php-wasm. Adding a language reduces to "write one runtime adapter" via the shared scaffolding.',
+          shipped: [
+            'regex#779 (Rust), ruby#21709, php#12167 shipped',
+            'php_loader.ts / ruby_loader.ts / rust_loader.ts factored into the shared module — adding a new runtime is now a small adapter',
+          ],
         },
         {
-          lead: 'Phase 3 — Layer 2: Docker.',
-          body: 'Full-fidelity container-based reproduction for bugs needing real fork, real sockets, real filesystems. Catalogue model (not hosted execution): pinned Dockerfile + repro.sh + GHCR-published image. Visitor reproduces locally with one `docker run`, optionally one-click via "Open in Codespaces". CI-snapshot verdict on each gallery page.',
+          number: '03',
+          title: 'Layer 2 — Docker',
+          status: 'closed',
+          lead: 'Full-fidelity container layer for bugs that need real fork / real sockets / real filesystems. Vivarium does not host execution; the catalogue ships and visitors `docker run`.',
+          shipped: [
+            'Four Layer 2 recipes (postgres-lost-update / flock-is-advisory / find-xargs-whitespace / bash-local-shadows-exit)',
+            'Pre-built images on GHCR; CI-snapshot verdicts embedded in each gallery page',
+            '"Open in Codespaces" one-click bring-up established',
+          ],
         },
         {
-          lead: 'Phase 4 — Layer 3: record-replay & deterministic. CLOSED 2026-04-28.',
-          body: 'Third layer for bugs Layers 1 and 2 cannot reach: record-replay (rr) and deterministic simulation (Antithesis-style). Trace-shipped catalogue: trace baked into a GHCR image, replayed on the visitor’s machine. One recipe shipped (lost-update data race); further entries deferred until a concrete bug forces them.',
+          number: '04',
+          title: 'Layer 3 — record-replay',
+          status: 'closed',
+          statusNote: '2026-04-28',
+          lead: "Third layer for true heisenbugs L1 / L2 can't reach. Trace baked into a GHCR image; visitors `rr replay` to rewind deterministically.",
+          shipped: [
+            'pthread lost-update shipped (parallel mergesort interleave dependency)',
+            'Recording is offline-only on PMU-equipped hosts; replay runs on commodity Linux for visitors and CI alike',
+          ],
         },
         {
-          lead: 'Phase 5 — Ecosystem. CLOSED 2026-04-29.',
-          body: 'Contract v1 published as an external standard with JSON Schema and CI enforcement. Manifest v1 + three reference TOML manifests so external repos can declare a Vivarium-runnable reproduction with a single .vivarium/manifest.toml. Reusable verdict-capture GitHub Actions workflow. Verdict drift detection on the weekly cron. Issue-triage tooling deferred without adoption.',
+          number: '05',
+          title: 'Ecosystem',
+          status: 'closed',
+          statusNote: '2026-04-29',
+          lead: 'Contract v1 / Manifest v1 published as external standards with JSON Schema and CI enforcement. The phase that gave Vivarium a public spec.',
+          shipped: [
+            'Contract v1 (verdict.json wire shape) published as JSON Schema',
+            'Manifest v1 + three reference TOMLs — declaring a reproduction takes one file',
+            'Reusable verdict-capture workflow + weekly cron drift detection',
+          ],
         },
         {
-          lead: 'Phase 6 — Usability and visual layer. CLOSED 2026-05-02.',
-          body: 'Visual redesign + reusable component library landed (Stitch-driven mocks substituting for Claude Design after quota constraints). Full Japanese ⇄ English i18n with symmetric URL trees and translated spec pages. Reproduction comparison: Contract v1 evidence surface, branch-fix verdict capture pipeline, side-by-side comparison page. Faceted recipe gallery + paste-an-error → ranked-candidates matcher. Interactive manifest scaffolder. Vivarium MCP server with four tools (list_recipes, get_recipe, lookup_verdict, match_error). All six sub-streams (V, R, S, M, X, L) shipped at v1 scope; the closure rule (V + R + ≥1 of S/M/X/L) was satisfied four-times-over.',
+          number: '06',
+          title: 'Usability and visual layer',
+          status: 'closed',
+          statusNote: '2026-05-02',
+          lead: 'Built the human-facing interaction layer above the primitives. All six sub-streams (V, R, S, M, X, L) shipped at v1; the closure rule was satisfied four times over.',
+          shipped: [
+            'Stitch-driven visual redesign + reusable component library',
+            'Full EN ⇄ JA i18n (symmetric trees + locale switcher)',
+            'Contract v1 evidence surface + branch-fix verdict capture pipeline + side-by-side comparison page',
+            'Faceted gallery + paste-an-error matcher + interactive manifest scaffolder',
+            'Vivarium MCP server (list_recipes / get_recipe / lookup_verdict / match_error)',
+          ],
         },
         {
-          lead: 'Phase 7 — First-30-minutes onboarding. ACTIVE.',
-          body: 'Turn "primitives are usable" (Phase 6) into "a stranger can pick this up cold". UI brush-up (V′ — information design, layout flow, visual-token revisit, component graduation) and onboarding documentation (D — getting started, integration guide, AI-agent setup, glossary) are co-defined: where the docs hit a wall, the UI is wrong. AI-slop verification (B3) wires the existing R.2 Path A + R.3 comparison + MCP match_error into one end-to-end walkthrough so an AI agent can drive "did my candidate fix actually work?" cold. A-tail clears Phase 6 leftovers: ajv-standalone migration for the verdict + manifest validators, and match_error v2 (synonym table, fuzzy match, language-specific stopwords). Phase closes when V′ + D + B3 ship; the A-tail is optional.',
+          number: '07',
+          title: 'First-30-minutes onboarding',
+          status: 'active',
+          lead: 'Turn "primitives are usable" into "a stranger can pick this up cold". V′ (UI brush-up) and D (documentation) are co-defined — where the docs hit a wall, the UI is wrong. Closure is permissive: V′ + D + B3.',
+          shipped: [
+            'D — getting-started / write-your-first-reproduction / integrate-with-your-repo / use-from-ai-agent / compare-branch-fix / glossary + bonus fork-your-own (EN+JA, 7 pages)',
+            'B3 — R.2 Path A on php-12167 + 5th MCP tool `verify_branch_fix` + the AI-slop verification walkthrough',
+            'A5 — match_error v2 (synonyms / fuzzy / multi-language stopwords)',
+            'A6 — recipes-index / branch-fix-pipeline / recipes.schema editorial follow-up',
+            'V′ — landing / /repro/ / /repro/compare / architecture page redesigns (in progress)',
+          ],
+          remaining: [
+            "V′ remaining: this page (roadmap) / overview / spec / match / new guide/index + nav reorder",
+            'Component graduation — extract `VerdictBadge` / `LayerPill` as standalone exports',
+            'A3 — ajv-standalone migration (waiting for trigger; optional)',
+          ],
         },
       ]}
     />
@@ -88,18 +162,10 @@ import {
     heading="Closure rule: partial completion is acceptable."
   >
     <p>
-      Phase closure on this project follows a deliberate pattern set by the
-      Phase 4 close ADR (ADR-0012). When the shape of the phase is{' '}
-      <strong>proven by partial completion</strong> — one Layer 3 recipe,
-      one MCP tool, one external adopter — the phase closes and remaining work
-      is requeued. This protects the lifelong project from the slow-creep of
-      incomplete phases that never close.
+      Phase closure on this project follows a deliberate pattern set by the Phase 4 close ADR (ADR-0012). When the shape of the phase is <strong>proven by partial completion</strong> — one Layer 3 recipe, one MCP tool, one external adopter — the phase closes and remaining work is requeued. This protects the lifelong project from the slow-creep of incomplete phases that never close.
     </p>
     <p>
-      The decisions that did <em>not</em> ship are recorded with the same care
-      as the ones that did. Public phase-close briefs cite the private ADRs
-      that captured the trade-offs, so future contributors understand{' '}
-      <em>why</em> a path was rejected, not just <em>that</em> it was.
+      The decisions that did <em>not</em> ship are recorded with the same care as the ones that did. Public phase-close briefs cite the private ADRs that captured the trade-offs, so future contributors understand <em>why</em> a path was rejected, not just <em>that</em> it was.
     </p>
   </Section>
 </Page>
