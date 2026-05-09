@@ -6,6 +6,7 @@ mago = "latest"
 ruff = "latest"
 tombi = "latest"
 rumdl = "latest"
+jq = "latest"
 rust = { version = "1.84.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 # Per-language interpreters (Python, Ruby, PHP) are intentionally
 # NOT pinned at this top level. Each task / command declares the version
@@ -255,6 +256,67 @@ flag "--base <image>" help="docker base image (e.g. node:26-slim)"
 flag "--repo <owner/repo>" help="upstream owner/repo override (default: heuristic per project)"
 '''
 run = '''bun run scripts/new-recipe.ts "{{usage.project}}" "{{usage.issue}}" "{{usage.title}}"{% if usage.base %} --base "{{usage.base}}"{% endif %}{% if usage.repo %} --repo "{{usage.repo}}"{% endif %}'''
+
+[tasks."recipes:verify"]
+description = "Verify a single Layer 2 recipe end-to-end (build + run + verdict + schema + indices + lint + docs build)"
+shell = "bash -c"
+usage = '''
+arg "<slug>" help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
+'''
+run = '''
+set -euo pipefail
+
+slug="{{usage.slug}}"
+recipe_dir="src/layer2_docker/${slug}"
+
+if [ ! -d "${recipe_dir}" ]; then
+  echo "Error: ${recipe_dir} does not exist."
+  echo "Available Layer 2 recipes:"
+  for d in src/layer2_docker/*/; do
+    name=$(basename "$d")
+    case "$name" in _*) continue ;; esac
+    echo "  $name"
+  done
+  exit 1
+fi
+if [ ! -f "${recipe_dir}/Dockerfile" ]; then
+  echo "Error: ${recipe_dir}/Dockerfile is missing."
+  exit 1
+fi
+
+echo "==> [1/7] ensure ajv-cli on PATH"
+bun add --global ajv-cli@5 ajv-formats >/dev/null
+# bun's global bin (where ajv lands) is not on Windows PATH by
+# default, so capture_layer2_verdict.sh's `ajv` invocation would
+# fail. Prepend it to PATH for the rest of this task body.
+export PATH="$(bun pm bin -g):${PATH}"
+
+echo "==> [2/7] docker build ${slug}"
+tag="vivarium-${slug}:dev"
+docker build -t "${tag}" "${recipe_dir}"
+
+echo "==> [3/7] docker run + capture verdict + schema-validate"
+bash scripts/capture_layer2_verdict.sh "${tag}" "${recipe_dir}/verdict.json"
+
+echo "==> [4/7] regenerate recipes / projects indices"
+(cd docs && bun run generate-index && bun run generate-project-pages)
+
+echo "==> [5/7] biome check (docs/)"
+mise run docs:check
+
+echo "==> [6/7] markdown lint"
+mise run markdown:check
+
+echo "==> [7/7] docs build (rspress)"
+(cd docs && bun run build)
+
+verdict=$(jq -r '.verdict' "${recipe_dir}/verdict.json")
+exit_code=$(jq -r '.exit_code' "${recipe_dir}/verdict.json")
+echo
+echo "✓ Recipe ${slug} verified end-to-end"
+echo "  verdict: ${verdict}"
+echo "  exit_code: ${exit_code}"
+'''
 
 # ── MCP server (packages/mcp-server) ─────────────────────────────────────
 
