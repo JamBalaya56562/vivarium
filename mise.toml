@@ -2,23 +2,10 @@
 bun = "latest"
 opentofu = "latest"
 uv = "latest"
-# Polyglot Rust-based formatter/linter toolchain (Phase 7 follow-up).
-# Each tool is a single-binary Rust artefact; mise pulls them straight
-# from upstream releases. Versions stay at "latest" because every entry
-# here is recently-released-and-still-iterating (rumdl, mago) — pinning
-# now would create churn without buying reproducibility for tools that
-# are not yet shipping breaking changes.
-mago = "latest"  # PHP fmt + lint + static analysis (carthage-software/mago)
-ruff = "latest"  # Python fmt + lint + import sort (astral-sh/ruff)
-tombi = "latest"  # TOML fmt + lint + LSP (tombi-toml/tombi)
-rumdl = "latest"  # Markdown lint (rvben/rumdl)
-# Rust toolchain — pinned to 1.84.0 with the rustfmt + clippy components
-# and the wasm32-wasip1 target installed alongside. Using the combined
-# inline-table form (rather than a bare `rust = "1.84.0"`) lets mise own
-# component installation end-to-end; tasks no longer need their own
-# `rustup component add` / `rustup target add` shims. Note: mise's
-# per-task `tools = { rust = "..." }` form only accepts a version
-# string, so component / target options must live here at the top level.
+mago = "latest"
+ruff = "latest"
+tombi = "latest"
+rumdl = "latest"
 rust = { version = "1.84.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 # Per-language interpreters (Python, Ruby, PHP) are intentionally
 # NOT pinned at this top level. Each task / command declares the version
@@ -254,6 +241,19 @@ description = "Regenerate docs/public/api/recipes.json from src/layer*/"
 dir = "docs"
 run = "bun run generate-index"
 
+[tasks."recipes:new"]
+description = "Scaffold a new Layer 2 recipe directory from src/layer2_docker/_template/"
+dir = "docs"
+shell = "bash -c"
+usage = '''
+arg "<project>" help="upstream project name (kebab-case, e.g. node, cpython)"
+arg "<issue>" help="upstream issue number"
+arg "<title>" help="bug title (one line)"
+flag "--base <image>" help="docker base image (e.g. node:26-slim)"
+flag "--repo <owner/repo>" help="upstream owner/repo override (default: heuristic per project)"
+'''
+run = '''bun run scripts/new-recipe.ts "{{usage.project}}" "{{usage.issue}}" "{{usage.title}}"{% if usage.base %} --base "{{usage.base}}"{% endif %}{% if usage.repo %} --repo "{{usage.repo}}"{% endif %}'''
+
 # ── MCP server (packages/mcp-server) ─────────────────────────────────────
 
 [tasks."mcp:install"]
@@ -364,10 +364,6 @@ depends = [
 ]
 
 # ── Polyglot Rust-based formatters and linters ───────────────────────────
-# Mago (PHP), Ruff (Python), Taplo (TOML), rumdl (Markdown), clippy (Rust).
-# Each language has `*:check` (read-only, used by CI) and `*:check:fix`
-# (autofix-and-write, used by contributors locally and by the CI autofix
-# workflows). The umbrella task `lint:all` runs every check sequentially.
 
 [tasks."php:check"]
 description = "Mago — PHP format check + lint (read-only)"
