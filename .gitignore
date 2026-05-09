@@ -143,10 +143,16 @@ temp/
 .tmp/
 
 # ─── Claude Code / AI tools ──────────────────
-.claude/
+# `.claude/` is tracked per Claude Code's team-shared convention
+# (https://code.claude.com/docs/en/claude-directory.md). Personal
+# overrides go to *.local.* files which stay gitignored.
+.claude/CLAUDE.local.md
+.claude/settings.local.json
+# launch.json embeds absolute paths to per-developer mise install
+# locations, so it cannot be team-shared as-is.
+.claude/launch.json
 .aider*
 .cursor-server/
-CLAUDE.local.md
 
 # ─── Local-only docs (design/strategy memos) ───
 /_context/
