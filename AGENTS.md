@@ -485,7 +485,245 @@ conflate "which layer does this problem fit" with "which library do we use."
 Phase 0 focuses on Layer 1 with Python + SQLite as the first concrete
 reproduction domain. Layer 2 and 3 are expected but not scheduled.
 
-## 6. When in doubt
+## 6. Adding a new reproduction recipe
+
+Operational checklist for AI agents adding a new recipe to any of
+the three layers. Read the layer's `src/layer*_*/README.md` first
+for the catalogue model and visitor-facing conventions; this
+section fills the agent-side gaps (slug parser quirks, data-file
+plumbing, local validation, commit conventions, common pitfalls).
+
+### 6.1 Conventions shared across layers
+
+#### Slug rules
+
+Recipe directory name = slug. Parsed by
+[`docs/scripts/generate-recipes-index.ts`](docs/scripts/generate-recipes-index.ts)
+(`parseSlug` function) using regex
+`^([a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*?)-(\d+)$`.
+
+The lazy quantifier means the **first** dash-separated segment that
+admits the trailing `-(\d+)$` pattern wins as the project name.
+
+| Slug                          | Parses as                                          |
+| ----------------------------- | -------------------------------------------------- |
+| `node-63041`                  | project=`node`, issue=63041 ✅                     |
+| `cpython-137205`              | project=`cpython`, issue=137205 ✅                 |
+| `bash-local-shadows-exit`     | project=`bash`, issue=0 (no trailing digits) ✅    |
+| `node-iso8601-month-63041`    | project=`node-iso8601-month`, issue=63041 ❌       |
+
+For numeric upstream issues use exactly `<project>-<issue>`.
+Descriptive suffixes belong in the README title, not the slug.
+
+#### Data files to update
+
+Both are hand-curated; edit them in the same PR as the recipe:
+
+```text
+docs/data/recipe-facets.json   ← add a row keyed by <slug>
+docs/data/projects.json        ← add a row keyed by <project> (only if new)
+```
+
+Then regenerate the public/api indices (these are tracked, so the
+diff shows them):
+
+```bash
+cd docs && mise exec -- bun run generate-index && mise exec -- bun run generate-project-pages
+```
+
+The generators write `docs/public/api/{recipes,projects}.json` and
+the auto-generated `docs/docs/{en,ja}/repro/<project>/index.mdx`
+landing pages (the latter are gitignored — regenerated on every
+build).
+
+#### Scaffolding (Layer 2 only currently)
+
+```bash
+mise run recipes-new -- <project> <issue> "<title>" --base <docker-image>
+```
+
+See [`docs/scripts/new-recipe.ts`](docs/scripts/new-recipe.ts).
+Layer 1 / Layer 3 scaffolders are not yet implemented; copy from
+an existing recipe in those layers.
+
+### 6.2 Layer 1 (WASM) specifics
+
+**Required files**:
+
+```text
+src/layer1_wasm/<slug>/
+├── index.html             ← Vivarium Contract v1 entry point
+├── repro.<lang>           ← the actual repro (e.g. repro.py, repro.rb)
+├── repro.ts               ← TypeScript driver loaded by index.html
+├── README.md              ← bug description + upstream issue link
+└── (auto-generated)
+    repro.js, repro.js.map, repro.highlighted.html  ← gitignored
+```
+
+**Verdict surface** is in-page (no `verdict.json`):
+
+- `<meta name="vivarium-contract" content="v1">` in `<head>`
+- `#verdict[data-verdict]` element in the body
+- `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__` JS globals
+
+Use the helpers in
+[`src/layer1_wasm/_shared/verdict.ts`](src/layer1_wasm/_shared/verdict.ts)
+so DOM and globals stay in sync.
+
+**Local validation**:
+
+```bash
+cd src/layer1_wasm && mise exec -- bun install --frozen-lockfile && mise exec -- bun run tsc --noEmit
+mise run ci:repro                                  # Playwright on Chromium / Firefox / WebKit
+cd .. && mise run docs:check && mise run markdown:check
+cd docs && mise exec -- bun run build
+```
+
+**Commit scope**: `feat(wasm)` — Layer 1 is WASM; established by
+PRs #180 / #189 / #192.
+
+**Pitfalls**:
+
+- **Pyodide version drift.** Pyodide currently bundles Python 3.13
+  / sqlite 3.39.0. A bug fixed in Python 3.14+ that does not exist
+  in 3.13 will show `verdict=unreproduced` here even though
+  upstream considers it valid. Layer 2 (`python:3.14-slim`) is
+  the right home for those.
+- **WASM memory cap.** Browsers cap WASM at ~4 GB. Bugs that need
+  GB-scale data → Layer 2.
+- **System calls.** Pyodide ships an MEMFS-like virtual FS, not
+  the real one. Anything depending on real filesystem semantics,
+  fork/exec, sockets, or signals → Layer 2.
+
+### 6.3 Layer 2 (Docker) specifics
+
+**Required files** — four tracked; `verdict.json` is CI-generated
+and gitignored:
+
+```text
+src/layer2_docker/<slug>/
+├── Dockerfile     ← pin the base image; copy repro.sh; set CMD
+├── repro.sh       ← exit 0 = reproduced, exit 1 = unreproduced
+├── README.md      ← upstream issue link + docker run + verdict contract
+└── index.html     ← gallery page; mirror an existing recipe's structure
+```
+
+**Do not add `.vivarium/manifest.toml`.** That format is for
+[`src/external_examples/`](src/external_examples/) (third-party
+repos declaring a Vivarium recipe). First-party recipes are
+discovered by directory walking, not manifest.
+
+**Local validation**:
+
+```bash
+cd src/layer2_docker/<slug>
+docker build -t vivarium-<slug>:dev .
+docker run --rm vivarium-<slug>:dev    # expect exit 0 + "verdict=reproduced"
+cd ../../.. && mise run docs:check && mise run markdown:check
+cd docs && mise exec -- bun run build
+mise exec -- bun run test:unit
+```
+
+**Commit scope**: `feat(layer2)` — established by PRs 92, 93,
+94, 98, 194 (the `feat(layer2):` historical thread).
+
+**Pitfalls**:
+
+- **Pinning.** Pin the Docker base image to a major tag at minimum
+  (`node:26-slim`, not `node:latest`). The image digest is
+  captured in the CI-generated `verdict.json` for full
+  determinism.
+- **Verdict polarity.** Exit 0 means *the bug reproduces*
+  (positive identification of the surprise). This is the Contract
+  v1 convention — different from typical CI green/red framing.
+  Easy to invert by accident.
+
+### 6.4 Layer 3 (rr / record-replay) specifics
+
+**Hard preconditions** — Layer 3 recipe authoring requires a
+maintainer host with:
+
+- Linux/x86_64 (rr does not support arm64, Windows, or macOS).
+- A CPU with an exposed PMU (Intel/AMD bare metal, or VMs that
+  pass through performance counters — Hyper-V / WSL2 / GHA hosted
+  Ubuntu **do not** qualify; see ADR-0011 in
+  `_context/decisions/`).
+- CPUID faulting enabled in the kernel (Intel Ivy Bridge+ or
+  modern AMD with stock recent Linux meets this).
+
+CI cannot record OR replay (both capabilities are missing on GHA's
+Hyper-V runners — confirmed empirically Phase 4 Stage A,
+2026-04-27). The maintainer records locally, ships the trace as a
+GitHub Release asset, and commits a tracked `verdict.json`. **If
+your environment does not meet these preconditions, stop and hand
+the recipe back to a maintainer.**
+
+**Required files**:
+
+```text
+src/layer3_thirdway/<slug>/
+├── Dockerfile        ← installs rr, builds reproducer, ADD trace.url
+├── record.sh         ← documents how the trace was captured (not run by CI)
+├── replay.sh         ← visitor-facing rr replay; verdict semantics
+├── trace.url         ← pinned URL of the GitHub Release asset
+├── README.md         ← upstream issue + docker run + verdict contract
+├── verdict.json      ← TRACKED here (unique to Layer 3) — captured locally
+└── out/              ← gitignored scratch for record.sh's local outputs
+```
+
+`verdict.json` being **tracked** is the key Layer 3 deviation from
+Layer 2. CI does not regenerate it.
+
+**Authoring workflow** (maintainer host):
+
+1. Write the reproducer + `record.sh` + `replay.sh`.
+2. Run `record.sh` locally → produces `out/<name>.tar.zst`.
+3. Upload the trace as a Release asset under
+   `aletheia-works/vivarium`, tag-pinned (`trace-<slug>-v1`). Pin
+   the URL in `trace.url`.
+4. Build the image locally (the Dockerfile pulls the trace via
+   `ADD`).
+5. Replay locally to capture stdout, hand-craft `verdict.json`
+   per Contract v1, validate it against
+   `docs/public/spec/verdict.schema.json` with `ajv-cli`.
+
+**Commit scope**: `feat(layer3)` — established by PR #106.
+
+**Pitfalls**:
+
+- **rr capability gaps on CI.** Do not try to "make CI replay
+  work". It will not. The maintainer-captured `verdict.json` is
+  the verdict CI surfaces.
+- **Container caps.** Visitor-facing `docker run` needs
+  `--cap-add=SYS_PTRACE --cap-add=PERFMON --security-opt
+  seccomp=unconfined`. Document this in the recipe README.
+- **Trace asset versioning.** Re-recording requires bumping the
+  Release asset tag (`trace-<slug>-v2` etc.) and updating
+  `trace.url`. Mutating an existing tagged asset breaks
+  reproducibility for visitors who already pulled the image.
+
+### 6.5 Cross-cutting pitfalls (all layers)
+
+- **`bunx` vs `bun x`.** Never write `bunx <pkg>` in scripts;
+  Windows local has no `bunx.cmd`. Always `bun x <pkg>`
+  (subcommand form).
+- **Auto-generated files.** `docs/public/api/recipes.json` and
+  `docs/public/api/projects.json` are tracked but generated.
+  Always run the generators before committing; never hand-edit.
+- **Recipe selection policy.** Must already match
+  `_context/strategy/issue_selection_policy.md` (gitignored,
+  local-only) before authoring. Selection criteria are not
+  re-litigated at PR time.
+
+### 6.6 When this checklist is wrong
+
+If you discover the checklist diverges from current behaviour
+(e.g. a generator name changed, a Pyodide version bumped,
+ADR-0011's reasoning becomes invalid), update this section in the
+same PR rather than working around it. The checklist is
+load-bearing for the next agent.
+
+## 7. When in doubt
 
 1. Re-read `_context/ambitious_integrated_platform_strategy.md` — the
    project's north star.

@@ -1,8 +1,12 @@
 # CLAUDE.md
 
-> Claude Code-specific addenda to [`AGENTS.md`](AGENTS.md).
-> Read `AGENTS.md` first — it is the authoritative, agent-agnostic instruction
-> set. This file only captures what is different or extra for Claude Code.
+> Claude Code-specific addenda to [`AGENTS.md`](AGENTS.md). The line below
+> imports `AGENTS.md` so it is auto-loaded into the session context (per
+> Claude Code's `@<path>` import syntax). The rest of this file captures
+> only what is different or extra for Claude Code; everything else is in
+> the imported `AGENTS.md`.
+
+@AGENTS.md
 
 ---
 
@@ -10,7 +14,10 @@
 
 Before acting on any non-trivial request, verify:
 
-1. `AGENTS.md` has been loaded into context. If not, read it now.
+1. `AGENTS.md` has been loaded via the `@AGENTS.md` import above —
+   confirm by skimming for the §6 "Adding a new reproduction recipe"
+   section. If absent (Claude Code older than the import-syntax
+   release), read `AGENTS.md` manually.
 2. The request is within scope for the current phase (Phase 0 — Bootstrap).
    Out-of-scope requests should be surfaced back to the user, not silently
    expanded into.
