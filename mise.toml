@@ -197,6 +197,7 @@ shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do
   slug_dir=$(dirname "$dockerfile")
   slug=$(basename "$slug_dir")
+  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
   echo "==> docker build vivarium-${slug}:dev"
   docker build -t "vivarium-${slug}:dev" "$slug_dir"
 done
@@ -227,6 +228,7 @@ shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do
   slug_dir=$(dirname "$dockerfile")
   slug=$(basename "$slug_dir")
+  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
   tag="vivarium-${slug}:dev"
   echo "==> capture verdict.json for ${slug}"
   bash scripts/capture_layer2_verdict.sh "$tag" "${slug_dir}/verdict.json"
