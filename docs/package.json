@@ -5,11 +5,12 @@
   "description": "Documentation site for Vivarium, built with rspress.",
   "type": "module",
   "scripts": {
+    "generate-validators": "bun run scripts/generate-validators.ts",
     "generate-index": "bun run scripts/generate-recipes-index.ts",
     "generate-project-pages": "bun run scripts/generate-project-pages.ts",
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
-    "dev": "bun run generate-index && bun run generate-project-pages && bun run prebuild-repro && rspress dev",
-    "build": "bun run generate-index && bun run generate-project-pages && rspress build",
+    "dev": "bun run generate-validators && bun run generate-index && bun run generate-project-pages && bun run prebuild-repro && rspress dev",
+    "build": "bun run generate-validators && bun run generate-index && bun run generate-project-pages && rspress build",
     "preview": "rspress preview",
     "test:e2e": "playwright test",
     "test:unit": "bun test scripts/__tests__"
@@ -20,6 +21,8 @@
     "@rspress/core": "^2.0.9",
     "@types/bun": "^1.3.13",
     "@types/node": "^25.6.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "jszip": "^3.10.1"
   },
   "dependencies": {

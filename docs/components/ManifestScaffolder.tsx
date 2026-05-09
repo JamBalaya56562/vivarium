@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react';
+import validateManifestRaw from '../generated/manifest-validator.mjs';
 import './manifest-scaffolder.css';
 
 /* ============================================================================
  * Phase 6 M.1 — interactive .vivarium/manifest.toml scaffolder.
  *
  * Hand-rolled form per ADR-0026 §1 (JSON Schema → labels/help only,
- * fields are hand-coded). Hand-rolled validation + TOML emission per
- * §2/§3. No backend; all state is in-memory.
+ * fields are hand-coded). TOML emission per §3.
  *
- * Output mirrors docs/public/spec/manifest.schema.json's example block.
+ * Validation runs against the ajv-standalone-generated validator at
+ * `docs/generated/manifest-validator.mjs`, which is built from
+ * `docs/public/spec/manifest.schema.json` by `scripts/generate-validators.ts`.
+ * The schema is the single source of truth; this component only converts
+ * the form state into a candidate manifest object and translates ajv
+ * errors back into the per-field UI map. See ADR-0034 for the migration
+ * rationale.
  * ========================================================================== */
 
 type Lang = 'en' | 'ja';
@@ -41,32 +47,156 @@ interface FormState {
   };
 }
 
-const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const URL_RE = /^https?:\/\/.+/;
-
 type FieldErrors = Partial<Record<string, string>>;
 
-function validate(state: FormState): FieldErrors {
-  const errors: FieldErrors = {};
-  if (!state.slug) errors.slug = 'required';
-  else if (!SLUG_RE.test(state.slug))
-    errors.slug = 'must match /^[a-z0-9]+(-[a-z0-9]+)*$/';
-  if (state.layer == null) errors.layer = 'required';
-  if (!state.bug.project) errors['bug.project'] = 'required';
-  if (state.bug.issue !== '' && !/^\d+$/.test(state.bug.issue))
-    errors['bug.issue'] = 'must be a non-negative integer';
-  if (!state.bug.upstream_url) errors['bug.upstream_url'] = 'required';
-  else if (!URL_RE.test(state.bug.upstream_url))
-    errors['bug.upstream_url'] = 'must be http(s)://…';
+interface AjvErrorObject {
+  instancePath: string;
+  schemaPath: string;
+  keyword: string;
+  params: Record<string, unknown>;
+  message?: string;
+}
+
+interface AjvValidateFn {
+  (data: unknown): boolean;
+  errors?: AjvErrorObject[] | null;
+}
+
+const validateManifest = validateManifestRaw as unknown as AjvValidateFn;
+
+function buildCandidate(state: FormState): Record<string, unknown> {
+  const candidate: Record<string, unknown> = { manifest: 'v1' };
+
+  if (state.slug) candidate.slug = state.slug;
+  if (state.layer != null) candidate.layer = state.layer;
+  if (state.title) candidate.title = state.title;
+  if (state.description) candidate.description = state.description;
+
+  const bug: Record<string, unknown> = {};
+  if (state.bug.project) bug.project = state.bug.project;
+  if (state.bug.issue === '') {
+    bug.issue = 0;
+  } else if (/^\d+$/.test(state.bug.issue)) {
+    bug.issue = Number(state.bug.issue);
+  } else {
+    // Non-numeric input — leave as-is so ajv can report a type error.
+    bug.issue = state.bug.issue;
+  }
+  if (state.bug.upstream_url) bug.upstream_url = state.bug.upstream_url;
+  candidate.bug = bug;
 
   if (state.layer === 1) {
-    if (!state.layer1.page_url) errors['layer1.page_url'] = 'required';
-    else if (!URL_RE.test(state.layer1.page_url))
-      errors['layer1.page_url'] = 'must be http(s)://…';
+    const layer1: Record<string, unknown> = {};
+    if (state.layer1.page_url) layer1.page_url = state.layer1.page_url;
+    if (state.layer1.expected_verdict)
+      layer1.expected_verdict = state.layer1.expected_verdict;
+    candidate.layer1 = layer1;
   } else if (state.layer === 2) {
-    if (!state.layer2.image) errors['layer2.image'] = 'required';
+    const layer2: Record<string, unknown> = {};
+    if (state.layer2.image) layer2.image = state.layer2.image;
+    if (state.layer2.dockerfile) layer2.dockerfile = state.layer2.dockerfile;
+    if (state.layer2.expected_verdict)
+      layer2.expected_verdict = state.layer2.expected_verdict;
+    candidate.layer2 = layer2;
   } else if (state.layer === 3) {
-    if (!state.layer3.image) errors['layer3.image'] = 'required';
+    const layer3: Record<string, unknown> = {};
+    if (state.layer3.image) layer3.image = state.layer3.image;
+    if (state.layer3.dockerfile) layer3.dockerfile = state.layer3.dockerfile;
+    if (state.layer3.expected_verdict)
+      layer3.expected_verdict = state.layer3.expected_verdict;
+    candidate.layer3 = layer3;
+  }
+
+  return candidate;
+}
+
+// Translate ajv `instancePath` (e.g. "/bug/upstream_url") + the optional
+// `params.missingProperty` for `required` errors into the dotted field
+// keys the UI map uses (e.g. "bug.upstream_url").
+function ajvErrorToFieldKey(err: AjvErrorObject): string {
+  const base = err.instancePath.replace(/^\//, '').replaceAll('/', '.');
+  if (
+    err.keyword === 'required' &&
+    typeof err.params.missingProperty === 'string'
+  ) {
+    return base
+      ? `${base}.${err.params.missingProperty}`
+      : err.params.missingProperty;
+  }
+  return base;
+}
+
+// Map ajv keywords to short UI-friendly messages. Falls back to ajv's
+// default `message` when the keyword is not specifically handled.
+function humanizeAjvError(err: AjvErrorObject): string {
+  switch (err.keyword) {
+    case 'required':
+      return 'required';
+    case 'pattern':
+      return `must match /${err.params.pattern}/`;
+    case 'format':
+      return err.params.format === 'uri'
+        ? 'must be a URI (e.g. https://…)'
+        : `must match format "${err.params.format}"`;
+    case 'type':
+      return `must be ${err.params.type}`;
+    case 'enum':
+      return 'must be one of the allowed values';
+    case 'minLength':
+      return `must be at least ${err.params.limit} character(s)`;
+    case 'minimum':
+      return `must be ≥ ${err.params.limit}`;
+    case 'const':
+      return `must equal ${JSON.stringify(err.params.allowedValue)}`;
+    default:
+      return err.message ?? `invalid (${err.keyword})`;
+  }
+}
+
+// Errors emitted only because the schema's per-layer `oneOf` branch
+// rejected a non-active layer. Hide these from the UI — the active
+// layer's own required/pattern errors are still surfaced.
+function isOneOfBranchNoise(err: AjvErrorObject): boolean {
+  if (err.keyword === 'oneOf') return true;
+  if (err.keyword === 'not') return true;
+  if (err.keyword === 'const' && err.instancePath === '/layer') return true;
+  return false;
+}
+
+function validate(state: FormState): FieldErrors {
+  // Pre-ajv guard: layer is the only field whose absence cannot be
+  // signalled via "candidate.layer omitted" (ajv would just say the
+  // root needs `layer`, with an empty instancePath). Surfacing it as a
+  // field error here keeps the UI consistent with the previous
+  // behaviour.
+  if (state.layer == null) {
+    const candidateNoLayer = buildCandidate(state);
+    const errors: FieldErrors = { layer: 'required' };
+    // Run ajv anyway so the user sees other field errors at the same
+    // time, but skip the root-level required error for `layer`.
+    if (!validateManifest(candidateNoLayer)) {
+      for (const err of validateManifest.errors ?? []) {
+        if (isOneOfBranchNoise(err)) continue;
+        if (
+          err.keyword === 'required' &&
+          err.params.missingProperty === 'layer'
+        )
+          continue;
+        const key = ajvErrorToFieldKey(err);
+        if (key && !errors[key]) errors[key] = humanizeAjvError(err);
+      }
+    }
+    return errors;
+  }
+
+  const candidate = buildCandidate(state);
+  if (validateManifest(candidate)) return {};
+
+  const errors: FieldErrors = {};
+  for (const err of validateManifest.errors ?? []) {
+    if (isOneOfBranchNoise(err)) continue;
+    const key = ajvErrorToFieldKey(err);
+    if (key && !errors[key]) errors[key] = humanizeAjvError(err);
   }
   return errors;
 }
