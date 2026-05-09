@@ -1,12 +1,3 @@
-# Path-based label rules for vivarium.
-# Consumed by .github/workflows/labeler.yml (actions/labeler).
-#
-# Rules map file-path patterns to labels defined in
-# infra/github/labels.tf. `type: *` labels are applied only where they
-# can be inferred mechanically (e.g. a purely doc change gets
-# `type: docs`); other `type: *` labels come from the conventional
-# commit prefix of the PR and are set by a separate automation.
-
 "scope: ci":
   - changed-files:
       - any-glob-to-any-file:
@@ -84,13 +75,8 @@
           - "src/layer2_docker/**"
           - "src/layer3_thirdway/**"
 
-"type: docs":
-  # `any-glob-to-all-files` (not `-any-file`): apply only when every
-  # changed file matches one of these doc patterns. The previous
-  # `-any-file` form over-applied `type: docs` to any mixed PR that
-  # happened to touch a single markdown file. See Issue #115.
-  - changed-files:
-      - any-glob-to-all-files:
-          - "**/*.md"
-          - "docs/docs/**"
-          - "LICENSE"
+# `type: *` labels are NOT defined here. They are derived from the
+# PR title's Conventional Commits prefix by the inline title-parsing
+# step in .github/workflows/labeler.yml (alongside the path-based
+# step that consumes this config). Title is the right source: the
+# commitlint workflow already enforces the prefix at PR open time.
