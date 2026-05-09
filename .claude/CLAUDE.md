@@ -1,8 +1,20 @@
 # CLAUDE.md
 
-> Claude Code-specific addenda to [`AGENTS.md`](AGENTS.md).
-> Read `AGENTS.md` first — it is the authoritative, agent-agnostic instruction
-> set. This file only captures what is different or extra for Claude Code.
+> Claude Code-specific addenda to [`AGENTS.md`](../AGENTS.md). The line
+> below imports `AGENTS.md` so it is auto-loaded into the session
+> context (per Claude Code's `@<path>` import syntax). The rest of
+> this file captures only what is different or extra for Claude
+> Code; everything else is in the imported `AGENTS.md`.
+>
+> Detailed operational checklists for specific subsystems (e.g.
+> recipe authoring under `src/layer*_*/`) live as path-scoped
+> rules under [`.claude/rules/`](rules/) and auto-load only when
+> Claude reads files matching their `paths:` frontmatter. This
+> keeps both `AGENTS.md` and this `CLAUDE.md` lean (the
+> "write effective instructions" guidance from
+> <https://code.claude.com/docs/en/memory.md>).
+
+@../AGENTS.md
 
 ---
 
@@ -10,13 +22,16 @@
 
 Before acting on any non-trivial request, verify:
 
-1. `AGENTS.md` has been loaded into context. If not, read it now.
-2. The request is within scope for the current phase (Phase 0 — Bootstrap).
-   Out-of-scope requests should be surfaced back to the user, not silently
+1. `AGENTS.md` has been loaded via the `@../AGENTS.md` import above —
+   confirm by skimming for §1 "What this project is". If absent
+   (Claude Code older than the import-syntax release), read
+   [`../AGENTS.md`](../AGENTS.md) manually.
+2. The request is within scope for the current phase. Out-of-scope
+   requests should be surfaced back to the user, not silently
    expanded into.
 3. Any strategy claim you are about to make matches the current state of
-   `_context/ambitious_integrated_platform_strategy.md` and
-   `_context/handoff_briefing_for_claude_code.md`. Those are the
+   `../_context/ambitious_integrated_platform_strategy.md` and
+   `../_context/handoff_briefing_for_claude_code.md`. Those are the
    tie-breakers for vision-level questions.
 
 ## 2. Tool preferences on this machine
@@ -64,8 +79,8 @@ updated.
 ## 5. Autonomous-loop mode
 
 When invoked via `/loop` (either with a fixed interval or in dynamic
-self-paced mode), the same guardrails from [`AGENTS.md § 2`](AGENTS.md) apply
-unchanged. Specifically, the loop **must not**:
+self-paced mode), the same guardrails from [`AGENTS.md § 2`](../AGENTS.md)
+apply unchanged. Specifically, the loop **must not**:
 
 - Merge or approve PRs.
 - Force-push to `main` once the first PR has landed.
@@ -82,11 +97,11 @@ filler tasks.
 Before opening or force-pushing a PR branch, run the matching CI checks
 locally first — every workflow whose `paths:` filter matches the diff.
 The canonical entry points are the `mise run ci:*` tasks in
-[`mise.toml`](mise.toml); `mise run ci:all` covers the union. Where a
+[`mise.toml`](../mise.toml); `mise run ci:all` covers the union. Where a
 `ci:*` task is missing for the workflow you triggered, transcribe its
 `run:` steps from the YAML and execute them by hand. Do **not** push
 hoping CI catches things — pushing red-then-fix burns the human's
 review attention faster than a local rerun. See
-[`AGENTS.md § 4.14`](AGENTS.md) for the full rationale and the
+[`AGENTS.md § 4.14`](../AGENTS.md) for the full rationale and the
 "convergence in both directions" requirement (when CI catches what
 local missed, extend the local task).
