@@ -19,49 +19,17 @@ deployed verdict snapshots, without scraping the docs site.
 | `list_recipes(layer?, project?, q?)` | Filtered list of catalogue entries. | All layers (1, 2, 3). |
 | `get_recipe(slug)` | Full metadata for one recipe (title, project, issue, page URL, verdict snapshot URL, GitHub source URL). | All layers. |
 | `lookup_verdict(slug)` | Layer 1 → `kind: "live"` + page URL (verdicts run in the browser). Layer 2/3 → `kind: "snapshot"` with the deployed `verdict.json` contents (verdict, exit code, image digest, stdout, stderr tail). | All layers (Layer 1 returns a stub). |
-| `match_error(text, limit?)` | Mechanical token-overlap ranking of recipes against a pasted error message or stack trace. Synonym table + bounded fuzzy match + multi-language stopwords (Phase 7 A5). | All layers. |
+| `match_error(text, limit?)` | Mechanical token-overlap ranking of recipes against a pasted error message or stack trace. Synonym table + bounded fuzzy match + multi-language stopwords. | All layers. |
 | `verify_branch_fix(slug, fix_url? \| fix_source?)` | Scaffolding helper for the AI-slop verification loop. Layer 1 → Path A: a recipe-page `compare_url` with the fix pre-loaded. Layer 2/3 → Path B: a `/repro/compare` deep-link plus the `gh workflow run branch-fix-verdict.yml` command. NOT an execution engine — actual reproduction runs in the visitor's browser (Path A) or in GitHub Actions (Path B). | All layers. |
-| `prepare_new_recipe(project, issue, title, base_image?, repo_owner?, layer?)` | Scaffolding helper that bundles every artefact an agent needs to author a new recipe: validated slug, the exact `mise run recipes:new` and `mise run recipes:verify` commands, placeholder rows for `docs/data/recipe-facets.json` and (if the project is new) `docs/data/projects.json`, a commit-subject template, and a sequenced next-steps checklist. Validates the slug against the `docs/scripts/generate-recipes-index.ts` parser regex at call time. NOT an execution engine — the agent's shell tool runs the returned commands. | Layer 2 has the canonical scaffolder; Layer 1/3 fall back to copying from an existing recipe. |
+| `prepare_new_recipe(project, issue, title, base_image?, repo_owner?, layer?)` | Scaffolding helper that bundles every artefact an agent needs to author a new recipe: validated slug, the exact `mise run recipes:new` and `mise run recipes:verify` commands, placeholder rows for `docs/data/recipe-facets.json` and (if the project is new) `docs/data/projects.json`, a commit-subject template, and a sequenced next-steps checklist. NOT an execution engine — the agent's shell tool runs the returned commands. | Layer 2 has the canonical scaffolder; Layer 1/3 fall back to copying from an existing recipe. |
 
 ## Install
 
-> **Status (2026-05-06)**: not yet published to a registry. The
-> `mcp-server-v0.1.0` tag has not been pushed, so the `npx` and
-> `bunx jsr:` snippets below would 404 today. Until the first publish,
-> use the local-clone path. The
-> [`publish-mcp.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/publish-mcp.yml)
-> workflow handles dual JSR + npm release on tag push; the snippets
-> in the next two subsections will work once that runs for the first
-> time.
+The exact MCP-config file location varies by client (Claude Code:
+`~/.claude/mcp.json`; Cline: its VS Code settings; Cursor:
+`~/.cursor/mcp.json`).
 
-### Local clone (works today)
-
-```bash
-git clone https://github.com/aletheia-works/vivarium.git
-cd vivarium/packages/mcp-server
-bun install
-bun run build
-```
-
-Then point your MCP client at the built entry point:
-
-```json
-{
-  "mcpServers": {
-    "vivarium": {
-      "command": "node",
-      "args": ["/absolute/path/to/vivarium/packages/mcp-server/dist/index.js"]
-    }
-  }
-}
-```
-
-### npm (post-publish; default for `npx`-based MCP launchers)
-
-Once the server has been published, the configuration becomes a
-single-line `npx` invocation. The exact MCP-config file location
-varies by client (Claude Code: `~/.claude/mcp.json`; Cline: its VS
-Code settings; Cursor: `~/.cursor/mcp.json`). Snippet:
+### npm (default for `npx`-based MCP launchers)
 
 ```json
 {
@@ -74,26 +42,13 @@ Code settings; Cursor: `~/.cursor/mcp.json`). Snippet:
 }
 ```
 
-### JSR (post-publish; Deno / Bun-native install)
-
-For clients with native JSR support (Bun ≥ 1.1, Deno):
+### JSR (Bun / Deno native install)
 
 ```bash
 bunx jsr:@aletheia-works/vivarium-mcp
 # or
 deno run --allow-net --allow-read jsr:@aletheia-works/vivarium-mcp
 ```
-
-## Why dual-channel distribution
-
-Per [ADR-0019](https://github.com/aletheia-works/vivarium) (private
-memo), this package publishes to both registries with **JSR canonical
-and npm fallback**. JSR contributes structural supply-chain defences
-(no postinstall scripts, OIDC-only publish via Sigstore provenance,
-GitHub-org-bound scope ownership, source-only publish); npm carries
-the `npx` ergonomics most MCP launchers expect today. Both registries
-ship with build provenance — verifiable via the public Sigstore Rekor
-transparency log.
 
 ## Configuration
 
@@ -105,9 +60,9 @@ when the network is unavailable.
 
 ## Versioning
 
-The MCP server's surface (the three tools above and their input
-schemas) is locked at v1 by ADR-0019. Optional additive changes ship
-as minor revisions; breaking changes require a v2 design ADR.
+The MCP server's tool surface (the tools listed above and their input
+schemas) is locked at v1. Optional additive changes ship as minor
+revisions; breaking changes require a v2 release.
 
 The recipes index format consumed by this server is locked separately
 at `index = "v1"` — see
