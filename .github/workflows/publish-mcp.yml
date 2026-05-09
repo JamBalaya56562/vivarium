@@ -27,6 +27,12 @@ name: publish-mcp
 # (npm/cli#9088); pinning to the latest npm avoids that footgun.
 # JSR publish runs through `bunx jsr publish`, which uses OIDC
 # automatically when `id-token: write` is granted.
+#
+# Idempotency: both publish steps are guarded by registry-presence
+# checks against package.json / jsr.json's version literal, so a
+# `workflow_dispatch` re-run after a partial failure (e.g. npm
+# succeeded but JSR was blocked) safely skips the half that is
+# already on its registry.
 
 on:
   push:
@@ -54,14 +60,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Sync bundled recipes snapshot
-        # Copy the latest tracked recipes index into the package so the
-        # offline fallback embedded with this release is current at
-        # publish time. The Pages-hosted live version remains canonical
-        # at runtime; this snapshot only matters when the agent is
-        # offline or the Pages fetch fails.
-        run: cp ../../docs/public/api/recipes.json src/bundled/recipes.json
-
       - name: Setup Bun
         # Single-tool job (bun only) — uses `oven-sh/setup-bun` directly
         # rather than the local setup-mise composite.
@@ -74,12 +72,46 @@ jobs:
         # in mise.toml. The publish steps below stay inline because they
         # call `bunx npm publish --provenance` and `bunx jsr publish`
         # against OIDC, which is a CI-only concern.
+        #
+        # `bun run build` and `bun run test` both chain `bun run
+        # sync:bundled` first, which copies the canonical
+        # docs/public/api/recipes.json into src/bundled/recipes.json
+        # (gitignored) so the offline fallback shipped in the tarball
+        # is always the latest snapshot, with no tracked-snapshot
+        # drift to manage.
         run: |
           bun install
           bun run build
           bun run test
 
+      - name: Read package version
+        # Version literal is single-sourced from package.json; the
+        # downstream registry-presence checks reuse it so the workflow
+        # is idempotent across reruns (re-dispatch after a partial
+        # failure must not double-publish the half that already
+        # succeeded).
+        id: pkg
+        run: |
+          version=$(jq -r .version package.json)
+          name=$(jq -r .name package.json)
+          jsr_name=$(jq -r .name jsr.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "npm_name=$name" >> "$GITHUB_OUTPUT"
+          echo "jsr_name=$jsr_name" >> "$GITHUB_OUTPUT"
+
+      - name: Check if npm version is already published
+        id: npm-check
+        run: |
+          if curl -fsSL -o /dev/null \
+            "https://registry.npmjs.org/${{ steps.pkg.outputs.npm_name }}/${{ steps.pkg.outputs.version }}"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::npm ${{ steps.pkg.outputs.version }} already published — skipping npm step"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
+        if: steps.npm-check.outputs.skip == 'false'
         run: bunx npm@latest publish --provenance --access public
         env:
           # Tells the npm CLI which registry to authenticate against; in
@@ -88,7 +120,24 @@ jobs:
           # OIDC trusted publishing requires on the consuming side.
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
 
+      - name: Check if JSR version is already published
+        id: jsr-check
+        run: |
+          if curl -fsSL "https://jsr.io/${{ steps.pkg.outputs.jsr_name }}/meta.json" \
+            | jq -e --arg v "${{ steps.pkg.outputs.version }}" '.versions[$v]' >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::JSR ${{ steps.pkg.outputs.version }} already published — skipping JSR step"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to JSR (provenance via OIDC)
+        # No `--allow-dirty` needed: src/bundled/recipes.json is
+        # gitignored, so although `bun install / build / test` above
+        # regenerates it, the working tree from `git status`'s
+        # perspective stays clean. JSR's tarball still ships the file
+        # because it is on the `publish.include` list in jsr.json.
+        if: steps.jsr-check.outputs.skip == 'false'
         run: bunx jsr publish
 
       - name: Summary
