@@ -79,7 +79,34 @@ jobs:
           bun run build
           bun run test
 
+      - name: Read package version
+        # Version literal is single-sourced from package.json; the
+        # downstream registry-presence checks reuse it so the workflow
+        # is idempotent across reruns (re-dispatch after a partial
+        # failure must not double-publish the half that already
+        # succeeded).
+        id: pkg
+        run: |
+          version=$(jq -r .version package.json)
+          name=$(jq -r .name package.json)
+          jsr_name=$(jq -r .name jsr.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "npm_name=$name" >> "$GITHUB_OUTPUT"
+          echo "jsr_name=$jsr_name" >> "$GITHUB_OUTPUT"
+
+      - name: Check if npm version is already published
+        id: npm-check
+        run: |
+          if curl -fsSL -o /dev/null \
+            "https://registry.npmjs.org/${{ steps.pkg.outputs.npm_name }}/${{ steps.pkg.outputs.version }}"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::npm ${{ steps.pkg.outputs.version }} already published — skipping npm step"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
+        if: steps.npm-check.outputs.skip == 'false'
         run: bunx npm@latest publish --provenance --access public
         env:
           # Tells the npm CLI which registry to authenticate against; in
@@ -88,8 +115,26 @@ jobs:
           # OIDC trusted publishing requires on the consuming side.
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
 
+      - name: Check if JSR version is already published
+        id: jsr-check
+        run: |
+          if curl -fsSL "https://jsr.io/${{ steps.pkg.outputs.jsr_name }}/meta.json" \
+            | jq -e --arg v "${{ steps.pkg.outputs.version }}" '.versions[$v]' >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::JSR ${{ steps.pkg.outputs.version }} already published — skipping JSR step"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to JSR (provenance via OIDC)
-        run: bunx jsr publish
+        # `--allow-dirty` is mandatory because the `Sync bundled
+        # recipes snapshot` step above mutates `src/bundled/recipes.json`
+        # at publish time so the npm tarball / JSR tarball both ship
+        # the freshest catalogue snapshot. JSR's publisher refuses a
+        # dirty tree by default; the dirtiness here is intentional and
+        # the modified file is on the JSR include list anyway.
+        if: steps.jsr-check.outputs.skip == 'false'
+        run: bunx jsr publish --allow-dirty
 
       - name: Summary
         run: |
