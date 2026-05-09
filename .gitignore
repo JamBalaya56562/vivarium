@@ -143,10 +143,15 @@ temp/
 .tmp/
 
 # ─── Claude Code / AI tools ──────────────────
-.claude/
+# `.claude/` is tracked per Claude Code's team-shared convention
+# (https://code.claude.com/docs/en/claude-directory.md). Only
+# `*.local.*` files stay gitignored — that is the canonical
+# personal-only suffix Claude Code itself documents
+# (`.claude/settings.local.json` is the official example).
+.claude/CLAUDE.local.md
+.claude/settings.local.json
 .aider*
 .cursor-server/
-CLAUDE.local.md
 
 # ─── Local-only docs (design/strategy memos) ───
 /_context/

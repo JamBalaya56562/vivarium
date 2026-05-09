@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vivarium-docs",
+      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\bun\\1.3.13\\bin\\bun.exe",
+      "runtimeArgs": ["--cwd=docs", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "vivarium-layer1",
+      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\uv\\0.11.11\\uv.exe",
+      "runtimeArgs": ["run", "--no-project", "--python", "3.13", "python", "-m", "http.server", "8767", "--directory", "src/layer1_wasm"],
+      "port": 8767
+    }
+  ]
+}

@@ -2,7 +2,9 @@
 
 > Standing instructions for any AI coding agent working in this repository.
 > Follows the emerging [agents.md](https://agents.md) convention.
-> Claude Code users: see also [`CLAUDE.md`](CLAUDE.md) for Claude-specific additions.
+> Claude Code users: see also [`.claude/CLAUDE.md`](.claude/CLAUDE.md) for
+> Claude-specific additions; path-scoped operational rules live under
+> [`.claude/rules/`](.claude/rules/).
 
 ---
 
@@ -83,10 +85,12 @@ If unsure whether an action crosses the line, stop and ask.
 ```text
 vivarium/
 ├── AGENTS.md              # this file — standing AI instructions
-├── CLAUDE.md              # Claude Code-specific addenda
 ├── README.md              # public project overview
 ├── LICENSE                # Apache-2.0
 ├── mise.toml              # mise-en-place tool versions (bun, opentofu, etc.)
+├── .claude/                # Claude Code config (team-shared)
+│   ├── CLAUDE.md          # Claude Code-specific addenda; auto-loads `@../AGENTS.md`
+│   └── rules/             # path-scoped operational rules (e.g. recipe-authoring.md)
 ├── .github/
 │   ├── workflows/         # CI/CD — thin callers into aletheia-works/.github reusables
 │   ├── dependabot.yml
