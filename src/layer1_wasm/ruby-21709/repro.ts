@@ -14,12 +14,14 @@
 //   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 
-import { loadVivariumRuby } from "../_shared/ruby_loader.js";
+import type { PathACapturedRun } from '../_shared/path_a.js';
+import { loadVivariumRuby } from '../_shared/ruby_loader.js';
+import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
   setVerdict,
   type VivariumResultV1,
-} from "../_shared/verdict.js";
+} from '../_shared/verdict.js';
 
 const REPRO_CODE = String.raw`
 require "json"
@@ -65,13 +67,13 @@ interface RubyVM {
   eval(code: string): { toString(): string };
 }
 
-const outputEl = document.getElementById("output");
-const metaEl = document.getElementById("meta");
-const reproCodeEl = document.getElementById("repro-code");
+const outputEl = document.getElementById('output');
+const metaEl = document.getElementById('meta');
+const reproCodeEl = document.getElementById('repro-code');
 
 if (!outputEl || !metaEl || !reproCodeEl) {
   throw new Error(
-    "ruby-21709: missing required DOM elements (#output, #meta, #repro-code).",
+    'ruby-21709: missing required DOM elements (#output, #meta, #repro-code).',
   );
 }
 
@@ -81,7 +83,7 @@ if (!outputEl || !metaEl || !reproCodeEl) {
 // fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
-  fetch("./repro.highlighted.html")
+  fetch('./repro.highlighted.html')
     .then((r) => (r.ok ? r.text() : null))
     .then((html) => {
       if (html) reproCodeEl.innerHTML = html;
@@ -89,65 +91,103 @@ if (!reproCodeEl.firstChild) {
     .catch(() => {});
 }
 
+function evaluate(result: ReproOutput): {
+  verdict: 'reproduced' | 'unreproduced';
+  message: string;
+} {
+  const reproduced = !result.regexp_built && result.string_built;
+  if (reproduced) {
+    return {
+      verdict: 'reproduced',
+      message:
+        'bug reproduced — Regexp interpolation rejects mixed encodings while String interpolation silently upgrades.',
+    };
+  }
+  if (result.regexp_built && result.string_built) {
+    return {
+      verdict: 'unreproduced',
+      message:
+        'bug not reproduced — Regexp and String interpolation now agree (likely fixed upstream).',
+    };
+  }
+  return {
+    verdict: 'unreproduced',
+    message: `bug not reproduced — unexpected outcome (regexp_built=${result.regexp_built}, string_built=${result.string_built}).`,
+  };
+}
+
+async function captureRun(
+  rb: RubyVM,
+  source: string,
+): Promise<PathACapturedRun> {
+  try {
+    const jsonText = rb.eval(source).toString();
+    const result = JSON.parse(jsonText) as ReproOutput;
+    const ev = evaluate(result);
+    return {
+      exitCode: 0,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: JSON.stringify(result, null, 2),
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      exitCode: 1,
+      verdict: 'unreproduced',
+      message: `runtime error: ${message}`,
+      stdout: message,
+    };
+  }
+}
+
 const startedAt = new Date();
 
 try {
   const { vm, rubyWasmVersion, rubyVersion } = await loadVivariumRuby({
-    pendingText: "Loading Ruby.wasm runtime and stdlib…",
+    pendingText: 'Loading Ruby.wasm runtime and stdlib…',
   });
 
-  setVerdict("pending", "Running reproduction script…");
+  setVerdict('pending', 'Running reproduction script…');
   const rb = vm as RubyVM;
-  const jsonText = rb.eval(REPRO_CODE).toString();
-  const result = JSON.parse(jsonText) as ReproOutput;
+  const baseline = await captureRun(rb, REPRO_CODE);
 
-  metaEl.textContent =
-    `Ruby ${result.ruby_version} via @ruby/${rubyVersion}-wasm-wasi v${rubyWasmVersion}.`;
-  outputEl.textContent = JSON.stringify(result, null, 2);
-
-  // Bug reproduces iff Regexp interpolation raises but String
-  // interpolation succeeds — the documented inconsistency.
-  const reproduced = !result.regexp_built && result.string_built;
-
-  if (reproduced) {
-    setVerdict(
-      "reproduced",
-      "bug reproduced — Regexp interpolation rejects mixed encodings while String interpolation silently upgrades.",
-    );
-  } else if (result.regexp_built && result.string_built) {
-    setVerdict(
-      "unreproduced",
-      "bug not reproduced — Regexp and String interpolation now agree (likely fixed upstream).",
-    );
-  } else {
-    setVerdict(
-      "unreproduced",
-      `bug not reproduced — unexpected outcome (regexp_built=${result.regexp_built}, string_built=${result.string_built}).`,
-    );
+  let baselineResult: ReproOutput | null = null;
+  try {
+    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
+  } catch {
+    outputEl.textContent = baseline.stdout;
+    setVerdict(baseline.verdict, baseline.message);
+    throw new Error(baseline.message);
   }
 
+  metaEl.textContent = `Ruby ${baselineResult.ruby_version} via @ruby/${rubyVersion}-wasm-wasi v${rubyWasmVersion}.`;
+  outputEl.textContent = baseline.stdout;
+  setVerdict(baseline.verdict, baseline.message);
+
   const finishedAt = new Date();
+  const reproduced = baseline.verdict === 'reproduced';
   const envelope: VivariumResultV1 = {
-    contract: "v1",
+    contract: 'v1',
     bug: {
-      project: "ruby",
+      project: 'ruby',
       issue: 21709,
-      upstream_url: "https://bugs.ruby-lang.org/issues/21709",
+      upstream_url: 'https://bugs.ruby-lang.org/issues/21709',
     },
     runtime: {
-      name: "ruby.wasm",
+      name: 'ruby.wasm',
       version: rubyWasmVersion,
       extras: {
-        ruby: result.ruby_version,
+        ruby: baselineResult.ruby_version,
         ruby_wasi_package: `@ruby/${rubyVersion}-wasm-wasi`,
       },
     },
     result: {
-      regexp_built: result.regexp_built,
-      regexp_raised: result.regexp_raised,
-      string_built: result.string_built,
-      string_encoding: result.string_encoding,
-      string_raised: result.string_raised,
+      regexp_built: baselineResult.regexp_built,
+      regexp_raised: baselineResult.regexp_raised,
+      string_built: baselineResult.string_built,
+      string_encoding: baselineResult.string_encoding,
+      string_raised: baselineResult.string_raised,
       reproduced,
     },
     timing: {
@@ -157,14 +197,21 @@ try {
     },
   };
   setResult(envelope);
+
+  // Phase 8 V″ — wire the editable script + Run button.
+  enableRunner({
+    slug: 'ruby-21709',
+    baselineSource: REPRO_CODE,
+    runFix: (source) => captureRun(rb, source),
+  });
 } catch (err: unknown) {
   console.error(err);
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== 'unreproduced') {
     setVerdict(
-      "unreproduced",
+      'unreproduced',
       `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }

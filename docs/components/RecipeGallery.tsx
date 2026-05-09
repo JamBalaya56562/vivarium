@@ -101,6 +101,22 @@ const STRINGS: Record<Lang, Strings> = {
 
 /* ----------------------------- Helpers --------------------------------- */
 
+// Rewrite the production-host URL baked into recipes.json so that, when
+// served from a different origin (local rspress dev at localhost:3000,
+// a fork's Pages deploy, an rspress preview), the "Open" link points
+// at the gallery's own host instead of the upstream Pages site. The
+// pathname (`/<base>/repro/<project>/<issue>/`) is preserved verbatim;
+// only the origin is swapped. SSR is left untouched.
+function localizeRecipeUrl(url: string): string {
+  if (typeof window === 'undefined') return url;
+  try {
+    const u = new URL(url);
+    return window.location.origin + u.pathname + u.search + u.hash;
+  } catch {
+    return url;
+  }
+}
+
 function uniqueValues<T>(
   items: RecipeEntry[],
   pick: (r: RecipeEntry) => T | undefined,
@@ -235,7 +251,7 @@ function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
       <div className="v-rg__actions">
         <a
           className="v-rg__btn v-rg__btn--primary"
-          href={recipe.page_url}
+          href={localizeRecipeUrl(recipe.page_url)}
           target="_blank"
           rel="noreferrer"
         >

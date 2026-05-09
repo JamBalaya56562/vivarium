@@ -12,12 +12,14 @@
 //     ordering on the build Pyodide ships).
 //   - "unreproduced" — the bug does NOT reproduce (or the runtime errored).
 
-import { loadVivariumPyodide } from "../_shared/loader.js";
+import { loadVivariumPyodide } from '../_shared/loader.js';
+import type { PathACapturedRun } from '../_shared/path_a.js';
+import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
   setVerdict,
   type VivariumResultV1,
-} from "../_shared/verdict.js";
+} from '../_shared/verdict.js';
 
 const REPRO_CODE = `
 import sys
@@ -57,13 +59,13 @@ interface PyodideRuntime {
   }>;
 }
 
-const outputEl = document.getElementById("output");
-const metaEl = document.getElementById("meta");
-const reproCodeEl = document.getElementById("repro-code");
+const outputEl = document.getElementById('output');
+const metaEl = document.getElementById('meta');
+const reproCodeEl = document.getElementById('repro-code');
 
 if (!outputEl || !metaEl || !reproCodeEl) {
   throw new Error(
-    "numpy-28287: missing required DOM elements (#output, #meta, #repro-code).",
+    'numpy-28287: missing required DOM elements (#output, #meta, #repro-code).',
   );
 }
 
@@ -73,12 +75,56 @@ if (!outputEl || !metaEl || !reproCodeEl) {
 // fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
-  fetch("./repro.highlighted.html")
+  fetch('./repro.highlighted.html')
     .then((r) => (r.ok ? r.text() : null))
     .then((html) => {
       if (html) reproCodeEl.innerHTML = html;
     })
     .catch(() => {});
+}
+
+function evaluate(result: ReproOutput): {
+  verdict: 'reproduced' | 'unreproduced';
+  message: string;
+} {
+  if (result.transitivity_violated) {
+    return {
+      verdict: 'reproduced',
+      message:
+        'bug reproduced — timedelta64 ordering is non-transitive (x < y < z but x ≥ z).',
+    };
+  }
+  return {
+    verdict: 'unreproduced',
+    message:
+      'bug not reproduced — timedelta64 ordering is transitive in this numpy build.',
+  };
+}
+
+async function captureRun(
+  runtime: PyodideRuntime,
+  source: string,
+): Promise<PathACapturedRun> {
+  try {
+    const proxy = await runtime.runPythonAsync(source);
+    const result = proxy.toJs({ dict_converter: Object.fromEntries });
+    proxy.destroy?.();
+    const ev = evaluate(result);
+    return {
+      exitCode: 0,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: JSON.stringify(result, null, 2),
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      exitCode: 1,
+      verdict: 'unreproduced',
+      message: `runtime error: ${message}`,
+      stdout: message,
+    };
+  }
 }
 
 const startedAt = new Date();
@@ -88,54 +134,50 @@ try {
   // explicitly via `loadPackage` / the `packages` option — it is not
   // imported at runtime startup.
   const { pyodide, version } = await loadVivariumPyodide({
-    packages: ["numpy"],
-    pendingText: "Loading Pyodide runtime and numpy…",
+    packages: ['numpy'],
+    pendingText: 'Loading Pyodide runtime and numpy…',
   });
 
-  setVerdict("pending", "Running reproduction script…");
+  setVerdict('pending', 'Running reproduction script…');
   const runtime = pyodide as PyodideRuntime;
-  const proxy = await runtime.runPythonAsync(REPRO_CODE);
-  const result = proxy.toJs({ dict_converter: Object.fromEntries });
-  proxy.destroy?.();
+  const baseline = await captureRun(runtime, REPRO_CODE);
+
+  let baselineResult: ReproOutput | null = null;
+  try {
+    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
+  } catch {
+    outputEl.textContent = baseline.stdout;
+    setVerdict(baseline.verdict, baseline.message);
+    throw new Error(baseline.message);
+  }
 
   metaEl.textContent =
-    `numpy ${result.numpy_version} on Python ${result.python_version} ` +
+    `numpy ${baselineResult.numpy_version} on Python ${baselineResult.python_version} ` +
     `via Pyodide v${version}.`;
-  outputEl.textContent = JSON.stringify(result, null, 2);
-
-  if (result.transitivity_violated) {
-    setVerdict(
-      "reproduced",
-      "bug reproduced — timedelta64 ordering is non-transitive (x < y < z but x ≥ z).",
-    );
-  } else {
-    setVerdict(
-      "unreproduced",
-      "bug not reproduced — timedelta64 ordering is transitive in this numpy build.",
-    );
-  }
+  outputEl.textContent = baseline.stdout;
+  setVerdict(baseline.verdict, baseline.message);
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
-    contract: "v1",
+    contract: 'v1',
     bug: {
-      project: "numpy",
+      project: 'numpy',
       issue: 28287,
-      upstream_url: "https://github.com/numpy/numpy/issues/28287",
+      upstream_url: 'https://github.com/numpy/numpy/issues/28287',
     },
     runtime: {
-      name: "pyodide",
+      name: 'pyodide',
       version,
       extras: {
-        python: result.python_version,
-        numpy: result.numpy_version,
+        python: baselineResult.python_version,
+        numpy: baselineResult.numpy_version,
       },
     },
     result: {
-      x_lt_y: result.x_lt_y,
-      y_lt_z: result.y_lt_z,
-      x_lt_z: result.x_lt_z,
-      transitivity_violated: result.transitivity_violated,
+      x_lt_y: baselineResult.x_lt_y,
+      y_lt_z: baselineResult.y_lt_z,
+      x_lt_z: baselineResult.x_lt_z,
+      transitivity_violated: baselineResult.transitivity_violated,
     },
     timing: {
       started_at: startedAt.toISOString(),
@@ -144,6 +186,13 @@ try {
     },
   };
   setResult(envelope);
+
+  // Phase 8 V″ — wire the editable script + Run button.
+  enableRunner({
+    slug: 'numpy-28287',
+    baselineSource: REPRO_CODE,
+    runFix: (source) => captureRun(runtime, source),
+  });
 } catch (err: unknown) {
   console.error(err);
   const errAny = err as { stack?: string; message?: string } | null;
@@ -151,9 +200,9 @@ try {
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
   // `loadVivariumPyodide` already sets "unreproduced" on load-time errors. Cover
   // the case where the runtime loaded but the reproduction itself errored.
-  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== 'unreproduced') {
     setVerdict(
-      "unreproduced",
+      'unreproduced',
       `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }

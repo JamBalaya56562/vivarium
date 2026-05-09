@@ -23,13 +23,14 @@
 // php-wasm runtime. The panel produces a Contract v1 verdict bundle
 // the visitor drops on /repro/compare for side-by-side review.
 
-import { enablePathA, type PathACapturedRun } from "../_shared/path_a.js";
-import { loadVivariumPhp, type PhpRunner } from "../_shared/php_loader.js";
+import { enablePathA, type PathACapturedRun } from '../_shared/path_a.js';
+import { loadVivariumPhp, type PhpRunner } from '../_shared/php_loader.js';
+import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
   setVerdict,
   type VivariumResultV1,
-} from "../_shared/verdict.js";
+} from '../_shared/verdict.js';
 
 const REPRO_CODE = `<?php
 $xml = '<?xml version="1.0"?><foo><bar><?stylesheet hello ?></bar></foo>';
@@ -52,14 +53,14 @@ interface ReproOutput {
   pi_text_empty: boolean;
 }
 
-const outputEl = document.getElementById("output");
-const metaEl = document.getElementById("meta");
-const reproCodeEl = document.getElementById("repro-code");
-const pathAMountEl = document.getElementById("path-a-mount");
+const outputEl = document.getElementById('output');
+const metaEl = document.getElementById('meta');
+const reproCodeEl = document.getElementById('repro-code');
+const pathAMountEl = document.getElementById('path-a-mount');
 
 if (!outputEl || !metaEl || !reproCodeEl) {
   throw new Error(
-    "php-12167: missing required DOM elements (#output, #meta, #repro-code).",
+    'php-12167: missing required DOM elements (#output, #meta, #repro-code).',
   );
 }
 
@@ -69,7 +70,7 @@ if (!outputEl || !metaEl || !reproCodeEl) {
 // fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
-  fetch("./repro.highlighted.html")
+  fetch('./repro.highlighted.html')
     .then((r) => (r.ok ? r.text() : null))
     .then((html) => {
       if (html) reproCodeEl.innerHTML = html;
@@ -78,7 +79,7 @@ if (!reproCodeEl.firstChild) {
 }
 
 function evaluate(result: ReproOutput): {
-  verdict: "reproduced" | "unreproduced";
+  verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
   // Bug reproduces iff xpath finds the PI node (count === 1) but
@@ -86,9 +87,9 @@ function evaluate(result: ReproOutput): {
   const reproduced = result.xpath_count === 1 && result.pi_text_empty;
   if (reproduced) {
     return {
-      verdict: "reproduced",
+      verdict: 'reproduced',
       message:
-        "bug reproduced — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.",
+        'bug reproduced — SimpleXML xpath returns the processing-instruction node, but casting it to string yields an empty value.',
     };
   }
   if (
@@ -97,13 +98,13 @@ function evaluate(result: ReproOutput): {
     result.pi_text !== null
   ) {
     return {
-      verdict: "unreproduced",
+      verdict: 'unreproduced',
       message:
-        "bug not reproduced — SimpleXML now returns the PI content correctly (likely fixed upstream).",
+        'bug not reproduced — SimpleXML now returns the PI content correctly (likely fixed upstream).',
     };
   }
   return {
-    verdict: "unreproduced",
+    verdict: 'unreproduced',
     message: `bug not reproduced — unexpected outcome (xpath_count=${result.xpath_count}, pi_text=${JSON.stringify(result.pi_text)}).`,
   };
 }
@@ -116,7 +117,7 @@ async function captureRun(
   if (exitCode !== 0) {
     return {
       exitCode,
-      verdict: "unreproduced",
+      verdict: 'unreproduced',
       message: `php-wasm exited non-zero (code=${exitCode}); stdout=${stdout}`,
       stdout,
     };
@@ -127,7 +128,7 @@ async function captureRun(
   } catch (err: unknown) {
     return {
       exitCode,
-      verdict: "unreproduced",
+      verdict: 'unreproduced',
       message: `bug not reproduced — fix output was not valid JSON (${err instanceof Error ? err.message : String(err)})`,
       stdout,
     };
@@ -145,10 +146,10 @@ const startedAt = new Date();
 
 try {
   const { php, phpWasmVersion } = await loadVivariumPhp({
-    pendingText: "Loading php-wasm runtime and stdlib…",
+    pendingText: 'Loading php-wasm runtime and stdlib…',
   });
 
-  setVerdict("pending", "Running reproduction script…");
+  setVerdict('pending', 'Running reproduction script…');
   const baseline = await captureRun(php, REPRO_CODE);
 
   let baselineResult: ReproOutput;
@@ -160,22 +161,21 @@ try {
     );
   }
 
-  metaEl.textContent =
-    `PHP ${baselineResult.php_version} via php-wasm v${phpWasmVersion}.`;
+  metaEl.textContent = `PHP ${baselineResult.php_version} via php-wasm v${phpWasmVersion}.`;
   outputEl.textContent = JSON.stringify(baselineResult, null, 2);
 
   setVerdict(baseline.verdict, baseline.message);
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
-    contract: "v1",
+    contract: 'v1',
     bug: {
-      project: "php",
+      project: 'php',
       issue: 12167,
-      upstream_url: "https://github.com/php/php-src/issues/12167",
+      upstream_url: 'https://github.com/php/php-src/issues/12167',
     },
     runtime: {
-      name: "php-wasm",
+      name: 'php-wasm',
       version: phpWasmVersion,
       extras: {
         php: baselineResult.php_version,
@@ -185,7 +185,7 @@ try {
       xpath_count: baselineResult.xpath_count,
       pi_text: baselineResult.pi_text,
       pi_text_empty: baselineResult.pi_text_empty,
-      reproduced: baseline.verdict === "reproduced",
+      reproduced: baseline.verdict === 'reproduced',
     },
     timing: {
       started_at: startedAt.toISOString(),
@@ -195,13 +195,24 @@ try {
   };
   setResult(envelope);
 
+  // Phase 8 V″ — wire the editable script + Run button (the in-place
+  // re-run affordance the runner offers, in the script column).
+  enableRunner({
+    slug: 'php-12167',
+    baselineSource: REPRO_CODE,
+    runFix: (source) => captureRun(php, source),
+  });
+
   // Phase 7 B3 — opt into Path A. The mount-point lives in the page
   // markup (`<section id="path-a-mount" hidden>`); reveal it before
   // mounting so the panel transitions from hidden to populated atomically.
+  // Path A overlaps with the runner conceptually (both re-run a pasted
+  // script), but Path A also captures verdict.json bundles for
+  // /repro/compare and is preserved here for the existing B3 walkthrough.
   if (pathAMountEl) {
-    pathAMountEl.removeAttribute("hidden");
+    pathAMountEl.removeAttribute('hidden');
     void enablePathA({
-      slug: "php-12167",
+      slug: 'php-12167',
       baselineSource: REPRO_CODE,
       baseline,
       runFix: (source) => captureRun(php, source),
@@ -212,9 +223,9 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
+  if (globalThis.__VIVARIUM_VERDICT__ !== 'unreproduced') {
     setVerdict(
-      "unreproduced",
+      'unreproduced',
       `bug not reproduced — runtime error: ${errAny?.message ?? String(err)}`,
     );
   }
