@@ -10,7 +10,7 @@ name: deploy-docs
 # composite action because rust is needed for `wasm32-wasip1` builds
 # alongside bun for the rspress site / Layer 1 TS, and mise reads
 # both pins from `mise.toml` so versions stay in lockstep with local
-# development. Single-tool workflows (test-docs-build, publish-mcp,
+# development. Single-tool workflows (publish-mcp,
 # branch-fix-verdict) use `oven-sh/setup-bun` directly instead.
 #
 # Layout:
