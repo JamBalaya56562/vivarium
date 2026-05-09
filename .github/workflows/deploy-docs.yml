@@ -10,7 +10,7 @@ name: deploy-docs
 # composite action because rust is needed for `wasm32-wasip1` builds
 # alongside bun for the rspress site / Layer 1 TS, and mise reads
 # both pins from `mise.toml` so versions stay in lockstep with local
-# development. Single-tool workflows (test-docs-build, publish-mcp,
+# development. Single-tool workflows (publish-mcp,
 # branch-fix-verdict) use `oven-sh/setup-bun` directly instead.
 #
 # Layout:
@@ -192,6 +192,10 @@ jobs:
           for dockerfile in src/layer2_docker/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
+            # Skip underscore-prefixed sentinels (e.g. `_template/`,
+            # `_layer2-shared/`) — same convention the recipes-index
+            # walker follows in docs/scripts/generate-recipes-index.ts.
+            case "$slug" in _*) continue ;; esac
             tag_latest="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:latest"
             tag_sha="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:${GITHUB_SHA}"
 
@@ -394,6 +398,10 @@ jobs:
             for shared in src/layer2_docker/_*/; do
               [ -d "$shared" ] || continue
               shared_name="$(basename "$shared")"
+              # `_template/` is the scaffolder seed (used by
+              # `mise run recipes:new`), not a shared runtime module.
+              # Don't ship it under each project's deploy dir.
+              case "$shared_name" in _template) continue ;; esac
               echo "Staging Layer 2 shared module: ${shared_name} → ${dest}/${project}/${shared_name}"
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done

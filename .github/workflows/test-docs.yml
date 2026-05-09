@@ -1,13 +1,20 @@
-name: Test docs site (E2E + unit)
+name: Test docs (unit + build + E2E)
 
-# Smoke + regression tests for the rspress docs site under `docs/`.
-# Two lanes:
+# Single workflow covering every PR-time and post-merge check the
+# rspress docs site needs. Three lanes:
 #
 #   1. Unit lane — `bun test scripts/__tests__` validates pure functions
 #      that the dev middleware uses (resolveReproFile etc.). No browser
 #      needed; runs in seconds.
 #
-#   2. E2E lane — Playwright runs against `bunx rspress preview`,
+#   2. Build verification — handled implicitly by the E2E lane below:
+#      Playwright's `webServer.command` is `bun run build && bun x
+#      rspress preview …`, so a broken docs build fails the E2E lane
+#      before any test runs. A dedicated build-only workflow used to
+#      live in `test-docs-build.yml` but was redundant with this and
+#      has been removed.
+#
+#   3. E2E lane — Playwright runs against `bunx rspress preview`,
 #      asserting that every tracked page (EN + JA, 68 total) renders
 #      with a non-empty <h1>, the rspress nav, and the footer; that the
 #      EN ↔ JA file tree is symmetric and the locale switcher round-
@@ -19,11 +26,11 @@ name: Test docs site (E2E + unit)
 #      stays at ~ one-engine cost, and per-engine failures appear as
 #      separate red checks for fast triage.
 #
-# Why this workflow exists (per the docs E2E PR notes): the rspress
-# docs site has no PR-time test gate today. Past PRs accidentally
-# broke component renders / nav / loading UX, and the regression
-# only surfaced when a maintainer browsed the deploy and noticed.
-# This workflow turns that class of breakage into a CI failure.
+# Why this workflow exists: the rspress docs site has no other
+# PR-time test gate today. Past PRs accidentally broke component
+# renders / nav / loading UX, and the regression only surfaced when
+# a maintainer browsed the deploy and noticed. This workflow turns
+# that class of breakage into a CI failure.
 #
 # Triggers:
 # - `pull_request` touching docs/ or this workflow — fast feedback.
@@ -41,12 +48,12 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
-      - '.github/workflows/test-docs-e2e.yml'
+      - '.github/workflows/test-docs.yml'
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      - '.github/workflows/test-docs-e2e.yml'
+      - '.github/workflows/test-docs.yml'
   workflow_dispatch:
 
 permissions:
@@ -55,7 +62,7 @@ permissions:
 # Cancel in-flight runs when a PR receives a new commit; save Actions
 # minutes.
 concurrency:
-  group: test-docs-e2e-${{ github.event.pull_request.number || github.ref }}
+  group: test-docs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

@@ -356,6 +356,11 @@ jobs:
           for dockerfile in src/layer3_thirdway/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
+            # Symmetric with the Layer 2 loop above: skip underscore-
+            # prefixed sentinels (e.g. a future `_template/` or
+            # `_layer3-shared/`). No Layer 3 sentinel exists today,
+            # but the convention is enforced for forward safety.
+            case "$slug" in _*) continue ;; esac
             tag="vivarium-${slug}:test"
 
             verdict_file="${slug_dir}/verdict.json"

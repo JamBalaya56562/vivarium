@@ -197,6 +197,7 @@ shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do
   slug_dir=$(dirname "$dockerfile")
   slug=$(basename "$slug_dir")
+  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
   echo "==> docker build vivarium-${slug}:dev"
   docker build -t "vivarium-${slug}:dev" "$slug_dir"
 done
@@ -227,6 +228,7 @@ shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do
   slug_dir=$(dirname "$dockerfile")
   slug=$(basename "$slug_dir")
+  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
   tag="vivarium-${slug}:dev"
   echo "==> capture verdict.json for ${slug}"
   bash scripts/capture_layer2_verdict.sh "$tag" "${slug_dir}/verdict.json"
@@ -300,7 +302,7 @@ run = "tofu apply"
 # ── Local CI equivalents (what GitHub Actions runs) ──────────────────────
 
 [tasks."ci:docs"]
-description = "Local equivalent of test-docs-build.yml"
+description = "Local docs build sanity (mirrors the build step inside test-docs.yml's E2E lane)"
 dir = "docs"
 run = '''
 bun install --frozen-lockfile
@@ -329,7 +331,7 @@ bun run test
 '''
 
 [tasks."ci:docs-unit"]
-description = "Local equivalent of test-docs-e2e.yml unit lane (resolveReproFile etc.)"
+description = "Local equivalent of test-docs.yml unit lane (resolveReproFile etc.)"
 dir = "docs"
 run = '''
 bun install --frozen-lockfile
@@ -337,7 +339,7 @@ bun run test:unit
 '''
 
 [tasks."ci:docs-e2e"]
-description = "Local equivalent of test-docs-e2e.yml E2E lane (Playwright against rspress preview, Chromium + Firefox + WebKit)"
+description = "Local equivalent of test-docs.yml E2E lane (Playwright against rspress preview, Chromium + Firefox + WebKit)"
 dir = "docs"
 shell = "bash -c"  # need `set -o pipefail`
 run = '''

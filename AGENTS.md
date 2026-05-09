@@ -305,9 +305,9 @@ them job-for-job:
 
 | Task                | Workflow                  |
 | ------------------- | ------------------------- |
-| `ci:docs`           | `test-docs-build.yml`     |
-| `ci:docs-unit`      | `test-docs-e2e.yml` (unit lane) |
-| `ci:docs-e2e`       | `test-docs-e2e.yml` (E2E lane)  |
+| `ci:docs`           | `test-docs.yml` (build is implicit in the E2E lane's `webServer.command`) |
+| `ci:docs-unit`      | `test-docs.yml` (unit lane) |
+| `ci:docs-e2e`       | `test-docs.yml` (E2E lane)  |
 | `ci:repro`          | `repro-regression.yml`    |
 | `ci:lint`           | `test-lint-check.yml`     |
 | `ci:mcp`            | `test-mcp.yml`            |
