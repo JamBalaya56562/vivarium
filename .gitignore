@@ -146,6 +146,7 @@ temp/
 .claude/
 .aider*
 .cursor-server/
+CLAUDE.local.md
 
 # ─── Local-only docs (design/strategy memos) ───
 /_context/
