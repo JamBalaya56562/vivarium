@@ -101,6 +101,12 @@ docs/.last-run.json
 doc_build/
 .rspress/
 
+# ajv-standalone validators emitted by `docs/scripts/generate-validators.ts`
+# from the schemas under `docs/public/spec/`. Reproducible from the schema
+# + the codegen script + pinned ajv/ajv-formats versions; the schemas are
+# the source of truth. See ADR-0034 for the migration rationale.
+docs/generated/
+
 # Per-project landing pages under `/repro/<project>/` are generated at
 # build time by `docs/scripts/generate-project-pages.ts` from the
 # `docs/public/api/projects.json` index — see the AUTO-GENERATED marker
