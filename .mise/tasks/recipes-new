@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# mise description="Scaffold a new Layer 2 recipe directory from src/layer2_docker/_template/"
+# mise dir="{{ config_root }}"
+# mise alias="recipe-new"
+#
+# Forwards CLI args to docs/scripts/new-recipe.ts. File-based tasks
+# pass `$@` cleanly across shells (Windows / macOS / Linux), unlike
+# inline `[tasks."x"]` blocks in mise.toml.
+#
+# Example:
+#   mise run recipes-new -- node 63041 "Intl.DateTimeFormat drops month" --base node:26-slim
+#
+# See src/layer2_docker/AGENTS.md §"Adding a new reproduction" for
+# the full workflow including the data-file edits the scaffolder
+# does NOT perform.
+
+set -euo pipefail
+
+cd docs
+exec mise exec -- bun run scripts/new-recipe.ts "$@"
