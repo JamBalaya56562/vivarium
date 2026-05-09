@@ -216,6 +216,11 @@ jobs:
           for dockerfile in src/layer2_docker/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
+            # Skip underscore-prefixed sentinels (e.g. `_template/`,
+            # `_layer2-shared/`). They are not real recipes — same
+            # convention the recipes-index walker follows in
+            # docs/scripts/generate-recipes-index.ts.
+            case "$slug" in _*) continue ;; esac
             tag="vivarium-${slug}:test"
             echo "Building Layer 2 image for regression: ${slug}"
             docker build --tag "$tag" "$slug_dir"
@@ -280,6 +285,7 @@ jobs:
           # the catalogue currently publishes.
           for vf in src/layer2_docker/*/verdict.json; do
             slug="$(basename "$(dirname "$vf")")"
+            case "$slug" in _*) continue ;; esac
             captured=$(jq -r '.verdict' "$vf")
             url="$(jq -r --arg s "$slug" \
               '.recipes[] | select(.slug == $s) | .verdict_url' \
