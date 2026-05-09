@@ -16,13 +16,17 @@ name: publish-mcp
 # after fixing CI plumbing (does not change the version literal).
 #
 # Toolchain: Bun end-to-end. Install / build / test all run on Bun;
-# the npm-side publish goes through `bunx npm publish --provenance`
-# because Bun does not yet support npm OIDC trusted publishing
-# directly (oven-sh/bun#15601, OPEN as of 2026-04). `bunx npm`
-# fetches and runs the npm CLI through Bun without needing a
-# separate Node install — the workflow does not call
-# `actions/setup-node`. JSR publish runs through `bunx jsr publish`,
-# which uses OIDC automatically when `id-token: write` is granted.
+# the npm-side publish goes through `bunx npm@latest publish
+# --provenance` because Bun does not yet support npm OIDC trusted
+# publishing directly (oven-sh/bun#15601, OPEN as of 2026-04).
+# `bunx npm@latest` fetches and runs the npm CLI through Bun without
+# needing a separate Node install — the workflow does not call
+# `actions/setup-node`. The `@latest` tag is load-bearing: bare
+# `bunx npm` resolves a cached older minor (observed 11.13.0) whose
+# trusted-publishing path masks real failures as ENEEDAUTH
+# (npm/cli#9088); pinning to the latest npm avoids that footgun.
+# JSR publish runs through `bunx jsr publish`, which uses OIDC
+# automatically when `id-token: write` is granted.
 
 on:
   push:
@@ -76,7 +80,7 @@ jobs:
           bun run test
 
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
-        run: bunx npm publish --provenance --access public
+        run: bunx npm@latest publish --provenance --access public
         env:
           # Tells the npm CLI which registry to authenticate against; in
           # combination with `id-token: write` permissions and
