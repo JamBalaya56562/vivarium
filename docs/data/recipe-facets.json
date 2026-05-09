@@ -66,6 +66,12 @@
       "symptom": "lost-update-data-race",
       "severity": "datarace",
       "tags": ["pthread", "rr-replay", "deterministic"]
+    },
+    "node-63041": {
+      "language": "javascript",
+      "symptom": "intl-month-dropped",
+      "severity": "regression",
+      "tags": ["intl", "datetimeformat", "iso8601-calendar", "icu"]
     }
   }
 }

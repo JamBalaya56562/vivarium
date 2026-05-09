@@ -77,6 +77,13 @@
       "description": "Layer 3 record-replay reproductions: a real pthreaded program is run under rr, the recorded trace ships in the image, and replay produces a bit-identical verdict every time.",
       "homepage": "https://man7.org/linux/man-pages/man7/pthreads.7.html",
       "github": "https://github.com/rr-debugger/rr"
+    },
+    "node": {
+      "display_name": "Node.js",
+      "tagline": "Node.js runtime and bundled subsystems (V8, ICU, libuv).",
+      "description": "Layer 2 Docker reproductions targeting open upstream regressions in the Node.js runtime. Each recipe pins a stable `node:<major>-slim` base so the verdict flips from `reproduced` to `unreproduced` once the upstream fix lands in a later patch release.",
+      "homepage": "https://nodejs.org/",
+      "github": "https://github.com/nodejs/node"
     }
   }
 }

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing Node.js Intl.DateTimeFormat dropping month with calendar:'iso8601' (#63041)</title>
+    <!-- vivarium-chrome-injected -->
+    <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
+    <link rel="stylesheet" href="../_shared/style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="kicker">Vivarium · Layer 2 · Docker (catalogue)</p>
+        <h1>Node.js <code>Intl.DateTimeFormat</code> drops month with <code>calendar: 'iso8601'</code></h1>
+        <p class="lede">
+          A <code>dateStyle: 'full'</code> formatter configured with
+          <code>calendar: 'iso8601'</code> silently elides the month
+          name from the output. Regression introduced in Node
+          v24.13.0 via an ICU update; reproduces on every release
+          since, including the v26.x current line. Upstream issue
+          <a href="https://github.com/nodejs/node/issues/63041">#63041</a>
+          is open with no attached fix PR at recipe-creation time.
+        </p>
+      </header>
+
+      <section>
+        <h2>CI verdict snapshot</h2>
+        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          Loading verdict snapshot…
+        </div>
+        <p class="meta" id="meta"></p>
+      </section>
+
+      <section>
+        <h2>Reproduce yourself</h2>
+        <pre><code>docker run --rm ghcr.io/aletheia-works/vivarium-node-63041:latest</code></pre>
+        <p class="meta">
+          First-pull cost ~70 MB (node:26-slim). Run takes well
+          under a second. See the
+          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/node-63041">
+            recipe directory</a> for the <code>Dockerfile</code> and
+          <code>repro.sh</code>.
+        </p>
+      </section>
+
+      <section>
+        <h2>CI snapshot output</h2>
+        <pre id="output">(loading…)</pre>
+      </section>
+
+      <footer>
+        <p class="meta">
+          Layer 2 pages report a CI-snapshot verdict; the visitor's
+          local <code>docker run</code> is the live confirmation.
+          See <a href="../">/repro/</a> for the gallery.
+        </p>
+      </footer>
+    </main>
+
+    <script type="module">
+      import { renderVerdictSnapshot } from "../_layer2-shared/layer2.js";
+      renderVerdictSnapshot({
+        bug: {
+          project: "node",
+          issue: 63041,
+          upstream_url: "https://github.com/nodejs/node/issues/63041",
+        },
+      });
+    </script>
+  </body>
+</html>
