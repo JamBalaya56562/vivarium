@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import validateVerdictRaw from '../generated/verdict-validator.mjs';
 import './repro-compare.css';
 
 /* ============================================================================
@@ -13,9 +14,10 @@ import './repro-compare.css';
  *   1. Accepts file drop / file picker (zip artefact OR bare json).
  *   2. Accepts URL params (?slug=&branch_url=&original_url=).
  *   3. Falls back to JSON paste on CORS / parse failure.
- *   4. Validates each loaded verdict against Contract v1 v1 shape
- *      (hand-rolled — schema is static and tiny; ajv-standalone migration
- *      is deferred per ADR-0023 §1 Negative until the schema grows).
+ *   4. Validates each loaded verdict against Contract v1 v1 shape via
+ *      the ajv-standalone-generated validator built from
+ *      `docs/public/spec/verdict.schema.json` (see ADR-0034). The schema
+ *      is the single source of truth.
  *   5. Renders side-by-side comparison via the V.2 component family.
  *
  * The visitor's verdicts never leave the browser — all parsing,
@@ -46,106 +48,51 @@ type ValidationResult =
   | { ok: true; data: VerdictV1 }
   | { ok: false; error: ValidationError };
 
-const REQUIRED_FIELDS = [
-  'contract',
-  'verdict',
-  'exit_code',
-  'image_tag',
-  'image_digest',
-  'captured_at',
-  'stdout',
-  'stderr_tail',
-] as const;
+interface AjvErrorObject {
+  instancePath: string;
+  schemaPath: string;
+  keyword: string;
+  params: Record<string, unknown>;
+  message?: string;
+}
+
+interface AjvValidateFn {
+  (data: unknown): boolean;
+  errors?: AjvErrorObject[] | null;
+}
+
+const validateVerdictAjv = validateVerdictRaw as unknown as AjvValidateFn;
+
+function ajvErrorToValidationError(err: AjvErrorObject): ValidationError {
+  // For `required` errors, ajv reports the parent's instancePath and
+  // the missing key in `params.missingProperty` — surface the missing
+  // path explicitly so the UI's "at /field" hint is precise.
+  if (
+    err.keyword === 'required' &&
+    typeof err.params.missingProperty === 'string'
+  ) {
+    const parent = err.instancePath || '';
+    return {
+      path: `${parent}/${err.params.missingProperty}`,
+      message: 'required field missing',
+    };
+  }
+  return {
+    path: err.instancePath || '/',
+    message: err.message ?? `invalid (${err.keyword})`,
+  };
+}
 
 function validateVerdict(raw: unknown): ValidationResult {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    return {
-      ok: false,
-      error: {
-        path: '/',
-        message: 'expected a JSON object at the top level',
-      },
-    };
+  if (validateVerdictAjv(raw)) {
+    return { ok: true, data: raw as VerdictV1 };
   }
-  const obj = raw as Record<string, unknown>;
-
-  for (const field of REQUIRED_FIELDS) {
-    if (!(field in obj)) {
-      return {
-        ok: false,
-        error: {
-          path: `/${field}`,
-          message: 'required field missing',
-        },
-      };
-    }
-  }
-
-  if (obj.contract !== 'v1') {
-    return {
-      ok: false,
-      error: {
-        path: '/contract',
-        message: `expected "v1", got ${JSON.stringify(obj.contract)}`,
-      },
-    };
-  }
-  if (obj.verdict !== 'reproduced' && obj.verdict !== 'unreproduced') {
-    return {
-      ok: false,
-      error: {
-        path: '/verdict',
-        message: `expected "reproduced" or "unreproduced", got ${JSON.stringify(obj.verdict)}`,
-      },
-    };
-  }
-  if (typeof obj.exit_code !== 'number' || !Number.isInteger(obj.exit_code)) {
-    return {
-      ok: false,
-      error: {
-        path: '/exit_code',
-        message: `expected integer, got ${typeof obj.exit_code}`,
-      },
-    };
-  }
-  if (typeof obj.image_tag !== 'string' || obj.image_tag.length === 0) {
-    return {
-      ok: false,
-      error: {
-        path: '/image_tag',
-        message: 'expected non-empty string',
-      },
-    };
-  }
-  for (const field of [
-    'image_digest',
-    'captured_at',
-    'stdout',
-    'stderr_tail',
-  ] as const) {
-    if (typeof obj[field] !== 'string') {
-      return {
-        ok: false,
-        error: {
-          path: `/${field}`,
-          message: `expected string, got ${typeof obj[field]}`,
-        },
-      };
-    }
-  }
-
+  const firstErr = validateVerdictAjv.errors?.[0];
   return {
-    ok: true,
-    data: {
-      contract: 'v1',
-      verdict: obj.verdict as VerdictLiteral,
-      exit_code: obj.exit_code,
-      image_tag: obj.image_tag as string,
-      image_digest: obj.image_digest as string,
-      captured_at: obj.captured_at as string,
-      stdout: obj.stdout as string,
-      stderr_tail: obj.stderr_tail as string,
-    },
+    ok: false,
+    error: firstErr
+      ? ajvErrorToValidationError(firstErr)
+      : { path: '/', message: 'invalid verdict shape' },
   };
 }
 
