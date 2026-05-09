@@ -146,6 +146,13 @@ temp/
 .claude/
 .aider*
 .cursor-server/
+# Project-scoped, local-only Claude Code instructions. Used for
+# personal operating rules that aren't part of the vivarium
+# implementation (e.g. how *we* select issues to reproduce). The
+# tracked `CLAUDE.md` covers implementation rules; `CLAUDE.local.md`
+# covers usage / dogfooding rules. See `CLAUDE.local.md` itself for
+# the current pointers.
+CLAUDE.local.md
 
 # ─── Local-only docs (design/strategy memos) ───
 /_context/
