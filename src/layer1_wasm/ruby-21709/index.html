@@ -19,36 +19,73 @@
       crossorigin
     />
     <link rel="stylesheet" href="../_shared/style.css" />
-  </head>
-  <body>
-    <main>
-      <header>
-        <p class="kicker">Vivarium · Layer 1 · Ruby.wasm</p>
-        <h1>Reproducing <a href="https://bugs.ruby-lang.org/issues/21709">ruby/ruby#21709</a></h1>
-        <p class="lede">
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
           Ruby's Regexp interpolation rejects fragments of differing
           encodings, while String interpolation silently upgrades them
           to UTF-8. With <code>prefix = '\p{In_Arabic}'</code> and
           <code>suffix = prefix.encode('US-ASCII')</code>,
           <code>/#{prefix}#{suffix}/</code> raises a
-          <code>RegexpError</code> while <code>"#{prefix}#{suffix}"</code>
-          builds a UTF-8 string fine. The two interpolation forms
-          should agree on how to combine fragments of different
-          encodings — they don't.
+          <code>RegexpError</code> while
+          <code>"#{prefix}#{suffix}"</code> builds a UTF-8 string.
         </p>
+        <p>
+          The two interpolation forms should agree on how to combine
+          fragments of different encodings. The script on this page
+          attempts both, captures whether each raised, and returns
+          a JSON summary the verdict logic uses to decide reproduced
+          vs unreproduced.
+        </p>
+        <p>
+          The full discussion (motivation, fix progress) lives in the
+          GitHub issue thread linked below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">ruby/ruby</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#21709</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Ruby.wasm</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Ruby.wasm</p>
+          <h1>Reproducing <a href="https://bugs.ruby-lang.org/issues/21709">ruby/ruby#21709</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://bugs.ruby-lang.org/issues/21709" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Ruby.wasm runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
       </header>
 
-      <section>
-        <h2>Verdict</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
-          Loading Ruby.wasm runtime…
-        </div>
-        <p class="meta" id="meta"></p>
-      </section>
-
-      <section>
-        <h2>Reproduction script</h2>
-        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">require</span><span style="color:#9ECBFF"> "json"</span></span>
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">require</span><span style="color:#9ECBFF"> "json"</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#FFAB70">result</span><span style="color:#E1E4E8"> = { </span><span style="color:#79B8FF">ruby_version:</span><span style="color:#79B8FF"> RUBY_VERSION</span><span style="color:#E1E4E8"> }</span></span>
 <span class="line"></span>
@@ -76,23 +113,14 @@
 <span class="line"><span style="color:#F97583">end</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">dump</span><span style="color:#E1E4E8">(result)</span></span></code></pre>
-      </section>
+        </section>
 
-      <section>
-        <h2>Output</h2>
-        <pre id="output">(running)</pre>
-      </section>
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
 
-      <footer>
-        <p class="meta">
-          Runtime:
-          <a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a>
-          loaded from
-          <a href="https://www.jsdelivr.com/package/npm/@ruby/wasm-wasi">cdn.jsdelivr.net</a>.
-          Source:
-          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/ruby-21709">vivarium/src/layer1_wasm/ruby-21709</a>.
-        </p>
-      </footer>
     </main>
 
     <script type="module" src="./repro.js"></script>

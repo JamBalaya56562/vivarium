@@ -20,31 +20,68 @@
       crossorigin
     />
     <link rel="stylesheet" href="../_shared/style.css" />
-  </head>
-  <body>
-    <main>
-      <header>
-        <p class="kicker">Vivarium · Layer 1 · Pyodide</p>
-        <h1>Reproducing <a href="https://github.com/pandas-dev/pandas/issues/56679">pandas-dev/pandas#56679</a></h1>
-        <p class="lede">
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
           <code>pd.Series([])</code> returns dtype <code>object</code>,
           but <code>pd.DataFrame({'a': []})['a']</code> returns dtype
           <code>float64</code>. The two constructors should produce a
           consistent dtype for an empty input.
         </p>
+        <p>
+          The script on this page constructs both shapes and compares
+          their dtypes. If the dtypes differ, the bug reproduces in
+          the pandas build Pyodide currently ships.
+        </p>
+        <p>
+          The full discussion (motivation, history, fix progress)
+          lives in the GitHub issue thread linked below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">pandas-dev/pandas</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#56679</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Pyodide v0.29.3</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Pyodide</p>
+          <h1>Reproducing <a href="https://github.com/pandas-dev/pandas/issues/56679">pandas-dev/pandas#56679</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://github.com/pandas-dev/pandas/issues/56679" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Pyodide runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
       </header>
 
-      <section>
-        <h2>Verdict</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
-          Loading Pyodide runtime…
-        </div>
-        <p class="meta" id="meta"></p>
-      </section>
-
-      <section>
-        <h2>Reproduction script</h2>
-        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> pandas </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> pd</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#E1E4E8">series_dtype </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(pd.Series([]).dtype)</span></span>
@@ -57,23 +94,14 @@
 <span class="line"><span style="color:#9ECBFF">    "df_dtype"</span><span style="color:#E1E4E8">: df_dtype,</span></span>
 <span class="line"><span style="color:#9ECBFF">    "mismatch"</span><span style="color:#E1E4E8">: series_dtype </span><span style="color:#F97583">!=</span><span style="color:#E1E4E8"> df_dtype,</span></span>
 <span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
-      </section>
+        </section>
 
-      <section>
-        <h2>Output</h2>
-        <pre id="output">(running)</pre>
-      </section>
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
 
-      <footer>
-        <p class="meta">
-          Runtime:
-          <a href="https://pyodide.org/">Pyodide</a>
-          loaded from
-          <a href="https://www.jsdelivr.com/package/npm/pyodide">cdn.jsdelivr.net</a>.
-          Source:
-          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679">vivarium/src/layer1_wasm/pandas-56679</a>.
-        </p>
-      </footer>
     </main>
 
     <script type="module" src="./repro.js"></script>

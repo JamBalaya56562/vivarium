@@ -5,7 +5,7 @@
 // look without each loader having to opt in. The asset lives in `_assets/`
 // (hand-written, no tsc step) — kept apart from `_shared/` (TS sources +
 // their compiled `.js` siblings, which `.gitignore` blanket-excludes).
-import "../_assets/chrome.js";
+import '../_assets/chrome.js';
 
 // Vivarium contract v1 — verdict and result envelope helpers.
 //
@@ -24,7 +24,7 @@ import "../_assets/chrome.js";
 // errored before producing a result. `pending` means the run has not yet
 // produced a verdict.
 
-export type VerdictState = "pending" | "reproduced" | "unreproduced";
+export type VerdictState = 'pending' | 'reproduced' | 'unreproduced';
 
 export interface VivariumResultV1Bug {
   /** Upstream project short name (e.g. "pandas"). */
@@ -54,7 +54,7 @@ export interface VivariumResultV1Timing {
 }
 
 export interface VivariumResultV1 {
-  contract: "v1";
+  contract: 'v1';
   bug: VivariumResultV1Bug;
   runtime: VivariumResultV1Runtime;
   /** Page-specific structured output. */
@@ -66,6 +66,8 @@ declare global {
   // eslint-disable-next-line no-var
   var __VIVARIUM_VERDICT__: VerdictState | undefined;
   // eslint-disable-next-line no-var
+  var __VIVARIUM_VERDICT_MESSAGE__: string | undefined;
+  // eslint-disable-next-line no-var
   var __VIVARIUM_RESULT__: VivariumResultV1 | undefined;
 }
 
@@ -73,30 +75,47 @@ declare global {
  * Update the verdict element + the `__VIVARIUM_VERDICT__` global atomically.
  *
  * @param state Verdict state.
- * @param text  Human-readable verdict. Should start with
- *   "bug reproduced", "bug not reproduced", or a page-specific
- *   pending message — see ADR-0008 / ADR-0029.
+ * @param text  Human-readable verdict. For `pending` it is shown verbatim
+ *   on the pill (loading / running messages). For `reproduced` /
+ *   `unreproduced` only the state literal renders on the pill; the full
+ *   message is stashed on `__VIVARIUM_VERDICT_MESSAGE__` for tooling
+ *   (Path A, runner status line, etc.). Phase 8 V″ reduces the verdict
+ *   pill to its minimum on-screen footprint — the output panel speaks
+ *   for itself.
  */
 export function setVerdict(state: VerdictState, text: string): void {
-  const el = document.getElementById("verdict");
+  const el = document.getElementById('verdict');
   if (!el) {
-    throw new Error(
-      'vivarium contract v1: missing element with id="verdict".',
-    );
+    throw new Error('vivarium contract v1: missing element with id="verdict".');
   }
-  el.classList.remove("reproduced", "unreproduced", "pending");
+  el.classList.remove('reproduced', 'unreproduced', 'pending');
   el.classList.add(state);
-  el.dataset["verdict"] = state;
-  el.textContent = text;
+  el.dataset['verdict'] = state;
+  // Phase 8 V″ — render short uppercase literals on the pill so the
+  // header row never wraps to two lines. Long pending messages
+  // ("Loading Pyodide runtime and sqlite3…") still go to
+  // `__VIVARIUM_VERDICT_MESSAGE__` for tooling that wants the full
+  // string. We disambiguate "loading" vs "running" by inspecting the
+  // caller-supplied text.
+  let label: string;
+  if (state === 'pending') {
+    label = /running/i.test(text) ? 'RUNNING…' : 'LOADING…';
+  } else if (state === 'reproduced') {
+    label = 'REPRODUCED';
+  } else {
+    label = 'UNREPRODUCED';
+  }
+  el.textContent = label;
   globalThis.__VIVARIUM_VERDICT__ = state;
+  globalThis.__VIVARIUM_VERDICT_MESSAGE__ = text;
 
   // Tell the chrome.js progress bar the run is finished. Pending updates
   // (which arrive multiple times during loading) are ignored by chrome.js
   // because it only cares about pct + label fields.
-  if (state !== "pending") {
+  if (state !== 'pending') {
     document.dispatchEvent(
-      new CustomEvent("vh-progress", {
-        detail: { stage: "done", pct: 100, label: "Reproduction complete." },
+      new CustomEvent('vh-progress', {
+        detail: { stage: 'done', pct: 100, label: 'Reproduction complete.' },
       }),
     );
   }
@@ -106,10 +125,10 @@ export function setVerdict(state: VerdictState, text: string): void {
  * Publish the structured result envelope on `__VIVARIUM_RESULT__`.
  */
 export function setResult(envelope: VivariumResultV1): void {
-  if (!envelope || envelope.contract !== "v1") {
+  if (!envelope || envelope.contract !== 'v1') {
     throw new Error(
       `vivarium contract v1: setResult expected contract="v1", got ${
-        envelope ? JSON.stringify(envelope.contract) : "null"
+        envelope ? JSON.stringify(envelope.contract) : 'null'
       }.`,
     );
   }

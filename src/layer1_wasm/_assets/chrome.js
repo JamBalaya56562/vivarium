@@ -42,9 +42,12 @@ window.addEventListener('storage', (e) => {
 
 // ── Inline SVG icons ────────────────────────────────────────────────────
 
-const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
-const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-const github = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.55 0-.27-.01-.99-.02-1.94-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .31.21.67.79.55 4.57-1.53 7.86-5.84 7.86-10.93C23.5 5.65 18.35.5 12 .5z"/></svg>';
+const sun =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+const moon =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const github =
+  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.55 0-.27-.01-.99-.02-1.94-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .31.21.67.79.55 4.57-1.53 7.86-5.84 7.86-10.93C23.5 5.65 18.35.5 12 .5z"/></svg>';
 
 // rspress's nav links — keep in sync with docs/docs/_nav.json. Hardcoded
 // here so this script doesn't need to fetch a JSON file before the page
@@ -74,8 +77,7 @@ function injectChrome() {
   nav.className = 'vh-topnav';
 
   const navLinks = NAV_ITEMS.map(
-    (it) =>
-      `<a class="vh-topnav__link" href="${it.link}">${it.text}</a>`,
+    (it) => `<a class="vh-topnav__link" href="${it.link}">${it.text}</a>`,
   ).join('');
 
   nav.innerHTML = `
@@ -101,8 +103,21 @@ function injectChrome() {
   // accommodate either element comfortably).
   const outputEl = document.querySelector('#output');
   if (outputEl?.parentElement) {
-    outputEl.parentElement.classList.add('vh-output-section');
+    const outputCol = outputEl.parentElement;
+    outputCol.classList.add('vh-output-section');
     outputEl.classList.add('vh-output');
+
+    // Wrap the output column's <h2> in a `.vh-runner__head` row so its
+    // height matches the script column's head row (which carries Edit /
+    // Run / Reset). Without this wrap the output column's content area
+    // is taller than the script column's by the action-row height.
+    const colH2 = outputCol.querySelector(':scope > h2');
+    if (colH2 && colH2.parentElement === outputCol) {
+      const head = document.createElement('div');
+      head.className = 'vh-runner__head';
+      outputCol.insertBefore(head, colH2);
+      head.appendChild(colH2);
+    }
 
     const progress = document.createElement('div');
     progress.className = 'vh-progress';
@@ -169,7 +184,7 @@ function hideProgress() {
 }
 
 document.addEventListener('vh-progress', (e) => {
-  const d = (e && e.detail) || {};
+  const d = e?.detail || {};
   if (d.stage === 'done') {
     setProgress(100, 'Reproduction complete.', '');
     hideProgress();
@@ -197,14 +212,109 @@ function registerServiceWorker() {
     });
 }
 
+// ── Description drawer (Phase 8 V″, ADR-0035) ──────────────────────────
+//
+// Recipe pages opt in by inlining:
+//   1. A `<template id="bug-context">` whose content is the drawer body
+//      (the description prose + any "Reported on" / metadata blocks).
+//   2. A `<button data-vh-action="open-drawer">` somewhere in the page
+//      (typically in the header action row) that triggers the drawer.
+//
+// We construct the drawer + click-wash at body level once, then wire
+// every matching button to toggle it. Closing on:
+//   - X button click
+//   - wash click
+//   - Escape key
+
+const drawerCloseSvg =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+function injectDescriptionDrawer() {
+  const tpl = document.getElementById('bug-context');
+  const triggers = document.querySelectorAll(
+    'button[data-vh-action="open-drawer"]',
+  );
+  if (!tpl || triggers.length === 0) return;
+
+  const wash = document.createElement('div');
+  wash.className = 'vh-drawer-wash';
+  wash.setAttribute('aria-hidden', 'true');
+
+  const drawer = document.createElement('aside');
+  drawer.className = 'vh-drawer';
+  drawer.setAttribute('role', 'dialog');
+  drawer.setAttribute('aria-modal', 'true');
+  drawer.setAttribute('aria-label', 'Bug context');
+  drawer.setAttribute('aria-hidden', 'true');
+  drawer.tabIndex = -1;
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'vh-drawer__close';
+  close.setAttribute('aria-label', 'Close bug context');
+  close.innerHTML = drawerCloseSvg;
+  drawer.appendChild(close);
+
+  // Clone the template content into the drawer.
+  drawer.appendChild(tpl.content.cloneNode(true));
+
+  document.body.appendChild(wash);
+  document.body.appendChild(drawer);
+
+  let lastTrigger = null;
+
+  function open(triggerEl) {
+    lastTrigger = triggerEl ?? null;
+    drawer.classList.add('is-open');
+    wash.classList.add('is-visible');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('vh-drawer-open');
+    for (const t of triggers) t.setAttribute('aria-expanded', 'true');
+    // Focus the close button so keyboard users can dismiss with Enter.
+    setTimeout(() => close.focus(), 50);
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    wash.classList.remove('is-visible');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('vh-drawer-open');
+    for (const t of triggers) t.setAttribute('aria-expanded', 'false');
+    if (lastTrigger && typeof lastTrigger.focus === 'function') {
+      lastTrigger.focus();
+    }
+    lastTrigger = null;
+  }
+
+  triggers.forEach((t) => {
+    t.setAttribute('aria-expanded', 'false');
+    t.setAttribute('aria-controls', 'vh-drawer-body');
+    t.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      open(t);
+    });
+  });
+
+  close.addEventListener('click', () => closeDrawer());
+  wash.addEventListener('click', () => closeDrawer());
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && drawer.classList.contains('is-open')) {
+      ev.preventDefault();
+      closeDrawer();
+    }
+  });
+}
+
 // ── Bootstrap ───────────────────────────────────────────────────────────
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     injectChrome();
+    injectDescriptionDrawer();
     registerServiceWorker();
   });
 } else {
   injectChrome();
+  injectDescriptionDrawer();
   registerServiceWorker();
 }

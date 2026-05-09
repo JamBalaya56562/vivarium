@@ -19,36 +19,81 @@
       crossorigin
     />
     <link rel="stylesheet" href="../_shared/style.css" />
-  </head>
-  <body>
-    <main>
-      <header>
-        <p class="kicker">Vivarium · Layer 1 · Rust (wasm32-wasip1)</p>
-        <h1>Reproducing <a href="https://github.com/rust-lang/regex/issues/779">rust-lang/regex#779</a></h1>
-        <p class="lede">
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
           The Rust <code>regex</code> crate violates a basic regex
           algebra: <code>(re)+</code> should equal
           <code>(re)(re)*</code>, but with
           <code>(?m)(^|a)+</code> against the haystack
           <code>"a\naaa\n"</code> the two equivalent forms produce
           different match-iteration outputs. RE2 and Go's regexp
-          have the same divergence; PCRE2 gets it right, so this is
-          an algebraic regex-engine bug rather than a regex-language
-          ambiguity.
+          have the same divergence; PCRE2 gets it right, so this
+          is an algebraic regex-engine bug rather than a
+          regex-language ambiguity.
         </p>
+        <p>
+          The actual reproduction logic lives in <code>src/main.rs</code>
+          and ships as <code>repro.wasm</code>, built from
+          <code>Cargo.toml</code> at deploy time. The script panel
+          on the left shows the relevant excerpt; the output panel
+          shows the JSON envelope the wasm prints to stdout when it
+          runs.
+        </p>
+        <p>
+          Unlike the Pyodide / Ruby.wasm / php-wasm recipes, this
+          page does <strong>not</strong> ship an in-browser
+          edit-and-run affordance — the Rust source is compiled
+          into <code>repro.wasm</code> at build time, so live
+          editing would require re-compilation outside the browser.
+          To experiment with variations, fork the crate and rebuild
+          <code>repro.wasm</code>.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">rust-lang/regex</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#779</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Rust wasm32-wasip1</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Rust wasm32-wasip1</p>
+          <h1>Reproducing <a href="https://github.com/rust-lang/regex/issues/779">rust-lang/regex#779</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://github.com/rust-lang/regex/issues/779" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Rust wasm32-wasip1 artefact via WASI shim…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
       </header>
 
-      <section>
-        <h2>Verdict</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
-          Loading Rust wasm32-wasip1 artefact via WASI shim…
-        </div>
-        <p class="meta" id="meta"></p>
-      </section>
-
-      <section>
-        <h2>Reproduction script (Rust)</h2>
-        <pre><code id="repro-code"><span class="line"><span style="color:#6A737D">// src/main.rs (excerpt — see this directory for the full crate)</span></span>
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script (Rust)</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#6A737D">// src/main.rs (excerpt — see this directory for the full crate)</span></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> haystack </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "a</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">aaa</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">;</span></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> re_plus     </span><span style="color:#F97583">=</span><span style="color:#B392F0"> Regex</span><span style="color:#F97583">::</span><span style="color:#B392F0">new</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"(?m)(^|a)+"</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">.</span><span style="color:#B392F0">unwrap</span><span style="color:#E1E4E8">();</span></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> re_expanded </span><span style="color:#F97583">=</span><span style="color:#B392F0"> Regex</span><span style="color:#F97583">::</span><span style="color:#B392F0">new</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"(?m)(^|a)(^|a)*"</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">.</span><span style="color:#B392F0">unwrap</span><span style="color:#E1E4E8">();</span></span>
@@ -59,24 +104,14 @@
 <span class="line"><span style="color:#F97583">    .</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">|</span><span style="color:#E1E4E8">m</span><span style="color:#F97583">|</span><span style="color:#E1E4E8"> (m</span><span style="color:#F97583">.</span><span style="color:#B392F0">start</span><span style="color:#E1E4E8">(), m</span><span style="color:#F97583">.</span><span style="color:#B392F0">end</span><span style="color:#E1E4E8">()))</span><span style="color:#F97583">.</span><span style="color:#B392F0">collect</span><span style="color:#F97583">::</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">Vec</span><span style="color:#E1E4E8">&#x3C;_>>();</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> reproduced </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> matches_plus </span><span style="color:#F97583">!=</span><span style="color:#E1E4E8"> matches_expanded;</span></span></code></pre>
-      </section>
+        </section>
 
-      <section>
-        <h2>Output</h2>
-        <pre id="output">(running)</pre>
-      </section>
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
 
-      <footer>
-        <p class="meta">
-          Runtime:
-          Rust crate compiled to <code>wasm32-wasip1</code>, instantiated in-browser via
-          <a href="https://github.com/bjorn3/browser_wasi_shim">@bjorn3/browser_wasi_shim</a>
-          loaded from
-          <a href="https://www.jsdelivr.com/package/npm/@bjorn3/browser_wasi_shim">cdn.jsdelivr.net</a>.
-          Source:
-          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779">vivarium/src/layer1_wasm/regex-779</a>.
-        </p>
-      </footer>
     </main>
 
     <script type="module" src="./repro.js"></script>

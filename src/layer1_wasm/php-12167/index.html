@@ -19,33 +19,78 @@
       crossorigin
     />
     <link rel="stylesheet" href="../_shared/style.css" />
-  </head>
-  <body>
-    <main>
-      <header>
-        <p class="kicker">Vivarium · Layer 1 · php-wasm</p>
-        <h1>Reproducing <a href="https://github.com/php/php-src/issues/12167">php/php-src#12167</a></h1>
-        <p class="lede">
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
           PHP's SimpleXML can find a processing-instruction node via
           <code>xpath("//processing-instruction()")</code>, but casting
           that node to string yields an empty value instead of the
-          PI's content. xpath returns the node — the count is
-          <em>one</em> — so the bug is purely in the string-cast path
-          for processing-instruction nodes.
+          PI's content. xpath returns the node — the count is one — so
+          the bug is purely in the string-cast path for
+          processing-instruction nodes.
         </p>
+        <p>
+          The script on this page builds a small XML document with one
+          processing instruction, runs the xpath query, casts the
+          returned node to string, and reports both the count and
+          the cast result. If the count is <code>1</code> and the
+          cast result is empty, the bug reproduces in the php-wasm
+          build this page loads.
+        </p>
+        <p>
+          This recipe also carries the <strong>"Try a fix"</strong>
+          panel below — Phase 7 B3's Path A. After the baseline run,
+          you can paste an alternative version of the script
+          (e.g. an AI-proposed userland fix) and re-run it through
+          the same in-browser PHP runtime. The full discussion of
+          the bug itself lives in the GitHub issue thread linked
+          below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">php/php-src</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#12167</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">php-wasm</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · php-wasm</p>
+          <h1>Reproducing <a href="https://github.com/php/php-src/issues/12167">php/php-src#12167</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://github.com/php/php-src/issues/12167" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading php-wasm runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
       </header>
 
-      <section>
-        <h2>Verdict</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
-          Loading php-wasm runtime…
-        </div>
-        <p class="meta" id="meta"></p>
-      </section>
-
-      <section>
-        <h2>Reproduction script</h2>
-        <pre><code id="repro-code"><span class="line"><span style="color:#F97583">&#x3C;?</span><span style="color:#79B8FF">php</span></span>
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">&#x3C;?</span><span style="color:#79B8FF">php</span></span>
 <span class="line"><span style="color:#E1E4E8">$xml </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> '&#x3C;?xml version="1.0"?>&#x3C;foo>&#x3C;bar>&#x3C;?stylesheet hello ?>&#x3C;/bar>&#x3C;/foo>'</span><span style="color:#E1E4E8">;</span></span>
 <span class="line"><span style="color:#E1E4E8">$sxe </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> simplexml_load_string</span><span style="color:#E1E4E8">($xml);</span></span>
 <span class="line"><span style="color:#E1E4E8">$pis </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> $sxe</span><span style="color:#F97583">-></span><span style="color:#B392F0">xpath</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"//processing-instruction()"</span><span style="color:#E1E4E8">);</span></span>
@@ -57,25 +102,16 @@
 <span class="line"><span style="color:#9ECBFF">  "pi_text"</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> $pi_text,</span></span>
 <span class="line"><span style="color:#9ECBFF">  "pi_text_empty"</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> $pi_text </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> ""</span><span style="color:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#E1E4E8">]);</span></span></code></pre>
-      </section>
+        </section>
 
-      <section>
-        <h2>Output</h2>
-        <pre id="output">(running)</pre>
-      </section>
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
 
       <section id="path-a-mount" hidden></section>
 
-      <footer>
-        <p class="meta">
-          Runtime:
-          <a href="https://github.com/seanmorris/php-wasm">php-wasm</a>
-          loaded from
-          <a href="https://www.jsdelivr.com/package/npm/php-wasm">cdn.jsdelivr.net</a>.
-          Source:
-          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/php-12167">vivarium/src/layer1_wasm/php-12167</a>.
-        </p>
-      </footer>
     </main>
 
     <script type="module" src="./repro.js"></script>
