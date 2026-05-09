@@ -144,7 +144,13 @@ jq -n \
 # Schema-validate the freshly-written verdict.json. Single-sources
 # clause 4 of the Contract v1 conformance check; same predicate as
 # the in-line ajv invocation in repro-regression.yml.
-ajv validate \
+#
+# `${AJV_BIN:-ajv}` lets the caller override the binary path. The
+# regression / branch-fix-verdict workflows already export AJV_BIN
+# pointing at the runner-temp ajv-cli install; mise's recipes:verify
+# task uses it to point at docs/node_modules/.bin/ajv.exe (the
+# devDep), avoiding bun-global pollution on developer machines.
+"${AJV_BIN:-ajv}" validate \
   --spec=draft2020 \
   -c ajv-formats \
   -s "$schema" \
