@@ -9,6 +9,7 @@ import { getRecipe } from '../src/tools/get_recipe.ts';
 import { listRecipes } from '../src/tools/list_recipes.ts';
 import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
 import { matchError } from '../src/tools/match_error.ts';
+import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
 import { verifyBranchFix } from '../src/tools/verify_branch_fix.ts';
 
 const FIXTURE_INDEX = {
@@ -402,6 +403,142 @@ describe('verify_branch_fix', () => {
       assert.equal(r.path, 'B');
       assert.equal(r.layer, 3);
       assert.match(r.gh_command!, /-f slug=lost-update/);
+    }
+  });
+});
+
+describe('prepare_new_recipe', () => {
+  it('layer 2 default — composes scaffold + verify commands and rows', async () => {
+    const r = await prepareNewRecipe({
+      project: 'node',
+      issue: 63041,
+      title: "Intl.DateTimeFormat drops month with calendar:'iso8601'",
+      base_image: 'node:26-slim',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.slug, 'node-63041');
+      assert.equal(r.layer, 2);
+      assert.equal(
+        r.upstream_issue_url,
+        'https://github.com/nodejs/node/issues/63041',
+      );
+      assert.match(r.scaffold_command, /^mise run recipes:new --/);
+      assert.match(r.scaffold_command, /node 63041/);
+      assert.match(r.scaffold_command, /--base "node:26-slim"/);
+      assert.equal(r.verify_command, 'mise run recipes:verify -- node-63041');
+      assert.equal(r.recipe_facets_row.key, 'node-63041');
+      assert.equal(r.projects_row.key, 'node');
+      assert.equal(
+        r.projects_row.value.github,
+        'https://github.com/nodejs/node',
+      );
+      assert.equal(
+        r.commit_subject,
+        'feat(layer2): node-63041 reproduction (...)',
+      );
+      assert.ok(r.next_steps.length > 0);
+    }
+  });
+
+  it('layer 1 — uses feat(wasm) scope and notes the missing scaffolder', async () => {
+    const r = await prepareNewRecipe({
+      project: 'cpython',
+      issue: 12345,
+      title: 'something',
+      layer: 1,
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 1);
+      assert.match(r.commit_subject, /^feat\(wasm\):/);
+      assert.match(r.scaffold_command, /^# No scaffolder for Layer 1/);
+      assert.match(r.verify_command, /^# No verifier for Layer 1/);
+      assert.equal(
+        r.upstream_issue_url,
+        'https://github.com/python/cpython/issues/12345',
+      );
+    }
+  });
+
+  it('layer 3 — uses feat(layer3) scope', async () => {
+    const r = await prepareNewRecipe({
+      project: 'pthread',
+      issue: 999,
+      title: 'race',
+      layer: 3,
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 3);
+      assert.match(r.commit_subject, /^feat\(layer3\):/);
+    }
+  });
+
+  it('rejects slugs that the recipes-index parser would not resolve', async () => {
+    // Underscore is not in [a-z0-9-]+ for the slug parser; "my_proj"
+    // produces an unparseable slug.
+    const r = await prepareNewRecipe({
+      project: 'my_proj',
+      issue: 63041,
+      title: 'x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /not parseable/);
+    }
+  });
+
+  it('rejects non-positive issue numbers', async () => {
+    const r = await prepareNewRecipe({
+      project: 'node',
+      issue: 0,
+      title: 'x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /positive integer/);
+    }
+  });
+
+  it('repo_owner override only forwarded to scaffold cmd when it differs from the default', async () => {
+    const heuristic = await prepareNewRecipe({
+      project: 'node',
+      issue: 1,
+      title: 't',
+      repo_owner: 'nodejs/node',
+    });
+    assert.equal(heuristic.ok, true);
+    if (heuristic.ok) {
+      assert.ok(
+        !heuristic.scaffold_command.includes('--repo'),
+        'should not redundantly pass --repo when it matches the default',
+      );
+    }
+    const overridden = await prepareNewRecipe({
+      project: 'foo',
+      issue: 1,
+      title: 't',
+      repo_owner: 'someorg/foo',
+    });
+    assert.equal(overridden.ok, true);
+    if (overridden.ok) {
+      assert.match(overridden.scaffold_command, /--repo someorg\/foo/);
+    }
+  });
+
+  it('falls back to <project>/<project> for unknown projects', async () => {
+    const r = await prepareNewRecipe({
+      project: 'mystery',
+      issue: 42,
+      title: 'x',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(
+        r.upstream_issue_url,
+        'https://github.com/mystery/mystery/issues/42',
+      );
     }
   });
 });

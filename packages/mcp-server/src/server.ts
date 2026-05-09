@@ -10,6 +10,12 @@
 //                                                 helper for the AI-slop
 //                                                 verification loop
 //                                                 (ADR-0030).
+//   prepare_new_recipe                          — Tier 2, returns the full
+//                                                 authoring command bundle
+//                                                 (scaffold + verify +
+//                                                 facets/projects rows)
+//                                                 for a new upstream
+//                                                 issue.
 //
 // See ADR-0019 §1 for the stdio-transport choice.
 
@@ -35,6 +41,11 @@ import {
   matchError,
   type MatchErrorArgs,
 } from './tools/match_error.js';
+import {
+  PREPARE_NEW_RECIPE_TOOL,
+  prepareNewRecipe,
+  type PrepareNewRecipeArgs,
+} from './tools/prepare_new_recipe.js';
 import {
   VERIFY_BRANCH_FIX_TOOL,
   verifyBranchFix,
@@ -64,6 +75,7 @@ export function createServer(): Server {
       LOOKUP_VERDICT_TOOL,
       MATCH_ERROR_TOOL,
       VERIFY_BRANCH_FIX_TOOL,
+      PREPARE_NEW_RECIPE_TOOL,
     ],
   }));
 
@@ -89,6 +101,11 @@ export function createServer(): Server {
         case 'verify_branch_fix':
           payload = await verifyBranchFix(
             args as unknown as VerifyBranchFixArgs,
+          );
+          break;
+        case 'prepare_new_recipe':
+          payload = await prepareNewRecipe(
+            args as unknown as PrepareNewRecipeArgs,
           );
           break;
         default:
