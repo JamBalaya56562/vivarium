@@ -25,8 +25,9 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "test": "bun test",
+    "sync:bundled": "mkdir -p src/bundled && cp ../../docs/public/api/recipes.json src/bundled/recipes.json",
+    "build": "bun run sync:bundled && tsc",
+    "test": "bun run sync:bundled && bun test",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
