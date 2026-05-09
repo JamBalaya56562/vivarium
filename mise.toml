@@ -254,6 +254,26 @@ description = "Regenerate docs/public/api/recipes.json from src/layer*/"
 dir = "docs"
 run = "bun run generate-index"
 
+[tasks."recipes:new"]
+description = "Scaffold a new Layer 2 recipe directory from src/layer2_docker/_template/"
+dir = "docs"
+# `shell = "bash -c"` is required on Windows: with the default `cmd /c`,
+# Tera-substituted double quotes are preserved literally in argv (cmd does
+# not strip them), so a multi-word `<title>` like "Intl drops month" lands
+# in the script as `\"Intl`/`drops`/`month\"` rather than a single token.
+# Bash strips quotes correctly. The task does not use `$@` / `${usage_*}`
+# so the `bash -c` `$0`-swallow gotcha (mise inline-run on Windows) does
+# not apply here.
+shell = "bash -c"
+usage = '''
+arg "<project>" help="upstream project name (kebab-case, e.g. node, cpython)"
+arg "<issue>" help="upstream issue number"
+arg "<title>" help="bug title (one line)"
+flag "--base <image>" help="docker base image (e.g. node:26-slim)"
+flag "--repo <owner/repo>" help="upstream owner/repo override (default: heuristic per project)"
+'''
+run = '''bun run scripts/new-recipe.ts "{{usage.project}}" "{{usage.issue}}" "{{usage.title}}"{% if usage.base %} --base "{{usage.base}}"{% endif %}{% if usage.repo %} --repo "{{usage.repo}}"{% endif %}'''
+
 # ── MCP server (packages/mcp-server) ─────────────────────────────────────
 
 [tasks."mcp:install"]
