@@ -159,6 +159,25 @@
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/flock/is-advisory/verdict.json"
     },
     {
+      "slug": "node-63041",
+      "layer": 2,
+      "project": "node",
+      "issue": 63041,
+      "title": "Node.js `Intl.DateTimeFormat` drops month with `calendar: 'iso8601'`",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/node/63041/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/node-63041",
+      "language": "javascript",
+      "tags": [
+        "intl",
+        "datetimeformat",
+        "iso8601-calendar",
+        "icu"
+      ],
+      "symptom": "intl-month-dropped",
+      "severity": "regression",
+      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/node/63041/verdict.json"
+    },
+    {
       "slug": "postgres-lost-update",
       "layer": 2,
       "project": "postgres",
