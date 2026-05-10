@@ -142,11 +142,11 @@ import {
       items={[
         {
           lead: 'branch-fix イメージをビルドして push する。',
-          body: <>AI の候補修正を fork に当て、レシピの <code>Dockerfile</code> で Docker イメージをビルドし、GitHub Actions ランナーが pull できるレジストリ（公開 ghcr.io / Docker Hub repo）に push する。image-as-input の境界は contract — Vivarium はあなたのソースをビルドしない、あなたが行う。</>,
+          body: <>AI の候補修正を fork に当て、レシピの <code>Dockerfile</code> で Docker イメージをビルドし、GitHub Actions ランナーが pull できるレジストリ（公開 ghcr.io / Docker Hub repo）に push する。image-as-input の境界は contract — Vivarium はあなたのソースをビルドしない、あなたが行う。<code>mise run branch-fix:publish</code> タスクが build / push / logout のサイクルをラップする（下の Callout 参照）。</>,
         },
         {
           lead: '比較ワークフローを trigger する。',
-          body: <><code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code> を実行する。ワークフローはあなたのイメージを pull、その中で再現を走らせ、Contract v1 verdict をキャプチャ、<code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> をアーティファクトとしてアップロードする。</>,
+          body: <><code>mise run branch-fix:verdict &lt;slug&gt; &lt;your-image-ref&gt;</code>、または直接 <code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code> を実行する。ワークフローはあなたのイメージを pull、その中で再現を走らせ、Contract v1 verdict をキャプチャ、<code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> をアーティファクトとしてアップロードする。</>,
         },
         {
           lead: 'アーティファクト zip をダウンロード。',
@@ -158,6 +158,19 @@ import {
         },
       ]}
     />
+    <Callout>
+      <strong>巨大 upstream build 用 PAT-push ヘルパー。</strong>{' '}
+      無料 GitHub Actions ランナーには重すぎる upstream プロジェクト
+      （Node.js、Chromium 等）をラップしたレシピは、バイナリをローカルで
+      先にビルドする必要がある。Packages スコープの fine-grained PAT を{' '}
+      <code>~/.config/vivarium/ghcr-pat</code>（mode 0600）に置き、{' '}
+      <code>mise run branch-fix:publish &lt;slug&gt; &lt;tag&gt; &lt;dockerfile&gt; &lt;context&gt;</code>{' '}
+      を実行すると、build → <code>ghcr.io/&lt;your-user&gt;/vivarium-&lt;slug&gt;-fix:&lt;tag&gt;</code>{' '}
+      に push → <code>docker logout</code> までやってくれる
+      — 認証情報は docker config に残らず、<code>gh</code> CLI の auth state も
+      触らない。<code>mise run ghcr:login</code> 単体で初回 PAT セットアップ
+      手順が表示される。
+    </Callout>
     <Callout>
       <strong>エージェント駆動のショートカット。</strong> Layer 2/3 の slug に対する
       <code>verify_branch_fix(slug)</code> は、コピペ可能な

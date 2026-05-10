@@ -237,6 +237,98 @@ done
 echo "Done. Refresh http://localhost:3000/vivarium/repro/<slug>/ to see captured verdicts."
 '''
 
+# ── Branch-fix publish (Path B, PAT-push) ────────────────────────────────
+#
+# Some Layer 2 recipes wrap an upstream project whose build is too heavy
+# for free-tier GitHub Actions runners (Node.js, Chromium, etc.) — the
+# contributor builds the branch-fix image locally and pushes to their
+# own ghcr.io namespace before triggering branch-fix-verdict.yml.
+#
+# These tasks read a PAT from a per-user file (default
+# `${XDG_CONFIG_HOME:-~/.config}/vivarium/ghcr-pat`, mode 0600) and feed
+# it to `docker login --password-stdin`, then `docker logout` after the
+# push so the credential is never persisted in the docker config. The
+# `gh` CLI auth state is never touched — branch-fix push uses a
+# Packages-only PAT, distinct from the all-purpose `gh` token.
+
+[tasks."ghcr:login"]
+description = "Log in to ghcr.io using a Packages-scoped PAT file (does not touch gh CLI auth state)"
+shell = "bash -c"
+run = '''
+set -euo pipefail
+pat_file="${VIVARIUM_GHCR_PAT_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/vivarium/ghcr-pat}"
+if [ ! -f "$pat_file" ]; then
+  cat <<EOF >&2
+ghcr.io PAT file not found: $pat_file
+
+One-time setup:
+  1. https://github.com/settings/personal-access-tokens/new
+     - Resource owner: <your GitHub username>
+     - Repository access: Public Repositories (read-only is fine)
+     - Permissions → Account permissions → Packages: Read and write
+     - Expiration: 90 days (or shorter)
+  2. mkdir -p "\$(dirname "$pat_file")"
+  3. printf '%s' '<paste-token>' > "$pat_file" && chmod 600 "$pat_file"
+
+The file is read at push time only; the credential is dropped from the
+docker config immediately after \`branch-fix:publish\` completes.
+EOF
+  exit 1
+fi
+user="${GHCR_USER:-$(gh api user --jq .login 2>/dev/null || true)}"
+[ -z "$user" ] && { echo "Set GHCR_USER=<username> or run 'gh auth login'." >&2; exit 1; }
+docker login ghcr.io -u "$user" --password-stdin < "$pat_file"
+'''
+
+[tasks."branch-fix:publish"]
+description = "Build a branch-fix image and push to ghcr.io/<user>/vivarium-<slug>-fix:<tag>; auto-logout after push"
+depends = ["ghcr:login"]
+shell = "bash -c"
+usage = '''
+arg "<slug>"       help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
+arg "<tag>"        help="image tag, typically the fix commit SHA (e.g. 04d86dab)"
+arg "<dockerfile>" help="path to the branch-fix Dockerfile"
+arg "<context>"    help="docker build context dir"
+'''
+run = '''
+set -euo pipefail
+slug="{{usage.slug}}"
+tag="{{usage.tag}}"
+dockerfile="{{usage.dockerfile}}"
+context="{{usage.context}}"
+user="${GHCR_USER:-$(gh api user --jq .login)}"
+img="ghcr.io/${user,,}/vivarium-${slug}-fix:${tag}"
+echo "==> docker build $img"
+docker build -t "$img" -f "$dockerfile" "$context"
+echo "==> docker push $img"
+docker push "$img"
+docker logout ghcr.io
+echo "$img"
+'''
+
+[tasks."branch-fix:verdict"]
+description = "Trigger aletheia-works/vivarium branch-fix-verdict.yml against a published image (thin wrapper over `gh workflow run`)"
+shell = "bash -c"
+usage = '''
+arg "<slug>"  help="recipe slug under src/layer2_docker/"
+arg "<image>" help="published image ref (e.g. ghcr.io/<user>/vivarium-<slug>-fix:<sha>)"
+flag "--expected <verdict>" help="expected branch-fix verdict (default: unreproduced)" default="unreproduced"
+'''
+run = '''
+set -euo pipefail
+slug="{{usage.slug}}"
+image="{{usage.image}}"
+expected="{{usage.expected}}"
+gh workflow run branch-fix-verdict.yml \
+  --repo aletheia-works/vivarium \
+  --field "slug=${slug}" \
+  --field "branch_image=${image}" \
+  --field "expected_verdict=${expected}"
+echo "Triggered. Tail with:"
+echo "  gh run list --repo aletheia-works/vivarium --workflow=branch-fix-verdict.yml --limit 1"
+echo "  gh run watch --repo aletheia-works/vivarium <run-id>"
+'''
+
 # ── Recipes catalogue index ──────────────────────────────────────────────
 
 [tasks."recipes:index"]
