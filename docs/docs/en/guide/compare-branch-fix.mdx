@@ -143,11 +143,11 @@ import {
       items={[
         {
           lead: 'Build and push your branch-fix image.',
-          body: <>Apply the AI's candidate fix to your fork, build a Docker image with the recipe's <code>Dockerfile</code>, and push to a registry the GitHub Actions runner can pull from (a public ghcr.io / Docker Hub repo). The image-as-input boundary is the contract — Vivarium does not build your source, you do.</>,
+          body: <>Apply the AI's candidate fix to your fork, build a Docker image with the recipe's <code>Dockerfile</code>, and push to a registry the GitHub Actions runner can pull from (a public ghcr.io / Docker Hub repo). The image-as-input boundary is the contract — Vivarium does not build your source, you do. The <code>mise run branch-fix:publish</code> task wraps the build / push / logout cycle (see Callout below).</>,
         },
         {
           lead: 'Trigger the comparison workflow.',
-          body: <>Run <code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code>. The workflow pulls your image, runs the reproduction inside it, captures a Contract v1 verdict, and uploads <code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> as an artefact.</>,
+          body: <>Run <code>mise run branch-fix:verdict &lt;slug&gt; &lt;your-image-ref&gt;</code>, or directly <code>gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=&lt;slug&gt; -f branch_image=&lt;your-image-ref&gt;</code>. The workflow pulls your image, runs the reproduction inside it, captures a Contract v1 verdict, and uploads <code>branch-fix-verdict-&lt;slug&gt;-&lt;run_id&gt;</code> as an artefact.</>,
         },
         {
           lead: 'Download the artefact zip.',
@@ -159,6 +159,19 @@ import {
         },
       ]}
     />
+    <Callout>
+      <strong>PAT-push helper for huge upstream builds.</strong>{' '}
+      Recipes wrapping projects whose build is too heavy for free-tier
+      GitHub Actions runners (Node.js, Chromium, etc.) need the binary
+      built locally first. Drop a Packages-scoped fine-grained PAT into{' '}
+      <code>~/.config/vivarium/ghcr-pat</code> (mode 0600), then{' '}
+      <code>mise run branch-fix:publish &lt;slug&gt; &lt;tag&gt; &lt;dockerfile&gt; &lt;context&gt;</code>{' '}
+      builds, pushes to <code>ghcr.io/&lt;your-user&gt;/vivarium-&lt;slug&gt;-fix:&lt;tag&gt;</code>,
+      and <code>docker logout</code>s — the credential never persists in
+      your docker config and the <code>gh</code> CLI auth state is left
+      untouched. <code>mise run ghcr:login</code> alone walks you through
+      the one-time PAT setup if the file is missing.
+    </Callout>
     <Callout>
       <strong>Agent-driven shortcut.</strong>{' '}
       <code>verify_branch_fix(slug)</code> on a Layer 2/3 slug returns
