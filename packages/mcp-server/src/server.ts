@@ -16,6 +16,14 @@
 //                                                 facets/projects rows)
 //                                                 for a new upstream
 //                                                 issue.
+//   prepare_fix_candidate                       — Phase 8, registers a
+//                                                 fix-candidate spec on an
+//                                                 existing Layer 1 recipe
+//                                                 so the page runs the
+//                                                 fork branch's wheel
+//                                                 side-by-side with the
+//                                                 released build
+//                                                 (ADR-0040).
 //
 // See ADR-0019 §1 for the stdio-transport choice.
 

@@ -59,6 +59,33 @@ flags in v1. It fetches the catalogue index from
 5-minute in-process TTL, falling back to a build-time bundled snapshot
 when the network is unavailable.
 
+## PR-authoring conventions for agents
+
+The scaffolding tools above (`prepare_new_recipe`, `prepare_fix_candidate`,
+and the `verify_branch_fix` Path B `gh_command` flow) all return PR
+bodies an agent can submit unmodified. Two conventions apply:
+
+- **Internal PRs against `aletheia-works/*` repos**: the org explicitly
+  allows AI authorship and ships an `ai: generated` label as part of
+  its mechanical-labelling pipeline. Bodies are written fully expanded
+  (no `<details>` collapse) so reviewers see all relevant context
+  inline. The agent is expected to apply the `ai: generated` label
+  after opening the PR (the returned `commands` bundle includes the
+  exact `gh pr edit ... --add-label "ai: generated"` line).
+- **External PRs against third-party upstreams** (e.g. proposing the
+  fix branch from a `prepare_fix_candidate` run back to
+  `pylint-dev/astroid`): convention is the opposite — keep the
+  primary summary tight and tuck implementation / verification
+  details inside `<details>` blocks. Many upstream maintainers
+  surface an aversion to long AI-shaped PR bodies; collapsing the
+  long-tail detail keeps the at-a-glance impression human-shaped
+  while still exposing the full reasoning to anyone who clicks
+  through.
+
+The MCP tools currently emit the *internal* style by default — the
+caller is responsible for re-shaping the body before submitting an
+external PR.
+
 ## Versioning
 
 The MCP server's tool surface (the tools listed above and their input
