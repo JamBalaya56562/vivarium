@@ -1,33 +1,13 @@
-// Phase 6 X.2 → Phase 7 A5 — match_error tool, v2.
+// Server-side mirror of the docs-site error → recipe matcher.
 //
-// Server-side mirror of the docs-site error → recipe matcher
-// (Phase 6 S.2, ADR-0025). The scoring weights are bit-identical
-// with the docs-site `ErrorRecipeMatcher.tsx`:
-//   symptom segment match → +5
-//   tag segment match     → +3
-//   project / slug match  → +2
-// Recipes with score 0 are dropped. Ties broken by (layer asc, slug asc).
-//
-// Phase 7 A5 (ADR-0028) extends v1 with three accuracy improvements,
-// none of which change the weights above:
-//   1. Adjacent-pair token expansion — "data type" also tries `datatype`,
-//      so multi-word user input can hit single-word catalogue terms.
-//   2. Synonym groups — variants of the same concept (e.g. `dtype` ⇄
-//      `datatype`) all expand to the whole group.
-//   3. Bounded fuzzy match — tokens of length ≥ 6 within Levenshtein
-//      distance 1 score the same as exact, so "missmatch" still hits
-//      `mismatch`.
-//   4. Multi-language stopwords — German, Spanish, French, Chinese,
-//      Korean noise tokens drop alongside the existing English+Japanese.
-//
-// **CRITICAL: keep in sync with `docs/components/ErrorRecipeMatcher.tsx`.**
-// ADR-0025 §Neutral made the docs surface the canonical implementation;
-// X.2 lifted it server-side bit-identical, and A5 keeps both copies
-// updated atomically. Diverging the scoring between MCP and the docs
-// matcher would surface as agent-vs-UI disagreement on identical input.
-//
-// The matcher remains mechanical — no LLM, no semantic embeddings.
-// AGENTS.md §3.3's mechanical-over-judgement rule carries through.
+// **Keep bit-identical with `docs/components/ErrorRecipeMatcher.tsx`.**
+// Diverging scoring between MCP and the docs matcher would surface as
+// agent-vs-UI disagreement on identical input. The scoring is
+// mechanical (no LLM / embeddings):
+//   symptom +5, tags +3, project/slug +2; ties → (layer asc, slug asc).
+// On top of exact match the matcher does adjacent-pair token
+// expansion, synonym-group lookup, and bounded (len≥6, distance≤1)
+// fuzzy match.
 
 import { getCatalogue } from '../catalogue.js';
 import type { RecipeEntry } from '../types.js';

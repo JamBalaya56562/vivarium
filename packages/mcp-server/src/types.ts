@@ -1,15 +1,8 @@
-// Type definitions for the Vivarium recipes index (locked at v1 by
-// ADR-0019, private memo) and the per-recipe verdict snapshot (Contract
-// v1, ADR-0014, with the optional revision-2 evidence surface from
-// ADR-0018). Kept structural and surface-only — the canonical schemas
+// Surface-only type façade for the recipes index (v1) and the
+// Layer 2/3 verdict snapshot (Contract v1). Canonical JSON Schemas
 // live at:
-//
 //   https://aletheia-works.github.io/vivarium/api/recipes.schema.json
 //   https://aletheia-works.github.io/vivarium/spec/verdict.schema.json
-//
-// Consumers who need runtime validation should fetch and validate against
-// those JSON Schemas; this module's types are an ergonomic façade for
-// the in-process tool implementations.
 
 export type Layer = 1 | 2 | 3;
 
@@ -22,9 +15,8 @@ export interface RecipeEntry {
   page_url: string;
   verdict_url?: string;
   source_url: string;
-  // Facet overlay added by ADR-0024 §2; always emitted by the generator
-  // but optional here so consumers reading older bundled snapshots (with
-  // no overlay merge) keep working.
+  // Facet overlay (optional so older bundled snapshots without the
+  // overlay merge keep deserialising).
   language?: string;
   symptom?: string;
   severity?: string;
@@ -39,9 +31,6 @@ export interface RecipesIndex {
 
 export type Verdict = 'reproduced' | 'unreproduced';
 
-// Layer 2 / 3 verdict snapshot shape per Contract v1.
-// `stderr_tail` keeps its source-side name; the in-page contract surface
-// renames it to `evidence.stderr` at the lift boundary (see ADR-0018).
 export interface VerdictSnapshot {
   contract: 'v1';
   verdict: Verdict;
@@ -50,5 +39,7 @@ export interface VerdictSnapshot {
   image_digest: string;
   captured_at: string;
   stdout: string;
+  // Source-side name kept here; the in-page contract surface renames
+  // it to `evidence.stderr` at the lift boundary.
   stderr_tail: string;
 }
