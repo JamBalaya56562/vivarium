@@ -42,6 +42,11 @@ import {
   type MatchErrorArgs,
 } from './tools/match_error.js';
 import {
+  PREPARE_FIX_CANDIDATE_TOOL,
+  prepareFixCandidate,
+  type PrepareFixCandidateArgs,
+} from './tools/prepare_fix_candidate.js';
+import {
   PREPARE_NEW_RECIPE_TOOL,
   prepareNewRecipe,
   type PrepareNewRecipeArgs,
@@ -76,6 +81,7 @@ export function createServer(): Server {
       MATCH_ERROR_TOOL,
       VERIFY_BRANCH_FIX_TOOL,
       PREPARE_NEW_RECIPE_TOOL,
+      PREPARE_FIX_CANDIDATE_TOOL,
     ],
   }));
 
@@ -106,6 +112,11 @@ export function createServer(): Server {
         case 'prepare_new_recipe':
           payload = await prepareNewRecipe(
             args as unknown as PrepareNewRecipeArgs,
+          );
+          break;
+        case 'prepare_fix_candidate':
+          payload = await prepareFixCandidate(
+            args as unknown as PrepareFixCandidateArgs,
           );
           break;
         default:

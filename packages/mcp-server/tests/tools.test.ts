@@ -9,6 +9,7 @@ import { getRecipe } from '../src/tools/get_recipe.ts';
 import { listRecipes } from '../src/tools/list_recipes.ts';
 import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
 import { matchError } from '../src/tools/match_error.ts';
+import { prepareFixCandidate } from '../src/tools/prepare_fix_candidate.ts';
 import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
 import { verifyBranchFix } from '../src/tools/verify_branch_fix.ts';
 
@@ -538,6 +539,159 @@ describe('prepare_new_recipe', () => {
       assert.equal(
         r.upstream_issue_url,
         'https://github.com/mystery/mystery/issues/42',
+      );
+    }
+  });
+});
+
+describe('prepare_fix_candidate', () => {
+  it('happy path — Layer 1 slug + valid fork URL + branch', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: 'fix/56679-empty-series',
+      upstream_pr: 'https://github.com/example-fork/pandas/pull/1',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.slug, 'pandas-56679');
+      assert.equal(r.layer, 1);
+      assert.equal(
+        r.fix_candidate_path,
+        'src/layer1_wasm/pandas-56679/fix-candidate.json',
+      );
+      assert.equal(r.fix_candidate_json.schema_version, 1);
+      assert.equal(r.fix_candidate_json.package, 'pandas');
+      assert.equal(
+        r.fix_candidate_json.source.url,
+        'https://github.com/example-fork/pandas',
+      );
+      assert.equal(r.fix_candidate_json.source.ref, 'fix/56679-empty-series');
+      assert.equal(
+        r.fix_candidate_json.upstream_pr,
+        'https://github.com/example-fork/pandas/pull/1',
+      );
+      assert.match(r.commit_subject, /^feat\(wasm\): register fix-candidate for pandas-56679$/);
+      assert.match(r.pr_title, /^feat\(wasm\): register fix-candidate for pandas-56679$/);
+      assert.equal(r.branch_name, 'register-fix-candidate-pandas-56679');
+      assert.match(r.pr_body, /<details>/);
+      assert.match(r.pr_body, /Generated with \[Claude Code\]/);
+      assert.ok(
+        r.commands.some((c) =>
+          c.includes('gh pr create --repo aletheia-works/vivarium'),
+        ),
+        'commands should include gh pr create',
+      );
+      assert.ok(
+        r.commands.some((c) =>
+          c.includes('cat > src/layer1_wasm/pandas-56679/fix-candidate.json'),
+        ),
+        'commands should include the cat heredoc for the spec file',
+      );
+    }
+  });
+
+  it('omits upstream_pr from JSON when not provided', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: 'fix/56679',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.fix_candidate_json.upstream_pr, undefined);
+      // PR body should not have an "Upstream PR:" line either.
+      assert.equal(r.pr_body.includes('Upstream PR:'), false);
+    }
+  });
+
+  it('package override wins over the catalogue project name', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: 'main',
+      package: 'pandas-stubs',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.fix_candidate_json.package, 'pandas-stubs');
+    }
+  });
+
+  it('returns ok:false on missing slug', async () => {
+    const r = await prepareFixCandidate({
+      slug: '',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: 'main',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /slug is required/);
+  });
+
+  it('returns ok:false on missing fork_url', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: '',
+      branch: 'main',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /fork_url is required/);
+  });
+
+  it('returns ok:false on missing branch', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: '',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /branch is required/);
+  });
+
+  it('rejects fork_url that is not a bare GitHub repo URL (tree / blob / pull)', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas/tree/main',
+      branch: 'main',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /bare GitHub repo URL/);
+  });
+
+  it('returns ok:false on unknown slug', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'does-not-exist',
+      fork_url: 'https://github.com/example-fork/pandas',
+      branch: 'main',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /not found in the recipe catalogue/);
+  });
+
+  it('rejects non-Layer-1 slugs (Layers 2/3 use verify_branch_fix instead)', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'bash-local-shadows-exit',
+      fork_url: 'https://github.com/example-fork/bash',
+      branch: 'main',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /only wired up for Layer 1/);
+      assert.match(r.error, /verify_branch_fix/);
+    }
+  });
+
+  it('strips a trailing slash from fork_url', async () => {
+    const r = await prepareFixCandidate({
+      slug: 'pandas-56679',
+      fork_url: 'https://github.com/example-fork/pandas/',
+      branch: 'main',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(
+        r.fix_candidate_json.source.url,
+        'https://github.com/example-fork/pandas',
       );
     }
   });
