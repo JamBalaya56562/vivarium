@@ -141,9 +141,14 @@ for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
 done
 '''
 
+[tasks."repro:build:wheels"]
+description = "Build Layer 1 fix-candidate wheels from each src/layer1_wasm/<slug>/wheels/source.json (gitignored output; ADR-0040)"
+shell = "bash -c"  # script uses `set -o pipefail` + `shopt -s nullglob`
+run = "bash scripts/build-layer1-wheels.sh"
+
 [tasks."repro:build"]
-description = "Build all Layer 1 reproductions (TS + Rust wasm)"
-depends = ["repro:build:ts", "repro:build:rust"]
+description = "Build all Layer 1 reproductions (TS + Rust wasm + fix-candidate wheels)"
+depends = ["repro:build:ts", "repro:build:rust", "repro:build:wheels"]
 
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"

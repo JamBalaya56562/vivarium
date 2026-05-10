@@ -81,15 +81,20 @@ jobs:
         with:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
-      - name: Setup mise (bun)
+      - name: Setup mise (bun, uv, jq)
         # Installs the project-wide tools listed in `[tools]` (bun,
-        # opentofu, uv). Per-task language toolchains (`rust@1.84.0`
-        # for the wasm32-wasip1 build, etc.) auto-install on first
-        # `mise run` via the task's `use = [...]` declaration in
-        # mise.toml — keeping per-recipe version flexibility.
+        # opentofu, uv, jq). Per-task language toolchains
+        # (`rust@1.84.0` for the wasm32-wasip1 build, etc.) auto-install
+        # on first `mise run` via the task's `use = [...]` declaration in
+        # mise.toml — keeping per-recipe version flexibility. `uv` and
+        # `jq` are needed by `repro:build:wheels`
+        # (`scripts/build-layer1-wheels.sh`), which `repro:build` now
+        # depends on per ADR-0040: wheels are built fresh from each
+        # `src/layer1_wasm/<slug>/wheels/source.json` rather than
+        # vendored.
         uses: ./.github/actions/setup-mise
         with:
-          tools: bun
+          tools: bun uv jq
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Build Layer 1 fix-candidate wheels from each
+# `src/layer1_wasm/<slug>/wheels/source.json` spec.
+#
+# Output (per spec, gitignored — see .gitignore):
+#   <wheels_dir>/<package>-<version>-py3-none-any.whl
+#   <wheels_dir>/manifest.json   (filename + version + commit + fetched_at)
+#
+# Used by:
+#   - `.github/workflows/deploy-docs.yml`  (CI; wheels ship in the Pages artefact)
+#   - `mise run wheels:build`               (local dev; wheels stay gitignored)
+#
+# Skips silently if no `source.json` files exist. Per-spec failure
+# halts the script (set -e) so CI surfaces the build error instead
+# of deploying a stale page.
+#
+# See ADR-0040 (`_context/decisions/0040-layer1-fix-candidate-wheels-from-ci.md`).
+
+set -euo pipefail
+shopt -s nullglob
+
+# Run from repo root so the glob below resolves regardless of caller cwd.
+cd "$(dirname "$0")/.."
+
+sources=(src/layer1_wasm/*/wheels/source.json)
+if [ ${#sources[@]} -eq 0 ]; then
+  echo "[wheels:build] No src/layer1_wasm/*/wheels/source.json found; nothing to build."
+  exit 0
+fi
+
+for src_json in "${sources[@]}"; do
+  wheels_dir="$(dirname "$src_json")"
+  slug_dir="$(dirname "$wheels_dir")"
+  slug="$(basename "$slug_dir")"
+
+  pkg=$(jq -r '.package' "$src_json")
+  url=$(jq -r '.source.url' "$src_json")
+  ref=$(jq -r '.source.ref' "$src_json")
+  upstream_pr=$(jq -r '.upstream_pr // ""' "$src_json")
+  purpose=$(jq -r '.purpose // ""' "$src_json")
+
+  if [ -z "$pkg" ] || [ "$pkg" = "null" ] || [ -z "$url" ] || [ "$url" = "null" ] || [ -z "$ref" ] || [ "$ref" = "null" ]; then
+    echo "[wheels:build] $src_json missing required field (package / source.url / source.ref); skipping." >&2
+    continue
+  fi
+
+  echo "[wheels:build] $slug: building $pkg @ git+$url@$ref"
+
+  # Wipe any stale artefacts so the manifest never points at a wheel
+  # filename that no longer exists.
+  rm -f "$wheels_dir"/*.whl "$wheels_dir/manifest.json"
+
+  # `uv run --no-project --with pip` spins up an ephemeral venv with
+  # pip available; `pip wheel --no-deps` resolves the VCS spec and
+  # builds a pure-Python wheel (Pyodide does not need a platform
+  # wheel for pure-Python packages). Pinning Python 3.13 keeps the
+  # build environment matched to the Pyodide runtime version this
+  # project ships.
+  uv run --no-project --with pip --python 3.13 -- \
+    python -m pip wheel --no-deps \
+    --wheel-dir "$wheels_dir" \
+    "${pkg} @ git+${url}@${ref}"
+
+  whl=$(ls "$wheels_dir"/*.whl | head -1)
+  if [ -z "$whl" ]; then
+    echo "[wheels:build] $slug: pip wheel produced no .whl file." >&2
+    exit 1
+  fi
+  filename=$(basename "$whl")
+  # Wheel filename grammar: <name>-<version>-<python>-<abi>-<platform>.whl
+  version=$(echo "$filename" | sed -E 's/^[^-]+-([^-]+)-.*/\1/')
+  commit=$(git ls-remote "$url" "$ref" | awk '{print $1}')
+  fetched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  jq -n \
+    --arg pkg "$pkg" \
+    --arg filename "$filename" \
+    --arg version "$version" \
+    --arg purpose "$purpose" \
+    --arg url "$url" \
+    --arg ref "$ref" \
+    --arg commit "$commit" \
+    --arg upstream_pr "$upstream_pr" \
+    --arg fetched_at "$fetched_at" \
+    --argjson schema_version 1 \
+    '{
+      schema_version: $schema_version,
+      package: $pkg,
+      filename: $filename,
+      version: $version,
+      purpose: $purpose,
+      source: {
+        type: "git",
+        url: $url,
+        ref: $ref,
+        commit: $commit,
+        spec: ($pkg + " @ git+" + $url + "@" + $ref)
+      },
+      upstream_pr: $upstream_pr,
+      fetched_at: $fetched_at
+    }' >"$wheels_dir/manifest.json"
+
+  echo "[wheels:build] $slug: wrote $filename (commit $commit)"
+done
