@@ -17,7 +17,7 @@ import {
   <PageHero
     eyebrow="// GUIDE · AI AGENT"
     title="Drive the Vivarium MCP server from Claude Code, Cursor, or Cline."
-    sub="Vivarium ships an MCP (Model Context Protocol) server with five tools that let an agent search the catalogue, read verdict snapshots, and scaffold branch-fix verification end-to-end. No HTML scraping of the docs site required."
+    sub="Vivarium ships an MCP (Model Context Protocol) server with seven tools that let an agent search the catalogue, read verdict snapshots, scaffold a new recipe, and scaffold branch-fix / fix-candidate verification end-to-end. No HTML scraping of the docs site required."
   />
 
   <Section
@@ -28,7 +28,7 @@ import {
       The Vivarium MCP server (<code>@aletheia-works/vivarium-mcp</code>)
       speaks{' '}
       <a href="https://modelcontextprotocol.io">Model Context Protocol</a>{' '}
-      over stdio and exposes five tools:{' '}
+      over stdio and exposes seven tools:{' '}
       <code>list_recipes</code>, <code>get_recipe</code>,{' '}
       <code>lookup_verdict</code>, <code>match_error</code>, and{' '}
       <code>verify_branch_fix</code>. An agent can browse the catalogue,
@@ -111,7 +111,7 @@ bun run build
 
   <Section
     eyebrow="// 3 · TOOLS"
-    heading="All four go through the same stdio transport."
+    heading="All seven go through the same stdio transport."
   >
     <ul>
       <li>
@@ -150,6 +150,31 @@ bun run build
         plus the <code>gh workflow run branch-fix-verdict.yml</code>{' '}
         command the contributor runs. Full walkthrough:{' '}
         <a href="/vivarium/en/guide/compare-branch-fix">Verify a branch-fix</a>.
+      </li>
+      <li>
+        <strong><code>prepare_new_recipe(project, issue, title, base_image?, repo_owner?, layer?)</code></strong> —
+        scaffolding helper for authoring a brand-new recipe in one step.
+        Returns the validated slug, the exact{' '}
+        <code>mise run recipes:new</code> /{' '}
+        <code>mise run recipes:verify</code> commands, placeholder rows
+        for <code>docs/data/recipe-facets.json</code> and (only if
+        the project is new) <code>docs/data/projects.json</code>, the
+        commit-subject template, and a sequenced next-steps checklist.
+        Layer 2 has the canonical scaffolder; Layer 1 / 3 fall back to
+        copying from an existing recipe.
+      </li>
+      <li>
+        <strong><code>prepare_fix_candidate(slug, fork_url, branch, upstream_pr?, package?, purpose?)</code></strong> —
+        scaffolding helper for registering a fix-candidate spec on an
+        existing Layer 1 recipe so the page runs the fork branch's
+        wheel side-by-side with the released build (per ADR-0040).
+        Returns the <code>fix-candidate.json</code> content the agent
+        should write, the recommended commit subject + PR title, a
+        ready-to-paste PR body, and the exact <code>gh</code> /{' '}
+        <code>git</code> commands to fork-and-clone{' '}
+        <code>aletheia-works/vivarium</code>, branch off main, drop
+        the spec in, commit, push, and open the cross-repo PR. Layer 1
+        only (Layers 2 / 3 use <code>verify_branch_fix</code>).
       </li>
     </ul>
   </Section>
