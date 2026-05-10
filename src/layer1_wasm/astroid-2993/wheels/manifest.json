@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "package": "astroid",
+  "filename": "astroid-4.2.0b3-py3-none-any.whl",
+  "version": "4.2.0b3",
+  "purpose": "fix-candidate verification for pylint-dev/astroid#2993",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/JamBalaya56562/astroid",
+    "ref": "claude/fix-astroid-2993-wVitv",
+    "commit": "5c904f27d2dcaf806ee5c8c62805f630fb7fe664",
+    "spec": "astroid @ git+https://github.com/JamBalaya56562/astroid@claude/fix-astroid-2993-wVitv"
+  },
+  "upstream_pr": "https://github.com/JamBalaya56562/astroid/pull/1",
+  "fetched_at": "2026-05-10T13:41:00Z"
+}
