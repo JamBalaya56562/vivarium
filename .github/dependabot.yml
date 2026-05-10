@@ -9,8 +9,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "03:00"
       timezone: "Asia/Tokyo"
     labels:
@@ -38,8 +37,7 @@ updates:
   - package-ecosystem: "terraform"
     directory: "/infra/github"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "03:00"
       timezone: "Asia/Tokyo"
     labels:
@@ -63,8 +61,7 @@ updates:
   - package-ecosystem: "bun"
     directory: "/packages/mcp-server"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "03:00"
       timezone: "Asia/Tokyo"
     labels:
