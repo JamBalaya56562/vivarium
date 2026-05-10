@@ -62,7 +62,13 @@ html.dark {
   --vh-accent-violet: #7c5cff;
   --vh-accent-violet-bright: #a18eff;
   --vh-accent-coral: #ff716c;
-  --vh-hairline: rgba(255, 255, 255, 0.08);
+  /* Bumped from 8% to 22% white so chip / ghost-button borders
+   * (kicker tag, "Bug context" / "Upstream issue" / "Fix candidate
+   * PR" chips, runner Edit / Reset, Path A buttons) read against the
+   * dark background. The previous 8% was visually flush with the
+   * page background in dark mode, leaving the buttons looking
+   * border-less even though the rule was applied. */
+  --vh-hairline: rgba(255, 255, 255, 0.22);
   --vh-card-bg: rgba(255, 255, 255, 0.025);
   --vh-window-chrome: #18181b;
   --vh-window-bg: #000508;
@@ -1054,13 +1060,20 @@ main > footer code {
 }
 
 .vh-runner__btn--primary {
-  border: 0;
-  background: var(--vh-accent-teal);
-  color: #00110e;
+  /* Match the REPRODUCED pill / kicker colour family — the previous
+   * full-saturation accent teal swallowed the dark "Run" label, and a
+   * partly-transparent teal still felt out of step with the rest of
+   * the chrome. Reusing `--vh-reproduced-bg/fg/border` keeps the
+   * button visually grouped with the verdict pills and the kicker
+   * tag, and the teal text on the soft teal wash stays legible. */
+  border: 1px solid var(--vh-reproduced-border);
+  background: var(--vh-reproduced-bg);
+  color: var(--vh-reproduced-fg);
 }
 
 .vh-runner__btn--primary:not(:disabled):hover {
-  background: var(--vh-accent-teal-bright);
+  background: color-mix(in srgb, var(--vh-accent-teal) 22%, transparent);
+  border-color: var(--vh-accent-teal-bright);
 }
 
 .vh-runner__btn--ghost {
@@ -1602,3 +1615,154 @@ body.vh-drawer-open {
     inset: 44px 0 0 0;
   }
 }
+
+/* ---------- Variant head (Phase 8 — two-variant fix-candidate verification) ----------
+ * Used by recipes that run the same reproduction script against two
+ * package builds (baseline vs fix-candidate). Each variant has a small
+ * heading block — title + spec — placed OUTSIDE the `<pre>` so the
+ * JSON inside is the only thing in the dark output box. The page-level
+ * `#verdict` pill in the top header still mirrors the baseline; the
+ * fix-candidate's verdict is read from the JSON's `crashed` field
+ * (intentional: a per-variant pill in red would visually flag the
+ * fix-candidate's `unreproduced` as a problem when in this context it
+ * is the desired outcome). */
+
+.vh-variant-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.vh-variant-head--secondary {
+  /* Generous breathing room between the two variants on tall / square
+   * monitors; tight viewports compress this below (see media block). */
+  margin-top: 1.4rem;
+}
+
+/* Wide-and-short displays (16:10, 16:9 laptops, e.g. 1440x900) feel
+ * cramped vertically — the second variant head's 1.4rem top margin
+ * pushes the fix-candidate `<pre>` further down than the column has
+ * room for. Match it to the baseline head's natural 0-margin top in
+ * those viewports so both heads sit flush against their respective
+ * panels. */
+@media (min-aspect-ratio: 16/10), (max-height: 900px) {
+  .vh-variant-head--secondary {
+    margin-top: 0.4rem;
+  }
+}
+
+.vh-variant-head__title {
+  margin: 0;
+}
+
+.vh-variant-head__spec {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  opacity: 0.7;
+  word-break: break-all;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+/* Each variant's `<pre>` consumes an equal share of the output
+ * column's remaining space (= column height minus the two
+ * `.vh-variant-head` blocks). Achieved with `flex: 1` once the
+ * column is set to `display: flex; flex-direction: column` via
+ * the `vh-output-multi` opt-out below — that two-piece arrangement
+ * adapts to any viewport without hard-coding a pixel or `vh`
+ * value. The `min-height` is intentionally small (8rem ≈ 128px,
+ * roughly 5 JSON lines + padding) so very wide-and-short
+ * viewports — e.g. 21:9 / 2:1 ultra-wides where the overall
+ * column already ends up short — do not have the floor force
+ * the fix-candidate panel below the fold. Long output scrolls
+ * inside the box instead of pushing the rest of the page down. */
+.vh-variant-output {
+  margin: 0;
+  flex: 1 1 0;
+  min-height: 8rem;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Multi-variant recipes (e.g. astroid-2993): opt out of chrome.js's
+ * single-output grid by adding `vh-output-multi` to the output column.
+ * The grid that chrome.js applies via `.vh-output-section` assumes one
+ * `<pre id="output">` sharing a single cell with the progress bar; a
+ * multi-variant recipe has several `<pre>` panels stacked plus extra
+ * `.vh-variant-head` rows, which the single-cell grid does not
+ * accommodate (`#output`'s `height: 25rem` collapses to its content
+ * size when it is treated as a sized grid item). The opt-out clears
+ * the explicit `grid-row` / `grid-column` placements chrome.js style
+ * applies to `.vh-progress` and `.vh-output`, and forces the column
+ * back to plain block flow. The progress bar (still inserted before
+ * `#output`) shows above the baseline pre during the load. */
+.vh-main__col--output.vh-output-multi {
+  display: flex;
+  flex-direction: column;
+}
+
+.vh-main__col--output.vh-output-multi .vh-output,
+.vh-main__col--output.vh-output-multi .vh-progress {
+  grid-row: auto;
+  grid-column: auto;
+}
+
+/* Variant heads (h2 + future spec text) sit at content height so the
+ * two `<pre>` panels divide the rest of the column. */
+.vh-main__col--output.vh-output-multi .vh-variant-head {
+  flex: 0 0 auto;
+}
+
+/* The baseline variant wraps its `<pre>` in `.vh-variant-stage`. The
+ * stage is a flex item that takes its 1fr share of the column AND
+ * acts as a positioning context so chrome.js's progress overlay
+ * (which the chrome injects before #output) stacks ON TOP of #output
+ * instead of taking its own row in the column. That keeps the column
+ * height constant across the load lifecycle (no CLS while the overlay
+ * appears / fades out) and lets the overlay's "loading…" UI cover
+ * the full baseline panel during install. Children are absolute-
+ * positioned so the stage's own flex sizing stays clean (a `display:
+ * grid` stage interacted poorly with `flex: 1 1 0`, biasing the
+ * column's split between baseline and fix-candidate). */
+.vh-main__col--output.vh-output-multi .vh-variant-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 8rem;
+}
+
+.vh-main__col--output.vh-output-multi .vh-variant-stage > .vh-progress,
+.vh-main__col--output.vh-output-multi .vh-variant-stage > .vh-output,
+.vh-main__col--output.vh-output-multi .vh-variant-stage > #output {
+  position: absolute;
+  inset: 0;
+  grid-row: auto;
+  grid-column: auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+}
+
+.vh-main__col--output.vh-output-multi .vh-variant-stage > .vh-progress {
+  z-index: 2;
+}
+
+/* Override the wide-viewport `@media (min-width: 1024px)` rule that
+ * stretches `.vh-output` (and `#output` directly) to `height: 100%`,
+ * and the desktop-flex layout `.vh-runner__viewport pre { max-height
+ * 32rem }` constraint that would otherwise cap our share. Specificity
+ * here (3 classes / 2 classes+1 id) is enough to win over the
+ * @media rule. */
+.vh-main__col--output.vh-output-multi #output-fix {
+  height: auto;
+  flex: 1 1 0;
+  min-height: 8rem;
+  max-height: none;
+}
+
+#output-fix {
+  background: var(--vh-terminal-bg);
+  border: 1px solid var(--vh-terminal-border);
+}
+

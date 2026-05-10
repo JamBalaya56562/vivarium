@@ -78,6 +78,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Upstream issue
             </a>
+            <a class="vh-chip" href="https://github.com/JamBalaya56562/astroid/pull/1" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+              Fix candidate PR
+            </a>
           </div>
         </div>
         <div class="vh-main__header-aside">
@@ -123,9 +127,22 @@
 <span class="line"><span style="color:#E1E4E8">result</span></span></code></pre>
         </section>
 
-        <section class="vh-main__col vh-main__col--output">
-          <h2>Output</h2>
-          <pre id="output">(running)</pre>
+        <section class="vh-main__col vh-main__col--output vh-output-multi">
+          <header class="vh-variant-head" data-variant="baseline">
+            <h2 class="vh-variant-head__title">Baseline output</h2>
+          </header>
+          <div class="vh-variant-stage" data-variant="baseline">
+            <!-- chrome.js inserts <div class="vh-progress"> before #output;
+                 the stage stacks both children in one grid cell so the
+                 overlay covers the pre during loading without taking
+                 extra column height. -->
+            <pre id="output" class="vh-variant-output">(pending)</pre>
+          </div>
+
+          <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
+            <h2 class="vh-variant-head__title">Fix-candidate output</h2>
+          </header>
+          <pre id="output-fix" class="vh-variant-output">(waiting for baseline)</pre>
         </section>
       </div>
 
