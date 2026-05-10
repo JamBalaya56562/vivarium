@@ -245,6 +245,73 @@ await micropip.install("astroid==4.1.2")
   }
   outputBaselineEl.textContent = baselineCapture.stdout;
 
+  // Build the Contract v1 envelope as a closure that reflects whatever
+  // variant data is currently captured. Called once after baseline (so
+  // `__VIVARIUM_RESULT__` is populated by the time the top-level
+  // `#verdict` pill flips to "reproduced" — Playwright reads the
+  // envelope at that moment and would otherwise see `undefined`), and
+  // again after the fix-candidate run completes so the envelope picks
+  // up the second variant.
+  const buildEnvelope = (): VivariumResultV1 | null => {
+    if (!baselineParsed || !baselineCapture) return null;
+    const finishedAt = new Date();
+    return {
+      contract: 'v1',
+      bug: {
+        project: 'astroid',
+        issue: 2993,
+        upstream_url: 'https://github.com/pylint-dev/astroid/issues/2993',
+      },
+      runtime: {
+        name: 'pyodide',
+        version,
+        extras: {
+          python: baselineParsed.python_version,
+          astroid: baselineParsed.astroid_version,
+          ...(fixParsed
+            ? { astroid_fix_candidate: fixParsed.astroid_version }
+            : {}),
+        },
+      },
+      result: {
+        nested_braces: baselineParsed.nested_braces,
+        exception_type: baselineParsed.exception_type,
+        crashed: baselineParsed.crashed,
+        baseline: {
+          spec: 'astroid==4.1.2',
+          verdict: baselineCapture.verdict,
+          astroid_version: baselineParsed.astroid_version,
+          exception_type: baselineParsed.exception_type,
+          crashed: baselineParsed.crashed,
+        },
+        fix_candidate:
+          fixParsed && fixCapture && manifest
+            ? {
+                spec:
+                  manifest.source.spec ??
+                  `astroid @ git+${manifest.source.url}@${manifest.source.ref}`,
+                verdict: fixCapture.verdict,
+                astroid_version: fixParsed.astroid_version,
+                exception_type: fixParsed.exception_type,
+                crashed: fixParsed.crashed,
+                upstream_pr: manifest.upstream_pr ?? null,
+              }
+            : null,
+      },
+      timing: {
+        started_at: startedAt.toISOString(),
+        finished_at: finishedAt.toISOString(),
+        duration_ms: finishedAt.getTime() - startedAt.getTime(),
+      },
+    };
+  };
+
+  // Publish the baseline-only envelope BEFORE flipping the verdict
+  // pill — Playwright's regression suite reads
+  // `__VIVARIUM_RESULT__` the moment `data-verdict` leaves `pending`.
+  const initialEnvelope = buildEnvelope();
+  if (initialEnvelope) setResult(initialEnvelope);
+
   // Top-level verdict pill mirrors baseline — preserves the
   // single-verdict Contract v1 surface for downstream consumers.
   setVerdict(baselineCapture.verdict, baselineCapture.message);
@@ -307,65 +374,15 @@ await micropip.install("astroid==4.1.2")
     );
   }
 
-  // ---- Contract v1 envelope ----------------------------------------
-  // `result` keeps the historical baseline-only fields (so any
-  // automation reading `__VIVARIUM_RESULT__.result.crashed` continues to
-  // work) and gains additive `baseline` / `fix_candidate` sub-objects
-  // describing each variant separately. Additive change — no `contract`
-  // version bump.
-  const finishedAt = new Date();
-  if (baselineParsed) {
-    const envelope: VivariumResultV1 = {
-      contract: 'v1',
-      bug: {
-        project: 'astroid',
-        issue: 2993,
-        upstream_url: 'https://github.com/pylint-dev/astroid/issues/2993',
-      },
-      runtime: {
-        name: 'pyodide',
-        version,
-        extras: {
-          python: baselineParsed.python_version,
-          astroid: baselineParsed.astroid_version,
-          ...(fixParsed
-            ? { astroid_fix_candidate: fixParsed.astroid_version }
-            : {}),
-        },
-      },
-      result: {
-        nested_braces: baselineParsed.nested_braces,
-        exception_type: baselineParsed.exception_type,
-        crashed: baselineParsed.crashed,
-        baseline: {
-          spec: 'astroid==4.1.2',
-          verdict: baselineCapture.verdict,
-          astroid_version: baselineParsed.astroid_version,
-          exception_type: baselineParsed.exception_type,
-          crashed: baselineParsed.crashed,
-        },
-        fix_candidate:
-          fixParsed && fixCapture && manifest
-            ? {
-                spec:
-                  manifest.source.spec ??
-                  `astroid @ git+${manifest.source.url}@${manifest.source.ref}`,
-                verdict: fixCapture.verdict,
-                astroid_version: fixParsed.astroid_version,
-                exception_type: fixParsed.exception_type,
-                crashed: fixParsed.crashed,
-                upstream_pr: manifest.upstream_pr ?? null,
-              }
-            : null,
-      },
-      timing: {
-        started_at: startedAt.toISOString(),
-        finished_at: finishedAt.toISOString(),
-        duration_ms: finishedAt.getTime() - startedAt.getTime(),
-      },
-    };
-    setResult(envelope);
-  }
+  // ---- Contract v1 envelope (final) ---------------------------------
+  // Re-publish the envelope now that the fix-candidate variant has
+  // also captured (or definitively failed). `result` keeps the
+  // historical baseline-only fields so consumers reading
+  // `__VIVARIUM_RESULT__.result.crashed` continue to work, and the
+  // additive `baseline` / `fix_candidate` sub-objects describe each
+  // variant separately. Additive change — no `contract` version bump.
+  const finalEnvelope = buildEnvelope();
+  if (finalEnvelope) setResult(finalEnvelope);
 
   enableRunner({
     slug: 'astroid-2993',
