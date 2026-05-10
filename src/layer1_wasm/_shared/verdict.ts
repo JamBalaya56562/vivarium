@@ -1,28 +1,18 @@
-// Side-effect: imports the shared reproduction-page chrome (nav, footer,
-// theme toggle, progress bar, service-worker registration). Every repro.ts
-// imports this verdict module (Pyodide / Ruby.wasm / php-wasm / Rust),
-// so wiring the chrome import here gives all language families the same
-// look without each loader having to opt in. The asset lives in `_assets/`
-// (hand-written, no tsc step) — kept apart from `_shared/` (TS sources +
-// their compiled `.js` siblings, which `.gitignore` blanket-excludes).
-import '../_assets/chrome.js';
-
-// Vivarium contract v1 — verdict and result envelope helpers.
+// Vivarium contract v1 verdict + result envelope helpers.
 //
-// Pages must include `<meta name="vivarium-contract" content="v1">` in
-// `<head>` and an element with `id="verdict"` somewhere in the body.
-//
-// Surface published by these helpers (per ADR-0008, with values renamed
-// in revision 3 by ADR-0029):
-// - DOM: `#verdict[data-verdict]` ∈ {"pending", "reproduced", "unreproduced"}
+// Surface (consumed by Playwright tests, /repro/compare, the docs
+// matcher, and external readers):
+// - DOM: `#verdict[data-verdict]` ∈ {"pending","reproduced","unreproduced"}
 // - Globals: `__VIVARIUM_VERDICT__`, `__VIVARIUM_RESULT__`
-// - Visible text on `#verdict`, set by `setVerdict(state, text)`
 //
-// `reproduced` means the bug REPRODUCES (the upstream behaviour is
-// observable in the runtime this page loads). `unreproduced` means it
-// does NOT — either the runtime ships a fixed version, or the runtime
-// errored before producing a result. `pending` means the run has not yet
-// produced a verdict.
+// `reproduced` means the bug REPRODUCES in the runtime this page
+// loads; `unreproduced` means it does not (fixed runtime, or the run
+// errored before producing a verdict).
+//
+// Side-effect: imports the shared chrome (nav / footer / theme
+// toggle / progress bar / service-worker) so every language family's
+// loader picks it up without an explicit opt-in.
+import '../_assets/chrome.js';
 
 export type VerdictState = 'pending' | 'reproduced' | 'unreproduced';
 

@@ -1,19 +1,9 @@
-// Phase 7 B3 — verify_branch_fix tool (5th MCP tool, ADR-0030).
-//
-// A scaffolding helper, NOT an execution engine. Stdio TypeScript can't
-// run php-wasm / pyodide (ADR-0019 §F rejected the headless-browser
-// dependency). The tool's job is to give the agent a deep-link URL plus
-// instructions, leaving execution to the visitor's browser (or to a
-// browser MCP the agent separately drives).
-//
-// Layer dispatch:
-//   - Layer 1 → path A. compare_url is the recipe page itself with
-//     `?fix_url=` or `?fix=<base64url>` so the visitor's browser does
-//     the run. Path A produces a verdict bundle the visitor drops on
-//     /repro/compare.
-//   - Layer 2/3 → path B. compare_url is /repro/compare with `?slug=`
-//     and `?branch_url=` placeholders; gh_command is the
-//     `branch-fix-verdict.yml` workflow_dispatch line the agent runs.
+// Scaffolding helper for the AI-slop branch-fix verification loop.
+// Returns deep-link URLs / commands; execution happens in the
+// visitor's browser (Layer 1 → path A: `?fix_url=` / `?fix=<base64>`)
+// or in GitHub Actions (Layer 2/3 → path B: a
+// `branch-fix-verdict.yml` workflow_dispatch line). The MCP server
+// itself runs no wasm and dispatches no jobs.
 
 import { getCatalogue } from '../catalogue.js';
 import type { Layer, RecipeEntry } from '../types.js';

@@ -1,16 +1,7 @@
-// Catalogue fetcher with a 5-minute in-process TTL and a build-time
-// bundled fallback. See ADR-0019 §4 for the data-source decision.
-//
-// Two modes:
-//   1. Runtime fetch from the canonical Pages endpoint with a TTL cache
-//      so the agent always sees a catalogue recent enough to reflect a
-//      same-day recipe addition.
-//   2. Bundled snapshot fallback for offline use, network failure, or
-//      cold start before the first successful fetch.
-//
-// The bundled snapshot is shipped in src/bundled/recipes.json — it is
-// refreshed at publish time by the GHA workflow that copies the latest
-// docs/public/api/recipes.json into the package before publish.
+// Catalogue fetcher: 5-minute in-process TTL with a build-time bundled
+// fallback for offline / network-failure / cold-start. The bundled
+// snapshot is refreshed at publish time by the GHA workflow that
+// copies docs/public/api/recipes.json into src/bundled/.
 
 import type { RecipesIndex, VerdictSnapshot } from './types.js';
 import bundledIndex from './bundled/recipes.json' with { type: 'json' };
@@ -27,7 +18,6 @@ interface CacheEntry {
 
 let cache: CacheEntry | null = null;
 
-// Reset cache; only used by tests.
 export function _resetCacheForTesting(): void {
   cache = null;
 }

@@ -1,21 +1,8 @@
-// prepare_new_recipe — given an upstream project + issue + title,
-// returns everything an AI agent (or human) needs to author a new
-// Vivarium recipe in a single step:
-//
-//   - validated slug (rejects values that the recipes-index parser
-//     in docs/scripts/generate-recipes-index.ts would not resolve)
-//   - the exact `mise run recipes:new -- ...` and
-//     `mise run recipes:verify -- ...` commands the agent should run
-//   - placeholder rows for docs/data/recipe-facets.json (always) and
-//     docs/data/projects.json (only when the project is new), with
-//     TODO markers for the human to fill in
-//   - a commit-subject template matching the `feat(layer<N>):` /
-//     `feat(wasm):` historical scope conventions
-//   - a sequenced next-steps checklist
-//
-// SCAFFOLDING HELPER, NOT an execution engine — same pattern as
-// verify_branch_fix. The MCP server returns the commands and
-// metadata; the agent's shell tool actually invokes mise.
+// Scaffolding helper that bundles every artefact an agent needs to
+// author a new recipe (validated slug, scaffold + verify commands,
+// placeholder facets / projects rows, commit-subject template, next
+// steps). The MCP server returns the commands and metadata; the
+// agent's shell tool actually invokes mise.
 
 import type { Layer } from '../types.js';
 

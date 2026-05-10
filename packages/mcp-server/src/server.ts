@@ -1,31 +1,6 @@
 // MCP server wiring — registers the v1 tools and connects a stdio
-// transport.
-//
-// Tool surface:
-//   list_recipes / get_recipe / lookup_verdict — ADR-0019 §3 (X.1, v0.1).
-//   match_error                                 — Phase 6 X.2, mirrors the
-//                                                 docs S.2 matcher
-//                                                 (ADR-0025 §Neutral).
-//   verify_branch_fix                           — Phase 7 B3, deep-link
-//                                                 helper for the AI-slop
-//                                                 verification loop
-//                                                 (ADR-0030).
-//   prepare_new_recipe                          — Tier 2, returns the full
-//                                                 authoring command bundle
-//                                                 (scaffold + verify +
-//                                                 facets/projects rows)
-//                                                 for a new upstream
-//                                                 issue.
-//   prepare_fix_candidate                       — Phase 8, registers a
-//                                                 fix-candidate spec on an
-//                                                 existing Layer 1 recipe
-//                                                 so the page runs the
-//                                                 fork branch's wheel
-//                                                 side-by-side with the
-//                                                 released build
-//                                                 (ADR-0040).
-//
-// See ADR-0019 §1 for the stdio-transport choice.
+// transport. The tool surface is documented in README.md; each tool
+// module owns its own description literal.
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
