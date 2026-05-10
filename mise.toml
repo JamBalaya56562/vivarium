@@ -157,12 +157,20 @@ bun run test
 # ── Native re-verification (run repros against host interpreters) ───────
 
 [tasks."repro:native:python"]
-description = "Run Python repros against host Python (Pyodide-equivalent pins)"
+description = "Run every src/layer1_wasm/*/repro.py against host Python (auto-discovered; PEP 723 inline metadata pins each script's deps)"
+shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
 run = '''
-mise exec uv -- uv run --python 3.13 src/layer1_wasm/pandas-56679/repro.py
-mise exec uv -- uv run --python 3.13 src/layer1_wasm/numpy-28287/repro.py
-mise exec uv -- uv run --python 3.13 src/layer1_wasm/cpython-137205/repro.py
-mise exec uv -- uv run --python 3.13 src/layer1_wasm/astroid-2993/repro.py
+set -euo pipefail
+shopt -s nullglob
+matched=0
+for f in src/layer1_wasm/*/repro.py; do
+  matched=1
+  echo "== $f =="
+  mise exec uv -- uv run --python 3.13 "$f"
+done
+if [ "$matched" -eq 0 ]; then
+  echo "[repro:native:python] no src/layer1_wasm/*/repro.py found — nothing to run" >&2
+fi
 '''
 
 [tasks."repro:native:ruby"]

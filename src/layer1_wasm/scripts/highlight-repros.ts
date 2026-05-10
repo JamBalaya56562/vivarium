@@ -55,6 +55,7 @@ const LAYER1_DIR = dirname(SCRIPT_DIR);
 const LANG_BY_PROJECT: Record<string, BundledLanguage> = {
   astroid: 'python',
   cpython: 'python',
+  mpmath: 'python',
   numpy: 'python',
   pandas: 'python',
   ruby: 'ruby',
