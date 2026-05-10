@@ -53,6 +53,7 @@ const LAYER1_DIR = dirname(SCRIPT_DIR);
 // before the first hyphen identifies the project, which in turn pins
 // the source language for Layer 1 recipes.
 const LANG_BY_PROJECT: Record<string, BundledLanguage> = {
+  astroid: 'python',
   cpython: 'python',
   numpy: 'python',
   pandas: 'python',
