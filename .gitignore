@@ -74,6 +74,13 @@ src/layer1_wasm/**/repro.highlighted.html
 !src/layer1_wasm/_assets/
 !src/layer1_wasm/_assets/**
 
+# Layer 1 fix-candidate wheels (ADR-0040): the wheel binary and its
+# generated `manifest.json` are built by `mise run repro:build:wheels`
+# (locally) or by `deploy-docs.yml` (CI) from each
+# `<slug>/wheels/source.json`. Only `source.json` is tracked.
+src/layer1_wasm/**/wheels/*.whl
+src/layer1_wasm/**/wheels/manifest.json
+
 # Playwright run artefacts (reports, traces, screenshots).
 src/layer1_wasm/playwright-report/
 src/layer1_wasm/test-results/

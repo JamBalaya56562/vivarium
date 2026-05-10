@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "package": "astroid",
+  "purpose": "fix-candidate verification for pylint-dev/astroid#2993",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/JamBalaya56562/astroid",
+    "ref": "claude/fix-astroid-2993-wVitv"
+  },
+  "upstream_pr": "https://github.com/JamBalaya56562/astroid/pull/1"
+}
