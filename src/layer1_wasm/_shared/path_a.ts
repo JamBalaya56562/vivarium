@@ -1,27 +1,10 @@
-// Phase 7 B3 — R.2 Path A (Layer 1 source-substitution branch-fix).
-//
-// Recipe pages opt in by calling `enablePathA({...})` at the end of
-// their main run. The helper:
-//   1. Mounts a "Try a fix" panel into the recipe page
-//      (look for `<section id="path-a-mount">`).
-//   2. Reads the page's baseline run (captured by the recipe and passed
-//      in via `baseline`) and prepares it as `original-verdict.json`.
-//   3. Accepts a fix source via paste / public URL fetch / file pick / URL
-//      params (`?fix=` base64url, `?fix_url=`).
-//   4. Runs the fix via the recipe's `runFix` callback (which re-uses the
-//      already-loaded WASM interpreter), captures it as
-//      `branch-fix-verdict.json`.
-//   5. Exposes both as downloadable `.json` files the visitor drops on
-//      `/repro/compare`.
-//
-// The captured shape is Contract v1 (Layer 2/3 verdict shape) so R.3
-// consumes Path A's output without schema branches. Layer-1-specific
-// fields are synthesised:
-//   - `image_tag`   = `layer1:<slug>:<sha256(source)[0..12]>`
-//   - `image_digest` = empty string (schema explicitly allows empty)
-//   - `stderr_tail`  = empty string (Layer 1 has no stderr stream)
-//
-// Design decisions in ADR-0030 (private memo).
+// Path A — Layer 1 source-substitution branch-fix panel. Recipe pages
+// opt in via `enablePathA({...})` after their baseline run; the
+// captured run + visitor's "fix" both serialise to the Contract v1
+// verdict shape so the /repro/compare page consumes them without
+// schema branching. Layer-1-specific fields are synthesised:
+// image_tag = `layer1:<slug>:<sha256(source)[0..12]>`,
+// image_digest / stderr_tail = "" (schema-allowed).
 
 const FIX_PARAM_LIMIT_BYTES = 4 * 1024;
 

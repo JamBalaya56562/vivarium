@@ -1,14 +1,8 @@
-// prepare_fix_candidate — register a fix-candidate spec on an existing
-// Layer 1 (WASM/Pyodide) Vivarium recipe so the recipe page runs the
-// fix branch's wheel side-by-side with the released build, per
-// ADR-0040.
-//
-// SCAFFOLDING HELPER, NOT an execution engine — same pattern as
-// prepare_new_recipe / verify_branch_fix. The MCP server returns the
-// `fix-candidate.json` content + the exact commands the agent should
-// run to fork-and-clone aletheia-works/vivarium, drop the spec in,
-// commit, push, and open the cross-repo PR. The agent's shell tool
-// actually invokes `git` / `gh`.
+// Scaffolding helper for registering a fix-candidate spec on an
+// existing Layer 1 recipe (per ADR-0040 — fix-candidate.json + CI
+// wheel build). Returns the spec content and the gh / git command
+// bundle the agent should run; no git or network operations happen
+// inside the MCP server.
 
 import { getCatalogue } from '../catalogue.js';
 import type { RecipeEntry } from '../types.js';

@@ -1,31 +1,10 @@
-// Phase 8 V″ — editable reproduction script + Run / Reset buttons.
-//
-// Recipes mount this helper after the baseline run finishes by calling
-// `enableRunner({...})`. It:
-//   1. Wraps the existing `<pre><code id="repro-code">` block (which
-//      `highlight-repros.ts` pre-renders with Shiki spans) inside a
-//      viewport that also contains a hidden `<textarea>`. The Shiki
-//      `<pre>` is the default surface — colourful, read-only.
-//   2. Inserts a `<div class="vh-runner__head">` flex row that hosts
-//      the script column's `<h2>` heading next to an Edit / Run /
-//      Reset action group. Putting the actions inline with the
-//      heading saves the column-height that an action bar below the
-//      editor would otherwise consume.
-//   3. On Edit, swaps the `<pre>` for the `<textarea>` (drops Shiki
-//      highlighting during edit — see ADR-0035 §"Negative"). Edits
-//      stay in the textarea until Reset.
-//   4. On Run, calls the recipe's `runFix(source)` callback with the
-//      currently-active source (textarea content if editing, the
-//      baseline source otherwise) and updates `#output` + the verdict
-//      pill in place.
-//   5. On Reset, restores the baseline source, switches back to view
-//      mode, and re-runs.
-//
-// Reuses the `PathACapturedRun` shape from `_shared/path_a.ts` so each
-// recipe needs only one `captureRun(source)` adapter to participate in
-// both the runner here and the existing Path A panel.
-//
-// Design decisions in ADR-0035.
+// Editable reproduction script + Run / Reset buttons. Recipes call
+// `enableRunner({...})` after the baseline run; on Edit the Shiki
+// `<pre>` swaps to a `<textarea>`, on Run the runner invokes the
+// recipe's `runFix(source)` and updates `#output` + the verdict pill
+// in place. Reuses `PathACapturedRun` so a recipe needs only one
+// `captureRun` adapter to participate in both the runner and the
+// existing Path A panel.
 
 import type { PathACapturedRun } from './path_a.js';
 import { setVerdict } from './verdict.js';
