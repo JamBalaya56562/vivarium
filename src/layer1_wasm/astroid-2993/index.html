@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing pylint-dev/astroid#2993</title>
+    <!-- vivarium-chrome-injected -->
+    <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/python_stdlib.zip" as="fetch" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide-lock.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Keep the version below in sync with DEFAULT_PYODIDE_VERSION in
+         ../_shared/loader.ts. -->
+    <link
+      rel="modulepreload"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
+      crossorigin
+    />
+    <link rel="stylesheet" href="../_shared/style.css" />
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
+          A fuzzed type comment such as
+          <code>a=b # type:i{{{...{{</code> — `i` followed by a long
+          run of <code>{</code> characters — makes
+          <code>astroid.builder.parse</code> raise an unhandled
+          <code>MemoryError</code> (or <code>RecursionError</code>,
+          depending on the runtime). The crash propagates out of any
+          tool built on astroid, including pylint and most IDE
+          plugins.
+        </p>
+        <p>
+          The script on this page installs astroid into Pyodide via
+          <code>micropip</code>, feeds it the fuzzed input, and
+          watches for an unhandled exception. If
+          <code>astroid.builder.parse</code> raises anything other
+          than <code>AstroidSyntaxError</code>, the bug reproduces in
+          the runtime currently loaded in your browser tab.
+        </p>
+        <p>
+          The expected fix mirrors astroid's #2762 fix for f-strings
+          (shipped in 4.1.2): catch
+          <code>MemoryError</code>/<code>RecursionError</code> in the
+          type-comment parser and treat the comment as opaque. The
+          full discussion lives in the GitHub issue thread linked
+          below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">pylint-dev/astroid</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#2993</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Pyodide v0.29.3</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Pyodide · astroid</p>
+          <h1>Reproducing <a href="https://github.com/pylint-dev/astroid/issues/2993">pylint-dev/astroid#2993</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://github.com/pylint-dev/astroid/issues/2993" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Pyodide runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
+      </header>
+
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> astroid</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">NESTED</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 270</span></span>
+<span class="line"><span style="color:#E1E4E8">code </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "a=b # type:i"</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "{"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> NESTED</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#9ECBFF">    "astroid_version"</span><span style="color:#E1E4E8">: astroid.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "nested_braces"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">NESTED</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "exception_type"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "exception_message"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "crashed"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">try</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    astroid.builder.parse(code)</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#E1E4E8"> astroid.exceptions.AstroidSyntaxError </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "AstroidSyntaxError"</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">MemoryError</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">RecursionError</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#79B8FF"> Exception</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result</span></span></code></pre>
+        </section>
+
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
+
+    </main>
+
+    <script type="module" src="./repro.js"></script>
+  </body>
+</html>
