@@ -81,10 +81,23 @@ export default defineConfig({
     },
   ],
 
+  // Three engines exercised. CI runs each project in its own
+  // matrix slot (per .github/workflows/repro-regression.yml) via
+  // `--project=<name>`, so the wall-clock stays on one browser even
+  // though Pyodide is heavy enough that running them serially in one
+  // worker would OOM the runner.
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
   ],
 });

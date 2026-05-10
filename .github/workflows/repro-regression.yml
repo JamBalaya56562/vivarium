@@ -85,8 +85,18 @@ concurrency:
 
 jobs:
   regression:
+    # One runner per browser engine so each Playwright project gets
+    # its own Pyodide memory budget (~1 GB resident with the heavier
+    # recipes); a single runner exercising all three serially would
+    # OOM. `fail-fast: false` lets each browser run to completion
+    # even if a sibling fails — flaky engines stay isolated.
+    name: regression (${{ matrix.browser }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     defaults:
       run:
         working-directory: src/layer1_wasm
@@ -388,18 +398,17 @@ jobs:
             echo "Layer 3 reproduction ${slug}: build OK; tracked verdict=${verdict}"
           done
 
-      - name: Install Playwright browsers
-        # `--with-deps` brings in the system libraries Chromium needs
-        # (libnss3, libatk-bridge, etc.). The runner is fresh so the
-        # apt step is unavoidable; total step time is ~30 s.
-        run: bunx playwright install --with-deps chromium
+      - name: Install Playwright browser (${{ matrix.browser }})
+        # `--with-deps` brings in the system libraries the engine
+        # needs. Each matrix slot installs only its own browser.
+        run: bunx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Run Playwright regression suite
+      - name: Run Playwright regression suite (${{ matrix.browser }})
         # `playwright.config.ts` auto-starts `python -m http.server`
         # on the layer1 root, so the test cases can hit
         # `/_shared/_test/`, `/pandas-56679/`, `/numpy-28287/`.
-        # Python 3 is preinstalled on `ubuntu-latest` runners.
-        run: bun run test
+        # `--project=<name>` selects the matrix slot's browser.
+        run: bun run test -- --project=${{ matrix.browser }}
         env:
           CI: 'true'
 
@@ -407,6 +416,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report-${{ github.run_id }}
+          # Browser name in the artefact prevents one matrix slot from
+          # clobbering another's report when multiple slots fail.
+          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
           path: src/layer1_wasm/playwright-report/
           retention-days: 14
