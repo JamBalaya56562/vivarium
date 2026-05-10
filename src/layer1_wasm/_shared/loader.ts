@@ -1,19 +1,7 @@
-// Vivarium contract v1 — Pyodide loader.
-//
-// Loads Pyodide from the jsDelivr CDN with a pinned version and an optional
-// list of preload packages. On any load failure, the helper sets the verdict
-// to "unreproduced" with the error text so the caller does not have to duplicate
-// that plumbing — and re-throws so the caller can also short-circuit.
-//
-// Pages should still also wrap their reproduction code in `try/catch` and
-// call `setVerdict("unreproduced", ...)` themselves on REPRODUCTION-time errors —
-// this helper only owns load-time errors.
-//
-// Side-effect: imports `./chrome.js` so every Layer 1 page gets the
-// shared nav / footer / theme toggle / progress bar / service-worker
-// registration without each HTML having to add a `<script>` tag.
+// Pyodide loader. Sets the verdict to "unreproduced" on load-time
+// errors and re-throws so the caller can short-circuit; recipe pages
+// still own their own reproduction-time try/catch.
 
-// chrome.js is imported via verdict.ts — see comment there.
 import { setVerdict } from "./verdict.js";
 
 export const DEFAULT_PYODIDE_VERSION = "0.29.3";
