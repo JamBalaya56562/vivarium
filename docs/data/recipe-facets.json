@@ -1,6 +1,12 @@
 {
   "$comment": "Per-recipe facet overlay for the gallery. Per ADR-0024 §1: hand-curated, reviewed in PR diff, scales to ~50 rows. New recipe → add a row here AND in docs/docs/{en,ja}/repro/index.mdx's table fallback.",
   "facets": {
+    "astroid-2993": {
+      "language": "python",
+      "symptom": "memory-error-on-fuzzed-input",
+      "severity": "crash",
+      "tags": ["ast", "type-comment", "fuzzing", "oss-fuzz"]
+    },
     "cpython-137205": {
       "language": "python",
       "symptom": "fk-pragma-silently-dropped",
