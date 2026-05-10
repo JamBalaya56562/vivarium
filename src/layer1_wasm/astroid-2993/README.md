@@ -58,8 +58,9 @@ parser and treat the comment as opaque.
 | `repro.js`                 | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`                 | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. PEP 723 inline metadata pins `astroid==4.1.2`. |
 | `verify_fix.py`            | **Native CLI orchestrator.** Two-variant fix verification — runs the same reproduction against PyPI 4.1.2 and against the fork branch via `uv run --with`, prints a single JSON envelope. Maintainer convenience tool; not part of Contract v1. |
-| `wheels/<file>.whl`        | Pre-built fix-candidate astroid wheel. Vendored in-repo for now so the page can install it via `micropip` from same-origin (PyPI does not yet ship the fix). A follow-up will move wheel building to CI and publishing to GitHub Pages so the binary leaves the repo (see issue / follow-up PR). |
-| `wheels/manifest.json`     | Records which wheel filename / version / source ref the page should install. The runtime fetches this before calling `micropip.install`. |
+| `wheels/source.json`       | **Tracked input** — hand-curated spec of the upstream fork + branch the fix-candidate wheel should be built from (`{ url, ref, upstream_pr }`). Editing this file is the only step required to refresh the fix candidate. |
+| `wheels/<file>.whl`        | **Generated, gitignored** — fix-candidate astroid wheel, built from `source.json` by `scripts/build-layer1-wheels.sh` (run by CI on every deploy and locally via `mise run repro:build:wheels`). Same-origin install lets `micropip` pull it without depending on PyPI to ship the fix. |
+| `wheels/manifest.json`     | **Generated, gitignored** — wheel filename + version + resolved commit SHA + `fetched_at`. Written by the same builder; read by `repro.ts` before calling `micropip.install`. |
 
 ## Verdict contract — `vivarium-contract: v1`
 
@@ -115,18 +116,37 @@ becomes redundant.
 
 ### Updating the fix-candidate wheel
 
-When the fork branch advances (or the fix-candidate is moved to a
-different fork / branch), regenerate the committed wheel:
+The wheel is built from
+[`wheels/source.json`](./wheels/source.json) — a one-screen JSON
+spec of the upstream fork + branch (per ADR-0040). To refresh the
+fix candidate (e.g. fork branch advanced, or the fix moved to a
+different fork), edit only that file:
+
+```jsonc
+{
+  "schema_version": 1,
+  "package": "astroid",
+  "purpose": "fix-candidate verification for pylint-dev/astroid#2993",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/<fork>/astroid",
+    "ref": "<branch>"
+  },
+  "upstream_pr": "https://github.com/<fork>/astroid/pull/<n>"
+}
+```
+
+CI (`deploy-docs` workflow) builds the wheel from that spec on
+every push to `main` via `scripts/build-layer1-wheels.sh` and
+ships it in the Pages artefact alongside the recipe page. The
+generated `wheels/<file>.whl` and `wheels/manifest.json` are
+gitignored — they never need to land in a PR.
+
+For local development:
 
 ```bash
-mise install                                                          # one-time
-mise exec uv -- uv run --no-project --with pip --python 3.13 -- \
-  python -m pip wheel --no-deps \
-    --wheel-dir src/layer1_wasm/astroid-2993/wheels \
-    "astroid @ git+https://github.com/<fork>/astroid@<branch>"
-# Then update src/layer1_wasm/astroid-2993/wheels/manifest.json
-# (`filename`, `version`, `source.ref`, `source.commit`, `fetched_at`)
-# and delete the old wheel file.
+mise install                          # one-time
+mise run repro:build:wheels           # writes wheels/<file>.whl + manifest.json (gitignored)
 ```
 
 Verify both variants natively before pushing:
