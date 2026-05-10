@@ -25,6 +25,13 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+    # Roll every GitHub Actions update into a single weekly PR
+    # instead of one per action; reviewing the SHA-pinned bumps
+    # together cuts merge overhead substantially.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     open-pull-requests-limit: 5
 
   # ─── OpenTofu providers ──────────────────────
@@ -42,6 +49,10 @@ updates:
     commit-message:
       prefix: "chore(infra)"
       include: "scope"
+    groups:
+      terraform-providers:
+        patterns:
+          - "*"
     open-pull-requests-limit: 3
 
   # ─── bun — packages/mcp-server ───────────────
@@ -69,6 +80,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+    groups:
+      mcp-server-deps:
+        patterns:
+          - "*"
     open-pull-requests-limit: 5
 
   # Future ecosystems to enable in Phase 1+:
