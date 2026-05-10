@@ -49,6 +49,12 @@
       "severity": "footgun",
       "tags": ["bash", "command-substitution", "exit-code"]
     },
+    "mpmath-983": {
+      "language": "python",
+      "symptom": "solver-asymmetry-on-nonsingular-matrix",
+      "severity": "bug",
+      "tags": ["numerical-linear-algebra", "qr-solve", "householder", "arbitrary-precision"]
+    },
     "find-xargs-whitespace": {
       "language": "shell",
       "symptom": "whitespace-unsafe-pipeline",

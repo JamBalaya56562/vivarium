@@ -163,6 +163,7 @@ mise exec uv -- uv run --python 3.13 src/layer1_wasm/pandas-56679/repro.py
 mise exec uv -- uv run --python 3.13 src/layer1_wasm/numpy-28287/repro.py
 mise exec uv -- uv run --python 3.13 src/layer1_wasm/cpython-137205/repro.py
 mise exec uv -- uv run --python 3.13 src/layer1_wasm/astroid-2993/repro.py
+mise exec uv -- uv run --python 3.13 src/layer1_wasm/mpmath-983/repro.py
 '''
 
 [tasks."repro:native:ruby"]
