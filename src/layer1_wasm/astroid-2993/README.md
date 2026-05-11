@@ -9,37 +9,36 @@
 
 [pylint-dev/astroid#2993](https://github.com/pylint-dev/astroid/issues/2993)
 — `astroid.builder.parse(code)` raises an unhandled `MemoryError`
-(or `RecursionError`, depending on the runtime) when fed a fuzzed
-type comment whose value is `i` followed by a long run of `{`
-characters:
+when fed a fuzzed type comment whose value is `i` followed by a long
+run of `{` characters:
 
 ```python
 import astroid
-code = "a=b # type:i" + "{" * 270
+code = "a = b # type:i" + "{" * 200
 astroid.builder.parse(code)
-# MemoryError (or RecursionError) — propagates out of `parse`
+# MemoryError — propagates out of `parse`
 ```
 
 The fuzzed input is from OSS-Fuzz; the upstream issue references the
 internal report at <https://issues.oss-fuzz.com/issues/489780714>.
 CPython's compiler walks the type-comment expression recursively and
-either runs out of stack or memory; astroid does not catch the
-runtime error in its type-comment parser, so the exception
-propagates out of `parse` and crashes any tool built on it (pylint,
-IDE plugins, etc.).
+runs out of memory; astroid 4.1.2 does not cut off pathological
+nesting before parsing, so the exception propagates out of `parse`
+and crashes any tool built on it (pylint, IDE plugins, etc.).
 
-The expected fix mirrors astroid's #2762 fix for f-strings (shipped
-in 4.1.2): catch `MemoryError`/`RecursionError` in the type-comment
-parser and treat the comment as opaque.
+The expected fix detects pathological nesting before calling Python's
+parser, skips the invalid type comment, and still parses deeply nested
+but valid type comments.
 
 ## Why this bug
 
 - Pure Python — astroid has only one required dependency
   (`typing-extensions`, already bundled by Pyodide). No native
   extensions, no I/O, no thread-scheduler dependence.
-- Reproduction is a single `astroid.builder.parse(code)` call;
-  verdict reduces to a boolean (did `parse` raise an unhandled
-  runtime error or not).
+- Reproduction is a small set of `astroid.builder.parse(code)` calls:
+  assignment and function pathological type comments must not crash
+  after the fix, while a deeply nested but valid type comment must
+  still parse.
 - Reported against astroid 4.1.x. Latest release at authoring time
   is 4.1.2 (2026-03-22) and the bug still reproduces there; pinning
   in PEP 723 / `repro.ts` to that exact version locks the verdict
@@ -76,19 +75,20 @@ fix-candidate panel intentionally does not surface a separate
 would mis-cue a successful fix as a failure (the fix candidate
 *should* not reproduce — that is the desired outcome). Visitors
 read each variant's outcome from the JSON inside its own `<pre>`
-(`crashed: true|false`, `exception_type`).
+(`crashed: true|false`, `skipped_pathological`,
+`valid_control_parsed`, and per-case details).
 
 The `result` field of `__VIVARIUM_RESULT__` keeps the legacy
 `nested_braces` / `exception_type` / `crashed` fields and additively
-gains `result.baseline` and `result.fix_candidate` sub-objects, each
-with that variant's own verdict + parsed astroid version.
+gains `skipped_pathological`, `valid_control_parsed`, `cases`,
+`result.baseline`, and `result.fix_candidate`, with each variant's
+own verdict + parsed astroid version.
 
 A `reproduced` verdict means **the bug reproduced** in that variant —
-`astroid.builder.parse` raised an unhandled `MemoryError` /
-`RecursionError` (or any non-`AstroidSyntaxError`). An
-`unreproduced` verdict means either the variant ships a graceful catch
-(`AstroidSyntaxError` or clean return), or the runtime errored
-before producing a result.
+a pathological type comment crashed `astroid.builder.parse`. An
+`unreproduced` verdict means the pathological assignment and function
+type comments were skipped before parsing and the valid deep-nesting
+control still parsed, or the runtime errored before producing a result.
 
 ## Two-variant fix verification
 
@@ -99,7 +99,7 @@ disappearing under the in-flight upstream PR in one page load:
 | Variant         | Source                                                   | Expected outcome |
 | --------------- | -------------------------------------------------------- | ---------------- |
 | `baseline`      | `astroid==4.1.2` from PyPI                               | `crashed: true`  |
-| `fix-candidate` | Wheel under `./wheels/`, built from the fork branch the upstream PR is opened from. Currently `JamBalaya56562/astroid@claude/fix-astroid-2993-wVitv` (see [PR #1](https://github.com/JamBalaya56562/astroid/pull/1)). | `crashed: false` |
+| `fix-candidate` | Wheel under `./wheels/`, built from the fork branch opened as [pylint-dev/astroid#3049](https://github.com/pylint-dev/astroid/pull/3049). Currently `JamBalaya56562/astroid@claude/fix-astroid-2993-wVitv`. | `crashed: false`, `skipped_pathological: true`, `valid_control_parsed: true` |
 
 The two runs share the same Pyodide instance — between variants the
 runtime calls `micropip.uninstall("astroid")`, drops `astroid*` from
@@ -153,8 +153,8 @@ Verify both variants natively before pushing:
 
 ```bash
 mise exec uv -- uv run src/layer1_wasm/astroid-2993/verify_fix.py
-# verdict=fix-candidate-confirmed — baseline still reproduces
-#   and the fix candidate flips the verdict to unreproduced.
+# verdict=fix-candidate-confirmed — baseline still reproduces and
+#   the fix candidate skips pathological type comments before parsing.
 ```
 
 ## Running locally — in-browser
@@ -177,7 +177,7 @@ Pyodide-bundled packages.
 ```bash
 mise install
 mise exec uv -- uv run src/layer1_wasm/astroid-2993/repro.py
-# verdict=reproduced — astroid.builder.parse raised MemoryError on a fuzzed type comment
+# verdict=reproduced — astroid.builder.parse raised MemoryError on a pathological type comment
 ```
 
 ## Deployment
