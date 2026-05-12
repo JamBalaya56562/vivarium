@@ -28,34 +28,29 @@
 
 | Language | Runtime                         | Status   |
 |----------|---------------------------------|----------|
-| Python   | [Pyodide](https://pyodide.org)  | Phase 0 first target |
-| SQLite   | [sqlite-wasm](https://sqlite.org/wasm/) | Paired with Pyodide |
-| Rust     | `wasm32-wasi` / `wasm32-unknown-unknown` | Deferred |
-| Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Deferred |
-| PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Deferred |
+| Python   | [Pyodide](https://pyodide.org)  | Active |
+| SQLite   | Pyodide `sqlite3`               | Active |
+| Rust     | `wasm32-wasip1`                 | Active |
+| Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Active |
+| PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Active |
 
 Concrete runtime choices land in [`docs/docs/`](../../docs/docs/) as ADRs, not
 here.
 
-## Phase 0 scope
+## Catalogue
 
-First vertical is **Pyodide + a hand-picked pandas bug**
-([Issue #13](https://github.com/aletheia-works/vivarium/issues/13)).
+Layer 1 recipes are immediate subdirectories such as
+[`pandas-56679/`](./pandas-56679/), [`regex-779/`](./regex-779/), and
+[`ruby-21709/`](./ruby-21709/). They are static browser pages published
+under `/vivarium/repro/<project>/<issue_path>/` by the `deploy-docs`
+workflow.
 
-### What is here
+## Conventions
 
-- [`pandas-56679/`](./pandas-56679/) — the Phase 0 PoC.
-  Reproduces [`pandas-dev/pandas#56679`](https://github.com/pandas-dev/pandas/issues/56679)
-  end-to-end in Pyodide. Static HTML; deployed under
-  `/vivarium/poc/pandas-56679/` by the `deploy-docs` workflow.
-
-### Conventions for new PoCs
-
-Each new Layer 1 PoC is its own immediate subdirectory of this folder
+Each new Layer 1 recipe is its own immediate subdirectory of this folder
 (e.g. `numpy-12345/`, `pandas-56679/`). The directory is required to
-contain an `index.html`; the deploy workflow publishes any directory
-matching this shape under `/vivarium/poc/<slug>/`. Companion files
-(`repro.mjs`, `style.css`, `README.md`, fixtures) live alongside.
+contain an `index.html`; companion files (`repro.ts`, `README.md`,
+fixtures, generated-highlight inputs) live alongside.
 
 ## Verdict surface
 

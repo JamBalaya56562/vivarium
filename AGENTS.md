@@ -87,7 +87,7 @@ vivarium/
 │   ├── CLAUDE.md          # Claude Code-specific addenda; auto-loads `@../AGENTS.md`
 │   └── rules/             # path-scoped operational rules (e.g. recipe-authoring.md)
 ├── .github/
-│   ├── workflows/         # CI/CD — thin callers into aletheia-works/.github reusables
+│   ├── workflows/         # CI/CD — mostly thin callers, plus Vivarium-owned reusable workflows
 │   ├── dependabot.yml
 │   ├── labeler.yml        # path-based label rules (mechanical)
 │   └── release.yml
@@ -194,11 +194,11 @@ PRs is legitimate housekeeping.
 
 ### 4.7 Organisation-level reusable workflows
 
-Shared CI logic (commitlint, release notes, etc.) lives in
-`aletheia-works/.github` as `workflow_call` reusables. Consuming repos —
-including this one — host only thin caller workflows plus any
-`workflow_run` listeners. If a workflow here starts duplicating logic that
-would belong in the org, flag it for promotion rather than copying.
+Shared cross-repo CI logic (commitlint, release notes, etc.) lives in
+`aletheia-works/.github` as `workflow_call` reusables. Vivarium-specific
+reusable workflows, such as verdict capture tied to Contract v1, live in this
+repository. If a workflow here starts duplicating logic that would belong in
+the org, flag it for promotion rather than copying.
 
 ### 4.8 GitHub Actions: latest versions, pinned by SHA
 

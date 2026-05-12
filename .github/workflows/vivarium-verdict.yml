@@ -1,0 +1,239 @@
+name: vivarium-verdict
+
+# Reusable workflow for capturing a Vivarium reproduction verdict.
+#
+# Any consumer repo can `uses:` this workflow to pull a published
+# `ghcr.io/aletheia-works/vivarium-<slug>` image, run it, capture
+# the verdict snapshot conforming to Vivarium Contract v1
+# (https://aletheia-works.github.io/vivarium/spec/contract-v1.html),
+# validate it against the published JSON Schema, assert the
+# captured verdict matches `expected_verdict`, and upload the
+# resulting `verdict.json` as a workflow artefact.
+#
+# Phase 5 sub-stream D per ADR-0013 (private memo). Tracking Issue:
+# https://github.com/aletheia-works/vivarium/issues/119.
+#
+# Caller example (consumer repo):
+#
+#   jobs:
+#     bash-issue:
+#       uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
+#       with:
+#         slug: bash-local-shadows-exit
+#
+# Inputs:
+#   slug              (required) Vivarium recipe slug, e.g.
+#                     "bash-local-shadows-exit". Used to derive the
+#                     default image tag and to label artefacts and
+#                     log lines.
+#   image             (optional) Image override. Default empty,
+#                     resolved at runtime to
+#                     "ghcr.io/aletheia-works/vivarium-<slug>:latest".
+#   expected_verdict  (optional) "reproduced" or "unreproduced". Job fails if
+#                     the captured verdict does not match. Default
+#                     "reproduced" (i.e., the bug still reproduces).
+#   timeout_minutes   (optional) Job timeout in minutes. Default 5.
+#                     Most Layer 2 recipes complete in seconds; the
+#                     budget exists for image-pull + slow networks.
+#
+# This workflow has only `workflow_call` as a trigger. The thin
+# self-test caller at `vivarium-verdict-self-test.yml` exercises it
+# against one of Vivarium's own Layer 2 recipes.
+
+on:
+  workflow_call:
+    inputs:
+      slug:
+        description: 'Vivarium recipe slug, e.g. "bash-local-shadows-exit".'
+        required: true
+        type: string
+      image:
+        description: 'Image override. Default: ghcr.io/aletheia-works/vivarium-<slug>:latest.'
+        required: false
+        type: string
+        default: ''
+      expected_verdict:
+        description: 'Expected verdict ("reproduced" or "unreproduced"). Job fails if captured differs.'
+        required: false
+        type: string
+        default: 'reproduced'
+      timeout_minutes:
+        description: 'Job timeout in minutes.'
+        required: false
+        type: number
+        default: 5
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verdict:
+    name: Capture verdict for ${{ inputs.slug }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+
+    steps:
+      - name: Setup Bun (for ajv-cli)
+        # ajv-cli is installed via `bun add --global` so it lands
+        # on PATH for subsequent run: steps. Same pattern the
+        # repro-regression / deploy-docs workflows use.
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install ajv-cli for verdict schema validation
+        run: bun add --global ajv-cli@5 ajv-formats
+
+      - name: Fetch contract v1 verdict schema
+        # Pull the canonical schema from GitHub Pages rather than
+        # vendoring it. The schema is locked at v1 by ADR-0014
+        # (private memo); v2 will land at a new URL with its own
+        # ADR.
+        run: |
+          set -euo pipefail
+          curl -sS --fail \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 2 \
+            -o /tmp/verdict.schema.json \
+            https://aletheia-works.github.io/vivarium/spec/verdict.schema.json
+
+      - name: Resolve image
+        id: resolve
+        env:
+          SLUG: ${{ inputs.slug }}
+          IMAGE_OVERRIDE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          if [ -n "$IMAGE_OVERRIDE" ]; then
+            image="$IMAGE_OVERRIDE"
+          else
+            image="ghcr.io/aletheia-works/vivarium-${SLUG}:latest"
+          fi
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "Resolved image: $image"
+
+      - name: Validate expected verdict
+        env:
+          EXPECTED: ${{ inputs.expected_verdict }}
+        run: |
+          set -euo pipefail
+          case "$EXPECTED" in
+            reproduced|unreproduced)
+              ;;
+            *)
+              echo "::error::expected_verdict must be 'reproduced' or 'unreproduced' (got '${EXPECTED}')."
+              exit 1
+              ;;
+          esac
+
+      - name: Log in to GHCR
+        if: startsWith(steps.resolve.outputs.image, 'ghcr.io/')
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        env:
+          IMAGE: ${{ steps.resolve.outputs.image }}
+        run: docker pull "$IMAGE"
+
+      - name: Run reproduction and capture verdict
+        # Run the recipe, capture stdout / stderr / exit_code,
+        # build a Contract v1 verdict.json envelope. Verdict
+        # semantics follow Contract v1 Revision 3: exit_code 0 means
+        # the bug reproduces ("reproduced"); non-zero means the
+        # reproduction did not demonstrate the bug ("unreproduced").
+        id: capture
+        env:
+          IMAGE: ${{ steps.resolve.outputs.image }}
+        run: |
+          set -euo pipefail
+          stdout_file="$(mktemp)"
+          stderr_file="$(mktemp)"
+          set +e
+          docker run --rm "$IMAGE" >"$stdout_file" 2>"$stderr_file"
+          exit_code=$?
+          set -e
+
+          if [ "$exit_code" -eq 0 ]; then
+            verdict="reproduced"
+          else
+            verdict="unreproduced"
+          fi
+
+          # `image_digest` is the registry RepoDigest if available;
+          # for locally-built images it falls back to the local
+          # image ID. Empty string is allowed by the schema if
+          # neither can be resolved.
+          digest="$(docker image inspect \
+            --format='{{if .RepoDigests}}{{index .RepoDigests 0}}{{else}}{{.Id}}{{end}}' \
+            "$IMAGE" 2>/dev/null || echo "")"
+          captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          jq -n \
+            --arg verdict "$verdict" \
+            --arg image_tag "$IMAGE" \
+            --arg image_digest "$digest" \
+            --arg captured_at "$captured_at" \
+            --arg stdout "$(cat "$stdout_file")" \
+            --arg stderr_tail "$(tail -c 4096 "$stderr_file")" \
+            --argjson exit_code "$exit_code" \
+            '{
+              contract: "v1",
+              verdict: $verdict,
+              exit_code: $exit_code,
+              image_tag: $image_tag,
+              image_digest: $image_digest,
+              captured_at: $captured_at,
+              stdout: $stdout,
+              stderr_tail: $stderr_tail
+            }' > verdict.json
+
+          rm -f "$stdout_file" "$stderr_file"
+
+          echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          echo "Captured verdict: $verdict (exit ${exit_code})"
+
+      - name: Validate verdict against contract v1 schema
+        # Single-source clause 4 of the contract v1 conformance
+        # check. A schema mismatch indicates either (a) the schema
+        # has evolved past v1 (unlikely, v1 is locked by ADR-0014)
+        # or (b) this workflow's envelope build drifted from the
+        # spec (a bug here, not in the recipe).
+        run: |
+          ajv validate \
+            --spec=draft2020 \
+            -c ajv-formats \
+            -s /tmp/verdict.schema.json \
+            -d verdict.json
+
+      - name: Assert verdict matches expected
+        env:
+          CAPTURED: ${{ steps.capture.outputs.verdict }}
+          EXPECTED: ${{ inputs.expected_verdict }}
+          EXIT_CODE: ${{ steps.capture.outputs.exit_code }}
+          SLUG: ${{ inputs.slug }}
+        run: |
+          if [ "$CAPTURED" != "$EXPECTED" ]; then
+            echo "::error::Vivarium verdict mismatch for ${SLUG}: captured=${CAPTURED} expected=${EXPECTED} (recipe exit_code=${EXIT_CODE}). Either the upstream bug shipped a fix, the recipe regressed, or expected_verdict input is stale."
+            exit 1
+          fi
+          echo "Vivarium verdict for ${SLUG}: ${CAPTURED} (matches expected)."
+
+      - name: Upload verdict.json artefact
+        # Always upload (even on failure) so a consumer's CI badge
+        # / debug flow can fetch the artefact even after a
+        # mismatch. 30-day retention matches GitHub's default for
+        # public repos.
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verdict-${{ inputs.slug }}-${{ github.run_id }}
+          path: verdict.json
+          retention-days: 30

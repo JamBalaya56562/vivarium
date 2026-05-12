@@ -7,16 +7,10 @@
 //   copy the same files into `doc_build/repro/`. So an E2E suite that
 //   runs against `bunx rspress preview` (production-shape) cannot
 //   exercise the middleware at all.
-// - Path resolution has three branches (underscore-prefixed shared,
-//   single-segment, multi-segment hierarchical) plus a trailing-slash
+// - Path resolution has two branches (underscore-prefixed shared and
+//   multi-segment hierarchical) plus a trailing-slash
 //   → index.html projection. An assertion matrix is the cheapest way
 //   to keep all of them honest as the recipe layout evolves.
-// - **Legacy flat URLs are deprecated** (PR #159 migrated to
-//   hierarchical `<project>/<issue>/` form). The unit suite locks in
-//   that flat URLs return `null` so the dev middleware sends 404 and
-//   the deprecation is visible — without these cases, a future
-//   refactor could re-add a flat fallback and silently re-introduce
-//   the dead URL shape.
 //
 // The test imports `resolveReproFile` directly. The function is pure
 // (only file-system reads) so it needs no rspress runtime, no port
@@ -79,31 +73,6 @@ describe('resolveReproFile — hierarchical (canonical) URLs', () => {
   });
 });
 
-describe('resolveReproFile — legacy flat URLs (deprecated, must 404)', () => {
-  // Flat slug URLs like `/repro/regex-779/` (and their assets) were
-  // deprecated by PR #159 in favour of the hierarchical
-  // `/repro/<project>/<issue>/` shape. The middleware must return null
-  // for the legacy form so the rspress fallback / asset 404 surfaces
-  // the deprecation cleanly. These cases lock that contract in.
-
-  test('legacy flat URL (/regex-779/) → null (deprecated, 404)', () => {
-    expect(resolveReproFile('regex-779/')).toBe(null);
-  });
-
-  test('legacy flat asset (/regex-779/repro.js) → null (deprecated, 404)', () => {
-    expect(resolveReproFile('regex-779/repro.js')).toBe(null);
-  });
-
-  test('legacy flat highlighted html (/regex-779/repro.highlighted.html) → null (deprecated)', () => {
-    expect(resolveReproFile('regex-779/repro.highlighted.html')).toBe(null);
-  });
-
-  test('legacy flat URL with non-numeric tail (/numpy-28287/repro.wasm) → null (deprecated)', () => {
-    // Same contract for every numeric-suffix flat slug.
-    expect(resolveReproFile('numpy-28287/repro.wasm')).toBe(null);
-  });
-});
-
 describe('resolveReproFile — bare and not-found URLs', () => {
   test('bare /repro/ → null (caller falls through to rspress for the gallery page)', () => {
     expect(resolveReproFile('')).toBe(null);
@@ -140,11 +109,8 @@ describe('resolveReproFile — shared scaffolding (underscore prefix)', () => {
   });
 });
 
-describe('resolveReproFile — single-segment legacy assets', () => {
+describe('resolveReproFile — single-segment project routes', () => {
   test("single-segment with extension that doesn't exist → null (caller returns 404)", () => {
-    // Pre-#159 there were also single-segment URLs like
-    // `/repro/something.js` for shared assets. Those that don't
-    // exist on disk fall through cleanly.
     expect(resolveReproFile('nope.js')).toBe(null);
   });
 

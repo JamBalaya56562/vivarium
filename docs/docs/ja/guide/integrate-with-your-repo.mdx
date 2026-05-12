@@ -46,7 +46,7 @@ import {
       「このバグはもう追跡しなくてよい」のシグナルになります。
     </p>
     <Callout>
-      Vivarium 本体のソースをコピーしません。再利用可能ワークフローが組織側で
+      Vivarium 本体のソースをコピーしません。再利用可能ワークフローが Vivarium リポジトリ側で
       保守されているので、こちらは <code>uses:</code> のリンクだけ持っておけば、
       Vivarium 側の改善が自動で乗ります。
     </Callout>
@@ -122,7 +122,7 @@ on:
 
 jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
 `}</code></pre>
@@ -138,11 +138,11 @@ jobs:
     </p>
     <pre><code>{`jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
   pandas-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: pandas-56679
 `}</code></pre>

@@ -8,7 +8,7 @@ name: Test MCP
 # happening.
 #
 # Tooling: single-tool job (bun only). Uses `oven-sh/setup-bun`
-# directly rather than the local setup-mise composite — there is
+# directly rather than the multi-tool mise setup — there is
 # nothing here that needs the rest of mise.toml.
 #
 # Fork-PR safe: uses `pull_request` (NOT `pull_request_target`), so

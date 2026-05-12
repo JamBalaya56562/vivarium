@@ -1,7 +1,6 @@
 # `src/` — Vivarium source tree
 
-> Scaffolding only. Phase 0 has not committed to any specific implementation
-> yet; this directory exists so layer boundaries are visible from day one.
+> Reproduction recipes live here, grouped by the layer they exercise.
 
 ---
 
@@ -18,8 +17,9 @@ reproduction problems have fundamentally different requirements:
 
 Picking one layer as "the answer" would force square pegs into round
 holes. The three-layer split exists so each problem class can be solved
-on its own terms — see [`AGENTS.md § 5`](../AGENTS.md) and the eventual
-[`docs/docs/ARCHITECTURE.md`](../docs/docs/) for the longer-form argument.
+on its own terms — see [`AGENTS.md § 5`](../AGENTS.md) and
+[`docs/docs/en/architecture.mdx`](../docs/docs/en/architecture.mdx) for the
+longer-form argument.
 
 ## Layout
 
@@ -31,19 +31,11 @@ src/
 ```
 
 Each subdirectory has its own `README.md` describing the kinds of
-problems routed to that layer. None contain production code yet —
-bringing a layer online starts with a feature Issue, not with
-speculative scaffolding.
+problems routed to that layer and the conventions for recipes in that
+catalogue.
 
 ## What does **not** live here
 
 - **Infrastructure-as-Code** — lives in [`infra/`](../infra/).
 - **Docs site** — lives in [`docs/`](../docs/) (markdown content under `docs/docs/`).
 - **Tooling and build configuration** — project root.
-
-## Current phase
-
-Phase 0 (Bootstrap) will populate `layer1_wasm/` first, starting with a
-hand-picked Pyodide + pandas reproduction PoC
-([Issue #13](https://github.com/aletheia-works/vivarium/issues/13)).
-Layers 2 and 3 are expected but unscheduled.

@@ -31,48 +31,12 @@ const REPRO_MIME: Record<string, string> = {
 };
 
 // Resolve a /repro/<sub> URL path to an absolute file under one of
-// src/layer{1,2,3}_*. Supports trailing-slash to index.html and
-// extension-based MIME type. Returns null if no match.
-//
-// URL to disk-slug mapping for the canonical <project>/<issue_path>/...
-// URL shape (PR #159 — flat slug `<project>-<issue>` URLs were
-// deprecated then; the resolver enforces the migration so any
-// remaining flat URL surfaces as a 404 instead of silently serving):
-//
-//   1. Underscore-prefixed first segment (e.g. _shared/sw.js,
-//      _layer2-shared/...) is looked up as-is, since shared scaffolding
-//      lives flat under each src/layer{N}_*/ and never had project /
-//      issue segmentation.
-//
-//   2. Single-segment lookups: covers project-landing assets and
-//      shared single-segment files (legacy `/repro/foo.js` etc.).
-//      Legacy flat slug directory URLs like `/repro/regex-779/` are
-//      explicitly excluded — they match the flat-slug regex and fall
-//      through to rspress, which 404s. Without this guard the disk
-//      lookup happens to find `regex-779/index.html` and serves the
-//      deprecated URL, defeating the migration.
-//
-//   3. Multi-segment lookups: first segment is the project, second
-//      segment is the issue_path. The recipe directory on disk is one of:
-//        a. <project>-<issue_path> (the prefix-style slug, the common
-//           case, e.g. cpython-137205, bash-local-shadows-exit).
-//        b. <issue_path> (the override-style slug for recipes whose
-//           on-disk name does not embed the project, e.g.
-//           PROJECT_OVERRIDES['lost-update'] = 'pthread', served at
-//           /repro/pthread/lost-update/ from the disk dir lost-update/).
-//      Both candidates are tried; the first that exists wins. Any
-//      remaining segments are joined back onto the resolved disk slug as
-//      the asset path under that recipe directory (e.g. repro.wasm,
-//      verdict.json).
+// src/layer{1,2,3}_*. Canonical recipe URLs use
+// /repro/<project>/<issue_path>/..., while underscore-prefixed shared
+// scaffolding remains flat under /repro/_*/...
 //
 // Exported so the docs/scripts/__tests__/resolveReproFile.test.ts unit
 // suite can verify each branch without spinning up the dev middleware.
-
-// Legacy flat slug shape: `<project>-<issue>` (one or more lowercase
-// dash-separated word segments followed by a trailing decimal issue
-// number). Used to suppress flat-URL directory lookups in the
-// single-segment branch so the deprecated form 404s cleanly.
-const LEGACY_FLAT_SLUG_RE = /^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*-\d+$/;
 
 export function resolveReproFile(rawSubpath: string): string | null {
   const subpath = rawSubpath || '';
@@ -95,18 +59,7 @@ export function resolveReproFile(rawSubpath: string): string | null {
     // Shared scaffolding — keep flat lookup.
     candidates.push(joinDisk(segments, trailingFile));
   } else if (segments.length === 1) {
-    const single = segments[0]!;
-    if (trailingFile === 'index.html' && LEGACY_FLAT_SLUG_RE.test(single)) {
-      // Legacy flat slug directory URL (e.g. `/repro/regex-779/`).
-      // Deprecated by PR #159 — fall through, rspress 404s.
-    } else {
-      // Project landing (`/repro/<project>/`) or legacy asset
-      // (`/repro/foo.js`) — try as-is. Project landings have no
-      // disk match and fall through to rspress for the rspress
-      // page; asset URLs that exist on disk under one of the layer
-      // roots get served.
-      candidates.push(joinDisk(segments, trailingFile));
-    }
+    // Project landing (`/repro/<project>/`) — fall through to rspress.
   } else {
     // Multi-segment — try the prefix-style slug first, then the
     // override-style slug.
@@ -245,9 +198,10 @@ export default defineConfig({
     ],
   },
 
-  // Dev-only middleware that intercepts `/vivarium/repro/<slug>/...` URLs
-  // and serves the corresponding file from `src/layer{1,2,3}_*/<slug>/`
-  // BEFORE rspress's SPA history fallback claims the URL.
+  // Dev-only middleware that intercepts
+  // `/vivarium/repro/<project>/<issue_path>/...` URLs and serves the
+  // corresponding file from `src/layer{1,2,3}_*/<recipe>/` BEFORE
+  // rspress's SPA history fallback claims the URL.
   //
   // Production deploy doesn't need this — the GH Actions build copies
   // these directories into doc_build/repro/ as plain static assets, so
@@ -274,16 +228,13 @@ export default defineConfig({
             // No file on disk. Three cases:
             //
             // 1. Directory-shaped URL (empty subpath or ends with '/') —
-            //    `/vivarium/repro/`, `/vivarium/repro/some-slug/`. These
-            //    should fall through to rspress's SPA so the gallery
-            //    page (docs/docs/{en,ja}/repro/index.mdx) can render.
-            //    Only the individual recipe slugs that DO have an
-            //    index.html in src/ get intercepted above.
+            //    `/vivarium/repro/`, project landing pages, or unknown
+            //    recipe routes. These should fall through to rspress's
+            //    SPA so docs routes can render or 404 there.
             //
             // 2. Extension-less URL — `/vivarium/repro/compare`,
-            //    `/vivarium/repro/some-slug`. These are rspress SPA
-            //    routes (e.g. R.3's compare.mdx page) or directory URLs
-            //    that need a redirect. Fall through so rspress can
+            //    `/vivarium/repro/<project>`, etc. These are rspress
+            //    SPA routes or clean URLs; fall through so rspress can
             //    handle them.
             //
             // 3. Asset-shaped URL (has an extension) — `repro.wasm`,

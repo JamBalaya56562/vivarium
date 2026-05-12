@@ -3,7 +3,7 @@
 Shared modules used by every reproduction page in `src/layer1_wasm/`.
 The leading underscore is the convention for "this directory is not a
 reproduction" — `deploy-docs.yml` recognises it and bundles the contents
-under `<pages-base>/poc/_shared/` without requiring an `index.html`.
+under each Layer 1 project directory without requiring an `index.html`.
 
 ## Source language
 
@@ -81,7 +81,7 @@ python -m http.server -d _shared 8766
 
 ## Smoke test expectations
 
-Open `<pages-base>/poc/_shared/_test/` in a browser. Expected:
+Open `<pages-base>/repro/<project>/_shared/_test/` in a browser. Expected:
 
 - The verdict band shows `bug reproduced — _shared helpers wired
   up.` and `data-verdict="reproduced"`.
@@ -102,5 +102,5 @@ when the deploy step copies the tree. It then iterates immediate
 subdirectories of `src/layer1_wasm/`; the default rule (must contain
 `index.html`) is relaxed for underscore-prefixed directories so that
 shared scaffolding ships without pretending to be a reproduction. The
-modules end up at `<pages-base>/poc/_shared/`, reachable from each
-reproduction at the relative path `../_shared/…`.
+modules end up at `<pages-base>/repro/<project>/_shared/`, reachable
+from each reproduction at the relative path `../_shared/…`.

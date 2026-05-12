@@ -1,17 +1,15 @@
 name: deploy-docs
 
-# Builds the rspress docs site and deploys to GitHub Pages, alongside any
-# Layer 1 (browser-native) PoC pages.
+# Builds the rspress docs site and deploys to GitHub Pages, alongside
+# browser-native reproduction pages.
 #
 # Prerequisites (one-time setup):
 # - Repo Settings → Pages → Source: "GitHub Actions".
 #
-# Tooling: multi-tool job (bun + rust) — uses the local setup-mise
-# composite action because rust is needed for `wasm32-wasip1` builds
-# alongside bun for the rspress site / Layer 1 TS, and mise reads
-# both pins from `mise.toml` so versions stay in lockstep with local
-# development. Single-tool workflows (publish-mcp,
-# branch-fix-verdict) use `oven-sh/setup-bun` directly instead.
+# Tooling: multi-tool job (bun + rust) — uses the official
+# `jdx/mise-action` directly so CI reads the same `mise.toml` as local
+# development. Single-tool workflows (publish-mcp, branch-fix-verdict)
+# use `oven-sh/setup-bun` directly instead.
 #
 # Layout:
 # - `docs/` holds the rspress site (config, lockfile, markdown content).
@@ -27,15 +25,9 @@ name: deploy-docs
 #   entry's `page_url` in `docs/public/api/recipes.json` so the bundling
 #   step shares the canonical mapping with the rest of the catalogue.
 # - Underscore-prefixed subdirectories (e.g. `src/layer1_wasm/_shared/`)
-#   hold scaffolding shared across reproductions. They are bundled flat
-#   under `repro/_shared/`, since each reproduction now lives at
-#   `repro/<project>/<issue_path>/` and references shared modules via
-#   `../../_shared/…`.
-# - Legacy `/poc/<slug>/` URLs (Phase 0 noun) get HTML meta-refresh
-#   redirect pages pointing at the new `/repro/<project>/<issue_path>/`
-#   location, so external links from before the migration continue to
-#   work.
-
+#   hold scaffolding shared across reproductions. They are bundled under
+#   each `repro/<project>/` directory so recipes can reference shared
+#   modules via `../_shared/…`.
 on:
   push:
     branches: [main]
@@ -43,7 +35,7 @@ on:
       - 'docs/**'
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
-      - '.mise.toml'
+      - 'mise.toml'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -82,8 +74,8 @@ jobs:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
       - name: Setup mise (bun, uv, jq)
-        # Installs the project-wide tools listed in `[tools]` (bun,
-        # opentofu, uv, jq). Per-task language toolchains
+        # Installs the tools needed before the first `mise run` (bun,
+        # uv, jq). Per-task language toolchains
         # (`rust@1.84.0` for the wasm32-wasip1 build, etc.) auto-install
         # on first `mise run` via the task's `use = [...]` declaration in
         # mise.toml — keeping per-recipe version flexibility. `uv` and
@@ -92,9 +84,12 @@ jobs:
         # depends on per ADR-0040: wheels are built fresh from each
         # `src/layer1_wasm/<slug>/wheels/source.json` rather than
         # vendored.
-        uses: ./.github/actions/setup-mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          tools: bun uv jq
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun uv jq
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
@@ -109,7 +104,7 @@ jobs:
         # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
         # ajv-cli + ajv-formats co-resolve without depending on bun's
         # global bin being on PATH (`oven-sh/setup-bun` adds it,
-        # `setup-mise`'s bun does not), and without leaking ajv into
+        # mise-installed bun does not), and without leaking ajv into
         # any tracked package.json.
         run: |
           cd "$RUNNER_TEMP"
@@ -274,23 +269,19 @@ jobs:
         # to the reproduction for review; they get copied too, which is
         # fine — the pages are static.
         #
-        # Three flavours of subdirectory:
+        # Two flavours of subdirectory:
         # 1. Reproduction pages — must contain `index.html`. Skipped if not.
-        #    Also gets an HTML meta-refresh redirect page at
-        #    `<pages-base>/poc/<slug>/` to keep legacy URLs working.
         # 2. Underscore-prefixed scaffolding (`_shared/`, `_assets/`) —
         #    duplicated under each `<project>/` so recipes can keep their
         #    `../_shared/…` references intact under the new
         #    `<project>/<issue_path>/` URL shape (one directory level
         #    above the recipe). The cost is a few KB × N projects of
         #    duplication; the win is leaving every recipe's source
-        #    untouched. No `/poc/_shared/` legacy redirect — that was
-        #    never a public URL.
+        #    untouched.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           dest="docs/doc_build/repro"
-          legacy_dest="docs/doc_build/poc"
           if [ ! -d src/layer1_wasm ]; then
             echo "No src/layer1_wasm/ directory; skipping bundling."
             exit 0
@@ -315,15 +306,15 @@ jobs:
             done
           done
           # Bundle each individual recipe.
-          for poc in src/layer1_wasm/*/; do
-            slug="$(basename "$poc")"
+          for recipe in src/layer1_wasm/*/; do
+            slug="$(basename "$recipe")"
             case "$slug" in
               _*)
                 continue
                 ;;
             esac
-            if [ ! -f "${poc}index.html" ]; then
-              echo "Skipping ${poc} (no index.html)"
+            if [ ! -f "${recipe}index.html" ]; then
+              echo "Skipping ${recipe} (no index.html)"
               continue
             fi
             page_url="$(jq -r --arg s "$slug" \
@@ -337,35 +328,12 @@ jobs:
             rel="${rel%/}"
             echo "Bundling reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
-            # `cp -R "$poc/."` copies the recipe directory's CONTENTS
+            # `cp -R "$recipe/."` copies the recipe directory's CONTENTS
             # (not the directory itself), so the recipe lands at $rel/
             # rather than $rel/$slug/.
-            cp -R "${poc}." "$dest/$rel/"
-            # Legacy `/poc/<slug>/` redirect — HTML meta-refresh is
-            # the simplest mechanism that works on GitHub Pages
-            # (which has no native server-side 301 support). Points
-            # at the new `<project>/<issue_path>/` location.
-            mkdir -p "$legacy_dest/$slug"
-            cat > "$legacy_dest/$slug/index.html" <<HTML
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8" />
-              <title>Vivarium · moved to /repro/${rel}/</title>
-              <meta http-equiv="refresh" content="0; url=../../repro/${rel}/" />
-              <link rel="canonical" href="../../repro/${rel}/" />
-              <meta name="robots" content="noindex" />
-            </head>
-            <body>
-              <p>This reproduction has moved to
-                <a href="../../repro/${rel}/">/repro/${rel}/</a>.
-                Updating in a moment…</p>
-            </body>
-          </html>
-          HTML
+            cp -R "${recipe}." "$dest/$rel/"
           done
           ls -la "$dest" || true
-          ls -la "$legacy_dest" || true
 
       - name: Bundle Layer 2 reproductions alongside docs
         # Layer 2 catalogue convention (per ADR-0010 / private memo):
@@ -445,31 +413,6 @@ jobs:
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
             cp -R "${entry}." "$dest/$rel/"
-            # Legacy slug-only URL `/repro/<slug>/` redirect. Before the
-            # hierarchical-URL move, Layer 2 pages were published at
-            # `<pages-base>/repro/<slug>/`; existing links in the wild
-            # need a meta-refresh to the new
-            # `<project>/<issue_path>/` location.
-            if [ "$rel" != "$slug" ]; then
-              mkdir -p "$dest/$slug"
-              cat > "$dest/$slug/index.html" <<HTML
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8" />
-              <title>Vivarium · moved to /repro/${rel}/</title>
-              <meta http-equiv="refresh" content="0; url=../${rel}/" />
-              <link rel="canonical" href="../${rel}/" />
-              <meta name="robots" content="noindex" />
-            </head>
-            <body>
-              <p>This reproduction has moved to
-                <a href="../${rel}/">/repro/${rel}/</a>.
-                Updating in a moment…</p>
-            </body>
-          </html>
-          HTML
-            fi
           done
           ls -la "$dest" || true
 

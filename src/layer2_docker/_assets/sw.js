@@ -1,9 +1,9 @@
 // Vivarium reproduction-page service worker.
 //
 // Caches Pyodide / Ruby.wasm / php-wasm runtime files so repeat visits
-// to any /repro/<slug>/ page are near-instant (no CDN fetch). First
-// visits go to the network; the response is stored in CacheStorage so
-// the next visit (any tab, any reproduction) hits cache.
+// to any /repro/<project>/<issue_path>/ page are near-instant (no CDN
+// fetch). First visits go to the network; the response is stored in
+// CacheStorage so the next visit (any tab, any reproduction) hits cache.
 //
 // Scope is /vivarium/repro/ — every reproduction page is in this tree.
 // Pages outside (the rspress docs site itself) are not affected.

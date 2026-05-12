@@ -4,8 +4,8 @@
 > verify a Vivarium-hosted bug reproduction in their own CI —
 > without copying any Vivarium internals.
 
-The workflow lives at
-[`aletheia-works/.github/.github/workflows/vivarium-verdict.yml`](https://github.com/aletheia-works/.github/blob/main/.github/workflows/vivarium-verdict.yml).
+The workflow lives in this repository at
+[`aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/vivarium-verdict.yml).
 It pulls the published `ghcr.io/aletheia-works/vivarium-<slug>`
 image, runs the recipe, captures a `verdict.json` matching
 [Contract v1](./contract-v1.md), validates it against the
@@ -18,7 +18,7 @@ expected.
 ```yaml
 jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
 ```
@@ -56,7 +56,7 @@ write:
 ```yaml
 jobs:
   fixed-detector:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: my-favourite-recipe
       expected_verdict: reproduced  # default; spelled out for clarity

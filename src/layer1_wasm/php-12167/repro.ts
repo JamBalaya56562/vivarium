@@ -15,13 +15,12 @@
 //   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 //
-// Phase 7 B3 (ADR-0030) — this recipe is the PoC for R.2 Path A
-// (Layer 1 source-substitution branch-fix). After the baseline run
-// captures the original verdict, we opt into the shared Path A panel
-// so visitors can paste an alternative reproduction script (typically a
-// userland fix proposed by an AI agent) and re-run it through the same
-// php-wasm runtime. The panel produces a Contract v1 verdict bundle
-// the visitor drops on /repro/compare for side-by-side review.
+// This recipe exercises R.2 Path A (Layer 1 source-substitution
+// branch-fix). After the baseline run captures the original verdict, we
+// opt into the shared Path A panel so visitors can paste an alternative
+// reproduction script and re-run it through the same php-wasm runtime.
+// The panel produces a Contract v1 verdict bundle the visitor drops on
+// /repro/compare for side-by-side review.
 
 import { enablePathA, type PathACapturedRun } from '../_shared/path_a.js';
 import { loadVivariumPhp, type PhpRunner } from '../_shared/php_loader.js';

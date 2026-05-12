@@ -92,10 +92,10 @@ function pathBCompareUrl(inputs: PathBUrlInputs): string {
 }
 
 function deriveCompareBaseFromPageUrl(pageUrl: string): string {
-  // page_url is e.g. https://aletheia-works.github.io/vivarium/repro/<slug>/.
+  // page_url is e.g.
+  // https://aletheia-works.github.io/vivarium/repro/<project>/<issue_path>/.
   // The compare page sits at /repro/compare under both /en and /ja chrome.
-  // Default to no-locale (legacy /repro/compare) — R.3 mounts the same
-  // component in both locales.
+  // R.3 mounts the same component in both locales.
   try {
     const u = new URL(pageUrl);
     return `${u.origin}/vivarium/repro/compare`;

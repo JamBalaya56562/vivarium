@@ -25,29 +25,23 @@
       <div class="vh-drawer__body" id="vh-drawer-body">
         <p>
           A fuzzed type comment such as
-          <code>a=b # type:i{{{...{{</code> — `i` followed by a long
+          <code>a = b # type:i{{{...{{</code> — `i` followed by a long
           run of <code>{</code> characters — makes
           <code>astroid.builder.parse</code> raise an unhandled
-          <code>MemoryError</code> (or <code>RecursionError</code>,
-          depending on the runtime). The crash propagates out of any
-          tool built on astroid, including pylint and most IDE
-          plugins.
+          <code>MemoryError</code>. The crash propagates out of any tool
+          built on astroid, including pylint and most IDE plugins.
         </p>
         <p>
           The script on this page installs astroid into Pyodide via
-          <code>micropip</code>, feeds it the fuzzed input, and
-          watches for an unhandled exception. If
-          <code>astroid.builder.parse</code> raises anything other
-          than <code>AstroidSyntaxError</code>, the bug reproduces in
-          the runtime currently loaded in your browser tab.
+          <code>micropip</code>, feeds it assignment and function type
+          comments with pathological nesting, and checks whether the
+          comments crash parsing or are skipped as invalid.
         </p>
         <p>
-          The expected fix mirrors astroid's #2762 fix for f-strings
-          (shipped in 4.1.2): catch
-          <code>MemoryError</code>/<code>RecursionError</code> in the
-          type-comment parser and treat the comment as opaque. The
-          full discussion lives in the GitHub issue thread linked
-          below.
+          The expected fix detects pathological nesting before calling
+          Python's parser, treats that type comment as opaque, and still
+          parses deeply nested but valid type comments. The full
+          discussion lives in the GitHub issue and PR linked below.
         </p>
       </div>
       <hr class="vh-drawer__divider" />
@@ -78,7 +72,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Upstream issue
             </a>
-            <a class="vh-chip" href="https://github.com/JamBalaya56562/astroid/pull/1" target="_blank" rel="noreferrer">
+            <a class="vh-chip" href="https://github.com/pylint-dev/astroid/pull/3049" target="_blank" rel="noreferrer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
               Fix candidate PR
             </a>
@@ -98,31 +92,86 @@
           <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> astroid</span></span>
 <span class="line"></span>
-<span class="line"><span style="color:#79B8FF">NESTED</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 270</span></span>
-<span class="line"><span style="color:#E1E4E8">code </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "a=b # type:i"</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "{"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> NESTED</span></span>
+<span class="line"><span style="color:#79B8FF">NESTED</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 200</span></span>
+<span class="line"><span style="color:#79B8FF">VALID_DEPTH</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 20</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> case_result</span><span style="color:#E1E4E8">(name, code, inspect):</span></span>
+<span class="line"><span style="color:#E1E4E8">    out </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#9ECBFF">        "name"</span><span style="color:#E1E4E8">: name,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "exception_type"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "exception_message"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "crashed"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#F97583">    try</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        module </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> astroid.builder.parse(code)</span></span>
+<span class="line"><span style="color:#E1E4E8">        out.update(inspect(module))</span></span>
+<span class="line"><span style="color:#F97583">    except</span><span style="color:#E1E4E8"> astroid.exceptions.AstroidSyntaxError </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "AstroidSyntaxError"</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#F97583">    except</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">MemoryError</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">RecursionError</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#F97583">    except</span><span style="color:#79B8FF"> Exception</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">        out[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> out</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> inspect_assignment</span><span style="color:#E1E4E8">(module):</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> {</span><span style="color:#9ECBFF">"type_annotation_is_none"</span><span style="color:#E1E4E8">: module.body[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">].type_annotation </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> inspect_function</span><span style="color:#E1E4E8">(module):</span></span>
+<span class="line"><span style="color:#E1E4E8">    node </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> module.body[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#9ECBFF">        "type_comment_returns_is_none"</span><span style="color:#E1E4E8">: node.type_comment_returns </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "type_comment_args_is_none"</span><span style="color:#E1E4E8">: node.type_comment_args </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> inspect_valid_assignment</span><span style="color:#E1E4E8">(module):</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> {</span><span style="color:#9ECBFF">"type_annotation_is_present"</span><span style="color:#E1E4E8">: module.body[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">].type_annotation </span><span style="color:#F97583">is</span><span style="color:#F97583"> not</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">assignment_code </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "a = b # type:i"</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "{"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> NESTED</span></span>
+<span class="line"><span style="color:#E1E4E8">function_code </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "def func():</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">    # type: i"</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "{"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> NESTED</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">    pass</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">"</span></span>
+<span class="line"><span style="color:#E1E4E8">valid_inner </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "List["</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> VALID_DEPTH</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "int"</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "]"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> VALID_DEPTH</span></span>
+<span class="line"><span style="color:#E1E4E8">valid_code </span><span style="color:#F97583">=</span><span style="color:#F97583"> f</span><span style="color:#9ECBFF">"a = b # type: </span><span style="color:#79B8FF">{</span><span style="color:#E1E4E8">valid_inner</span><span style="color:#79B8FF">}</span><span style="color:#9ECBFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">assignment </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> case_result(</span><span style="color:#9ECBFF">"pathological_assignment"</span><span style="color:#E1E4E8">, assignment_code, inspect_assignment)</span></span>
+<span class="line"><span style="color:#E1E4E8">function </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> case_result(</span><span style="color:#9ECBFF">"pathological_function"</span><span style="color:#E1E4E8">, function_code, inspect_function)</span></span>
+<span class="line"><span style="color:#E1E4E8">valid_control </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> case_result(</span><span style="color:#9ECBFF">"valid_deep_nesting"</span><span style="color:#E1E4E8">, valid_code, inspect_valid_assignment)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">pathological_cases </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [assignment, function]</span></span>
+<span class="line"><span style="color:#E1E4E8">crashed </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> any</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">bool</span><span style="color:#E1E4E8">(case[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">]) </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> case </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> pathological_cases)</span></span>
+<span class="line"><span style="color:#E1E4E8">skipped_pathological </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    assignment.get(</span><span style="color:#9ECBFF">"type_annotation_is_none"</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#F97583">    and</span><span style="color:#E1E4E8"> function.get(</span><span style="color:#9ECBFF">"type_comment_returns_is_none"</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#F97583">    and</span><span style="color:#E1E4E8"> function.get(</span><span style="color:#9ECBFF">"type_comment_args_is_none"</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">valid_control_parsed </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> valid_control.get(</span><span style="color:#9ECBFF">"type_annotation_is_present"</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> True</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#E1E4E8">result </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
 <span class="line"><span style="color:#9ECBFF">    "astroid_version"</span><span style="color:#E1E4E8">: astroid.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
 <span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
 <span class="line"><span style="color:#9ECBFF">    "nested_braces"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">NESTED</span><span style="color:#E1E4E8">,</span></span>
-<span class="line"><span style="color:#9ECBFF">    "exception_type"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
-<span class="line"><span style="color:#9ECBFF">    "exception_message"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
-<span class="line"><span style="color:#9ECBFF">    "crashed"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "valid_depth"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">VALID_DEPTH</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "exception_type"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">next</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">        (case[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> case </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> pathological_cases </span><span style="color:#F97583">if</span><span style="color:#E1E4E8"> case[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">]),</span></span>
+<span class="line"><span style="color:#79B8FF">        None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    ),</span></span>
+<span class="line"><span style="color:#9ECBFF">    "crashed"</span><span style="color:#E1E4E8">: crashed,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "skipped_pathological"</span><span style="color:#E1E4E8">: skipped_pathological,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "valid_control_parsed"</span><span style="color:#E1E4E8">: valid_control_parsed,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "cases"</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#9ECBFF">        "assignment"</span><span style="color:#E1E4E8">: assignment,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "function"</span><span style="color:#E1E4E8">: function,</span></span>
+<span class="line"><span style="color:#9ECBFF">        "valid_control"</span><span style="color:#E1E4E8">: valid_control,</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
 <span class="line"><span style="color:#E1E4E8">}</span></span>
-<span class="line"></span>
-<span class="line"><span style="color:#F97583">try</span><span style="color:#E1E4E8">:</span></span>
-<span class="line"><span style="color:#E1E4E8">    astroid.builder.parse(code)</span></span>
-<span class="line"><span style="color:#F97583">except</span><span style="color:#E1E4E8"> astroid.exceptions.AstroidSyntaxError </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "AstroidSyntaxError"</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
-<span class="line"><span style="color:#F97583">except</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">MemoryError</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">RecursionError</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> e:</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
-<span class="line"><span style="color:#F97583">except</span><span style="color:#79B8FF"> Exception</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> e:</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_type"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"exception_message"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
-<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"crashed"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> True</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#E1E4E8">result</span></span></code></pre>
         </section>

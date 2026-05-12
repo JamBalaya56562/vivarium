@@ -11,9 +11,10 @@ venvs:
 
 1. ``baseline`` — ``astroid==4.1.2`` from PyPI (the build under which
    the bug was filed; should still ``reproduced``).
-2. ``fix-candidate`` — a fork+branch the upstream PR is opened from
+2. ``fix-candidate`` — the fork+branch opened as upstream PR #3049
    (currently ``JamBalaya56562/astroid@claude/fix-astroid-2993-wVitv``);
-   should flip to ``unreproduced``.
+   should flip to ``unreproduced`` by skipping pathological type
+   comments before parsing while still parsing valid deep nesting.
 
 The output is a single JSON envelope on stdout listing both verdicts,
 so a maintainer can see the **before / after** of the candidate fix in
@@ -42,7 +43,8 @@ import sys
 import textwrap
 from datetime import datetime, timezone
 
-NESTED = 270
+NESTED = 200
+VALID_DEPTH = 20
 
 VARIANTS: list[dict[str, str]] = [
     {
@@ -53,7 +55,7 @@ VARIANTS: list[dict[str, str]] = [
     },
     {
         "name": "fix-candidate",
-        "label": "JamBalaya56562/astroid@claude/fix-astroid-2993-wVitv",
+        "label": "pylint-dev/astroid#3049",
         "spec": (
             "astroid @ git+https://github.com/JamBalaya56562/astroid"
             "@claude/fix-astroid-2993-wVitv"
@@ -64,36 +66,88 @@ VARIANTS: list[dict[str, str]] = [
 
 # Per-variant probe; runs in a uv-managed ephemeral venv that has the
 # variant's astroid spec installed. Mirrors repro.py's exception
-# taxonomy so the per-variant verdicts are directly comparable.
+# taxonomy and fixed-behavior assertions so the per-variant verdicts
+# are directly comparable.
 PROBE = textwrap.dedent(
     f"""
     import json, sys
     import astroid
 
     NESTED = {NESTED}
-    code = "a=b # type:i" + "{{" * NESTED
+    VALID_DEPTH = {VALID_DEPTH}
+
+    def case_result(name, code, inspect):
+        out = {{
+            "name": name,
+            "exception_type": None,
+            "exception_message": None,
+            "crashed": False,
+        }}
+        try:
+            module = astroid.builder.parse(code)
+            out.update(inspect(module))
+        except astroid.exceptions.AstroidSyntaxError as e:
+            out["exception_type"] = "AstroidSyntaxError"
+            out["exception_message"] = str(e)[:200]
+        except (MemoryError, RecursionError) as e:
+            out["exception_type"] = type(e).__name__
+            out["exception_message"] = str(e)[:200]
+            out["crashed"] = True
+        except Exception as e:
+            out["exception_type"] = type(e).__name__
+            out["exception_message"] = str(e)[:200]
+            out["crashed"] = True
+        return out
+
+    def inspect_assignment(module):
+        return {{"type_annotation_is_none": module.body[0].type_annotation is None}}
+
+    def inspect_function(module):
+        node = module.body[0]
+        return {{
+            "type_comment_returns_is_none": node.type_comment_returns is None,
+            "type_comment_args_is_none": node.type_comment_args is None,
+        }}
+
+    def inspect_valid_assignment(module):
+        return {{"type_annotation_is_present": module.body[0].type_annotation is not None}}
+
+    assignment_code = "a = b # type:i" + "{{" * NESTED
+    function_code = "def func():\\n    # type: i" + "{{" * NESTED + "\\n    pass\\n"
+    valid_inner = "List[" * VALID_DEPTH + "int" + "]" * VALID_DEPTH
+    valid_code = f"a = b # type: {{valid_inner}}"
+
+    assignment = case_result("pathological_assignment", assignment_code, inspect_assignment)
+    function = case_result("pathological_function", function_code, inspect_function)
+    valid_control = case_result("valid_deep_nesting", valid_code, inspect_valid_assignment)
+
+    pathological_cases = [assignment, function]
+    crashed = any(bool(case["crashed"]) for case in pathological_cases)
+    skipped_pathological = (
+        assignment.get("type_annotation_is_none") is True
+        and function.get("type_comment_returns_is_none") is True
+        and function.get("type_comment_args_is_none") is True
+    )
+    valid_control_parsed = valid_control.get("type_annotation_is_present") is True
 
     out = {{
         "astroid_version": astroid.__version__,
         "python_version": sys.version.split()[0],
         "nested_braces": NESTED,
-        "exception_type": None,
-        "exception_message": None,
-        "crashed": False,
+        "valid_depth": VALID_DEPTH,
+        "exception_type": next(
+            (case["exception_type"] for case in pathological_cases if case["crashed"]),
+            None,
+        ),
+        "crashed": crashed,
+        "skipped_pathological": skipped_pathological,
+        "valid_control_parsed": valid_control_parsed,
+        "cases": {{
+            "assignment": assignment,
+            "function": function,
+            "valid_control": valid_control,
+        }},
     }}
-    try:
-        astroid.builder.parse(code)
-    except astroid.exceptions.AstroidSyntaxError as e:
-        out["exception_type"] = "AstroidSyntaxError"
-        out["exception_message"] = str(e)[:200]
-    except (MemoryError, RecursionError) as e:
-        out["exception_type"] = type(e).__name__
-        out["exception_message"] = str(e)[:200]
-        out["crashed"] = True
-    except Exception as e:
-        out["exception_type"] = type(e).__name__
-        out["exception_message"] = str(e)[:200]
-        out["crashed"] = True
 
     print(json.dumps(out))
     """
@@ -139,6 +193,10 @@ def run_variant(variant: dict[str, str]) -> dict[str, object]:
         return record
     record.update(result)
     record["verdict"] = "reproduced" if result["crashed"] else "unreproduced"
+    record["fixed_assertions_passed"] = (
+        result.get("skipped_pathological") is True
+        and result.get("valid_control_parsed") is True
+    )
     return record
 
 
@@ -162,6 +220,12 @@ def main() -> int:
     print(json.dumps(envelope, indent=2))
 
     mismatches = [v for v in variants if v["verdict"] != v["expected"]]
+    assertion_failures = [
+        v
+        for v in variants
+        if v["name"] == "fix-candidate" and v.get("fixed_assertions_passed") is not True
+    ]
+    mismatches.extend(assertion_failures)
     if mismatches:
         print(
             "\nverdict=mismatch — variants did not match expected verdicts: "
@@ -175,7 +239,7 @@ def main() -> int:
 
     print(
         "\nverdict=fix-candidate-confirmed — baseline still reproduces and "
-        "the fix candidate flips the verdict to unreproduced.",
+        "the fix candidate skips pathological type comments before parsing.",
         file=sys.stderr,
     )
     return 0

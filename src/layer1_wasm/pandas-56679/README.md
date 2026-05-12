@@ -1,9 +1,8 @@
 # Reproduction — pandas-dev/pandas#56679
 
-> **Status**: Phase 1 reproduction page. Originally Vivarium's Phase 0
-> hand-coded PoC; retrofitted onto the [`_shared/`](../_shared/) helpers
-> and TypeScript toolchain so it consumes the canonical `vivarium-contract: v1`
-> surface like every other Phase 1 page.
+> **Status**: Layer 1 reproduction page. Uses the shared
+> [`_shared/`](../_shared/) helpers and TypeScript toolchain, and emits
+> the canonical `vivarium-contract: v1` surface.
 
 ## The bug
 
@@ -13,8 +12,6 @@
 constructors should produce a consistent dtype for an empty input.
 
 ## Why this bug
-
-Originally selected as Phase 0's "easiest to debug at a glance" PoC:
 
 - Three-line reproduction, zero non-pandas dependencies.
 - Verdict is a `dtype` comparison — a single boolean — so the page emits
@@ -82,11 +79,11 @@ The companion `repro.py` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a Pyodide quirk.
 PEP 723 inline metadata pins **`pandas==2.3.3`** — the exact
-version Pyodide v0.29.3 bundles — and the `.mise.toml` at the repo
+version Pyodide v0.29.3 bundles — and the `mise.toml` at the repo
 root pins Python to 3.13:
 
 ```bash
-# One-time per machine / .mise.toml change.
+# One-time per machine / mise.toml change.
 mise install
 
 # Reproduces the bug; exits 0 on `reproduced`. uv reads the inline
@@ -113,11 +110,6 @@ Published to GitHub Pages at
 build` in `src/layer1_wasm/` first so the compiled `repro.js` exists
 when the bundling step copies the directory into the Pages artefact.
 
-Legacy URL `https://aletheia-works.github.io/vivarium/poc/pandas-56679/`
-is preserved by an HTML meta-refresh redirect generated at deploy
-time, so external links from before the URL migration continue to
-work.
-
 ## Verification status
 
 ### Machine-verified (Claude Preview MCP, Chromium-based engine)
@@ -136,12 +128,10 @@ work.
 
 ### Needs a human check
 
-Carried over from the Phase 0 PoC, still applicable post-retrofit:
-
 1. **Cross-browser** — confirmation in current Firefox and Safari, in
    addition to the Chromium engine that Preview MCP drives. Pyodide
    advertises support, but Safari has historically differed on
-   `SharedArrayBuffer` / COOP-COEP defaults; this PoC does not use
+   `SharedArrayBuffer` / COOP-COEP defaults; this recipe does not use
    threading so it should be unaffected, but only a real run on each
    engine can prove it.
 2. **First-visit load on typical broadband** — local measurement is not

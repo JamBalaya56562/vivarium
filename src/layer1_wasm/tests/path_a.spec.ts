@@ -1,6 +1,6 @@
 // Phase 7 B3 — R.2 Path A regression suite.
 //
-// Asserts the Path A panel on the php-12167 PoC recipe:
+// Asserts the Path A panel on the php-12167 recipe:
 //  - Mounts after the baseline run completes.
 //  - Accepts a userland fix via the textarea + Run button and re-runs
 //    the substituted source through the same php-wasm runtime.

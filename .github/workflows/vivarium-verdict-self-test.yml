@@ -1,7 +1,7 @@
 name: vivarium-verdict self-test
 
 # Smoke-test the reusable verdict-capture workflow at
-# `aletheia-works/.github/.github/workflows/vivarium-verdict.yml`
+# `.github/workflows/vivarium-verdict.yml`
 # against one of Vivarium's own Layer 2 recipes. If this fails, the
 # reusable workflow itself is broken — consumer repos pulling it
 # via `uses:` would also fail. Intentionally a thin caller, not
@@ -31,6 +31,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   bash-local-shadows-exit:
@@ -39,6 +40,6 @@ jobs:
     # ships from the GHCR public registry on every main deploy,
     # so it has the lowest variance among the current Layer 2
     # entries.
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
+    uses: ./.github/workflows/vivarium-verdict.yml
     with:
       slug: bash-local-shadows-exit

@@ -10,9 +10,6 @@
 //   exposes the loading-UX surface (vh-progress fades, vh-output
 //   reveals on completion). This guards the regression where chrome.js
 //   fails to inject silently.
-// - The **legacy flat URL** (/repro/<slug>/) either redirects to the
-//   hierarchical form or still serves a working page — never the
-//   silent-break shape (parent HTML 200 + asset 404/503).
 //
 // One static HTTP server is auto-started: rspress's preview server on
 // port 8770 (well clear of Layer 1=8767, Layer 2=8768). Tests address

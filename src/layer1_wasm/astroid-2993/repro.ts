@@ -1,31 +1,30 @@
 // Vivarium Layer 1 reproduction — pylint-dev/astroid#2993.
 //
-// `astroid.builder.parse(code)` raises an unhandled `MemoryError` (or
-// `RecursionError`, depending on the runtime) when fed a fuzzed type
-// comment like `a=b # type:i{{{{...{{`. CPython's compiler walks the
-// type-comment expression recursively; astroid does not catch the
-// runtime error, so it propagates out of `parse` and crashes any
-// caller (pylint, IDE plugins, etc.).
+// `astroid.builder.parse(code)` raises an unhandled `MemoryError`
+// when fed a fuzzed type comment like `a = b # type:i{{{{...{{`.
+// CPython's compiler walks the type-comment expression recursively;
+// astroid 4.1.2 does not cut off pathological nesting before parsing,
+// so the runtime error propagates out of `parse` and crashes any caller
+// (pylint, IDE plugins, etc.).
 //
-// The expected fix mirrors astroid's #2762 fix for f-strings (shipped
-// in 4.1.2): catch `MemoryError`/`RecursionError` in the type-comment
-// parser and treat the comment as opaque. The fix candidate this page
-// renders side-by-side is the in-flight upstream PR
-// (https://github.com/JamBalaya56562/astroid/pull/1) — built into a
-// pure-Python wheel committed under `./wheels/` and installed into
-// the same Pyodide tab so visitors can compare the before/after
-// verdict in one page load.
+// The expected fix detects pathological type-comment nesting up front,
+// skips that invalid type comment without parsing it, and still parses
+// deeply nested but valid type comments. The fix candidate this page
+// renders side-by-side is upstream PR #3049
+// (https://github.com/pylint-dev/astroid/pull/3049) — built into a
+// pure-Python wheel under `./wheels/` and installed into the same
+// Pyodide tab so visitors can compare the before/after verdict in one
+// page load.
 //
 // Verdict semantics (per ADR-0008 / contract v1) — applied to each
 // variant card individually; the top-level `#verdict` pill mirrors the
 // **baseline** variant so the existing Contract v1 single-verdict
 // surface (`__VIVARIUM_VERDICT__`, `data-verdict`) keeps its prior
 // meaning and downstream consumers do not need to branch.
-//   - "reproduced" — `astroid.builder.parse` raised an unhandled
-//     `MemoryError` / `RecursionError` (or any non-`AstroidSyntaxError`).
-//   - "unreproduced" — `parse` returned cleanly, or raised
-//     `AstroidSyntaxError` (which would mean upstream landed a
-//     graceful catch).
+//   - "reproduced" — a pathological type comment crashed
+//     `astroid.builder.parse`.
+//   - "unreproduced" — both pathological comments were skipped before
+//     parsing and the valid deep-nesting control still parsed.
 
 import { loadVivariumPyodide } from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
@@ -36,52 +35,123 @@ import {
   type VivariumResultV1,
 } from '../_shared/verdict.js';
 
-// 270 nested `{` mirrors the fuzz from the upstream issue. The exact
-// threshold at which CPython's compiler runs out of stack is
-// implementation-dependent; 270 reproduces reliably on the Python
-// 3.13 build Pyodide v0.29.3 ships. Hardcoded inside the template
-// literal so the build-time syntax highlighter (which does not
-// expand ${…} substitutions) renders the source visitors run.
+// 200 nested `{` matches the minimized upstream regression test in
+// PR #3049. Hardcoded inside the template literal so the build-time
+// syntax highlighter (which does not expand ${…} substitutions)
+// renders the source visitors run.
 const REPRO_CODE = `
 import sys
 import astroid
 
-NESTED = 270
-code = "a=b # type:i" + "{" * NESTED
+NESTED = 200
+VALID_DEPTH = 20
+
+
+def case_result(name, code, inspect):
+    out = {
+        "name": name,
+        "exception_type": None,
+        "exception_message": None,
+        "crashed": False,
+    }
+    try:
+        module = astroid.builder.parse(code)
+        out.update(inspect(module))
+    except astroid.exceptions.AstroidSyntaxError as e:
+        out["exception_type"] = "AstroidSyntaxError"
+        out["exception_message"] = str(e)[:200]
+    except (MemoryError, RecursionError) as e:
+        out["exception_type"] = type(e).__name__
+        out["exception_message"] = str(e)[:200]
+        out["crashed"] = True
+    except Exception as e:
+        out["exception_type"] = type(e).__name__
+        out["exception_message"] = str(e)[:200]
+        out["crashed"] = True
+    return out
+
+
+def inspect_assignment(module):
+    return {"type_annotation_is_none": module.body[0].type_annotation is None}
+
+
+def inspect_function(module):
+    node = module.body[0]
+    return {
+        "type_comment_returns_is_none": node.type_comment_returns is None,
+        "type_comment_args_is_none": node.type_comment_args is None,
+    }
+
+
+def inspect_valid_assignment(module):
+    return {"type_annotation_is_present": module.body[0].type_annotation is not None}
+
+
+assignment_code = "a = b # type:i" + "{" * NESTED
+function_code = "def func():\\n    # type: i" + "{" * NESTED + "\\n    pass\\n"
+valid_inner = "List[" * VALID_DEPTH + "int" + "]" * VALID_DEPTH
+valid_code = f"a = b # type: {valid_inner}"
+
+assignment = case_result("pathological_assignment", assignment_code, inspect_assignment)
+function = case_result("pathological_function", function_code, inspect_function)
+valid_control = case_result("valid_deep_nesting", valid_code, inspect_valid_assignment)
+
+pathological_cases = [assignment, function]
+crashed = any(bool(case["crashed"]) for case in pathological_cases)
+skipped_pathological = (
+    assignment.get("type_annotation_is_none") is True
+    and function.get("type_comment_returns_is_none") is True
+    and function.get("type_comment_args_is_none") is True
+)
+valid_control_parsed = valid_control.get("type_annotation_is_present") is True
 
 result = {
     "astroid_version": astroid.__version__,
     "python_version": sys.version.split()[0],
     "nested_braces": NESTED,
-    "exception_type": None,
-    "exception_message": None,
-    "crashed": False,
+    "valid_depth": VALID_DEPTH,
+    "exception_type": next(
+        (case["exception_type"] for case in pathological_cases if case["crashed"]),
+        None,
+    ),
+    "crashed": crashed,
+    "skipped_pathological": skipped_pathological,
+    "valid_control_parsed": valid_control_parsed,
+    "cases": {
+        "assignment": assignment,
+        "function": function,
+        "valid_control": valid_control,
+    },
 }
-
-try:
-    astroid.builder.parse(code)
-except astroid.exceptions.AstroidSyntaxError as e:
-    result["exception_type"] = "AstroidSyntaxError"
-    result["exception_message"] = str(e)[:200]
-except (MemoryError, RecursionError) as e:
-    result["exception_type"] = type(e).__name__
-    result["exception_message"] = str(e)[:200]
-    result["crashed"] = True
-except Exception as e:
-    result["exception_type"] = type(e).__name__
-    result["exception_message"] = str(e)[:200]
-    result["crashed"] = True
 
 result
 `.trim();
+
+interface ReproCaseOutput {
+  name: string;
+  exception_type: string | null;
+  exception_message: string | null;
+  crashed: boolean;
+  type_annotation_is_none?: boolean;
+  type_comment_returns_is_none?: boolean;
+  type_comment_args_is_none?: boolean;
+  type_annotation_is_present?: boolean;
+}
 
 interface ReproOutput {
   astroid_version: string;
   python_version: string;
   nested_braces: number;
+  valid_depth: number;
   exception_type: string | null;
-  exception_message: string | null;
   crashed: boolean;
+  skipped_pathological: boolean;
+  valid_control_parsed: boolean;
+  cases: {
+    assignment: ReproCaseOutput;
+    function: ReproCaseOutput;
+    valid_control: ReproCaseOutput;
+  };
 }
 
 interface PyodideRuntime {
@@ -135,31 +205,51 @@ function evaluate(result: ReproOutput): {
   if (result.crashed) {
     return {
       verdict: 'reproduced',
-      message: `bug reproduced — astroid.builder.parse raised ${result.exception_type} on a fuzzed type comment.`,
+      message: `bug reproduced — astroid.builder.parse raised ${result.exception_type} on a pathological type comment.`,
+    };
+  }
+  if (result.skipped_pathological && result.valid_control_parsed) {
+    return {
+      verdict: 'unreproduced',
+      message:
+        'bug not reproduced — astroid skipped pathological type comments before parsing and kept valid deep nesting intact.',
     };
   }
   return {
     verdict: 'unreproduced',
     message:
-      'bug not reproduced — astroid handled the fuzzed type comment without an unhandled runtime error.',
+      'bug not reproduced — astroid no longer crashes, but the pathological-skip or valid-control assertions did not all pass.',
+  };
+}
+
+function normalizeCase(result: ReproCaseOutput): ReproCaseOutput {
+  return {
+    ...result,
+    exception_type: result.exception_type ?? null,
+    exception_message: result.exception_message ?? null,
   };
 }
 
 // Re-shape the dict that came back through `pyodide.toJs(...)` so the
 // stringified form is symmetric across the baseline and fix-candidate
 // variants. Pyodide maps Python `None` to JS `undefined`, and
-// `JSON.stringify` strips `undefined`-valued keys — so a clean run that
-// left `exception_type` / `exception_message` at None would render as
-// a 4-field object while a crashing run renders as 6 fields. Normalising
-// here keeps both panels comparable at a glance.
+// `JSON.stringify` strips `undefined`-valued keys. Normalising here
+// keeps both panels comparable at a glance.
 function normalize(result: ReproOutput): ReproOutput {
   return {
     astroid_version: result.astroid_version,
     python_version: result.python_version,
     nested_braces: result.nested_braces,
+    valid_depth: result.valid_depth,
     exception_type: result.exception_type ?? null,
-    exception_message: result.exception_message ?? null,
     crashed: result.crashed,
+    skipped_pathological: result.skipped_pathological,
+    valid_control_parsed: result.valid_control_parsed,
+    cases: {
+      assignment: normalizeCase(result.cases.assignment),
+      function: normalizeCase(result.cases.function),
+      valid_control: normalizeCase(result.cases.valid_control),
+    },
   };
 }
 
@@ -275,14 +365,21 @@ await micropip.install("astroid==4.1.2")
       },
       result: {
         nested_braces: baselineParsed.nested_braces,
+        valid_depth: baselineParsed.valid_depth,
         exception_type: baselineParsed.exception_type,
         crashed: baselineParsed.crashed,
+        skipped_pathological: baselineParsed.skipped_pathological,
+        valid_control_parsed: baselineParsed.valid_control_parsed,
+        cases: baselineParsed.cases,
         baseline: {
           spec: 'astroid==4.1.2',
           verdict: baselineCapture.verdict,
           astroid_version: baselineParsed.astroid_version,
           exception_type: baselineParsed.exception_type,
           crashed: baselineParsed.crashed,
+          skipped_pathological: baselineParsed.skipped_pathological,
+          valid_control_parsed: baselineParsed.valid_control_parsed,
+          cases: baselineParsed.cases,
         },
         fix_candidate:
           fixParsed && fixCapture && manifest
@@ -294,6 +391,9 @@ await micropip.install("astroid==4.1.2")
                 astroid_version: fixParsed.astroid_version,
                 exception_type: fixParsed.exception_type,
                 crashed: fixParsed.crashed,
+                skipped_pathological: fixParsed.skipped_pathological,
+                valid_control_parsed: fixParsed.valid_control_parsed,
+                cases: fixParsed.cases,
                 upstream_pr: manifest.upstream_pr ?? null,
               }
             : null,

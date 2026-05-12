@@ -199,9 +199,9 @@ function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol === 'file:') return;
 
-  // Path is relative to /repro/<slug>/. The SW lives at
-  // /vivarium/repro/_assets/sw.js (per-layer copy under each layer's
-  // _assets/ tree). Scope is the whole /repro/ tree so any reproduction
+  // Path is relative to /repro/<project>/<issue_path>/. The SW lives at
+  // /vivarium/repro/<project>/_assets/sw.js (per-project copy under each
+  // layer's _assets/ tree). Scope is the whole /repro/ tree so any reproduction
   // page benefits from the cached Pyodide; this requires the
   // `Service-Worker-Allowed` header which the rspress dev middleware
   // sets for any file ending in `sw.js`, regardless of SW location.

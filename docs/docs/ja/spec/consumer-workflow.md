@@ -4,7 +4,7 @@
 > 自分の CI 内で Vivarium ホスト型バグ再現を検証できる再利用可能 GitHub Actions ワークフロー。
 
 ワークフローは
-[`aletheia-works/.github/.github/workflows/vivarium-verdict.yml`](https://github.com/aletheia-works/.github/blob/main/.github/workflows/vivarium-verdict.yml)
+[`aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/vivarium-verdict.yml)
 に配置されている。
 公開済みの `ghcr.io/aletheia-works/vivarium-<slug>` イメージをプルし、
 レシピを実行し、[Contract v1](./contract-v1.md) に準拠する `verdict.json` をキャプチャし、
@@ -17,7 +17,7 @@
 ```yaml
 jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
 ```
@@ -53,7 +53,7 @@ jobs:
 ```yaml
 jobs:
   fixed-detector:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: my-favourite-recipe
       expected_verdict: reproduced  # デフォルト; 明確にするため明示

@@ -85,7 +85,7 @@ threading), so a plain server is enough.
 
 The companion `repro.py` script reproduces the bug without any
 WASM layer. PEP 723 inline metadata pins **`numpy==2.2.5`** — the
-exact version Pyodide v0.29.3 bundles — and the `.mise.toml` at the
+exact version Pyodide v0.29.3 bundles — and the `mise.toml` at the
 repo root pins Python to 3.13:
 
 ```bash

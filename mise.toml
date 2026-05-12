@@ -248,7 +248,7 @@ for dockerfile in src/layer2_docker/*/Dockerfile; do
   echo "==> capture verdict.json for ${slug}"
   bash scripts/capture_layer2_verdict.sh "$tag" "${slug_dir}/verdict.json"
 done
-echo "Done. Refresh http://localhost:3000/vivarium/repro/<slug>/ to see captured verdicts."
+echo "Done. Refresh http://localhost:3000/vivarium/repro/<project>/<issue_path>/ to see captured verdicts."
 '''
 
 # ── Branch-fix publish (Path B, PAT-push) ────────────────────────────────

@@ -48,7 +48,7 @@ import {
     </p>
     <Callout>
       You don't copy any Vivarium source. The reusable workflow is maintained
-      org-side, so you only carry the <code>uses:</code> link — Vivarium-side
+      in the Vivarium repository, so you only carry the <code>uses:</code> link —
       improvements ride along automatically.
     </Callout>
   </Section>
@@ -124,7 +124,7 @@ on:
 
 jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
 `}</code></pre>
@@ -141,11 +141,11 @@ jobs:
     </p>
     <pre><code>{`jobs:
   bash-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: bash-local-shadows-exit
   pandas-issue:
-    uses: aletheia-works/.github/.github/workflows/vivarium-verdict.yml@main
+    uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
     with:
       slug: pandas-56679
 `}</code></pre>
