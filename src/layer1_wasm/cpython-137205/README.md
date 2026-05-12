@@ -89,7 +89,7 @@ python -m http.server -d . 8767
 The companion `repro.py` script reproduces the bug without any
 WASM layer. The bug lives in the CPython `sqlite3` binding layer,
 not in libsqlite3 itself, so no third-party packages are needed.
-The `.mise.toml` at the repo root pins Python to 3.13:
+The `mise.toml` at the repo root pins Python to 3.13:
 
 ```bash
 mise install

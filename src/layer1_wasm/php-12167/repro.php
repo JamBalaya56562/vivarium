@@ -5,7 +5,7 @@
 // Mirrors the script that runs in `repro.ts` (under php-wasm) so a
 // contributor can re-verify the bug against a real PHP interpreter:
 //
-//   mise install               # one-time, picks up .mise.toml
+//   mise install               # one-time, picks up mise.toml
 //   mise exec php -- php src/layer1_wasm/php-12167/repro.php
 //
 // The script prints `pass` if the bug REPRODUCES (xpath returns the

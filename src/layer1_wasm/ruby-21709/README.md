@@ -78,11 +78,11 @@ python -m http.server -d . 8767
 The companion `repro.rb` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a Ruby.wasm
-quirk. The `.mise.toml` at the repo root pins Ruby to **3.3.3**
+quirk. The `mise.toml` at the repo root pins Ruby to **3.3.3**
 to match the version `@ruby/3.3-wasm-wasi` bundles, so:
 
 ```bash
-# One-time per machine / .mise.toml change.
+# One-time per machine / mise.toml change.
 mise install
 
 # Reproduces the bug; exits 0 on `reproduced`.

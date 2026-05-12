@@ -81,11 +81,11 @@ python -m http.server -d . 8767
 The companion `repro.php` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a php-wasm
-quirk. The `.mise.toml` at the repo root pins PHP to **8.2.11**
+quirk. The `mise.toml` at the repo root pins PHP to **8.2.11**
 to match the version php-wasm bundles, so:
 
 ```bash
-# One-time per machine / .mise.toml change.
+# One-time per machine / mise.toml change.
 mise install
 
 # Reproduces the bug; exits 0 on `reproduced`.
