@@ -17,7 +17,7 @@ import {
   <PageHero
     eyebrow="// GUIDE · AI AGENT"
     title="Drive the Vivarium MCP server from Claude Code, Cursor, or Cline."
-    sub="Vivarium ships an MCP (Model Context Protocol) server with seven tools that let an agent search the catalogue, read verdict snapshots, scaffold a new recipe, and scaffold branch-fix / fix-candidate verification end-to-end. No HTML scraping of the docs site required."
+    sub="Vivarium ships an MCP (Model Context Protocol) server that lets an agent search the catalogue, read verdict snapshots, scaffold a new recipe, and scaffold branch-fix / fix-candidate verification end-to-end. No HTML scraping of the docs site required."
   />
 
   <Section
@@ -28,12 +28,13 @@ import {
       The Vivarium MCP server (<code>@aletheia-works/vivarium-mcp</code>)
       speaks{' '}
       <a href="https://modelcontextprotocol.io">Model Context Protocol</a>{' '}
-      over stdio and exposes seven tools:{' '}
-      <code>list_recipes</code>, <code>get_recipe</code>,{' '}
-      <code>lookup_verdict</code>, <code>match_error</code>, and{' '}
-      <code>verify_branch_fix</code>. An agent can browse the catalogue,
-      fetch metadata for a given recipe, pull deployed Layer 2 / 3 verdict
-      snapshots, and scaffold the AI-slop verification loop end-to-end.
+      over stdio and exposes a set of tools (catalogue enumeration,
+      recipe lookup, verdict snapshots, error-to-recipe matching, plus
+      scaffolders for new recipes and for branch-fix / fix-candidate
+      verification). An agent can browse the catalogue, fetch metadata
+      for a given recipe, pull deployed Layer 2 / 3 verdict snapshots,
+      and scaffold the AI-slop verification loop end-to-end. The full
+      list and per-tool inputs are in the section below.
     </p>
     <Callout>
       <strong>The first JSR / npm publish is intentionally on hold</strong>.
@@ -111,7 +112,7 @@ bun run build
 
   <Section
     eyebrow="// 3 · TOOLS"
-    heading="All seven go through the same stdio transport."
+    heading="Every tool goes through the same stdio transport."
   >
     <ul>
       <li>

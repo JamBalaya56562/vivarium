@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../components/PageChrome';
+import siteStats from '../../data/site-stats.json';
 
 <Page>
   <PageHero
@@ -22,10 +23,10 @@ import {
 
   <KpiStrip
     items={[
-      { value: '14', label: 'Recipes shipped', accent: 'teal' },
-      { value: '3', label: 'Execution layers', accent: 'violet' },
-      { value: '7', label: 'MCP tools', accent: 'coral' },
-      { value: '2', label: 'Locales (EN / JA)', accent: 'teal' },
+      { value: String(siteStats.recipes), label: 'Recipes shipped', accent: 'teal' },
+      { value: String(siteStats.layers), label: 'Execution layers', accent: 'violet' },
+      { value: String(siteStats.mcpTools), label: 'MCP tools', accent: 'coral' },
+      { value: String(siteStats.locales), label: 'Locales (EN / JA)', accent: 'teal' },
     ]}
   />
 
@@ -46,7 +47,7 @@ import {
 
     <h3>Reproduction catalogue</h3>
     <ul>
-      <li>14 recipes shipped across the three layers, from browser-native WASM pages to Docker and record-replay snapshots.</li>
+      <li>{siteStats.recipes} recipes shipped across the three layers, from browser-native WASM pages to Docker and record-replay snapshots.</li>
       <li>Faceted gallery, paste-an-error candidate matcher, project-level landing pages.</li>
     </ul>
 
@@ -59,7 +60,7 @@ import {
 
     <h3>AI agent integration</h3>
     <ul>
-      <li><strong>Vivarium MCP server</strong> — seven tools (<code>list_recipes</code> / <code>get_recipe</code> / <code>lookup_verdict</code> / <code>match_error</code> / <code>verify_branch_fix</code> / <code>prepare_new_recipe</code> / <code>prepare_fix_candidate</code>).</li>
+      <li><strong>Vivarium MCP server</strong> — {siteStats.mcpTools} tools covering recipe discovery, verdict lookup, error-to-recipe matching, branch-fix verification, and authoring scaffolders (see the <a href="https://www.npmjs.com/package/@aletheia-works/vivarium-mcp">package README</a> for the full surface).</li>
       <li><strong>AI-slop verification flow</strong> — match the error → open a recipe → paste a candidate fix → re-run → compare verdicts side-by-side, end-to-end.</li>
     </ul>
 

@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../components/PageChrome';
+import siteStats from '../../data/site-stats.json';
 
 <Page>
   <PageHero
@@ -22,10 +23,10 @@ import {
 
   <KpiStrip
     items={[
-      { value: '14', label: 'Recipes shipped', accent: 'teal' },
-      { value: '3', label: 'Execution layers', accent: 'violet' },
-      { value: '7', label: 'MCP tools', accent: 'coral' },
-      { value: '2', label: 'Locales (EN / JA)', accent: 'teal' },
+      { value: String(siteStats.recipes), label: 'Recipes shipped', accent: 'teal' },
+      { value: String(siteStats.layers), label: 'Execution layers', accent: 'violet' },
+      { value: String(siteStats.mcpTools), label: 'MCP tools', accent: 'coral' },
+      { value: String(siteStats.locales), label: 'Locales (EN / JA)', accent: 'teal' },
     ]}
   />
 
@@ -46,7 +47,7 @@ import {
 
     <h3>再現カタログ</h3>
     <ul>
-      <li>14 件のレシピを 3 つのレイヤーにわたって出荷。ブラウザ内 WASM ページから Docker、record-replay スナップショットまで揃っています。</li>
+      <li>{siteStats.recipes} 件のレシピを {siteStats.layers} つのレイヤーにわたって出荷。ブラウザ内 WASM ページから Docker、record-replay スナップショットまで揃っています。</li>
       <li>ファセット付きギャラリー、エラーメッセージ貼付による候補レシピ検索、プロジェクト別ランディングページ。</li>
     </ul>
 
@@ -59,7 +60,7 @@ import {
 
     <h3>AI エージェント連携</h3>
     <ul>
-      <li><strong>Vivarium MCP サーバ</strong> — 7 つのツール (<code>list_recipes</code> / <code>get_recipe</code> / <code>lookup_verdict</code> / <code>match_error</code> / <code>verify_branch_fix</code> / <code>prepare_new_recipe</code> / <code>prepare_fix_candidate</code>)。</li>
+      <li><strong>Vivarium MCP サーバ</strong> — {siteStats.mcpTools} 個のツールがレシピ探索 / verdict ルックアップ / エラー → レシピ照合 / branch-fix 検証 / 新規レシピ・修正候補のスキャフォルダーをカバー (全ラインナップは <a href="https://www.npmjs.com/package/@aletheia-works/vivarium-mcp">パッケージ README</a> を参照)。</li>
       <li><strong>AI-slop 検証フロー</strong> — エラーをマッチ → レシピを開く → 修正候補を貼って再実行 → verdict をサイドバイサイドで比較するエンドツーエンドの動線。</li>
     </ul>
 
