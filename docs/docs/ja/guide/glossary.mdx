@@ -76,8 +76,8 @@ import {
         verdict の根拠となるデータ——キャプチャされた stdout / stderr、
         終了コード、所要時間。Layer 1 はページ内に inline で公開し、
         Layer 2 / 3 は <code>verdict.json</code> 内に同梱する。
-        Phase 6 R.1 で Contract v1 rev 2 として追加された。これにより
-        比較ページが「再現するか<em>どうか</em>」だけでなく「<em>なぜ</em>」も示せる。
+        Contract v1 rev 2 により、比較ページが「再現するか<em>どうか</em>」
+        だけでなく「<em>なぜ</em>」も示せる。
       </dd>
     </dl>
   </Section>
@@ -93,7 +93,7 @@ import {
         JS グローバル、メタタグ、そして <code>verdict.json</code>
         ファイル形状。Vivarium ページが
         <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>
-        を載せて署名する規約。Phase 5 から v1 でロックされている。詳細は
+        を載せて署名する規約。v1 として安定している。詳細は
         <a href="/vivarium/ja/spec/contract-v1">Contract v1</a>。
       </dd>
 
@@ -101,7 +101,7 @@ import {
       <dd>
         公開サーフェス——外部リポジトリが
         <code>.vivarium/manifest.toml</code> に置く TOML ファイルで、
-        その repo 自身の Vivarium 実行可能な再現を宣言する。Phase 5 から v1 安定。
+        その repo 自身の Vivarium 実行可能な再現を宣言する。v1 として安定。
         詳細は <a href="/vivarium/ja/spec/manifest-v1">Manifest v1</a>。
         manifest は外部 repo が書くもの、recipe（上記）は<em>このリポジトリ</em>がホストするもの。
       </dd>
@@ -136,8 +136,8 @@ import {
         モチベーションとなったワークフロー: コントリビューター（人間または
         AI エージェント）が候補修正を作成し、レシピに対して実行し、
         PR を出す前に比較を確認する。「自分の AI のドラフトは本当にバグを解いたのか、
-        それとも正しそうに見えるだけなのか?」Phase 7 サブストリーム B3 が、既存の
-        branch-fix パイプライン + 比較ページ + MCP ツールを 1 本のウォークスルーに繋ぐ。
+        それとも正しそうに見えるだけなのか?」branch-fix パイプライン + 比較ページ +
+        MCP ツールを 1 本のウォークスルーに繋ぐ。
       </dd>
 
       <dt id="consumer-workflow"><strong>Consumer workflow</strong></dt>
@@ -145,7 +145,6 @@ import {
         外部リポジトリが自身の CI から呼び出して自身の manifest の再現に対する
         verdict をキャプチャする再利用可能 GitHub Actions ワークフロー。
         詳細は <a href="/vivarium/ja/spec/consumer-workflow">spec/consumer-workflow</a>。
-        Phase 5 サブストリーム D。
       </dd>
     </dl>
   </Section>

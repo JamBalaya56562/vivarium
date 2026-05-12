@@ -2,8 +2,6 @@ import { ArrowRight, Lock } from 'lucide-react';
 import { useState } from 'react';
 import './vivarium-hero.css';
 
-/* ------------------------------ i18n strings ----------------------------- */
-
 type Lang = 'en' | 'ja';
 
 const STRINGS = {
@@ -97,8 +95,6 @@ const STRINGS = {
   },
 } as const;
 
-/* ------------------------------- Icons ------------------------------- */
-
 /* WasmGlyph + DockerGlyph stay inline because they are brand-evoking
  * marks tied to specific runtimes, not generic UI icons. The two
  * generic icons (cta arrow + URL-bar lock) come from lucide-react. */
@@ -114,8 +110,6 @@ const DockerGlyph = () => (
     <path d="M5 11h2v2H5zM8 11h2v2H8zM11 11h2v2h-2zM8 8h2v2H8zM11 8h2v2h-2zM11 5h2v2h-2zM14 11h2v2h-2zM21 11h-2.4c-.3-1-1.4-1.7-2.6-1.7-.5 0-.9.1-1.3.3 1.3.4 2.3 1.4 2.3 2.7 0 .8-.4 1.5-1 2H21v-3.3z" />
   </svg>
 );
-
-/* ----------------------------- Window shell ----------------------------- */
 
 type BadgeKind = 'wasm' | 'docker';
 
@@ -150,8 +144,6 @@ const Chrome = ({ url, badge }: { url: string; badge: BadgeKind }) => (
     <ChromeBadge kind={badge} />
   </div>
 );
-
-/* ------------ Per-reproduction inner content (no outer wrapper) ------------ */
 
 const CpythonInner = ({ s }: { s: typeof STRINGS.en }) => (
   <>
@@ -348,8 +340,6 @@ const RubyInner = ({ s }: { s: typeof STRINGS.en }) => (
   </>
 );
 
-/* ------------------------------- Tab data ------------------------------- */
-
 type TabId = 'cpython' | 'postgres' | 'ruby';
 type SlotName = 'front' | 'mid' | 'low';
 
@@ -366,8 +356,6 @@ const INITIAL_SLOTS: Record<TabId, SlotName> = {
   postgres: 'mid',
   ruby: 'low',
 };
-
-/* ---------------------------- Hero component ---------------------------- */
 
 export function VivariumHero({ lang = 'en' }: { lang?: Lang } = {}) {
   const [slots, setSlots] = useState<Record<TabId, SlotName>>(INITIAL_SLOTS);

@@ -2,30 +2,6 @@ import { useMemo, useState } from 'react';
 import './error-recipe-matcher.css';
 import recipesIndex from '../public/api/recipes.json';
 
-/* ============================================================================
- * Phase 6 S.2 → Phase 7 A5 — error → recipe matcher (mechanical, no LLM).
- *
- * Mechanical token-overlap scoring per ADR-0025:
- *   symptom segment match → +5
- *   tag segment match     → +3
- *   project / slug match  → +2
- * Recipes with score 0 are hidden. Ties broken by (layer asc, slug asc).
- *
- * Phase 7 A5 (ADR-0028) extends v1 with three accuracy improvements that
- * never change the weights above:
- *   1. Adjacent-pair token expansion — "data type" also tries `datatype`.
- *   2. Synonym groups — variants of the same concept (e.g. dtype⇄datatype).
- *   3. Bounded fuzzy match — Levenshtein distance ≤ 1 for tokens of
- *      length ≥ 6 (typo tolerance).
- *   4. Multi-language stopwords — German, Spanish, French, Chinese,
- *      Korean noise tokens drop alongside the English+Japanese set.
- *
- * **CRITICAL: keep in sync with `packages/mcp-server/src/tools/match_error.ts`.**
- * The MCP X.2 server-side mirror is bit-identical with this file by ADR
- * design. Diverging the scoring would surface as agent-vs-UI disagreement
- * on identical input.
- * ========================================================================== */
-
 interface RecipeEntry {
   slug: string;
   layer: 1 | 2 | 3;
@@ -50,9 +26,7 @@ const INDEX = recipesIndex as RecipesIndex;
 
 const MAX_INPUT_BYTES = 16 * 1024;
 
-/* Multi-language stopword set (Phase 7 A5). The goal is dropping the
- * frequent noise tokens that would never sit in a recipe overlay
- * anyway, not full lexical coverage of any one language. */
+// Keep scoring behavior in sync with packages/mcp-server/src/tools/match_error.ts.
 const STOPWORDS = new Set([
   // English
   'the',
@@ -141,10 +115,6 @@ const STOPWORDS = new Set([
   '스택',
 ]);
 
-/* Synonym groups (Phase 7 A5). Within a group, any token in the
- * user's input expands the input set to include all members.
- * Conservative on purpose — false-positive pressure rises with table
- * size. Add entries only when the mapping is unambiguous. */
 const SYNONYM_GROUPS: ReadonlyArray<readonly string[]> = [
   ['dtype', 'datatype'],
   ['nullptr', 'nullpointer', 'nilptr', 'nullpointerexception'],
@@ -171,10 +141,6 @@ const SYNONYM_MAP: ReadonlyMap<string, ReadonlyArray<string>> = (() => {
   return m;
 })();
 
-/* Bounded fuzzy match (Phase 7 A5). Only tokens of length ≥
- * FUZZY_MIN_LEN are eligible; only Levenshtein distance ≤ 1 is
- * accepted. Same scoring weight as exact, but matched tokens
- * record `via: 'fuzzy'` for client-side rendering. */
 const FUZZY_MIN_LEN = 6;
 
 function withinDistance1(a: string, b: string): boolean {
@@ -340,8 +306,6 @@ function scoreRecipe(recipe: RecipeEntry, tokens: TokenSet): Score {
   return { recipe, score, matched };
 }
 
-/* --------------------------------- i18n ---------------------------------- */
-
 type Lang = 'en' | 'ja';
 
 interface Strings {
@@ -421,8 +385,6 @@ const STRINGS: Record<Lang, Strings> = {
   },
 };
 
-/* ------------------------------ Components ------------------------------ */
-
 function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
   const s = STRINGS[lang];
   const r = score.recipe;
@@ -489,16 +451,11 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
   );
 }
 
-/* -------------------------------- Main -------------------------------- */
-
 export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
   const s = STRINGS[lang];
   const [input, setInput] = useState('');
 
-  // Live filter — every keystroke re-scores against `input` directly.
-  // No debounce: 11 recipes × O(token) is sub-millisecond and the matcher
-  // has no other settings (layer/severity toggles etc.) so there is no
-  // submit semantic to wait on. Clear button is the only escape hatch.
+  // No debounce: the catalogue is small and the matcher has no submit flow.
   const tokens = useMemo(() => tokenise(input), [input]);
 
   const ranked = useMemo<Score[]>(() => {

@@ -194,20 +194,18 @@ try {
   };
   setResult(envelope);
 
-  // Phase 8 V″ — wire the editable script + Run button (the in-place
-  // re-run affordance the runner offers, in the script column).
+  // Wire the editable script + Run button in the script column.
   enableRunner({
     slug: 'php-12167',
     baselineSource: REPRO_CODE,
     runFix: (source) => captureRun(php, source),
   });
 
-  // Phase 7 B3 — opt into Path A. The mount-point lives in the page
-  // markup (`<section id="path-a-mount" hidden>`); reveal it before
-  // mounting so the panel transitions from hidden to populated atomically.
+  // Reveal the Path A mount point before mounting so the panel transitions
+  // from hidden to populated atomically.
   // Path A overlaps with the runner conceptually (both re-run a pasted
   // script), but Path A also captures verdict.json bundles for
-  // /repro/compare and is preserved here for the existing B3 walkthrough.
+  // /repro/compare and remains available for branch-fix verification.
   if (pathAMountEl) {
     pathAMountEl.removeAttribute('hidden');
     void enablePathA({

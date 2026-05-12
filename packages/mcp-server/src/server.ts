@@ -46,8 +46,8 @@ const SERVER_NAME = 'vivarium-mcp';
 // these three files produce a confusing client experience. Bump the
 // patch component for additive changes within v0.x (additional tools,
 // description / surface refinements) — the project is still pre-1.0
-// and `prepare_fix_candidate` (Phase 8 / ADR-0040) is meaningful but
-// fully opt-in, so a minor bump would overstate the impact.
+// and `prepare_fix_candidate` is meaningful but fully opt-in, so a minor
+// bump would overstate the impact.
 const SERVER_VERSION = '0.1.1';
 
 export function createServer(): Server {

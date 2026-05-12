@@ -1,5 +1,3 @@
-/* Phase 6 M.1 — manifest scaffolder. Tokens inherit from page-chrome.css. */
-
 .v-mfs {
   margin: 1.25rem 0 2.5rem;
   font-family:
@@ -21,8 +19,6 @@
   margin-top: 2rem;
 }
 
-/* ---------- Group / fieldset ---------- */
-
 .v-mfs__group {
   border: 1px solid var(--vh-hairline);
   border-radius: 8px;
@@ -39,8 +35,6 @@
   color: var(--vh-text-muted);
   padding: 0 0.4rem;
 }
-
-/* ---------- Fields ---------- */
 
 .v-mfs__field {
   display: flex;
@@ -118,8 +112,6 @@ html.dark .v-mfs__input {
   font-size: 0.78rem;
 }
 
-/* ---------- Layer chips ---------- */
-
 .v-mfs__chips {
   display: flex;
   flex-wrap: wrap;
@@ -155,8 +147,6 @@ html.dark .v-mfs__input {
   color: var(--vh-text-dim);
   font-style: italic;
 }
-
-/* ---------- Actions ---------- */
 
 .v-mfs__actions {
   display: flex;
@@ -195,8 +185,6 @@ html.dark .v-mfs__input {
 .v-mfs__btn--ghost {
   background: transparent;
 }
-
-/* ---------- Output ---------- */
 
 .v-mfs__output {
   margin: 0.5rem 0;

@@ -319,7 +319,7 @@ try {
   });
   const runtime = pyodide as PyodideRuntime;
 
-  // -------- Variant 1: baseline (PyPI astroid==4.1.2) ----------------
+  // Baseline variant: PyPI astroid==4.1.2.
   setVerdict('pending', 'Installing astroid==4.1.2 from PyPI…');
   await runtime.runPythonAsync(`
 import micropip
@@ -420,7 +420,7 @@ await micropip.install("astroid==4.1.2")
     `Baseline astroid ${baselineParsed?.astroid_version ?? '?'} on Python ` +
     `${baselineParsed?.python_version ?? '?'} via Pyodide v${version}.`;
 
-  // -------- Variant 2: fix-candidate (committed wheel) ---------------
+  // Fix-candidate variant: committed wheel.
   outputFixEl.textContent = 'Fetching wheel manifest…';
   let manifestRes: Response | null = null;
   try {

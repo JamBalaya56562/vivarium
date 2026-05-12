@@ -81,8 +81,6 @@ html.dark {
   }
 }
 
-/* ---------- Left column ---------- */
-
 .v-hero__left {
   width: 100%;
   display: flex;
@@ -211,8 +209,6 @@ html.dark {
   flex-shrink: 0;
 }
 
-/* ---------- Right column ---------- */
-
 .v-hero__right {
   position: relative;
   width: 100%;
@@ -317,8 +313,6 @@ html.dark {
   flex-direction: column;
 }
 
-/* ---------- Bento (desktop) ---------- */
-
 .v-bento {
   position: relative;
   flex: 1 1 auto;
@@ -326,8 +320,6 @@ html.dark {
   height: 100%;
   min-height: 580px;
 }
-
-/* ---------- Tabs (mobile-only) ---------- */
 
 .v-tabs {
   display: none;
@@ -423,9 +415,8 @@ html.dark {
   color: var(--vh-accent-teal-bright);
 }
 
-/* ---------- Browser windows ---------- *
- *
- * Default (desktop): all 3 windows are absolute-positioned inside .v-bento,
+/*
+ * Default desktop: all 3 windows are absolute-positioned inside .v-bento,
  * with their slot class (--slot-front/mid/low) deciding placement, scale,
  * rotation, and opacity. Clicking a non-front window updates state which
  * swaps slot classes; CSS transitions interpolate between them.
@@ -645,10 +636,6 @@ html.dark {
   border-radius: 9999px;
   animation: v-pulse 1.6s ease-in-out infinite;
 }
-
-/* DevTools-style Console panel — replaces the old terminal panel for the
-   front (WASM) window so it reads as "running in a browser" rather than
-   "running in a terminal". */
 
 .v-console {
   margin-top: 0.75rem;
@@ -933,9 +920,8 @@ html.dark {
   color: var(--vh-accent-teal);
 }
 
-/* ---------------- Mobile / narrow viewports (< 1024px) ----------------
- *
- * Same tabbed layout, just reflowed: the right column drops below the
+/*
+ * Mobile / narrow viewports: the right column drops below the
  * left column instead of sitting beside it. Glows and particles are
  * dropped — they overpower a narrow column.
  */

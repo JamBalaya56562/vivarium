@@ -2,29 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import validateVerdictRaw from '../generated/verdict-validator.mjs';
 import './repro-compare.css';
 
-/* ============================================================================
- * Phase 6 R.3 — branch-fix vs original verdict comparison surface.
- *
- * Consumes the artefact bundle locked by ADR-0020 (R.2 pipeline):
- *   - branch-fix-verdict.json   (always present)
- *   - original-verdict.json     (omitted when no deployed Pages snapshot)
- *
- * Both files conform to Vivarium Contract v1 (post-ADR-0018 evidence
- * extension). This module:
- *   1. Accepts file drop / file picker (zip artefact OR bare json).
- *   2. Accepts URL params (?slug=&branch_url=&original_url=).
- *   3. Falls back to JSON paste on CORS / parse failure.
- *   4. Validates each loaded verdict against Contract v1 v1 shape via
- *      the ajv-standalone-generated validator built from
- *      `docs/public/spec/verdict.schema.json` (see ADR-0034). The schema
- *      is the single source of truth.
- *   5. Renders side-by-side comparison via the V.2 component family.
- *
- * The visitor's verdicts never leave the browser — all parsing,
- * validation, and rendering is client-side.
- * ========================================================================== */
-
-/* ----------------------------- Types & schema ---------------------------- */
+// Verdict files are parsed, validated, and rendered entirely client-side.
 
 type VerdictLiteral = 'reproduced' | 'unreproduced';
 
@@ -95,8 +73,6 @@ function validateVerdict(raw: unknown): ValidationResult {
       : { path: '/', message: 'invalid verdict shape' },
   };
 }
-
-/* --------------------------------- i18n ---------------------------------- */
 
 type Lang = 'en' | 'ja';
 
@@ -291,8 +267,6 @@ const STRINGS: Record<Lang, Strings> = {
   },
 };
 
-/* ----------------------------- VerdictBadge ------------------------------ */
-
 type BadgeVerdict = 'reproduced' | 'unreproduced' | 'pending' | 'unavailable';
 
 export function VerdictBadge({
@@ -322,8 +296,6 @@ export function VerdictBadge({
     </span>
   );
 }
-
-/* ---------------------------- EvidencePanel ------------------------------ */
 
 interface EvidenceExtras {
   duration_ms?: number | null;
@@ -431,8 +403,6 @@ export function EvidencePanel({
   );
 }
 
-/* -------------------------- VerdictCompareLayout ------------------------- */
-
 export function VerdictCompareLayout({
   lang,
   slug,
@@ -499,8 +469,6 @@ export function VerdictCompareLayout({
     </div>
   );
 }
-
-/* ------------------------------ Drop / load ------------------------------ */
 
 // Resolves the deployed Pages base for the *current* host (so fork
 // deploys at <user>.github.io/<repo>/ work without rebuild). Looks up
@@ -618,8 +586,6 @@ async function fetchVerdictFromUrl(
   return validateVerdict(body);
 }
 
-/* ------------------------------ Main app ------------------------------- */
-
 export interface ReproCompareProps {
   lang: Lang;
 }
@@ -646,7 +612,6 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
   const dropRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  /* ----- URL params ingestion (run once on mount) ----- */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -708,8 +673,6 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
     // s only used for messages above; deps frozen at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.fetchFailed]);
-
-  /* ----- File handling ----- */
 
   const ingestFile = useCallback(
     async (file: File) => {
@@ -802,8 +765,6 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
     [ingestFile],
   );
 
-  /* ----- Paste apply ----- */
-
   const applyPasted = useCallback(() => {
     const newErrors: SideError[] = [];
     const apply = (side: Side, text: string) => {
@@ -826,8 +787,6 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
     apply('original', pasteOriginal);
     setErrors((xs) => [...xs, ...newErrors]);
   }, [pasteBranch, pasteOriginal]);
-
-  /* ----- Slug-driven original fetch ----- */
 
   const fetchOriginalFromSlug = useCallback(async () => {
     if (!slug) return;
@@ -856,8 +815,6 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
   }, []);
 
   const showComparison = branch != null || original != null;
-
-  /* ------------------------------- Render ------------------------------- */
 
   return (
     <div className="v-rc">

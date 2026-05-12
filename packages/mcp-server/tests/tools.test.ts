@@ -228,8 +228,6 @@ describe('match_error', () => {
     }
   });
 
-  // Phase 7 A5 — accuracy improvements (synonym, fuzzy, multi-lang stopwords).
-
   it('expands "data type" → datatype → dtype via synonym table', async () => {
     const r = await matchError({
       text: 'pandas DataFrame has a data type mismatch',

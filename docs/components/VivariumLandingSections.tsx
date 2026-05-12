@@ -10,34 +10,10 @@ import {
 } from 'lucide-react';
 import './vivarium-landing.css';
 
-/* ============================================================================
- * Phase 7 V′ — landing-page sections that sit BELOW the existing hero.
- *
- * Order on the page (informed by the V′ information-design audit + Stitch
- * wall-bouncing v1+v3 hybrid):
- *   1. <VivariumHero>        — existing
- *   2. <VivariumNumbers>     — proof up front (v3 evidence-first)
- *   3. <VivariumLayers>      — three-layer strip
- *   4. <VivariumPersonas>    — "where do you start?" 4-card grid
- *   5. <VivariumCtaBand>     — secondary CTA into gallery / spec
- *   6. <VivariumFooter>      — existing
- *
- * Each section is a standalone export so future pages can re-use individual
- * pieces (e.g. <VivariumLayers> may also appear on /architecture).
- * ========================================================================== */
-
 type Lang = 'en' | 'ja';
-
-/* --------------------------------- Icons --------------------------------- */
-
-/* lucide-react icons accept a className prop; sizing and color come from
- * vivarium-landing.css so callers never have to pass pixel units.
- * lucide is tree-shaken — only the named imports above ship to the bundle. */
 
 const LAYER_ICONS = [AppWindow, Container, RotateCcw] as const;
 const PERSONA_ICONS = [Timer, GitBranch, Sparkles, Pencil] as const;
-
-/* ------------------------------ i18n strings ----------------------------- */
 
 const STRINGS = {
   en: {
@@ -45,9 +21,9 @@ const STRINGS = {
     numbers: {
       eyebrow: '// SHIPPED · 2026',
       items: [
-        { value: '11', label: 'reproductions catalogued' },
-        { value: '4', label: 'MCP tools' },
-        { value: '6', label: 'phases closed' },
+        { value: '14', label: 'reproductions catalogued' },
+        { value: '7', label: 'MCP tools' },
+        { value: '8', label: 'phases closed' },
         { value: 'v1', label: 'public contract' },
       ],
     },
@@ -100,7 +76,7 @@ const STRINGS = {
         {
           micro: 'AI AGENT',
           title: 'Drive Vivarium from Claude or Aider',
-          body: 'The `@aletheia-works/vivarium-mcp` server exposes four tools. List recipes, fetch verdicts, match an error string.',
+          body: 'The `@aletheia-works/vivarium-mcp` server exposes seven tools for catalogue reads, verdict lookup, matching, and scaffolding.',
           href: '/guide/use-from-ai-agent',
         },
         {
@@ -114,8 +90,8 @@ const STRINGS = {
     },
     cta: {
       eyebrow: '// SEE IT RUN',
-      heading: 'Eleven real upstream bugs, running in a browser tab.',
-      sub: 'pandas, numpy, CPython, Ruby, PHP, Rust regex on Layer 1. PostgreSQL, bash, flock, find/xargs on Layer 2. coreutils sort race on Layer 3.',
+      heading: 'Fourteen real upstream bugs, routed through the right layer.',
+      sub: 'Layer 1 covers browser-native WASM recipes; Layer 2 ships Docker reproductions; Layer 3 carries record-replay snapshots.',
       primary: { label: 'Browse the gallery →', href: '/repro/' },
       ghost: { label: 'Read the spec', href: '/spec/' },
     },
@@ -125,9 +101,9 @@ const STRINGS = {
     numbers: {
       eyebrow: '// 出荷済み · 2026',
       items: [
-        { value: '11', label: 'レシピ公開' },
-        { value: '4', label: 'MCP ツール' },
-        { value: '6', label: 'フェーズクローズ' },
+        { value: '14', label: 'レシピ公開' },
+        { value: '7', label: 'MCP ツール' },
+        { value: '8', label: 'フェーズクローズ' },
         { value: 'v1', label: '公開コントラクト' },
       ],
     },
@@ -180,7 +156,7 @@ const STRINGS = {
         {
           micro: 'AI エージェント',
           title: 'Claude や Aider から Vivarium を呼ぶ',
-          body: '`@aletheia-works/vivarium-mcp` が 4 つのツールを公開する。レシピ列挙、verdict 取得、エラー文字列マッチ。',
+          body: '`@aletheia-works/vivarium-mcp` が 7 つのツールを公開する。カタログ参照、verdict 取得、エラー文字列マッチ、scaffolding まで扱える。',
           href: '/guide/use-from-ai-agent',
         },
         {
@@ -195,15 +171,13 @@ const STRINGS = {
     cta: {
       eyebrow: '// 実物を見る',
       heading:
-        '11 個の本物のアップストリームバグが、ブラウザのタブ 1 枚で動く。',
-      sub: 'Layer 1 の pandas、numpy、CPython、Ruby、PHP、Rust regex。Layer 2 の PostgreSQL、bash、flock、find/xargs。Layer 3 の coreutils sort race。',
+        '14 個の本物のアップストリームバグを、適したレイヤーで再現する。',
+      sub: 'Layer 1 はブラウザ内 WASM、Layer 2 は Docker 再現、Layer 3 は record-replay スナップショットを扱う。',
       primary: { label: '再現一覧へ →', href: '/repro/' },
       ghost: { label: '仕様を読む', href: '/spec/' },
     },
   },
 } as const;
-
-/* -------------------------- VivariumNumbers ---------------------------- */
 
 export function VivariumNumbers({ lang = 'en' }: { lang?: Lang } = {}) {
   const s = STRINGS[lang];
@@ -225,8 +199,6 @@ export function VivariumNumbers({ lang = 'en' }: { lang?: Lang } = {}) {
     </section>
   );
 }
-
-/* -------------------------- VivariumLayers ----------------------------- */
 
 export function VivariumLayers({ lang = 'en' }: { lang?: Lang } = {}) {
   const s = STRINGS[lang];
@@ -266,8 +238,6 @@ export function VivariumLayers({ lang = 'en' }: { lang?: Lang } = {}) {
     </section>
   );
 }
-
-/* -------------------------- VivariumPersonas --------------------------- */
 
 export function VivariumPersonas({ lang = 'en' }: { lang?: Lang } = {}) {
   const s = STRINGS[lang];
@@ -314,8 +284,6 @@ export function VivariumPersonas({ lang = 'en' }: { lang?: Lang } = {}) {
     </section>
   );
 }
-
-/* -------------------------- VivariumCtaBand ---------------------------- */
 
 export function VivariumCtaBand({ lang = 'en' }: { lang?: Lang } = {}) {
   const s = STRINGS[lang];

@@ -54,12 +54,7 @@ const MAX_INPUT_BYTES = 16 * 1024;
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
-// Multi-language stopword set (Phase 7 A5). The goal isn't full
-// lexical coverage of any single language — it's dropping the
-// frequent noise tokens that would never sit in a recipe overlay.
-// Anything that sneaks through scores 0 against the catalogue
-// anyway; the worst case is wasted comparison cycles, not wrong
-// matches.
+// Drop frequent noise tokens; anything unknown still scores 0 against the catalogue.
 const STOPWORDS: ReadonlySet<string> = new Set([
   // English
   'the', 'and', 'for', 'with', 'from', 'that', 'this', 'have',
@@ -84,14 +79,7 @@ const STOPWORDS: ReadonlySet<string> = new Set([
   '오류', '예외', '실패', '스택',
 ]);
 
-// Synonym groups (Phase 7 A5). Within a group, any token in the
-// user's input expands the input set to include all members.
-// Variants are stored hyphen-stripped (lowercase, alphanumeric)
-// to match the kebab-segmented catalogue tokens.
-//
-// Conservative on purpose — false-positive pressure rises with
-// table size. Add a group only when there's an unambiguous mapping
-// between a user-input shape and a catalogue overlay token.
+// Variants are stored hyphen-stripped to match the kebab-segmented catalogue tokens.
 const SYNONYM_GROUPS: ReadonlyArray<readonly string[]> = [
   ['dtype', 'datatype'],
   ['nullptr', 'nullpointer', 'nilptr', 'nullpointerexception'],
@@ -115,10 +103,7 @@ const SYNONYM_MAP: ReadonlyMap<string, ReadonlyArray<string>> = (() => {
   return m;
 })();
 
-// Phase 7 A5: bounded fuzzy match. Only fires for tokens of length
-// ≥ FUZZY_MIN_LEN; only Levenshtein distance ≤ 1 is accepted (single
-// insert / delete / substitute). Same weight as exact, but the
-// MatchedToken records `via: 'fuzzy'` for client-side rendering.
+// Only Levenshtein distance <= 1 is accepted, and only for longer tokens.
 const FUZZY_MIN_LEN = 6;
 
 function withinDistance1(a: string, b: string): boolean {
@@ -312,7 +297,7 @@ export async function matchError(
 export const MATCH_ERROR_TOOL = {
   name: 'match_error',
   description:
-    "Find Vivarium recipes that match a pasted error message or stack trace by mechanical token overlap (no LLM). The text is tokenised, lowercase-compared against each recipe's symptom (weight 5 per segment), tags (3), project (2), and slug (2). v2 (Phase 7 A5) adds adjacent-pair tokens (so 'data type' can hit `dtype`), a small synonym table (e.g. dtype⇄datatype, segfault⇄sigsegv), and bounded Levenshtein-1 fuzzy matching for tokens of length ≥ 6. Stopword set covers English, Japanese, German, Spanish, French, Chinese, and Korean noise tokens. Recipes with score > 0 are returned in descending score order; ties broken by (layer asc, slug asc). Each matched token reports its `via` (`synonym` or `fuzzy` when non-exact) and the original `input` that triggered it, so agents can render the provenance. Pair with `get_recipe` to drill into a specific result, or `list_recipes` for unfiltered browsing.",
+    "Find Vivarium recipes that match a pasted error message or stack trace by mechanical token overlap (no LLM). The text is tokenised, lowercase-compared against each recipe's symptom (weight 5 per segment), tags (3), project (2), and slug (2). Matching includes adjacent-pair tokens (so 'data type' can hit `dtype`), a small synonym table (e.g. dtype⇄datatype, segfault⇄sigsegv), and bounded Levenshtein-1 fuzzy matching for tokens of length >= 6. Stopword set covers English, Japanese, German, Spanish, French, Chinese, and Korean noise tokens. Recipes with score > 0 are returned in descending score order; ties broken by (layer asc, slug asc). Each matched token reports its `via` (`synonym` or `fuzzy` when non-exact) and the original `input` that triggered it, so agents can render the provenance. Pair with `get_recipe` to drill into a specific result, or `list_recipes` for unfiltered browsing.",
   inputSchema: {
     type: 'object' as const,
     properties: {

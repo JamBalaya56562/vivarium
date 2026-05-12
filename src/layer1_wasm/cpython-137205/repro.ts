@@ -15,9 +15,9 @@
 //   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
 //     or the runtime errored before producing a result).
 //
-// Phase 8 V″ (ADR-0035) — after the baseline run, the recipe enables
-// `enableRunner({...})` so visitors can edit the script and re-run via
-// the Run button. The captured-run shape uses the same
+// After the baseline run, the recipe enables `enableRunner({...})` so
+// visitors can edit the script and re-run via the Run button. The
+// captured-run shape uses the same
 // `PathACapturedRun` interface Path A uses, so a single `captureRun`
 // adapter feeds both the runner and (when applicable) the Path A panel.
 
@@ -198,9 +198,8 @@ try {
   };
   setResult(envelope);
 
-  // Phase 8 V″ — wire the editable script + Run button. The runner
-  // mounts itself around the existing #repro-code <pre>, so no
-  // additional mount-point is required in the recipe HTML.
+  // The runner mounts itself around the existing #repro-code <pre>, so no
+  // additional mount point is required in the recipe HTML.
   enableRunner({
     slug: 'cpython-137205',
     baselineSource: REPRO_CODE,

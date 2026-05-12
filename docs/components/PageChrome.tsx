@@ -1,8 +1,6 @@
 import { type CSSProperties, type ReactNode, useEffect } from 'react';
 import './page-chrome.css';
 
-/* ----------------------------- PageHero ----------------------------- */
-
 export function PageHero({
   eyebrow,
   title,
@@ -21,8 +19,6 @@ export function PageHero({
     </header>
   );
 }
-
-/* ----------------------------- Section ----------------------------- */
 
 /**
  * Slugify a heading string for use as an HTML id (and #anchor target).
@@ -68,8 +64,6 @@ export function Section({
   );
 }
 
-/* ----------------------------- KpiStrip ----------------------------- */
-
 type KpiAccent = 'teal' | 'violet' | 'coral';
 
 export function KpiStrip({
@@ -92,8 +86,6 @@ export function KpiStrip({
     </div>
   );
 }
-
-/* ----------------------------- CompareCards ----------------------------- */
 
 export function CompareCards({
   others,
@@ -119,8 +111,6 @@ export function CompareCards({
     </div>
   );
 }
-
-/* ----------------------------- LayerCards ----------------------------- */
 
 type LayerAccent = 'teal' | 'violet' | 'coral';
 
@@ -160,8 +150,6 @@ export function LayerCards({
     </div>
   );
 }
-
-/* ----------------------------- LayerMatrix ----------------------------- */
 
 /**
  * Architecture-page comparison strip. Each column is one of the three
@@ -220,8 +208,6 @@ export function LayerMatrix({
     </div>
   );
 }
-
-/* ----------------------------- LayerSection ----------------------------- */
 
 /**
  * Architecture-page deep-dive section for a single layer. Replaces the
@@ -303,8 +289,6 @@ export function LayerSection({
   );
 }
 
-/* ----------------------------- RouteCards ----------------------------- */
-
 /**
  * Persona-route grid for "what you came here to do" cards. Used on
  * the overview / guide-map / spec pages — distinct from `LayerCards`
@@ -364,8 +348,6 @@ export function RouteCards({
   );
 }
 
-/* ----------------------------- InlineCta ----------------------------- */
-
 /**
  * Short inline CTA designed to sit between two sections of the same
  * page — lighter weight than `NextCta` (which closes the page) and
@@ -396,8 +378,6 @@ export function InlineCta({
   );
 }
 
-/* ----------------------------- NumberedList ----------------------------- */
-
 export function NumberedList({
   items,
 }: {
@@ -418,8 +398,6 @@ export function NumberedList({
   );
 }
 
-/* ----------------------------- Callout ----------------------------- */
-
 export function Callout({ children }: { children: ReactNode }) {
   return (
     <blockquote className="v-callout">
@@ -427,8 +405,6 @@ export function Callout({ children }: { children: ReactNode }) {
     </blockquote>
   );
 }
-
-/* ----------------------------- NextCta ----------------------------- */
 
 export function NextCta({
   eyebrow,
@@ -470,8 +446,6 @@ export function NextCta({
   );
 }
 
-/* ----------------------------- BottomNote ----------------------------- */
-
 export function BottomNote({ text, href }: { text: string; href: string }) {
   return (
     <a className="v-bottom-note" href={href} target="_blank" rel="noreferrer">
@@ -479,8 +453,6 @@ export function BottomNote({ text, href }: { text: string; href: string }) {
     </a>
   );
 }
-
-/* ----------------------------- Page wrapper ----------------------------- */
 
 /**
  * Trigger rspress's right-side TOC (Outline) to re-scan headings on every

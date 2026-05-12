@@ -3,23 +3,6 @@ import './project-page.css';
 import projectsIndex from '../public/api/projects.json';
 import recipesIndex from '../public/api/recipes.json';
 
-/* ============================================================================
- * Project landing page.
- *
- * Mounted from each `docs/docs/{en,ja}/repro/<project>/index.mdx` to back the
- * `/repro/<project>/` URL — the natural truncation target when a visitor
- * trims `/repro/<project>/<issue>/` in the address bar.
- *
- * Reads the in-tree `docs/public/api/{recipes,projects}.json` (regenerated
- * by `docs/scripts/generate-recipes-index.ts` from the layer directories
- * + the `docs/data/{recipe-facets,projects}.json` overlays).
- *
- * v1 surface:
- *   - project hero (display name, tagline, description, homepage / GitHub
- *     links from the projects.json overlay, layer/recipe count chips)
- *   - issue list table with verdict layer badge + open / source links
- * ========================================================================== */
-
 interface RecipeEntry {
   slug: string;
   layer: 1 | 2 | 3;

@@ -42,10 +42,6 @@ const D5_DOC_URL_EN =
 const D5_DOC_URL_JA =
   'https://aletheia-works.github.io/vivarium/ja/guide/compare-branch-fix';
 
-/* ------------------------------------------------------------------------ */
-/* base64url (encode is sync; decode in Path A's panel)                     */
-/* ------------------------------------------------------------------------ */
-
 function base64UrlEncode(text: string): string {
   // Use TextEncoder + manual base64 to preserve UTF-8 semantics; Node's
   // Buffer is available but the package targets a portable ES surface.
@@ -60,10 +56,6 @@ function base64UrlEncode(text: string): string {
       : Buffer.from(bytes).toString('base64');
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-
-/* ------------------------------------------------------------------------ */
-/* Compare-URL builders                                                     */
-/* ------------------------------------------------------------------------ */
 
 interface PathAUrlInputs {
   pageUrl: string;
@@ -103,10 +95,6 @@ function deriveCompareBaseFromPageUrl(pageUrl: string): string {
     return 'https://aletheia-works.github.io/vivarium/repro/compare';
   }
 }
-
-/* ------------------------------------------------------------------------ */
-/* Instructions                                                             */
-/* ------------------------------------------------------------------------ */
 
 interface InstructionInputs {
   recipe: RecipeEntry;
@@ -151,10 +139,6 @@ function buildInstructions(inputs: InstructionInputs): string {
     `**Verdict semantics.** A working fix flips the verdict from \`reproduced\` to \`unreproduced\`. Pipeline spec: ${PIPELINE_DOC_URL}. Walkthrough: [English](${D5_DOC_URL_EN}) · [日本語](${D5_DOC_URL_JA}).`,
   ].join('\n');
 }
-
-/* ------------------------------------------------------------------------ */
-/* Tool                                                                     */
-/* ------------------------------------------------------------------------ */
 
 export async function verifyBranchFix(
   args: VerifyBranchFixArgs,

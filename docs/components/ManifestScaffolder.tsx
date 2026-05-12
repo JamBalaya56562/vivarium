@@ -2,20 +2,7 @@ import { useMemo, useState } from 'react';
 import validateManifestRaw from '../generated/manifest-validator.mjs';
 import './manifest-scaffolder.css';
 
-/* ============================================================================
- * Phase 6 M.1 — interactive .vivarium/manifest.toml scaffolder.
- *
- * Hand-rolled form per ADR-0026 §1 (JSON Schema → labels/help only,
- * fields are hand-coded). TOML emission per §3.
- *
- * Validation runs against the ajv-standalone-generated validator at
- * `docs/generated/manifest-validator.mjs`, which is built from
- * `docs/public/spec/manifest.schema.json` by `scripts/generate-validators.ts`.
- * The schema is the single source of truth; this component only converts
- * the form state into a candidate manifest object and translates ajv
- * errors back into the per-field UI map. See ADR-0034 for the migration
- * rationale.
- * ========================================================================== */
+// Validation uses the generated AJV validator from docs/public/spec/manifest.schema.json.
 
 type Lang = 'en' | 'ja';
 type LayerLiteral = 1 | 2 | 3;
@@ -201,8 +188,6 @@ function validate(state: FormState): FieldErrors {
   return errors;
 }
 
-/* ----------------------------- TOML emission ----------------------------- */
-
 function escapeTomlBasic(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
@@ -276,8 +261,6 @@ function buildToml(state: FormState): string {
 
   return `${lines.join('\n')}\n`;
 }
-
-/* --------------------------------- i18n ---------------------------------- */
 
 interface Strings {
   formEyebrow: string;
@@ -429,8 +412,6 @@ const STRINGS: Record<Lang, Strings> = {
     specLink: 'Manifest v1 仕様 → /vivarium/ja/spec/manifest-v1',
   },
 };
-
-/* ------------------------------ Components ------------------------------ */
 
 const INITIAL_STATE: FormState = {
   slug: '',

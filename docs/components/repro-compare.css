@@ -1,9 +1,3 @@
-/* Phase 6 R.3 — branch-fix vs original verdict comparison surface.
- * Design tokens are inherited from page-chrome.css (which redeclares the
- * vivarium-hero.css token set). This file only carries the comparison-page
- * specific shapes.
- */
-
 .v-rc {
   margin: 1.5rem 0 4rem;
   font-family:
@@ -24,8 +18,6 @@
   text-transform: uppercase;
   color: var(--vh-accent-teal);
 }
-
-/* ---------- Inputs row (slug + expected) ---------- */
 
 .v-rc__inputs {
   display: grid;
@@ -78,8 +70,6 @@
   font-size: 0.75rem;
   color: var(--vh-text-dim);
 }
-
-/* ---------- Drop zone ---------- */
 
 .v-rc__drop {
   margin-top: 0.5rem;
@@ -134,8 +124,6 @@
   font-family: "JetBrains Mono", monospace;
 }
 
-/* ---------- Action buttons ---------- */
-
 .v-rc__actions {
   display: flex;
   flex-wrap: wrap;
@@ -178,8 +166,6 @@
   background: transparent;
 }
 
-/* ---------- Errors strip ---------- */
-
 .v-rc__errors {
   margin: 1.5rem 0;
   padding: 1rem 1.25rem;
@@ -218,8 +204,6 @@
 .v-rc__error-path {
   color: var(--vh-text);
 }
-
-/* ---------- Paste fallback ---------- */
 
 .v-rc__paste {
   margin: 2rem 0;
@@ -269,8 +253,6 @@
   background: var(--vh-card-bg-hover);
   outline: none;
 }
-
-/* ---------- Verdict badge ---------- */
 
 .v-vbadge {
   display: inline-flex;
@@ -323,8 +305,6 @@
 .v-vbadge__symbol {
   font-weight: 700;
 }
-
-/* ---------- Comparison strip ---------- */
 
 .v-compare-strip {
   margin-top: 0.5rem;
@@ -388,8 +368,6 @@
     border-left: 1px solid var(--vh-hairline);
   }
 }
-
-/* ---------- Evidence panel ---------- */
 
 .v-evidence {
   display: flex;
@@ -530,8 +508,6 @@
 :root:not(.dark) .v-evidence__stream-body {
   background: rgba(4, 34, 28, 0.06);
 }
-
-/* ---------- Help / semantics blocks ---------- */
 
 .v-rc__help,
 .v-rc__semantics {

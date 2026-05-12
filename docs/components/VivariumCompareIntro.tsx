@@ -2,24 +2,11 @@ import { ClipboardPaste, Link2, Upload } from 'lucide-react';
 import type { ReactNode } from 'react';
 import './vivarium-compare-intro.css';
 
-/** Render a string with `backticks` becoming inline <code> spans.
- *  Markdown-lite — just enough for the card bodies. */
 function renderInlineCode(text: string): ReactNode {
-  return text.split('`').map((part, i) =>
-    // Odd indices are inside backticks → wrap in <code>.
-    i % 2 === 1 ? <code key={i}>{part}</code> : part,
-  );
+  return text
+    .split('`')
+    .map((part, i) => (i % 2 === 1 ? <code key={i}>{part}</code> : part));
 }
-
-/* ============================================================================
- * Phase 7 V′ — orientation strip for /repro/compare.
- *
- * Sits between PageHero and <ReproCompareApp>. Surfaces the three input
- * modes that ReproCompare supports so a fresh visitor knows up-front
- * whether they have what they need (a verdict bundle) and which way
- * to bring it. Detailed how-to (the four-step bundle generation guide)
- * lives at the bottom of <ReproCompareApp> as before.
- * ========================================================================== */
 
 type Lang = 'en' | 'ja';
 

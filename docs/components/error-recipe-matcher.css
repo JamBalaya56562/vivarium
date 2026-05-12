@@ -1,7 +1,3 @@
-/* Phase 6 S.2 — error → recipe matcher.
- * Reuses .v-rg__card and .v-rg__title family from recipe-gallery.css.
- */
-
 .v-erm {
   margin: 1.25rem 0 2.5rem;
   font-family:
@@ -92,8 +88,6 @@
   background: transparent;
 }
 
-/* ---------- Tokens chip strip ---------- */
-
 .v-erm__tokens {
   display: flex;
   flex-wrap: wrap;
@@ -160,8 +154,6 @@
   text-transform: uppercase;
 }
 
-/* ---------- Results ---------- */
-
 .v-erm__results {
   margin-top: 1.5rem;
 }
@@ -227,8 +219,6 @@
   color: var(--vh-text-muted);
   margin-right: 0.15rem;
 }
-
-/* ---------- Empty / hint states ---------- */
 
 .v-erm__empty {
   margin-top: 1.5rem;

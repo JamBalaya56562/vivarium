@@ -5,8 +5,6 @@
  * dark and light theme tokens are inherited automatically.
  */
 
-/* ---------- Shared section primitives ---------- */
-
 .v-land-numbers,
 .v-land-layers,
 .v-land-personas,
@@ -64,8 +62,6 @@
   color: var(--vh-text-muted);
 }
 
-/* ---------- Numbers strip ---------- */
-
 .v-land-numbers {
   border-top: 1px solid var(--vh-hairline);
   border-bottom: 1px solid var(--vh-hairline);
@@ -118,8 +114,6 @@
   text-transform: uppercase;
   color: var(--vh-text-dim);
 }
-
-/* ---------- Three-layer strip ---------- */
 
 .v-land-layers {
   border-bottom: 1px solid var(--vh-hairline);
@@ -229,8 +223,6 @@
   word-break: break-word;
 }
 
-/* ---------- Persona grid ---------- */
-
 .v-land-personas {
   border-bottom: 1px solid var(--vh-hairline);
 }
@@ -338,8 +330,6 @@
 .v-land-persona:hover .v-land-persona__arrow {
   transform: translateX(3px);
 }
-
-/* ---------- Secondary CTA band ---------- */
 
 .v-land-cta {
   border-bottom: 1px solid var(--vh-hairline);

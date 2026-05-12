@@ -21,7 +21,7 @@ import { ErrorRecipeMatcher } from '../../../components/ErrorRecipeMatcher';
   >
     <h3>1. Robust to synonyms</h3>
     <p>
-      Paste "<code>dtype mismatch</code>" and recipes mentioning "datatype", "dtypes", or "numpy.dtype" surface as candidates too. Phase 7 A5's synonym table normalises pairs like <code>dtype⇄datatype</code>, <code>regex⇄regexp</code>, and <code>fork⇄spawn</code> to a single key — you don't have to guess the project's preferred spelling.
+      Paste "<code>dtype mismatch</code>" and recipes mentioning "datatype", "dtypes", or "numpy.dtype" surface as candidates too. The matcher normalises pairs like <code>dtype⇄datatype</code>, <code>regex⇄regexp</code>, and <code>fork⇄spawn</code> to a single key — you don't have to guess the project's preferred spelling.
     </p>
 
     <h3>2. Robust to typos (fuzzy match)</h3>

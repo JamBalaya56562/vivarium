@@ -159,10 +159,6 @@ interface RuntimeState {
   busy: boolean;
 }
 
-/* ------------------------------------------------------------------------ */
-/* Hash + base64url helpers                                                 */
-/* ------------------------------------------------------------------------ */
-
 async function sha256Hex(text: string): Promise<string> {
   const enc = new TextEncoder();
   const digest = await crypto.subtle.digest("SHA-256", enc.encode(text));
@@ -184,10 +180,6 @@ function base64UrlDecode(input: string): string {
   return new TextDecoder().decode(bytes);
 }
 
-/* ------------------------------------------------------------------------ */
-/* Verdict synthesis                                                        */
-/* ------------------------------------------------------------------------ */
-
 async function captureToVerdict(
   slug: string,
   source: string,
@@ -205,10 +197,6 @@ async function captureToVerdict(
     stderr_tail: "",
   };
 }
-
-/* ------------------------------------------------------------------------ */
-/* Panel                                                                    */
-/* ------------------------------------------------------------------------ */
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -437,10 +425,6 @@ function buildPanel(
     resetBtn,
   };
 }
-
-/* ------------------------------------------------------------------------ */
-/* enablePathA                                                              */
-/* ------------------------------------------------------------------------ */
 
 export async function enablePathA(opts: PathAOptions): Promise<void> {
   const mountSelector = opts.mountSelector ?? "#path-a-mount";

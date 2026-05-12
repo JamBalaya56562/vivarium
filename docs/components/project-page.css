@@ -125,8 +125,6 @@ html.dark .v-pp__count-chip {
   color: var(--vh-accent-violet);
 }
 
-/* ------------------------- Recipes table ------------------------- */
-
 .v-pp__section-heading {
   margin: 1.6rem 0 0.6rem;
   font-family: "Space Grotesk", "Inter", sans-serif;

@@ -1,11 +1,3 @@
-/* Phase 7 V′ — orientation strip for /repro/compare.
- *
- * Inherits --vh-* tokens from vivarium-hero.css (loaded by VivariumHero
- * on the landing page) AND from page-chrome.css (loaded by every doc
- * page via PageChrome). The compare page goes through PageChrome, so
- * the tokens are present.
- */
-
 .v-compare-intro {
   width: 100%;
   margin: 1rem 0 2.5rem;

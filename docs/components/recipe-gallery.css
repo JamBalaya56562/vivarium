@@ -1,7 +1,3 @@
-/* Phase 6 S.1 — recipe gallery faceted search.
- * Tokens inherit from page-chrome.css.
- */
-
 .v-rg {
   margin: 1.25rem 0 2.5rem;
   font-family:
@@ -18,8 +14,6 @@
   text-transform: uppercase;
   color: var(--vh-accent-teal);
 }
-
-/* ---------- Controls (search + facet groups) ---------- */
 
 .v-rg__controls {
   display: flex;
@@ -117,8 +111,6 @@ html.dark .v-rg__search-input {
   background: rgba(255, 113, 108, 0.12);
 }
 
-/* ---------- Result bar ---------- */
-
 .v-rg__resultbar {
   display: flex;
   align-items: center;
@@ -157,8 +149,6 @@ html.dark .v-rg__search-input {
   background: var(--vh-card-bg);
   border-radius: 8px;
 }
-
-/* ---------- Cards grid ---------- */
 
 .v-rg__cards {
   display: grid;

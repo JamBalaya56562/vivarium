@@ -212,7 +212,7 @@ function registerServiceWorker() {
     });
 }
 
-// ── Description drawer (Phase 8 V″, ADR-0035) ──────────────────────────
+// Description drawer shared by recipe pages.
 //
 // Recipe pages opt in by inlining:
 //   1. A `<template id="bug-context">` whose content is the drawer body

@@ -39,8 +39,6 @@ html.dark {
   --vh-card-bg-hover: rgba(4, 34, 28, 0.04);
 }
 
-/* ---------- Page wrapper ---------- */
-
 .v-page {
   max-width: 880px;
   margin: 0 auto;
@@ -55,8 +53,6 @@ html.dark {
     padding: 0 2rem;
   }
 }
-
-/* ---------- Page hero ---------- */
 
 .v-page-hero {
   position: relative;
@@ -120,8 +116,6 @@ html.dark {
   background: var(--vh-hairline);
   width: 100%;
 }
-
-/* ---------- Section ---------- */
 
 .v-section {
   margin-bottom: 3rem;
@@ -321,8 +315,6 @@ html.dark {
   margin: 2.5rem 0;
 }
 
-/* ---------- KPI strip ---------- */
-
 .v-kpi-strip {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -365,8 +357,6 @@ html.dark {
   color: var(--vh-text-dim);
   line-height: 1.4;
 }
-
-/* ---------- Compare cards ---------- */
 
 .v-compare {
   margin-top: 2rem;
@@ -449,8 +439,6 @@ html.dark {
   font-size: 0.8rem;
   color: var(--vh-accent-teal);
 }
-
-/* ---------- Layer cards ---------- */
 
 .v-layers {
   display: grid;
@@ -566,8 +554,6 @@ html.dark {
   color: var(--vh-text-dim);
 }
 
-/* ---------- Layer matrix (architecture page comparison strip) ---------- */
-
 .v-layer-matrix {
   margin-top: 2rem;
   border-top: 1px solid var(--vh-hairline);
@@ -649,8 +635,6 @@ html.dark {
     display: none;
   }
 }
-
-/* ---------- Layer section (architecture page deep-dive) ---------- */
 
 .v-layer-section {
   position: relative;
@@ -830,8 +814,6 @@ html.dark {
   border-bottom-color: var(--vh-accent-coral);
 }
 
-/* ---------- Route cards (persona-route grid) ---------- */
-
 .v-routes {
   display: grid;
   grid-template-columns: 1fr;
@@ -932,8 +914,6 @@ html.dark {
   transform: translateX(4px);
 }
 
-/* ---------- Inline CTA (between sections of one page) ---------- */
-
 .v-inline-cta {
   display: flex;
   flex-wrap: wrap;
@@ -976,8 +956,6 @@ html.dark {
 .v-inline-cta__link:hover {
   border-bottom-color: var(--vh-accent-teal);
 }
-
-/* ---------- Numbered list ---------- */
 
 .v-numlist {
   display: flex;
@@ -1029,8 +1007,6 @@ html.dark {
   font-size: 1rem;
 }
 
-/* ---------- Callout (body-size aside) ---------- */
-
 .v-callout {
   margin: 2rem 0 0;
   padding: 0.75rem 0 0.75rem 2rem;
@@ -1044,8 +1020,6 @@ html.dark {
 .v-callout p {
   margin: 0;
 }
-
-/* ---------- Next-page CTA band ---------- */
 
 .v-next-cta {
   width: 100%;
@@ -1151,8 +1125,6 @@ html.dark {
   background: var(--vh-card-bg-hover);
 }
 
-/* ---------- Bottom note ---------- */
-
 .v-bottom-note {
   display: block;
   max-width: 880px;
@@ -1171,8 +1143,6 @@ html.dark {
 .v-bottom-note:hover {
   color: var(--vh-accent-teal-bright);
 }
-
-/* ---------- Glossary (definition list) ---------- */
 /*
  * Used by guide/glossary pages. <dl><dt><strong>Term</strong></dt>
  * <dd>Definition…</dd></dl>. Definitions are typographically subordinate

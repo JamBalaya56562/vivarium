@@ -69,9 +69,8 @@ declare global {
  *   on the pill (loading / running messages). For `reproduced` /
  *   `unreproduced` only the state literal renders on the pill; the full
  *   message is stashed on `__VIVARIUM_VERDICT_MESSAGE__` for tooling
- *   (Path A, runner status line, etc.). Phase 8 V″ reduces the verdict
- *   pill to its minimum on-screen footprint — the output panel speaks
- *   for itself.
+ *   (Path A, runner status line, etc.). The pill stays short because
+ *   the output panel carries the detailed explanation.
  */
 export function setVerdict(state: VerdictState, text: string): void {
   const el = document.getElementById('verdict');
@@ -81,8 +80,7 @@ export function setVerdict(state: VerdictState, text: string): void {
   el.classList.remove('reproduced', 'unreproduced', 'pending');
   el.classList.add(state);
   el.dataset['verdict'] = state;
-  // Phase 8 V″ — render short uppercase literals on the pill so the
-  // header row never wraps to two lines. Long pending messages
+  // Keep the pill short so the header row never wraps to two lines. Long pending messages
   // ("Loading Pyodide runtime and sqlite3…") still go to
   // `__VIVARIUM_VERDICT_MESSAGE__` for tooling that wants the full
   // string. We disambiguate "loading" vs "running" by inspecting the

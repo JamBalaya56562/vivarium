@@ -124,8 +124,6 @@ html.dark body::after {
   z-index: -1;
 }
 
-/* ---------- Top nav (mirrors rspress's <header class="rp-nav">) ---------- */
-
 .vh-topnav {
   position: sticky;
   top: 0;
@@ -246,7 +244,7 @@ main {
   }
 }
 
-/* ---------- Output section + progress bar (loading UX) ----------
+/*
  *
  * The progress bar and the `<pre id="output">` share a grid cell so
  * swapping between them doesn't shift the rest of the page. Min-height
@@ -342,7 +340,7 @@ main {
   color: var(--vh-text-dim);
 }
 
-/* ---------- Header ----------
+/*
  *
  * Originally this targeted the bare `<header>` inside `<main>`, but
  * `chrome.js` now also injects a `.vh-topnav` `<header>` at the top
@@ -411,8 +409,6 @@ h2 {
   max-width: 640px;
 }
 
-/* ---------- Body sections ---------- */
-
 section {
   margin-bottom: 1.75rem;
 }
@@ -438,8 +434,6 @@ code {
   border: 1px solid var(--vh-hairline);
 }
 
-/* ---------- Reproduction script (code block) ---------- */
-
 pre {
   margin: 0;
   padding: 1.25rem 1.5rem;
@@ -461,8 +455,6 @@ pre code {
   font-size: inherit;
   color: inherit;
 }
-
-/* ---------- Verdict pill (the money element) ---------- */
 
 .verdict {
   display: inline-flex;
@@ -521,14 +513,10 @@ pre code {
   }
 }
 
-/* ---------- Output / terminal block ---------- */
-
 #output {
   background: var(--vh-terminal-bg);
   border: 1px solid var(--vh-terminal-border);
 }
-
-/* ---------- Meta line under the verdict ---------- */
 
 .meta {
   margin: 0.85rem 0 0;
@@ -537,8 +525,6 @@ pre code {
   font-family: "JetBrains Mono", monospace;
   letter-spacing: 0.02em;
 }
-
-/* ---------- Footer ---------- */
 
 main > footer {
   margin-top: 1.75rem;
@@ -557,8 +543,6 @@ main > footer .meta {
 main > footer code {
   font-size: 0.85em;
 }
-
-/* ---------- Site-wide footer (matches rspress's themeConfig footer) ---------- */
 
 .vh-footer {
   margin-top: 4rem;
@@ -586,7 +570,7 @@ main > footer code {
   border-bottom-color: var(--vh-accent-teal);
 }
 
-/* ---------- Path A — Layer 1 source-substitution branch-fix panel ----------
+/*
  *
  * Mounted by `_shared/path_a.ts` into a `<section id="path-a-mount">` that
  * recipes opt into. Shares the same teal/violet token language as the rest
@@ -827,8 +811,8 @@ main > footer code {
 }
 
 /* ============================================================================
- * Phase 8 V″ — desktop two-pane split + right-overlay description drawer.
- * ADR-0035. Activates at >=1024px; below that breakpoint the recipe page
+ * Desktop two-pane split + right-overlay description drawer.
+ * Activates at >=1024px; below that breakpoint the recipe page
  * keeps its existing single-column stack (no class needed for the
  * fallback — the existing rules above already paint that path).
  *
@@ -854,8 +838,6 @@ main > footer code {
     max-width: 1280px;
   }
 }
-
-/* ---------- Header strip with right-aligned verdict aside ---------- */
 
 .vh-main__header {
   margin-bottom: 1.25rem;
@@ -896,8 +878,6 @@ main > footer code {
   }
 }
 
-/* ---------- Inline-icon ghost / primary chips for the action row ---------- */
-
 .vh-chip {
   display: inline-flex;
   align-items: center;
@@ -937,8 +917,6 @@ main > footer code {
   flex-shrink: 0;
 }
 
-/* ---------- Two-column work surface ---------- */
-
 .vh-main__cols {
   display: grid;
   grid-template-columns: 1fr;
@@ -963,8 +941,6 @@ main > footer code {
 .vh-main__col h2 {
   margin-bottom: 0.85rem;
 }
-
-/* ---------- Editable script + Run button (the runner) ---------- */
 
 .vh-runner {
   display: flex;
@@ -1109,8 +1085,6 @@ main > footer code {
 .vh-runner__status--error {
   color: var(--vh-unreproduced-fg);
 }
-
-/* ---------- Description drawer (right slide-in overlay) ---------- */
 
 .vh-drawer-wash {
   position: fixed;
@@ -1296,10 +1270,10 @@ body.vh-drawer-open {
 }
 
 /* ============================================================================
- * Phase 8 V″ — second-pass header & viewport-fit refinements (2026-05-09).
+ * Header and viewport-fit refinements.
  *
- * The earlier draft (above this block) gave the right structural shape
- * but two complaints surfaced after the maintainer stepped through it:
+ * The base split-pane layout needs these constraints to avoid two common
+ * failures:
  *   1. The header took 3 rows (kicker + title + action chips) plus a
  *      verdict-aside column; on a laptop screen this pushed the script
  *      and output below the fold.
@@ -1388,7 +1362,7 @@ body.vh-drawer-open {
     display: none;
   }
 
-  /* ----- Viewport-fit columns (independent scroll containers) -----
+  /*
    *
    * Approach: turn the body into a flex column so the topnav + main +
    * site-footer chain occupies *exactly* one viewport. Inside `main`,
@@ -1427,8 +1401,8 @@ body.vh-drawer-open {
     min-height: 0;
   }
 
-  /* Phase 8 V″ doesn't run inside path-a, but if the recipe HTML places
-   * `<section id="path-a-mount">` between cols and footer (php-12167),
+  /* If recipe HTML places `<section id="path-a-mount">` between cols and
+   * footer (php-12167),
    * keep it shrink-zero so it doesn't squash cols. */
   body:has(main.vh-main) > main.vh-main > section[id="path-a-mount"] {
     flex-shrink: 0;
@@ -1616,7 +1590,7 @@ body.vh-drawer-open {
   }
 }
 
-/* ---------- Variant head (Phase 8 — two-variant fix-candidate verification) ----------
+/*
  * Used by recipes that run the same reproduction script against two
  * package builds (baseline vs fix-candidate). Each variant has a small
  * heading block — title + spec — placed OUTSIDE the `<pre>` so the
@@ -1765,4 +1739,3 @@ body.vh-drawer-open {
   background: var(--vh-terminal-bg);
   border: 1px solid var(--vh-terminal-border);
 }
-

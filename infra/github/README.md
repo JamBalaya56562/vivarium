@@ -7,9 +7,9 @@ OpenTofu configuration that manages this repository's settings declaratively.
 | Resource | File |
 |---|---|
 | Repository | `main.tf` |
-| Branch protection | `branch_protection.tf` |
-| Issue/PR labels | `labels.tf` |
-| Phase milestones | `milestones.tf` |
+| Branch protection | `main.tf` |
+| Issue/PR labels | `main.tf` |
+| Phase milestones | `main.tf` |
 
 ## CI workflows
 
@@ -75,10 +75,7 @@ infra/github/
 ├── versions.tf                 # OpenTofu and provider versions
 ├── providers.tf                # GitHub provider config
 ├── variables.tf                # Input variables
-├── main.tf                     # Repository resource
-├── branch_protection.tf        # Branch protection rules
-├── labels.tf                   # Issue/PR labels
-├── milestones.tf               # Phase milestones (Phase 0–6)
+├── main.tf                     # Repository settings, branch protection, labels, milestones
 ├── terraform.tfvars.example    # Template for terraform.tfvars
 ├── .gitignore                  # Excludes state and secrets
 ├── .terraform.lock.hcl         # Provider version lock (committed)

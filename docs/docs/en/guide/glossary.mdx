@@ -76,9 +76,9 @@ import {
       <dd>
         The supporting data behind a verdict — captured stdout / stderr,
         exit code, duration. Layer 1 publishes evidence inline on the
-        page; Layer 2 / 3 ship it inside <code>verdict.json</code>. Added
-        in Contract v1 rev 2 (Phase 6 R.1) so the comparison page can
-        show <em>why</em>, not just <em>whether</em>.
+        page; Layer 2 / 3 ship it inside <code>verdict.json</code>. Contract
+        v1 rev 2 makes the comparison page show <em>why</em>, not just
+        <em>whether</em>.
       </dd>
     </dl>
   </Section>
@@ -95,7 +95,7 @@ import {
         <code>verdict.json</code> file shape. The contract a Vivarium page
         signs by carrying
         <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>.
-        Locked at v1 since Phase 5; see
+        Stable as v1; see
         <a href="/spec/contract-v1">Contract v1</a>.
       </dd>
 
@@ -103,8 +103,8 @@ import {
       <dd>
         The publication surface — a TOML file at
         <code>.vivarium/manifest.toml</code> that an external repo ships to
-        declare its own Vivarium-runnable reproduction. v1 stable since
-        Phase 5; see <a href="/spec/manifest-v1">Manifest v1</a>. A manifest
+        declare its own Vivarium-runnable reproduction. v1 is stable; see
+        <a href="/spec/manifest-v1">Manifest v1</a>. A manifest
         is what an external repo writes; a recipe (above) is what
         <em>this</em> repo hosts.
       </dd>
@@ -141,8 +141,8 @@ import {
         The motivating workflow: a contributor (human or AI agent) produces
         a candidate fix, runs it against the recipe, and sees the comparison
         before opening a PR. "Did my AI's draft actually solve the bug, or
-        does it just look right?" Phase 7 sub-stream B3 wires the existing
-        branch-fix pipeline + comparison page + MCP tools into one walkthrough.
+        does it just look right?" The walkthrough wires the branch-fix
+        pipeline + comparison page + MCP tools into one flow.
       </dd>
 
       <dt id="consumer-workflow"><strong>Consumer workflow</strong></dt>
@@ -150,7 +150,7 @@ import {
         The reusable GitHub Actions workflow at
         <a href="/spec/consumer-workflow">spec/consumer-workflow</a>
         that an external repo invokes from its CI to capture a
-        verdict for its own manifest's reproduction. Phase 5 sub-stream D.
+        verdict for its own manifest's reproduction.
       </dd>
     </dl>
   </Section>

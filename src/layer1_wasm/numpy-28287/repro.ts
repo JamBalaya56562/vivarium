@@ -187,7 +187,7 @@ try {
   };
   setResult(envelope);
 
-  // Phase 8 V″ — wire the editable script + Run button.
+  // Wire the editable script + Run button.
   enableRunner({
     slug: 'numpy-28287',
     baselineSource: REPRO_CODE,

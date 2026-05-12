@@ -198,7 +198,7 @@ try {
   };
   setResult(envelope);
 
-  // Phase 8 V″ — wire the editable script + Run button.
+  // Wire the editable script + Run button.
   enableRunner({
     slug: 'ruby-21709',
     baselineSource: REPRO_CODE,

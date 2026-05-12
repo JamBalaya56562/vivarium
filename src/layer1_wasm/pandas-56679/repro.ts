@@ -174,7 +174,7 @@ try {
   };
   setResult(envelope);
 
-  // Phase 8 V″ — wire the editable script + Run button.
+  // Wire the editable script + Run button.
   enableRunner({
     slug: 'pandas-56679',
     baselineSource: REPRO_CODE,
