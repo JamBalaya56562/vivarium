@@ -79,11 +79,11 @@ The companion `repro.py` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a Pyodide quirk.
 PEP 723 inline metadata pins **`pandas==2.3.3`** — the exact
-version Pyodide v0.29.3 bundles — and the `.mise.toml` at the repo
+version Pyodide v0.29.3 bundles — and the `mise.toml` at the repo
 root pins Python to 3.13:
 
 ```bash
-# One-time per machine / .mise.toml change.
+# One-time per machine / mise.toml change.
 mise install
 
 # Reproduces the bug; exits 0 on `reproduced`. uv reads the inline

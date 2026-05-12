@@ -84,7 +84,7 @@ or the WASI shim could not load.
 ## Native verification — same reproduction under a real Rust
 
 The `Cargo.toml` and `src/main.rs` work as a normal Rust binary. The
-`.mise.toml` at the repo root pins Rust to a stable toolchain
+`mise.toml` at the repo root pins Rust to a stable toolchain
 matching CI:
 
 ```bash

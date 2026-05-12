@@ -62,6 +62,7 @@ on:
       - 'docs/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
+      - 'mise.toml'
   pull_request:
     paths:
       - 'src/layer1_wasm/**'
@@ -71,6 +72,7 @@ on:
       - 'docs/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
+      - 'mise.toml'
   schedule:
     # Mondays at 00:00 UTC.
     - cron: '0 0 * * 1'
@@ -104,14 +106,16 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup mise (bun)
-        # Installs the project-wide tools listed in `[tools]` (bun,
-        # opentofu, uv). Layer 1 Rust crates compiled to wasm32-wasip1
-        # are handled by the `repro:build:rust` task's `use = [...]`
-        # — mise auto-installs the pinned rust toolchain on first run
-        # so each recipe can choose its own version.
-        uses: ./.github/actions/setup-mise
+        # Installs bun through mise. Layer 1 Rust crates compiled to
+        # wasm32-wasip1 are handled by the `repro:build:rust` task's
+        # `use = [...]` — mise auto-installs the pinned rust toolchain
+        # on first run so each recipe can choose its own version.
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          tools: bun
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
 
       - name: Install ajv-cli for verdict schema validation
         # Single-source clause 4 of the contract v1 conformance check
@@ -125,7 +129,7 @@ jobs:
         # the CLI's `-c ajv-formats` plugin loader resolves both as
         # siblings under the same tree — without depending on bun's
         # global bin being on PATH (`oven-sh/setup-bun` adds it,
-        # `setup-mise`'s bun does not), and without leaking ajv into
+        # mise-installed bun does not), and without leaking ajv into
         # the repo's tracked package.jsons.
         #
         # The same ajv install is also reused below for the Phase 5

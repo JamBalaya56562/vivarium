@@ -6,12 +6,10 @@ name: deploy-docs
 # Prerequisites (one-time setup):
 # - Repo Settings → Pages → Source: "GitHub Actions".
 #
-# Tooling: multi-tool job (bun + rust) — uses the local setup-mise
-# composite action because rust is needed for `wasm32-wasip1` builds
-# alongside bun for the rspress site / Layer 1 TS, and mise reads
-# both pins from `mise.toml` so versions stay in lockstep with local
-# development. Single-tool workflows (publish-mcp,
-# branch-fix-verdict) use `oven-sh/setup-bun` directly instead.
+# Tooling: multi-tool job (bun + rust) — uses the official
+# `jdx/mise-action` directly so CI reads the same `mise.toml` as local
+# development. Single-tool workflows (publish-mcp, branch-fix-verdict)
+# use `oven-sh/setup-bun` directly instead.
 #
 # Layout:
 # - `docs/` holds the rspress site (config, lockfile, markdown content).
@@ -37,7 +35,7 @@ on:
       - 'docs/**'
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
-      - '.mise.toml'
+      - 'mise.toml'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
@@ -76,8 +74,8 @@ jobs:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
       - name: Setup mise (bun, uv, jq)
-        # Installs the project-wide tools listed in `[tools]` (bun,
-        # opentofu, uv, jq). Per-task language toolchains
+        # Installs the tools needed before the first `mise run` (bun,
+        # uv, jq). Per-task language toolchains
         # (`rust@1.84.0` for the wasm32-wasip1 build, etc.) auto-install
         # on first `mise run` via the task's `use = [...]` declaration in
         # mise.toml — keeping per-recipe version flexibility. `uv` and
@@ -86,9 +84,12 @@ jobs:
         # depends on per ADR-0040: wheels are built fresh from each
         # `src/layer1_wasm/<slug>/wheels/source.json` rather than
         # vendored.
-        uses: ./.github/actions/setup-mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
-          tools: bun uv jq
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun uv jq
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
@@ -103,7 +104,7 @@ jobs:
         # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
         # ajv-cli + ajv-formats co-resolve without depending on bun's
         # global bin being on PATH (`oven-sh/setup-bun` adds it,
-        # `setup-mise`'s bun does not), and without leaking ajv into
+        # mise-installed bun does not), and without leaking ajv into
         # any tracked package.json.
         run: |
           cd "$RUNNER_TEMP"

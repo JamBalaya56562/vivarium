@@ -3,7 +3,7 @@
 # Mirrors the script that runs in `repro.ts` (under Ruby.wasm) so a
 # contributor can re-verify the bug against a real Ruby interpreter:
 #
-#   mise install                     # one-time, picks up .mise.toml
+#   mise install                     # one-time, picks up mise.toml
 #   mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
 #
 # Prints `pass` if the bug REPRODUCES (Regexp interpolation rejects
