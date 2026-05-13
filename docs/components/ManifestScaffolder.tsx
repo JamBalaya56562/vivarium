@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import validateManifestRaw from '../generated/manifest-validator.mjs';
 import './manifest-scaffolder.css';
 
-// Validation uses the generated AJV validator from docs/public/spec/manifest.schema.json.
+// Validation uses the generated AJV validator from docs/site/public/spec/manifest.schema.json.
 
 type Lang = 'en' | 'ja';
 type LayerLiteral = 1 | 2 | 3;

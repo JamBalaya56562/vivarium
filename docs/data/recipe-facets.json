@@ -1,5 +1,5 @@
 {
-  "$comment": "Per-recipe facet overlay for the gallery. Per ADR-0024 §1: hand-curated, reviewed in PR diff, scales to ~50 rows. New recipe → add a row here AND in docs/docs/{en,ja}/repro/index.mdx's table fallback.",
+  "$comment": "Per-recipe facet overlay for the gallery. Per ADR-0024 §1: hand-curated, reviewed in PR diff, scales to ~50 rows. New recipe → add a row here AND in docs/site/{en,ja}/repro/index.mdx's table fallback.",
   "facets": {
     "astroid-2993": {
       "language": "python",

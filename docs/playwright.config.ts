@@ -17,9 +17,9 @@
 //
 // Preview mode (vs dev mode) trade-off: preview serves the static
 // build output (`doc_build/`), which mirrors what GitHub Pages serves
-// in production. Dev mode goes through the rspress middleware in
-// rspress.config.ts §builderConfig.server.setup, which is dev-only;
-// the middleware is unit-tested separately under
+// in production. Dev mode goes through setupReproDevMiddleware from
+// docs/scripts/repro-dev-middleware.ts, which is dev-only; the
+// middleware is unit-tested separately under
 // `scripts/__tests__/resolveReproFile.test.ts` so the E2E suite can
 // stay focused on the production-shape surface.
 

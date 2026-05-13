@@ -6,12 +6,12 @@
 #        `.github/workflows/rumdl-autofix.yml` (heals fixable diagnostics).
 
 [global]
-# Scope to pure markdown only — MDX files (`docs/docs/**/*.mdx`) embed
+# Scope to pure markdown only — MDX files (`docs/site/**/*.mdx`) embed
 # JSX components (Page, Section, Callout, etc.) and would trigger
 # MD033 (inline-html) for every component invocation. Biome already
 # covers MDX as a JSX dialect.
 include = [
-  "docs/docs/**/*.md",
+  "docs/site/**/*.md",
   "AGENTS.md",
   "CLAUDE.md",
   "README.md",
