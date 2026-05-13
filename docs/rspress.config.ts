@@ -10,6 +10,9 @@ import { defineConfig } from '@rspress/core';
 // or moved to a custom domain, update `base` accordingly.
 
 const REPO_ROOT = path.join(__dirname, '..');
+const DOC_ROOT = path.join(__dirname, 'docs');
+const PUBLIC_ASSETS_ROOT = path.join(__dirname, 'public');
+const SITE_BASE = '/vivarium/';
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
   path.join(REPO_ROOT, 'src', 'layer2_docker'),
@@ -95,8 +98,8 @@ function joinDisk(segments: string[], trailingFile: string): string {
 }
 
 export default defineConfig({
-  root: path.join(__dirname, 'docs'),
-  base: '/vivarium/',
+  root: DOC_ROOT,
+  base: SITE_BASE,
   title: 'Vivarium',
   description:
     'Universal bug reproduction — any language, any environment, any scale.',
@@ -125,6 +128,41 @@ export default defineConfig({
     },
   },
   head: [
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '32x32',
+        href: `${SITE_BASE}favicon-32x32.png`,
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '16x16',
+        href: `${SITE_BASE}favicon-16x16.png`,
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '192x192',
+        href: `${SITE_BASE}icon-192.png`,
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: `${SITE_BASE}apple-touch-icon.png`,
+      },
+    ],
     [
       'link',
       {
@@ -212,6 +250,15 @@ export default defineConfig({
   // Ruby.wasm / php-wasm runtime can actually execute.
   builderConfig: {
     server: {
+      publicDir: [
+        {
+          name: path.join(DOC_ROOT, 'public'),
+        },
+        {
+          name: PUBLIC_ASSETS_ROOT,
+          watch: true,
+        },
+      ],
       setup({ server }) {
         // Dev-only — preview/build don't enter this branch (rsbuild calls
         // setup() in both modes, but in production `doc_build/repro/` is
