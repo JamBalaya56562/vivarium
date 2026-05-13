@@ -1,6 +1,6 @@
 // Docs-site smoke suite.
 //
-// For each tracked page under `docs/docs/{en,ja}/`, asserts:
+// For each tracked page under `docs/site/{en,ja}/`, asserts:
 //   1. HTTP 200 — the page actually loads from the rspress preview
 //      server without a 404 or 500.
 //   2. Non-empty <title> — rspress emits the frontmatter title (or
@@ -27,7 +27,7 @@
 //   page shape on every engine.
 //
 // The page list is enumerated from disk (`tests/_helpers/pages.ts`),
-// so new pages added to `docs/docs/{en,ja}/` automatically join the
+// so new pages added to `docs/site/{en,ja}/` automatically join the
 // smoke suite without a test edit. This is the "silent breakage
 // safety net" the user asked for: any future PR that accidentally
 // breaks page X's render gets caught here even if the PR's own

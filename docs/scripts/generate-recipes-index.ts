@@ -2,7 +2,7 @@
 //
 // Walks vivarium's recipe directories under src/layer1_wasm,
 // src/layer2_docker, and src/layer3_thirdway (each holding kebab-case
-// recipe sub-directories) and emits docs/public/api/recipes.json — the
+// recipe sub-directories) and emits docs/site/public/api/recipes.json — the
 // catalogue index consumed by the Vivarium MCP server (ADR-0019, private
 // memo) and any other programmatic tool that wants to list, filter, or
 // look up reproductions.
@@ -363,7 +363,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const outDir = join(__dirname, '..', 'public', 'api');
+  const outDir = join(__dirname, '..', 'site', 'public', 'api');
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, 'recipes.json');
   await writeFile(outPath, `${JSON.stringify(out, null, 2)}\n`, 'utf-8');

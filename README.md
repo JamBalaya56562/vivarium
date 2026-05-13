@@ -45,7 +45,7 @@ Programmatic access:
 
 - **[`@aletheia-works/vivarium-mcp`](packages/mcp-server/)** — Model Context Protocol server exposing the catalogue + verdict-snapshot reads + branch-fix / fix-candidate scaffolding to AI agent clients (Claude Code, Cline, Cursor, Continue, …). Dual-published to JSR (canonical) and npm (fallback).
 
-The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`. The rspress configuration and lockfile live in `docs/`; the markdown content lives in `docs/docs/`.
+The docs site is built with [rspress](https://rspress.rs) and deployed to GitHub Pages from [`docs/`](docs/) on every push to `main`. The rspress configuration and lockfile live in `docs/`; the markdown content lives in `docs/site/`.
 
 ## Getting Started
 

@@ -37,7 +37,7 @@ on.execute("PRAGMA foreign_keys").fetchone()[0]   # => 1
   `sqlite3` Pyodide package), which still exhibits the behaviour.
 - Demonstrates that Vivarium handles standard-library bugs (not just
   numerical-library bugs), and adds the **sqlite** vertical that
-  [`docs/roadmap.md`](../../docs/docs/roadmap.md) lists as a
+  [`docs/site/en/roadmap.mdx`](../../docs/site/en/roadmap.mdx) lists as a
   Phase 1 deliverable.
 
 ## A note on "SQLite-WASM"

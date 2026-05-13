@@ -93,5 +93,5 @@
   - changed-files:
       - any-glob-to-all-files:
           - "**/*.md"
-          - "docs/docs/**"
+          - "docs/site/**"
           - "LICENSE"
