@@ -6,7 +6,7 @@
 > guarantees the recipe and the registered image; the runtime
 > happens on the visitor's machine.
 >
-> See [Phase 3 — Layer 2: Docker](../../docs/docs/roadmap.md#phase-3--layer-2-docker)
+> See [Phase 3 — Layer 2: Docker](../../docs/site/en/roadmap.mdx#three-execution-layers)
 > for the visitor-facing description and the design rationale.
 
 ---
@@ -63,8 +63,8 @@ Layer 2. Visitors pull from GHCR directly.
 ## Verdict semantics
 
 The verdict snapshot file shape is defined by
-[Vivarium Contract v1](../../docs/docs/spec/contract-v1.md); its JSON
-Schema lives at `docs/public/spec/verdict.schema.json` and the
+[Vivarium Contract v1](../../docs/site/en/spec/contract-v1.md); its JSON
+Schema lives at `docs/site/public/spec/verdict.schema.json` and the
 `deploy-docs` / `repro-regression` workflows validate every
 `verdict.json` against it on each write.
 

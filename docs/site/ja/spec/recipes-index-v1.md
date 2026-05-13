@@ -98,7 +98,7 @@ v1 では `project` フィールドは引き続き slug 由来のままにして
 
 `recipes.json` ドキュメントが v1 に準拠するのは:
 
-1. [`recipes.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/api/recipes.schema.json)
+1. [`recipes.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/api/recipes.schema.json)
    を検証パスする。
 2. `index === "v1"` かつ `contract === "v1"`。
 3. すべてのエントリの `slug` が `^[a-z0-9]+(-[a-z0-9]+)*$` に一致する。

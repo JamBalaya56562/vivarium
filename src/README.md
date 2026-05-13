@@ -18,7 +18,7 @@ reproduction problems have fundamentally different requirements:
 Picking one layer as "the answer" would force square pegs into round
 holes. The three-layer split exists so each problem class can be solved
 on its own terms — see [`AGENTS.md § 5`](../AGENTS.md) and
-[`docs/docs/en/architecture.mdx`](../docs/docs/en/architecture.mdx) for the
+[`docs/site/en/architecture.mdx`](../docs/site/en/architecture.mdx) for the
 longer-form argument.
 
 ## Layout
@@ -37,5 +37,5 @@ catalogue.
 ## What does **not** live here
 
 - **Infrastructure-as-Code** — lives in [`infra/`](../infra/).
-- **Docs site** — lives in [`docs/`](../docs/) (markdown content under `docs/docs/`).
+- **Docs site** — lives in [`docs/`](../docs/) (markdown content under `docs/site/`).
 - **Tooling and build configuration** — project root.

@@ -1,7 +1,7 @@
 // Catalogue fetcher: 5-minute in-process TTL with a build-time bundled
 // fallback for offline / network-failure / cold-start. The bundled
 // snapshot is refreshed at publish time by the GHA workflow that
-// copies docs/public/api/recipes.json into src/bundled/.
+// copies docs/site/public/api/recipes.json into src/bundled/.
 
 import type { RecipesIndex, VerdictSnapshot } from './types.js';
 import bundledIndex from './bundled/recipes.json' with { type: 'json' };

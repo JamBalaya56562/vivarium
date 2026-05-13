@@ -66,10 +66,10 @@ mise run recipes:index
 cd docs && mise exec -- bun run generate-project-pages
 ```
 
-`mise run recipes:index` writes both `docs/public/api/recipes.json`
+`mise run recipes:index` writes both `docs/site/public/api/recipes.json`
 (tracked) and `docs/data/site-stats.json` (gitignored — site KPI
 counts consumed by the roadmap MDX). `generate-project-pages`
-writes the auto-generated `docs/docs/{en,ja}/repro/<project>/index.mdx`
+writes the auto-generated `docs/site/{en,ja}/repro/<project>/index.mdx`
 landing pages (gitignored — regenerated on every build). Do not
 fall back to bare `bun run generate-index`: it skips the site-stats
 step and leaves the roadmap page's numbers stale on local preview.
@@ -229,7 +229,7 @@ Layer 2. CI does not regenerate it.
    `ADD`).
 5. Replay locally to capture stdout, hand-craft `verdict.json`
    per Contract v1, validate it against
-   `docs/public/spec/verdict.schema.json` with `ajv-cli`.
+   `docs/site/public/spec/verdict.schema.json` with `ajv-cli`.
 
 **Commit scope**: `feat(layer3)` — established by PR 106.
 
@@ -253,8 +253,8 @@ Layer 2. CI does not regenerate it.
 - **`bunx` vs `bun x`.** Never write `bunx <pkg>` in scripts;
   Windows local has no `bunx.cmd`. Always `bun x <pkg>`
   (subcommand form).
-- **Auto-generated files.** `docs/public/api/recipes.json` and
-  `docs/public/api/projects.json` are tracked but generated.
+- **Auto-generated files.** `docs/site/public/api/recipes.json` and
+  `docs/site/public/api/projects.json` are tracked but generated.
   Always run the generators before committing; never hand-edit.
 - **Recipe selection policy.** Must already match
   `_context/strategy/issue_selection_policy.md` (gitignored,

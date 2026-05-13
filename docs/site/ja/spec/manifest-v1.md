@@ -166,7 +166,7 @@ v2 JSON Schema の兄弟ファイル、別の ADR が必要。
 
 1. 消費リポジトリの `.vivarium/manifest.toml` に配置された有効な TOML 1.0 ドキュメントである。
 2. TOML→JSON 変換後に
-   [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json)
+   [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/manifest.schema.json)
    を検証パスする。
 3. `[layer1]` / `[layer2]` / `[layer3]` のうちちょうど一つが存在し、
    トップレベルの `layer` 整数と一致する。
@@ -189,6 +189,6 @@ v2 JSON Schema の兄弟ファイル、別の ADR が必要。
 ## 関連情報
 
 - [Contract v1](./contract-v1.md) — このマニフェストが指すアーティファクトが公開しなければならないランタイム verdict サーフェス。
-- [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/manifest.schema.json)
+- [`manifest.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/manifest.schema.json)
   — TOML→JSON 変換後のマニフェスト用 JSON Schema（draft 2020-12）。
 - [Consumer workflow](./consumer-workflow.md) — コンシューマーが自身の CI でマニフェストで宣言されたイメージを検証するための再利用可能 GitHub Actions ワークフロー。

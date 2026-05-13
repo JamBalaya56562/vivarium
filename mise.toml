@@ -350,10 +350,11 @@ echo "  gh run watch --repo aletheia-works/vivarium <run-id>"
 # ── Recipes catalogue index ──────────────────────────────────────────────
 
 [tasks."recipes:index"]
-description = "Regenerate docs/public/api/recipes.json + docs/data/site-stats.json from src/layer*/"
+description = "Regenerate docs/site/public/api/recipes.json + docs/data/site-stats.json from src/layer*/"
 dir = "docs"
-# `generate-site-stats` reads recipes.json, so it must run *after* generate-index.
-run = "bun run generate-index && bun run generate-site-stats"
+# `generate-project-pages` and `generate-site-stats` read recipes.json,
+# so they must run *after* generate-index.
+run = "bun run generate-index && bun run generate-project-pages && bun run generate-site-stats"
 
 [tasks."recipes:new"]
 description = "Scaffold a new Layer 2 recipe directory from src/layer2_docker/_template/"
