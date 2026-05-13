@@ -3,7 +3,7 @@
 // Aggregates a small set of "headline numbers" the docs site references
 // (currently: total recipes, distinct execution layers, MCP tool count)
 // into docs/data/site-stats.json. Run after generate-recipes-index.ts so
-// the recipe figure stays in lock-step with docs/public/api/recipes.json.
+// the recipe figure stays in lock-step with docs/site/public/api/recipes.json.
 //
 // Why this exists: the roadmap page used to hard-code these counts, so
 // every recipe or MCP tool added required a parallel doc edit and was
@@ -12,9 +12,9 @@
 // figures.
 //
 // Sources of truth:
-//   - recipes / layers : docs/public/api/recipes.json (generated upstream)
+//   - recipes / layers : docs/site/public/api/recipes.json (generated upstream)
 //   - mcpTools         : packages/mcp-server/src/tools/*.ts file count
-//   - locales          : docs/docs/<locale>/ directory count
+//   - locales          : docs/site/<locale>/ directory count
 //
 // The output is tracked so a PR that changes either source also surfaces
 // the resulting stats delta in the diff.
@@ -25,9 +25,16 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..', '..');
-const RECIPES_INDEX = join(REPO_ROOT, 'docs', 'public', 'api', 'recipes.json');
+const RECIPES_INDEX = join(
+  REPO_ROOT,
+  'docs',
+  'site',
+  'public',
+  'api',
+  'recipes.json',
+);
 const MCP_TOOLS_DIR = join(REPO_ROOT, 'packages', 'mcp-server', 'src', 'tools');
-const DOCS_CONTENT_DIR = join(REPO_ROOT, 'docs', 'docs');
+const DOCS_CONTENT_DIR = join(REPO_ROOT, 'docs', 'site');
 const OUT = join(REPO_ROOT, 'docs', 'data', 'site-stats.json');
 
 const KNOWN_LOCALES = new Set(['en', 'ja']);

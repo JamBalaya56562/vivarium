@@ -13,8 +13,8 @@
 #     deployed original.
 #
 # Contract v1 reference:
-#   docs/docs/spec/contract-v1.md
-#   docs/public/spec/verdict.schema.json
+#   docs/site/en/spec/contract-v1.md
+#   docs/site/public/spec/verdict.schema.json
 #
 # Usage:
 #   capture_layer2_verdict.sh <image_ref> <output_path>
@@ -46,7 +46,7 @@
 #   container exit ≠ 0 → verdict "unreproduced" (bug did not reproduce)
 #
 # Schema validation requires `ajv` (ajv-cli) on PATH and
-# `docs/public/spec/verdict.schema.json` reachable via $REPO_ROOT
+# `docs/site/public/spec/verdict.schema.json` reachable via $REPO_ROOT
 # (default: the repository this script lives in).
 
 set -euo pipefail
@@ -95,7 +95,7 @@ done
 if [ -z "${REPO_ROOT:-}" ]; then
   REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 fi
-schema="${REPO_ROOT}/docs/public/spec/verdict.schema.json"
+schema="${REPO_ROOT}/docs/site/public/spec/verdict.schema.json"
 if [ ! -f "$schema" ]; then
   echo "::error::Contract v1 schema missing at ${schema}" >&2
   exit 1

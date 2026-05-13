@@ -2,7 +2,7 @@
 //
 // Build-time codegen for ajv-standalone validators.
 //
-// Reads each schema under `docs/public/spec/` and emits a self-contained
+// Reads each schema under `docs/site/public/spec/` and emits a self-contained
 // validator module under `docs/generated/`. The generated modules are
 // gitignored — they are reproducible from the schema + this script + the
 // pinned ajv / ajv-formats versions in package.json.
@@ -23,7 +23,7 @@ import standaloneCode from 'ajv/dist/standalone/index.js';
 import addFormats from 'ajv-formats';
 
 interface Target {
-  /** Path relative to docs/public/spec/. */
+  /** Path relative to docs/site/public/spec/. */
   schema: string;
   /** Output filename under docs/generated/. */
   output: string;
@@ -46,7 +46,7 @@ const TARGETS: Target[] = [
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = join(SCRIPT_DIR, '..');
-const SCHEMA_DIR = join(DOCS_DIR, 'public', 'spec');
+const SCHEMA_DIR = join(DOCS_DIR, 'site', 'public', 'spec');
 const OUTPUT_DIR = join(DOCS_DIR, 'generated');
 
 mkdirSync(OUTPUT_DIR, { recursive: true });

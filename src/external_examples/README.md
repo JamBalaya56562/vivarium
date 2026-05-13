@@ -3,7 +3,7 @@
 > **Purpose:** demonstrate how a repository *outside*
 > `aletheia-works/vivarium` would declare a Vivarium-runnable
 > reproduction via the
-> [Manifest v1 spec](../../docs/docs/spec/manifest-v1.md).
+> [Manifest v1 spec](../../docs/site/en/spec/manifest-v1.md).
 >
 > Each subdirectory here is treated as if it were a separate
 > external repo's root. The `.vivarium/manifest.toml` inside
@@ -28,7 +28,7 @@ manifests, one per layer:
 
 CI (`repro-regression.yml`) validates every
 `src/external_examples/*/.vivarium/manifest.toml` against
-[`docs/public/spec/manifest.schema.json`](../../docs/public/spec/manifest.schema.json)
+[`docs/site/public/spec/manifest.schema.json`](../../docs/site/public/spec/manifest.schema.json)
 on every push and pull request. A schema mismatch fails the
 workflow loudly.
 
@@ -52,7 +52,7 @@ workflow loudly.
 1. Create `src/external_examples/<your-example-slug>/.vivarium/manifest.toml`.
 2. Set `manifest = "v1"`, fill in `slug`, `title`, `layer`,
    `[bug]`, and the layer-specific table per the
-   [spec](../../docs/docs/spec/manifest-v1.md).
+   [spec](../../docs/site/en/spec/manifest-v1.md).
 3. Open a PR. CI validates the new manifest against the schema.
 
 The `<your-example-slug>` directory name does not need to match

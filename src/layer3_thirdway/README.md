@@ -6,7 +6,7 @@
 > trace baked into the image. Vivarium guarantees the recipe and
 > the registered image; the replay happens on the visitor's machine.
 >
-> See [Phase 4 — Layer 3: record-replay & deterministic](../../docs/docs/roadmap.md#phase-4--layer-3-record-replay--deterministic)
+> See [Phase 4 — Layer 3: record-replay & deterministic](../../docs/site/en/roadmap.mdx#three-execution-layers)
 > for the visitor-facing description and the design rationale.
 
 ---
@@ -142,8 +142,8 @@ the three are in Docker's default profile.
 ## Verdict semantics
 
 The verdict snapshot file shape is defined by
-[Vivarium Contract v1](../../docs/docs/spec/contract-v1.md); its JSON
-Schema lives at `docs/public/spec/verdict.schema.json` and the
+[Vivarium Contract v1](../../docs/site/en/spec/contract-v1.md); its JSON
+Schema lives at `docs/site/public/spec/verdict.schema.json` and the
 `repro-regression` workflow validates the tracked `verdict.json`
 against it on every PR.
 

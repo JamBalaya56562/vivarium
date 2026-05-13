@@ -1,6 +1,6 @@
-import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from '@rspress/core';
+import { setupReproDevMiddleware } from './scripts/repro-dev-middleware';
 
 // Vivarium docs site configuration.
 //
@@ -9,93 +9,8 @@ import { defineConfig } from '@rspress/core';
 // repo name with leading and trailing slashes. If the repo is ever renamed
 // or moved to a custom domain, update `base` accordingly.
 
-const REPO_ROOT = path.join(__dirname, '..');
-const DOC_ROOT = path.join(__dirname, 'docs');
-const PUBLIC_ASSETS_ROOT = path.join(__dirname, 'public');
+const DOC_ROOT = path.join(__dirname, 'site');
 const SITE_BASE = '/vivarium/';
-const REPRO_ROOTS = [
-  path.join(REPO_ROOT, 'src', 'layer1_wasm'),
-  path.join(REPO_ROOT, 'src', 'layer2_docker'),
-  path.join(REPO_ROOT, 'src', 'layer3_thirdway'),
-];
-
-const REPRO_MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.mjs': 'application/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.wasm': 'application/wasm',
-  '.ico': 'image/x-icon',
-  '.map': 'application/json; charset=utf-8',
-};
-
-// Resolve a /repro/<sub> URL path to an absolute file under one of
-// src/layer{1,2,3}_*. Canonical recipe URLs use
-// /repro/<project>/<issue_path>/..., while underscore-prefixed shared
-// scaffolding remains flat under /repro/_*/...
-//
-// Exported so the docs/scripts/__tests__/resolveReproFile.test.ts unit
-// suite can verify each branch without spinning up the dev middleware.
-
-export function resolveReproFile(rawSubpath: string): string | null {
-  const subpath = rawSubpath || '';
-
-  // Trailing-slash directory URL → index.html lookup.
-  let trailingFile = '';
-  let lookupPath = subpath;
-  if (lookupPath === '' || lookupPath.endsWith('/')) {
-    trailingFile = 'index.html';
-    if (lookupPath.endsWith('/')) lookupPath = lookupPath.slice(0, -1);
-  }
-
-  const segments = lookupPath === '' ? [] : lookupPath.split('/');
-
-  // Build the list of candidate disk-relative paths to try, in order.
-  const candidates: string[] = [];
-  if (segments.length === 0) {
-    // Bare `/repro/` — fall through (no candidate).
-  } else if (segments[0]?.startsWith('_')) {
-    // Shared scaffolding — keep flat lookup.
-    candidates.push(joinDisk(segments, trailingFile));
-  } else if (segments.length === 1) {
-    // Project landing (`/repro/<project>/`) — fall through to rspress.
-  } else {
-    // Multi-segment — try the prefix-style slug first, then the
-    // override-style slug.
-    const project = segments[0]!;
-    const issuePath = segments[1]!;
-    const rest = segments.slice(2);
-    const prefixSlug = `${project}-${issuePath}`;
-    candidates.push(joinDisk([prefixSlug, ...rest], trailingFile));
-    const overrideSlug = issuePath;
-    candidates.push(joinDisk([overrideSlug, ...rest], trailingFile));
-  }
-
-  for (const candidate of candidates) {
-    for (const root of REPRO_ROOTS) {
-      const abs = path.join(root, candidate);
-      if (!existsSync(abs)) continue;
-      const s = statSync(abs);
-      if (s.isDirectory()) {
-        const idx = path.join(abs, 'index.html');
-        if (existsSync(idx)) return idx;
-        continue;
-      }
-      return abs;
-    }
-  }
-  return null;
-}
-
-function joinDisk(segments: string[], trailingFile: string): string {
-  const base = segments.join('/');
-  if (!trailingFile) return base;
-  return base ? `${base}/${trailingFile}` : trailingFile;
-}
 
 export default defineConfig({
   root: DOC_ROOT,
@@ -200,7 +115,7 @@ export default defineConfig({
     },
     editLink: {
       docRepoBaseUrl:
-        'https://github.com/aletheia-works/vivarium/tree/main/docs/docs',
+        'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
     },
     enableContentAnimation: true,
     lastUpdated: true,
@@ -215,7 +130,7 @@ export default defineConfig({
         searchPlaceholderText: 'Search',
         editLink: {
           docRepoBaseUrl:
-            'https://github.com/aletheia-works/vivarium/tree/main/docs/docs',
+            'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
           text: 'Edit this page on GitHub',
         },
       },
@@ -229,7 +144,7 @@ export default defineConfig({
         searchPlaceholderText: '検索',
         editLink: {
           docRepoBaseUrl:
-            'https://github.com/aletheia-works/vivarium/tree/main/docs/docs',
+            'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
           text: 'GitHub でこのページを編集',
         },
       },
@@ -250,78 +165,8 @@ export default defineConfig({
   // Ruby.wasm / php-wasm runtime can actually execute.
   builderConfig: {
     server: {
-      publicDir: [
-        {
-          name: path.join(DOC_ROOT, 'public'),
-        },
-        {
-          name: PUBLIC_ASSETS_ROOT,
-          watch: true,
-        },
-      ],
       setup({ server }) {
-        // Dev-only — preview/build don't enter this branch (rsbuild calls
-        // setup() in both modes, but in production `doc_build/repro/` is
-        // already populated by the deploy workflow, so the catch-all
-        // matches no live requests).
-        if (server == null) return;
-        server.middlewares.use((req, res, next) => {
-          const url = req.url ?? '';
-          const match = url.match(/^\/vivarium\/repro\/([^?#]*)(?:[?#].*)?$/);
-          if (!match) return next();
-          const subpath = match[1] ?? '';
-          const filePath = resolveReproFile(subpath);
-          if (!filePath) {
-            // No file on disk. Three cases:
-            //
-            // 1. Directory-shaped URL (empty subpath or ends with '/') —
-            //    `/vivarium/repro/`, project landing pages, or unknown
-            //    recipe routes. These should fall through to rspress's
-            //    SPA so docs routes can render or 404 there.
-            //
-            // 2. Extension-less URL — `/vivarium/repro/compare`,
-            //    `/vivarium/repro/<project>`, etc. These are rspress
-            //    SPA routes or clean URLs; fall through so rspress can
-            //    handle them.
-            //
-            // 3. Asset-shaped URL (has an extension) — `repro.wasm`,
-            //    `verdict.json`, `repro.js`. These must NOT fall
-            //    through, otherwise the SPA returns its HTML shell and
-            //    the page tries to parse it as wasm/JSON. Return 404
-            //    explicitly with a hint.
-            if (subpath === '' || subpath.endsWith('/')) {
-              return next();
-            }
-            if (!path.extname(subpath)) {
-              return next();
-            }
-            res.statusCode = 404;
-            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-            res.end(
-              `404: ${subpath} not found in src/layer{1,2,3}_*/.\n` +
-                'For Rust reproductions: run `cargo build --release --target wasm32-wasip1` in the recipe directory.\n' +
-                'For Layer 2 verdict.json: the file is generated by CI; not present in local dev.\n',
-            );
-            return;
-          }
-
-          const ext = path.extname(filePath).toLowerCase();
-          res.setHeader(
-            'Content-Type',
-            REPRO_MIME[ext] ?? 'application/octet-stream',
-          );
-          res.setHeader('Cache-Control', 'no-store');
-          // The shared service worker (`_shared/sw.js`) is located inside
-          // the `_shared/` subtree, but it needs to control the whole
-          // `/vivarium/repro/` tree so any reproduction page benefits
-          // from the cached Pyodide / Ruby.wasm runtime. Browsers cap
-          // a SW's scope to its own directory unless the response sets
-          // this header.
-          if (filePath.endsWith('sw.js')) {
-            res.setHeader('Service-Worker-Allowed', '/vivarium/repro/');
-          }
-          createReadStream(filePath).pipe(res);
-        });
+        setupReproDevMiddleware(server);
       },
     },
   },

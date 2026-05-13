@@ -1,15 +1,15 @@
 // Page enumeration helper for the docs E2E suite.
 //
-// Scans `docs/docs/{en,ja}/` at test-load time and emits the URL list
+// Scans `docs/site/{en,ja}/` at test-load time and emits the URL list
 // the smoke and i18n specs iterate over. Listing the pages dynamically
-// (rather than hardcoding) means new content under `docs/docs/` is
+// (rather than hardcoding) means new content under `docs/site/` is
 // automatically covered by the smoke suite the next time it runs —
 // the "silent regression" that motivated this PR (a feature lands on
 // page X, page Y stops rendering, nobody notices) becomes the kind of
 // thing CI catches without a separate test added.
 //
 // The URL projection mirrors rspress's default: file path
-// `docs/docs/{lang}/foo/bar.mdx` becomes URL
+// `docs/site/{lang}/foo/bar.mdx` becomes URL
 // `/vivarium/[ja/]foo/bar` (`.mdx`/`.md` extensions stripped, `index`
 // segments collapsed to a trailing slash, JA pages prefixed with
 // `/ja/`).
@@ -24,7 +24,7 @@ import path from 'node:path';
 // keeps the two test runners on the same code path.
 const HERE = import.meta.dirname;
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const DOCS_DOCS = path.join(REPO_ROOT, 'docs', 'docs');
+const DOCS_SITE = path.join(REPO_ROOT, 'docs', 'site');
 const SITE_BASE = '/vivarium';
 
 export interface PageRef {
@@ -32,12 +32,12 @@ export interface PageRef {
   url: string;
   /** Locale: "en" or "ja". */
   lang: 'en' | 'ja';
-  /** Filesystem path relative to docs/docs/{lang}/. */
+  /** Filesystem path relative to docs/site/{lang}/. */
   rel: string;
 }
 
 function listPagesIn(lang: 'en' | 'ja'): PageRef[] {
-  const root = path.join(DOCS_DOCS, lang);
+  const root = path.join(DOCS_SITE, lang);
   const out: PageRef[] = [];
 
   function walk(dir: string, prefix: string) {

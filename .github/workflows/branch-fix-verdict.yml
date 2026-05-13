@@ -154,7 +154,7 @@ jobs:
           else
             verdict_url="$(jq -r --arg s "$slug" \
               '.recipes[] | select(.slug == $s) | .verdict_url' \
-              docs/public/api/recipes.json)"
+              docs/site/public/api/recipes.json)"
             if [ -z "$verdict_url" ] || [ "$verdict_url" = "null" ]; then
               echo "::error::Recipe ${slug} has no verdict_url in recipes.json (Layer 1 recipes have no static snapshot; only Layer 2 / 3 do)."
               exit 1
@@ -175,7 +175,7 @@ jobs:
                 ajv validate \
                   --spec=draft2020 \
                   -c ajv-formats \
-                  -s "docs/public/spec/verdict.schema.json" \
+                  -s "docs/site/public/spec/verdict.schema.json" \
                   -d "$out"
                 ;;
               404)

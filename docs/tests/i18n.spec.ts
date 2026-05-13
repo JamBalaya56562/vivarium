@@ -1,8 +1,8 @@
 // i18n switcher and EN ↔ JA symmetry suite.
 //
 // Asserts:
-//   1. Every EN page tracked under `docs/docs/en/` has a sibling under
-//      `docs/docs/ja/`, and vice versa. ADR-0028 §"i18n Definition of
+//   1. Every EN page tracked under `docs/site/en/` has a sibling under
+//      `docs/site/ja/`, and vice versa. ADR-0028 §"i18n Definition of
 //      Done" mandates EN+JA same-PR; this case turns that policy into
 //      a CI failure when it's accidentally violated.
 //   2. Every representative EN page exposes a locale-switcher anchor
