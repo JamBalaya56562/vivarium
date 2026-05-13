@@ -35,7 +35,14 @@ interface AjvValidateFn {
 const validateManifest = validateManifestRaw as unknown as AjvValidateFn;
 const validateVerdict = validateVerdictRaw as unknown as AjvValidateFn;
 
-const SCHEMA_DIR = path.join(import.meta.dirname, '..', '..', 'public', 'spec');
+const SCHEMA_DIR = path.join(
+  import.meta.dirname,
+  '..',
+  '..',
+  'site',
+  'public',
+  'spec',
+);
 
 function loadSchemaExamples(filename: string): unknown[] {
   const schema = JSON.parse(
