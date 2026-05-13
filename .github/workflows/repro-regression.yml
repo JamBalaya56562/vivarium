@@ -28,7 +28,7 @@ name: repro-regression
 # External manifest validation (every trigger):
 #
 # `src/external_examples/*/.vivarium/manifest.toml` are validated
-# against `docs/public/spec/manifest.schema.json` (Vivarium Manifest
+# against `docs/site/public/spec/manifest.schema.json` (Vivarium Manifest
 # v1; locked by ADR-0015). The workflow converts each TOML manifest
 # to JSON via Python's stdlib `tomllib` and runs ajv against the
 # JSON Schema. Phase 5 sub-stream C deliverable.
@@ -59,7 +59,7 @@ on:
       - 'src/layer2_docker/**'
       - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
-      - 'docs/public/spec/**.schema.json'
+      - 'docs/site/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
       - 'mise.toml'
@@ -69,7 +69,7 @@ on:
       - 'src/layer2_docker/**'
       - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
-      - 'docs/public/spec/**.schema.json'
+      - 'docs/site/public/spec/**.schema.json'
       - '.github/workflows/repro-regression.yml'
       - '.github/workflows/deploy-docs.yml'
       - 'mise.toml'
@@ -119,7 +119,7 @@ jobs:
 
       - name: Install ajv-cli for verdict schema validation
         # Single-source clause 4 of the contract v1 conformance check
-        # (`docs/public/spec/verdict.schema.json`) by validating every
+        # (`docs/site/public/spec/verdict.schema.json`) by validating every
         # generated / tracked `verdict.json` with ajv-cli below, instead
         # of the historical `jq -e` predicate. Both Layer 2 (CI-built,
         # CI-snapshot) and Layer 3 (maintainer-tracked) verdict files
@@ -152,7 +152,7 @@ jobs:
         # `src/external_examples/*/.vivarium/manifest.toml` is converted
         # to JSON via Python stdlib `tomllib` (Python 3.11+; preinstalled
         # on `ubuntu-latest`) and validated against
-        # `docs/public/spec/manifest.schema.json`. Schema mismatch fails
+        # `docs/site/public/spec/manifest.schema.json`. Schema mismatch fails
         # the workflow loudly so the spec page and the reference
         # examples stay in lockstep.
         #
@@ -167,7 +167,7 @@ jobs:
             echo "No src/external_examples/*/.vivarium/manifest.toml; skipping."
             exit 0
           fi
-          schema="docs/public/spec/manifest.schema.json"
+          schema="docs/site/public/spec/manifest.schema.json"
           if [ ! -f "$schema" ]; then
             echo "::error::Manifest schema missing at ${schema}"
             exit 1
@@ -303,7 +303,7 @@ jobs:
             captured=$(jq -r '.verdict' "$vf")
             url="$(jq -r --arg s "$slug" \
               '.recipes[] | select(.slug == $s) | .verdict_url' \
-              docs/public/api/recipes.json)"
+              docs/site/public/api/recipes.json)"
             if [ -z "$url" ] || [ "$url" = "null" ]; then
               echo "::warning::Layer 2 ${slug}: not present in recipes.json or has no verdict_url — skipped"
               continue
@@ -388,7 +388,7 @@ jobs:
             "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
-              -s "${GITHUB_WORKSPACE}/docs/public/spec/verdict.schema.json" \
+              -s "${GITHUB_WORKSPACE}/docs/site/public/spec/verdict.schema.json" \
               -d "$verdict_file" || {
                 echo "::error::Layer 3 recipe ${slug} has malformed verdict.json (failed schema validation)"
                 cat "$verdict_file"

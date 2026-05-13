@@ -21,7 +21,7 @@
 - **AI-delegated development.** Humans set direction and merge; AI agents
   implement, review, and iterate.
 - **Current phase: Phase 8.** Phases 0–7 are closed (see
-  [`docs/docs/en/roadmap.mdx`](docs/docs/en/roadmap.mdx) and
+  [`docs/site/en/roadmap.mdx`](docs/site/en/roadmap.mdx) and
   `_context/phase_summaries/` for what shipped).
 
 Deeper strategy context is in `_context/` (local-only, gitignored). Treat those
@@ -99,10 +99,12 @@ vivarium/
 │   ├── tsconfig.json
 │   ├── bun.lock
 │   ├── scripts/           # build-time scripts (e.g. recipes-index generator)
-│   ├── public/
-│   │   ├── api/           # machine-readable endpoints — recipes.json, recipes.schema.json
-│   │   └── spec/          # JSON Schemas — verdict.schema.json, manifest.schema.json
-│   └── docs/              # tracked markdown content (vision, architecture, spec, roadmap, …)
+│   └── site/              # rspress root: markdown content + public assets
+│       ├── public/
+│       │   ├── api/       # machine-readable endpoints — recipes.json, recipes.schema.json
+│       │   └── spec/      # JSON Schemas — verdict.schema.json, manifest.schema.json
+│       ├── en/            # English docs content
+│       └── ja/            # Japanese docs content
 ├── packages/
 │   └── mcp-server/        # @aletheia-works/vivarium-mcp (JSR + npm dual publish)
 ├── src/
@@ -122,8 +124,8 @@ project publishes (npm / JSR packages, future CLI, etc.) live under
 - `docs/` — tracked. The rspress documentation site lives here; its
   configuration (`package.json`, `rspress.config.ts`, `tsconfig.json`,
   `bun.lock`) sits at the top of `docs/`, and the markdown content
-  itself lives one level deeper under `docs/docs/`. Every file under
-  `docs/docs/` is something the project would be comfortable showing
+  itself lives one level deeper under `docs/site/`. Every file under
+  `docs/site/` is something the project would be comfortable showing
   an outside contributor (vision, architecture, roadmap, guide, spec).
 - `_context/` — gitignored. Private strategy memos, chat handoffs,
   half-formed drafts, and the project's Architecture Decision Records
@@ -280,7 +282,7 @@ is sequential and never re-used; superseded ADRs keep their original
 number with a `Status: Superseded by ADR-NNNN` note rather than being
 deleted. ADRs are gitignored — they are private working memos, not
 public docs. Reasoning that should be visitor-facing belongs in
-`docs/docs/` (vision, architecture, roadmap, guide, spec).
+`docs/site/` (vision, architecture, roadmap, guide, spec).
 
 Write an ADR when:
 

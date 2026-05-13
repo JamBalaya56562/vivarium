@@ -1,5 +1,5 @@
 // Unit test for the dev-only middleware path-resolver in
-// `docs/rspress.config.ts`. The function maps `/vivarium/repro/<sub>`
+// `docs/scripts/repro-dev-middleware.ts`. The function maps `/vivarium/repro/<sub>`
 // URL subpaths to absolute file paths under `src/layer{1,2,3}_*/`.
 //
 // Why a unit test (and not just E2E coverage)?
@@ -19,7 +19,7 @@
 import { describe, expect, test } from 'bun:test';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { resolveReproFile } from '../../rspress.config';
+import { resolveReproFile } from '../repro-dev-middleware';
 
 // `import.meta.dirname` keeps this file portable between bun test
 // (current runner) and any future Node/Vitest harness.

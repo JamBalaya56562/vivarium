@@ -9,10 +9,9 @@
     "generate-index": "bun run scripts/generate-recipes-index.ts",
     "generate-project-pages": "bun run scripts/generate-project-pages.ts",
     "generate-site-stats": "bun run scripts/generate-site-stats.ts",
-    "stage-public-assets": "bun run scripts/stage-public-assets.ts",
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
     "dev": "bun run generate-validators && bun run generate-index && bun run generate-project-pages && bun run generate-site-stats && bun run prebuild-repro && rspress dev",
-    "build": "bun run generate-validators && bun run generate-index && bun run generate-project-pages && bun run generate-site-stats && rspress build && bun run stage-public-assets",
+    "build": "bun run generate-validators && bun run generate-index && bun run generate-project-pages && bun run generate-site-stats && rspress build",
     "preview": "rspress preview",
     "test:e2e": "playwright test",
     "test:unit": "bun run generate-validators && bun test scripts/__tests__"

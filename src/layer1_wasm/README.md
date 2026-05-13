@@ -34,7 +34,7 @@
 | Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Active |
 | PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Active |
 
-Concrete runtime choices land in [`docs/docs/`](../../docs/docs/) as ADRs, not
+Concrete runtime choices land in [`docs/site/`](../../docs/site/) as ADRs, not
 here.
 
 ## Catalogue
@@ -55,7 +55,7 @@ fixtures, generated-highlight inputs) live alongside.
 ## Verdict surface
 
 Every Layer 1 reproduction emits its verdict via the in-page surface
-defined by [Vivarium Contract v1](../../docs/docs/spec/contract-v1.md)
+defined by [Vivarium Contract v1](../../docs/site/en/spec/contract-v1.md)
 — the `<meta name="vivarium-contract">` tag, the
 `#verdict[data-verdict]` DOM element, and the
 `__VIVARIUM_VERDICT__` / `__VIVARIUM_RESULT__` JavaScript globals.

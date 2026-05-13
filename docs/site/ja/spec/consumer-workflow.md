@@ -8,7 +8,7 @@
 に配置されている。
 公開済みの `ghcr.io/aletheia-works/vivarium-<slug>` イメージをプルし、
 レシピを実行し、[Contract v1](./contract-v1.md) に準拠する `verdict.json` をキャプチャし、
-[公開 JSON Schema](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json)
+[公開 JSON Schema](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/verdict.schema.json)
 に対して検証し、キャプチャした verdict が呼び出し元が期待するものと一致することを
 アサートする。
 
@@ -85,7 +85,7 @@ GitHub Actions API 経由でアーティファクトをフェッチできる。
 ## 関連情報
 
 - [Contract v1](./contract-v1.md) — このワークフローが消費する verdict サーフェス。
-- [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/public/spec/verdict.schema.json) —
+- [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/verdict.schema.json) —
   ワークフローが検証に使用するスキーマ。
 - [Layer 2 カタログ](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
   — `inputs.slug` に使用できるスラッグ。

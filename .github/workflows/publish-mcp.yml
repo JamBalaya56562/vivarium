@@ -75,7 +75,7 @@ jobs:
         #
         # `bun run build` and `bun run test` both chain `bun run
         # sync:bundled` first, which copies the canonical
-        # docs/public/api/recipes.json into src/bundled/recipes.json
+        # docs/site/public/api/recipes.json into src/bundled/recipes.json
         # (gitignored) so the offline fallback shipped in the tarball
         # is always the latest snapshot, with no tracked-snapshot
         # drift to manage.
