@@ -171,7 +171,7 @@ export async function prepareNewRecipe(
       homepage: '',
       github: `https://github.com/${ownerRepo}`,
     },
-    note: `Only add this row to docs/data/projects.json if "${project}" is a new project (i.e. no existing recipe under src/layer*_*/${project}-*/).`,
+    note: `Only add this row to docs/site/_data/projects.json if "${project}" is a new project (i.e. no existing recipe under src/layer*_*/${project}-*/).`,
   };
 
   const commitSubject = `feat(${commitScopeFor(layer)}): ${slug} reproduction (...)`;
@@ -184,17 +184,17 @@ export async function prepareNewRecipe(
           `Edit src/layer2_docker/${slug}/repro.sh — replace the TODO stub with the real probe.`,
           `Edit src/layer2_docker/${slug}/README.md — fill in bug description, verdict contract, references.`,
           `Edit src/layer2_docker/${slug}/index.html — fill in the lede.`,
-          `Add the recipe_facets_row to docs/data/recipe-facets.json with real values.`,
-          `If "${project}" is a new project, add the projects_row to docs/data/projects.json.`,
+          `Add the recipe_facets_row to docs/site/_data/recipe-facets.json with real values.`,
+          `If "${project}" is a new project, add the projects_row to docs/site/_data/projects.json.`,
           `Run: ${verifyCommand}  (this regenerates indices, runs lint, runs the docker build/run, and the rspress build).`,
           `Commit with subject: ${commitSubject}`,
           `Submit the PR.`,
         ]
       : [
           `Copy from an existing recipe under src/layer${layer}_*/ — the canonical authoring reference.`,
-          `Add the recipe_facets_row to docs/data/recipe-facets.json with real values.`,
-          `If "${project}" is a new project, add the projects_row to docs/data/projects.json.`,
-          `Run: cd docs && mise exec -- bun run generate-index && mise exec -- bun run generate-project-pages`,
+          `Add the recipe_facets_row to docs/site/_data/recipe-facets.json with real values.`,
+          `If "${project}" is a new project, add the projects_row to docs/site/_data/projects.json.`,
+          `Run: cd docs && mise exec -- bun run generate`,
           `Validate locally per the layer's README + the .claude/rules/recipe-authoring.md checklist.`,
           `Commit with subject: ${commitSubject}`,
           `Submit the PR.`,
@@ -224,7 +224,7 @@ export async function prepareNewRecipe(
 export const PREPARE_NEW_RECIPE_TOOL = {
   name: 'prepare_new_recipe',
   description:
-    "Prepare everything an AI agent needs to author a new Vivarium recipe for a given upstream project + issue. SCAFFOLDING HELPER, not an execution engine — returns the exact `mise run recipes:new` and `mise run recipes:verify` commands the agent should run, plus placeholder rows for docs/data/recipe-facets.json and (if the project is new) docs/data/projects.json, plus a commit-subject template and a sequenced next-steps checklist. Validates the slug at call time against the same regex `docs/scripts/generate-recipes-index.ts` uses, so unparseable slugs are rejected before any work begins. Use this immediately after picking an issue from `gh search`; pair with `match_error` / `list_recipes` if you need to confirm no existing recipe already covers the bug.",
+    "Prepare everything an AI agent needs to author a new Vivarium recipe for a given upstream project + issue. SCAFFOLDING HELPER, not an execution engine — returns the exact `mise run recipes:new` and `mise run recipes:verify` commands the agent should run, plus placeholder rows for docs/site/_data/recipe-facets.json and (if the project is new) docs/site/_data/projects.json, plus a commit-subject template and a sequenced next-steps checklist. Validates the slug at call time against the same regex `docs/scripts/generate-recipes-index.ts` uses, so unparseable slugs are rejected before any work begins. Use this immediately after picking an issue from `gh search`; pair with `match_error` / `list_recipes` if you need to confirm no existing recipe already covers the bug.",
   inputSchema: {
     type: 'object' as const,
     properties: {

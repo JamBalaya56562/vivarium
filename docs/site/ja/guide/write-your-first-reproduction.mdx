@@ -11,7 +11,7 @@ import {
   Callout,
   NextCta,
   BottomNote,
-} from '../../../components/PageChrome';
+} from '../../_components/PageChrome';
 
 <Page>
   <PageHero
@@ -150,7 +150,7 @@ import pandas as pd
     <p>ギャラリー（<code>/repro/</code>）と MCP サーバが読む <code>recipes.json</code> は、ビルド時に <code>src/layer*/</code> をスキャンして自動生成されます。 手元での確認用には:</p>
     <pre><code>{`mise run recipes:index
 # あるいは
-cd docs && bun run generate-index
+cd docs && bun run generate
 `}</code></pre>
     <p>生成された <code>docs/site/public/api/recipes.json</code> に 自分のスラッグが入っていれば成功です。 docs サイトをローカルで動かすと、ギャラリーにカードが現れます:</p>
     <pre><code>{`cd docs && bun run dev

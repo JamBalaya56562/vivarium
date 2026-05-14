@@ -8,7 +8,7 @@ import {
   Sparkles,
   Timer,
 } from 'lucide-react';
-import siteStats from '../data/site-stats.json';
+import siteStats from '../_generated/site-stats.json';
 import './vivarium-landing.css';
 
 type Lang = 'en' | 'ja';

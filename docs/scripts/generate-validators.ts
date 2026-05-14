@@ -3,9 +3,9 @@
 // Build-time codegen for ajv-standalone validators.
 //
 // Reads each schema under `docs/site/public/spec/` and emits a self-contained
-// validator module under `docs/generated/`. The generated modules are
-// gitignored — they are reproducible from the schema + this script + the
-// pinned ajv / ajv-formats versions in package.json.
+// validator module under `docs/site/_generated/validators/`. The generated
+// modules are gitignored — they are reproducible from the schema + this script
+// + the pinned ajv / ajv-formats versions in package.json.
 //
 // Wired into `bun run dev` and `bun run build` via docs/package.json,
 // ahead of `generate-index` so the rspress build never sees a stale
@@ -16,16 +16,16 @@
 // pipeline picks it up.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 import addFormats from 'ajv-formats';
+import { SITE_GENERATED_VALIDATORS_DIR, SITE_SPEC_DIR } from './site-paths';
 
 interface Target {
   /** Path relative to docs/site/public/spec/. */
   schema: string;
-  /** Output filename under docs/generated/. */
+  /** Output filename under docs/site/_generated/validators/. */
   output: string;
   /** Human-friendly name used in log lines. */
   label: string;
@@ -44,16 +44,11 @@ const TARGETS: Target[] = [
   },
 ];
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const DOCS_DIR = join(SCRIPT_DIR, '..');
-const SCHEMA_DIR = join(DOCS_DIR, 'site', 'public', 'spec');
-const OUTPUT_DIR = join(DOCS_DIR, 'generated');
-
-mkdirSync(OUTPUT_DIR, { recursive: true });
+mkdirSync(SITE_GENERATED_VALIDATORS_DIR, { recursive: true });
 
 for (const { schema, output, label } of TARGETS) {
-  const schemaPath = join(SCHEMA_DIR, schema);
-  const outputPath = join(OUTPUT_DIR, output);
+  const schemaPath = join(SITE_SPEC_DIR, schema);
+  const outputPath = join(SITE_GENERATED_VALIDATORS_DIR, output);
   const schemaJson = JSON.parse(readFileSync(schemaPath, 'utf-8'));
 
   // Strict mode is on by default; the schemas use only documented
@@ -72,6 +67,6 @@ for (const { schema, output, label } of TARGETS) {
 
   writeFileSync(outputPath, moduleCode, 'utf-8');
   console.log(
-    `[generate-validators] ${label}: ${schema} → generated/${output}`,
+    `[generate-validators] ${label}: ${schema} -> _generated/validators/${output}`,
   );
 }

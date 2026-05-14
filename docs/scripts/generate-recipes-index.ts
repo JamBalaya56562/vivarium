@@ -19,13 +19,13 @@
 //   - page_url = "<pages-base>/repro/<project>/<issue_path>/", where
 //     issue_path = the upstream issue number when slug ends in "-<digits>",
 //     otherwise the slug suffix after the project prefix (e.g. slug
-//     "bash-local-shadows-exit" → "/repro/bash/local-shadows-exit/"). For
+//     "bash-local-shadows-exit" -> "/repro/bash/local-shadows-exit/"). For
 //     PROJECT_OVERRIDES entries the disk slug becomes the issue_path under
 //     the override's project (e.g. "lost-update" → "/repro/pthread/lost-update/").
 //   - title = first H1 of the recipe README, with the leading
 //     "Reproduction —" prefix stripped.
 //   - language / symptom / severity / tags = merged from the facet overlay
-//     at docs/data/recipe-facets.json (ADR-0024 §1+§2). Recipes without an
+//     at docs/site/_data/recipe-facets.json (ADR-0024). Recipes without an
 //     overlay row default to language: "unknown" and empty tags; the
 //     gallery degrades to "show but unfilterable on language" for those.
 //
@@ -34,8 +34,8 @@
 // bumping the literal; breaking changes require v2.
 
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
 // Owner and repository name. Resolved from CI-provided env vars when
 // the script runs in GitHub Actions (so a fork's deploy bundles its
@@ -215,8 +215,8 @@ async function readTitle(
   }
 }
 
-async function loadFacetOverlay(repoRoot: string): Promise<FacetOverlay> {
-  const overlayPath = join(repoRoot, 'docs', 'data', 'recipe-facets.json');
+async function loadFacetOverlay(): Promise<FacetOverlay> {
+  const overlayPath = join(SITE_DATA_DIR, 'recipe-facets.json');
   try {
     const raw = await readFile(overlayPath, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<FacetOverlay>;
@@ -235,8 +235,8 @@ async function loadFacetOverlay(repoRoot: string): Promise<FacetOverlay> {
   }
 }
 
-async function loadProjectsOverlay(repoRoot: string): Promise<ProjectsOverlay> {
-  const overlayPath = join(repoRoot, 'docs', 'data', 'projects.json');
+async function loadProjectsOverlay(): Promise<ProjectsOverlay> {
+  const overlayPath = join(SITE_DATA_DIR, 'projects.json');
   try {
     const raw = await readFile(overlayPath, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<ProjectsOverlay>;
@@ -317,11 +317,8 @@ async function buildEntry(
 }
 
 async function main(): Promise<void> {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const REPO_ROOT = join(__dirname, '..', '..');
-
-  const overlay = await loadFacetOverlay(REPO_ROOT);
-  const projectsOverlay = await loadProjectsOverlay(REPO_ROOT);
+  const overlay = await loadFacetOverlay();
+  const projectsOverlay = await loadProjectsOverlay();
   const recipes: RecipeEntry[] = [];
   for (const { layer, dir } of LAYERS) {
     const layerDir = join(REPO_ROOT, dir);
@@ -363,7 +360,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const outDir = join(__dirname, '..', 'site', 'public', 'api');
+  const outDir = SITE_API_DIR;
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, 'recipes.json');
   await writeFile(outPath, `${JSON.stringify(out, null, 2)}\n`, 'utf-8');

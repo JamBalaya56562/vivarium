@@ -9,16 +9,16 @@
 // constraint or breaks the bundled example, this suite catches it
 // before the codegen output ships.
 //
-// The validators are imported from `docs/generated/`, which is
-// gitignored — running this suite without first running
+// The validators are imported from `docs/site/_generated/validators/`, which
+// is gitignored — running this suite without first running
 // `bun run generate-validators` (or `bun run dev` / `build`, both of
 // which trigger codegen) returns a clear "no module found" error.
 
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import validateManifestRaw from '../../generated/manifest-validator.mjs';
-import validateVerdictRaw from '../../generated/verdict-validator.mjs';
+import validateManifestRaw from '../../site/_generated/validators/manifest-validator.mjs';
+import validateVerdictRaw from '../../site/_generated/validators/verdict-validator.mjs';
 
 interface AjvErrorObject {
   instancePath: string;
