@@ -18,7 +18,7 @@
       "!**/public/api/recipes.schema.json",
       "!**/public/spec",
       "!**/bun.lock",
-      "!**/generated"
+      "!**/_generated"
     ]
   },
   "formatter": {

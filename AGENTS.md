@@ -99,9 +99,13 @@ vivarium/
 │   ├── tsconfig.json
 │   ├── bun.lock
 │   ├── scripts/           # build-time scripts (e.g. recipes-index generator)
-│   └── site/              # rspress root: markdown content + public assets
+│   └── site/              # rspress root: content, UI, data, public assets
+│       ├── _components/   # MDX-mounted React components + component CSS
+│       ├── _data/         # hand-curated site overlays
+│       ├── _generated/    # gitignored validators / derived site data
+│       ├── _styles/       # global docs CSS overrides
 │       ├── public/
-│       │   ├── api/       # machine-readable endpoints — recipes.json, recipes.schema.json
+│       │   ├── api/       # machine-readable endpoints — recipes.json + projects.json (generated from _data/), recipes.schema.json (hand-written)
 │       │   └── spec/      # JSON Schemas — verdict.schema.json, manifest.schema.json
 │       ├── en/            # English docs content
 │       └── ja/            # Japanese docs content
@@ -121,12 +125,12 @@ project publishes (npm / JSR packages, future CLI, etc.) live under
 
 ### 4.2 `docs/` vs `_context/`
 
-- `docs/` — tracked. The rspress documentation site lives here; its
-  configuration (`package.json`, `rspress.config.ts`, `tsconfig.json`,
-  `bun.lock`) sits at the top of `docs/`, and the markdown content
-  itself lives one level deeper under `docs/site/`. Every file under
-  `docs/site/` is something the project would be comfortable showing
-  an outside contributor (vision, architecture, roadmap, guide, spec).
+- `docs/` — tracked. The rspress documentation app lives here; its
+  configuration, scripts, tests, package metadata, and lockfile sit at the
+  top of `docs/`. The site source itself lives under `docs/site/`: markdown
+  content, MDX-mounted UI components, global styles, hand-curated data
+  overlays, generated site-only modules, and public assets. Visitor-facing
+  pages and public machine-readable assets stay under `docs/site/`.
 - `_context/` — gitignored. Private strategy memos, chat handoffs,
   half-formed drafts, and the project's Architecture Decision Records
   (`_context/decisions/`). AI agents may *read* these freely for

@@ -18,8 +18,8 @@
 //   mise run recipes-new -- typescript 61717 "tsc --build --watch produces stray .js" \
 //                          --repo microsoft/TypeScript --base node:24-slim
 //
-// The script intentionally does NOT touch docs/data/recipe-facets.json
-// or docs/data/projects.json — those entries require human metadata
+// The script intentionally does NOT touch docs/site/_data/recipe-facets.json
+// or docs/site/_data/projects.json — those entries require human metadata
 // judgement (severity, symptom, tags, project tagline, homepage). The
 // next-steps banner reminds you to add those rows manually before
 // committing.
@@ -191,13 +191,13 @@ console.log(
   `  4. Edit src/layer2_docker/${slug}/index.html — fill in the lede.`,
 );
 console.log(
-  `  5. Add a row to docs/data/recipe-facets.json keyed by "${slug}" (language / symptom / severity / tags).`,
+  `  5. Add a row to docs/site/_data/recipe-facets.json keyed by "${slug}" (language / symptom / severity / tags).`,
 );
 console.log(
-  `  6. (If "${project}" is a new project) add a row to docs/data/projects.json keyed by "${project}".`,
+  `  6. (If "${project}" is a new project) add a row to docs/site/_data/projects.json keyed by "${project}".`,
 );
 console.log(
-  '  7. Regenerate indices: cd docs && mise exec -- bun run generate-index && mise exec -- bun run generate-project-pages',
+  '  7. Regenerate docs data: cd docs && mise exec -- bun run generate',
 );
 console.log(
   `  8. Local verify: cd src/layer2_docker/${slug} && docker build -t vivarium-${slug}:dev . && docker run --rm vivarium-${slug}:dev`,

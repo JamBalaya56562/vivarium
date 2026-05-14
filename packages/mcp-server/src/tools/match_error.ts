@@ -1,6 +1,6 @@
 // Server-side mirror of the docs-site error → recipe matcher.
 //
-// **Keep bit-identical with `docs/components/ErrorRecipeMatcher.tsx`.**
+// **Keep bit-identical with `docs/site/_components/ErrorRecipeMatcher.tsx`.**
 // Diverging scoring between MCP and the docs matcher would surface as
 // agent-vs-UI disagreement on identical input. The scoring is
 // mechanical (no LLM / embeddings):

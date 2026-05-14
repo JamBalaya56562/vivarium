@@ -4,8 +4,8 @@ paths:
   - "src/layer1_wasm/**"
   - "src/layer2_docker/**"
   - "src/layer3_thirdway/**"
-  - "docs/data/recipe-facets.json"
-  - "docs/data/projects.json"
+  - "docs/site/_data/recipe-facets.json"
+  - "docs/site/_data/projects.json"
   - "docs/scripts/generate-recipes-index.ts"
   - "docs/scripts/generate-project-pages.ts"
   - "docs/scripts/new-recipe.ts"
@@ -54,25 +54,34 @@ Descriptive suffixes belong in the README title, not the slug.
 Both are hand-curated; edit them in the same PR as the recipe:
 
 ```text
-docs/data/recipe-facets.json   ← add a row keyed by <slug>
-docs/data/projects.json        ← add a row keyed by <project> (only if new)
+docs/site/_data/recipe-facets.json   ← add a row keyed by <slug>
+docs/site/_data/projects.json        ← add a row keyed by <project> (only if new)
 ```
 
-Then regenerate the public/api indices (these are tracked, so the
-diff shows them) and the project landing pages:
+Then regenerate every derived artefact in one shot:
 
 ```bash
 mise run recipes:index
-cd docs && mise exec -- bun run generate-project-pages
 ```
 
-`mise run recipes:index` writes both `docs/site/public/api/recipes.json`
-(tracked) and `docs/data/site-stats.json` (gitignored — site KPI
-counts consumed by the roadmap MDX). `generate-project-pages`
-writes the auto-generated `docs/site/{en,ja}/repro/<project>/index.mdx`
-landing pages (gitignored — regenerated on every build). Do not
-fall back to bare `bun run generate-index`: it skips the site-stats
-step and leaves the roadmap page's numbers stale on local preview.
+This task runs `bun run generate` inside `docs/`, which chains
+`generate-validators` → `generate-index` → `generate-project-pages`
+→ `generate-site-stats`. Outputs:
+
+- `docs/site/public/api/recipes.json` (**tracked**) — the diff shows
+  every recipe addition.
+- `docs/site/public/api/projects.json` (**tracked**) — generated from
+  the `_data/projects.json` overlay; the diff shows every new project.
+- `docs/site/_generated/site-stats.json` (**gitignored**) — site KPI
+  counts consumed by the roadmap MDX.
+- `docs/site/{en,ja}/repro/<project>/index.mdx` (**gitignored**) —
+  auto-generated project landing pages.
+- `docs/site/_generated/validators/*.mjs` (**gitignored**) — ajv
+  standalone validators built from `docs/site/public/spec/`.
+
+Do not fall back to bare `bun run generate-index` (or any single
+sub-step): partial runs leave at least one of the four outputs stale,
+which the roadmap page or recipe gallery surfaces on local preview.
 
 ### Scaffolding (Layer 2 only currently)
 

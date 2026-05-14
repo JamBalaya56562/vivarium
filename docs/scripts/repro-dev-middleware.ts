@@ -1,15 +1,16 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import path, { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { REPO_ROOT, REPRO_BASE_PATH } from './site-paths';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.join(SCRIPT_DIR, '..', '..');
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
   path.join(REPO_ROOT, 'src', 'layer2_docker'),
   path.join(REPO_ROOT, 'src', 'layer3_thirdway'),
 ];
+const REPRO_URL_RE = new RegExp(
+  `^${escapeRegExp(REPRO_BASE_PATH)}/([^?#]*)(?:[?#].*)?$`,
+);
 
 const REPRO_MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -106,7 +107,7 @@ export function setupReproDevMiddleware(
   if (server == null) return;
   server.middlewares.use((req, res, next) => {
     const url = req.url ?? '';
-    const match = url.match(/^\/vivarium\/repro\/([^?#]*)(?:[?#].*)?$/);
+    const match = url.match(REPRO_URL_RE);
     if (!match) return next();
     const subpath = match[1] ?? '';
     const filePath = resolveReproFile(subpath);
@@ -137,8 +138,12 @@ export function setupReproDevMiddleware(
     res.setHeader('Cache-Control', 'no-store');
     // `_shared/sw.js` needs to control the whole `/vivarium/repro/` tree.
     if (filePath.endsWith('sw.js')) {
-      res.setHeader('Service-Worker-Allowed', '/vivarium/repro/');
+      res.setHeader('Service-Worker-Allowed', `${REPRO_BASE_PATH}/`);
     }
     createReadStream(filePath).pipe(res);
   });
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

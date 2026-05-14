@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import validateManifestRaw from '../generated/manifest-validator.mjs';
+import validateManifestRaw from '../_generated/validators/manifest-validator.mjs';
 import './manifest-scaffolder.css';
 
 // Validation uses the generated AJV validator from docs/site/public/spec/manifest.schema.json.

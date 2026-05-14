@@ -48,7 +48,7 @@
         "project": {
           "type": "string",
           "minLength": 1,
-          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; per Phase 6 ADR-0024 (private memo) the slug-derived heuristic is retained — facet fields land via a centralised overlay (docs/data/recipe-facets.json) instead of per-recipe frontmatter."
+          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; per Phase 6 ADR-0024 (private memo) the slug-derived heuristic is retained — facet fields land via a centralised overlay (docs/site/_data/recipe-facets.json) instead of per-recipe frontmatter."
         },
         "issue": {
           "type": "integer",
@@ -78,7 +78,7 @@
         "language": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. Primary implementation language, lowercase (e.g. 'python', 'rust', 'shell'). Sourced from docs/data/recipe-facets.json per Phase 6 ADR-0024 (private memo). Added in the 2026-05-03 v1 revision; backwards-compatible, v1 consumers ignore."
+          "description": "Optional. Primary implementation language, lowercase (e.g. 'python', 'rust', 'shell'). Sourced from docs/site/_data/recipe-facets.json per Phase 6 ADR-0024 (private memo). Added in the 2026-05-03 v1 revision; backwards-compatible, v1 consumers ignore."
         },
         "symptom": {
           "type": "string",
