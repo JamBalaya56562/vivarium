@@ -1,6 +1,6 @@
-import path from 'node:path';
 import { defineConfig } from '@rspress/core';
 import { setupReproDevMiddleware } from './scripts/repro-dev-middleware';
+import { NAV_OVERRIDES_CSS, SITE_BASE, SITE_ROOT } from './scripts/site-paths';
 
 // Vivarium docs site configuration.
 //
@@ -9,11 +9,8 @@ import { setupReproDevMiddleware } from './scripts/repro-dev-middleware';
 // repo name with leading and trailing slashes. If the repo is ever renamed
 // or moved to a custom domain, update `base` accordingly.
 
-const DOC_ROOT = path.join(__dirname, 'site');
-const SITE_BASE = '/vivarium/';
-
 export default defineConfig({
-  root: DOC_ROOT,
+  root: SITE_ROOT,
   base: SITE_BASE,
   title: 'Vivarium',
   description:
@@ -36,7 +33,7 @@ export default defineConfig({
   // Lower the breakpoint at which the nav's GitHub icon + theme toggle
   // collapse into the hamburger menu, so the docs nav matches the
   // reproduction-page nav (which keeps both icons inline at all widths).
-  globalStyles: path.join(__dirname, 'styles/nav-overrides.css'),
+  globalStyles: NAV_OVERRIDES_CSS,
   markdown: {
     link: {
       checkDeadLinks: true,

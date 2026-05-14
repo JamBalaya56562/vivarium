@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import './recipe-gallery.css';
-import recipesIndex from '../site/public/api/recipes.json';
+import recipesIndex from '../public/api/recipes.json';
 
 interface RecipeEntry {
   slug: string;

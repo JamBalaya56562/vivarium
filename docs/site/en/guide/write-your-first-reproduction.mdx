@@ -11,7 +11,7 @@ import {
   Callout,
   NextCta,
   BottomNote,
-} from '../../../components/PageChrome';
+} from '../../_components/PageChrome';
 
 <Page>
   <PageHero
@@ -150,7 +150,7 @@ import pandas as pd
     <p><code>recipes.json</code>, which the gallery (<code>/repro/</code>) and the MCP server consume, is generated from{' '} <code>src/layer*/</code> at build time. To regenerate locally:</p>
     <pre><code>{`mise run recipes:index
 # or
-cd docs && bun run generate-index
+cd docs && bun run generate
 `}</code></pre>
     <p>Check that <code>docs/site/public/api/recipes.json</code> contains your slug. With the docs site running locally, the new recipe shows up as a card on the gallery:</p>
     <pre><code>{`cd docs && bun run dev

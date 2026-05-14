@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import validateVerdictRaw from '../generated/verdict-validator.mjs';
+import validateVerdictRaw from '../_generated/validators/verdict-validator.mjs';
 import './repro-compare.css';
 
 // Verdict files are parsed, validated, and rendered entirely client-side.

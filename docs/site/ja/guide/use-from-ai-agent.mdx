@@ -11,7 +11,7 @@ import {
   Callout,
   NextCta,
   BottomNote,
-} from '../../../components/PageChrome';
+} from '../../_components/PageChrome';
 
 <Page>
   <PageHero
@@ -130,8 +130,8 @@ bun run build
         新しいレシピを 1 ステップで起こすための足場ヘルパー。
         検証済 slug、<code>mise run recipes:new</code> /{' '}
         <code>mise run recipes:verify</code> の正確なコマンド、
-        <code>docs/data/recipe-facets.json</code>（と新しいプロジェクトのみ
-        <code>docs/data/projects.json</code>）に追加する placeholder 行、
+        <code>docs/site/_data/recipe-facets.json</code>（と新しいプロジェクトのみ
+        <code>docs/site/_data/projects.json</code>）に追加する placeholder 行、
         コミットメッセージのテンプレート、順序付き next-steps チェックリストを返す。
         Layer 2 にだけ専用スキャフォルダがあり、Layer 1 / 3 は既存レシピを
         コピーする運用。
