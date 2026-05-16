@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing HypothesisWorks/hypothesis#4651</title>
+    <!-- vivarium-chrome-injected -->
+    <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/python_stdlib.zip" as="fetch" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide-lock.json" as="fetch" type="application/json" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Keep the version below in sync with DEFAULT_PYODIDE_VERSION in
+         ../_shared/loader.ts. -->
+    <link
+      rel="modulepreload"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
+      crossorigin
+    />
+    <link rel="stylesheet" href="../_shared/style.css" />
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
+          <code>st.decimals(min_value, max_value, places=N)</code>
+          should only generate <code>Decimal</code> values that fall
+          inside the declared <code>[min_value, max_value]</code>
+          range and align to <code>N</code> decimal places. With
+          high-significant-digit bounds (e.g. a 65-digit
+          <code>min_value</code> and a 129-digit
+          <code>max_value</code>), the strategy returns samples that
+          exceed <code>max_value</code> by many orders of magnitude.
+        </p>
+        <p>
+          The script on this page installs hypothesis into Pyodide
+          via <code>micropip</code>, runs the strategy under both a
+          bounded <code>@given</code> search and a manual
+          <code>strategy.example()</code> sweep, and reports any
+          sample that violates the declared bounds. If either path
+          finds a bound-violating value, the bug reproduces in the
+          runtime currently loaded in your browser tab.
+        </p>
+        <p>
+          The suspected fix area is the internal <code>ctx(val)</code>
+          helper in
+          <code>hypothesis/strategies/_internal/core.py:1811</code>:
+          <code>precision = ceil(math.log10(abs(val) or 1)) + places + 1</code>
+          collapses to 1 for tiny values, and at that precision the
+          quantising divide drops essentially every coefficient
+          digit. The full discussion lives in the GitHub issue
+          thread linked below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">HypothesisWorks/hypothesis</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#4651</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Pyodide v0.29.3</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Pyodide · hypothesis</p>
+          <h1>Reproducing <a href="https://github.com/HypothesisWorks/hypothesis/issues/4651">HypothesisWorks/hypothesis#4651</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+            <a class="vh-chip" href="https://github.com/HypothesisWorks/hypothesis/issues/4651" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Upstream issue
+            </a>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Pyodide runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
+      </header>
+
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> hypothesis</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> decimal </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Decimal</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> hypothesis </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> given, settings, strategies </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> st, HealthCheck</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">MIN_</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Decimal(</span><span style="color:#9ECBFF">"0."</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "0"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> 63</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "1"</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#79B8FF">MAX_</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Decimal(</span><span style="color:#9ECBFF">"9"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> 64</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "."</span><span style="color:#F97583"> +</span><span style="color:#9ECBFF"> "9"</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> 64</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#79B8FF">PLACES</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 2</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#9ECBFF">    "hypothesis_version"</span><span style="color:#E1E4E8">: hypothesis.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "min_value"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">MIN_</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#9ECBFF">    "max_value"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">MAX_</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#9ECBFF">    "places"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">PLACES</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "hypothesis_falsifying"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "hypothesis_crash"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "manual_violations"</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "manual_crash"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "bound_violated"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">False</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D"># Approach A — bounded Hypothesis search.</span></span>
+<span class="line"><span style="color:#6A737D"># Capturing an AssertionError from inside the property hands us the</span></span>
+<span class="line"><span style="color:#6A737D"># falsifying example without scraping Hypothesis's pytest-style</span></span>
+<span class="line"><span style="color:#6A737D"># reporter. derandomize=True + database=None makes the 300-example</span></span>
+<span class="line"><span style="color:#6A737D"># budget deterministic across browsers.</span></span>
+<span class="line"><span style="color:#E1E4E8">state </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span><span style="color:#9ECBFF">"falsifying"</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">@given</span><span style="color:#E1E4E8">(st.decimals(</span><span style="color:#FFAB70">min_value</span><span style="color:#F97583">=</span><span style="color:#79B8FF">MIN_</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">max_value</span><span style="color:#F97583">=</span><span style="color:#79B8FF">MAX_</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">places</span><span style="color:#F97583">=</span><span style="color:#79B8FF">PLACES</span><span style="color:#E1E4E8">))</span></span>
+<span class="line"><span style="color:#B392F0">@settings</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#FFAB70">    max_examples</span><span style="color:#F97583">=</span><span style="color:#79B8FF">300</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">    deadline</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">    derandomize</span><span style="color:#F97583">=</span><span style="color:#79B8FF">True</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">    database</span><span style="color:#F97583">=</span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#FFAB70">    suppress_health_check</span><span style="color:#F97583">=</span><span style="color:#79B8FF">list</span><span style="color:#E1E4E8">(HealthCheck),</span></span>
+<span class="line"><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> prop</span><span style="color:#E1E4E8">(d):</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">MIN_</span><span style="color:#F97583"> &#x3C;=</span><span style="color:#E1E4E8"> d </span><span style="color:#F97583">&#x3C;=</span><span style="color:#79B8FF"> MAX_</span><span style="color:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> state[</span><span style="color:#9ECBFF">"falsifying"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">is</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">            state[</span><span style="color:#9ECBFF">"falsifying"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> str</span><span style="color:#E1E4E8">(d)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#F97583">        raise</span><span style="color:#79B8FF"> AssertionError</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">(d)[:</span><span style="color:#79B8FF">120</span><span style="color:#E1E4E8">])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">try</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    prop()</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#79B8FF"> AssertionError</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">    pass</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#79B8FF"> Exception</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"hypothesis_crash"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#F97583"> f</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">{type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__}</span><span style="color:#9ECBFF">: </span><span style="color:#79B8FF">{str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span><span style="color:#79B8FF">}</span><span style="color:#9ECBFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result[</span><span style="color:#9ECBFF">"hypothesis_falsifying"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> state[</span><span style="color:#9ECBFF">"falsifying"</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D"># Approach B — manual strategy.example() sweep.</span></span>
+<span class="line"><span style="color:#6A737D"># Independent confirmation path: if Hypothesis's machinery itself</span></span>
+<span class="line"><span style="color:#6A737D"># misbehaves on WASM, the raw strategy output still tells us whether</span></span>
+<span class="line"><span style="color:#6A737D"># the bound-violation phenomenon survives.</span></span>
+<span class="line"><span style="color:#E1E4E8">strat </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> st.decimals(</span><span style="color:#FFAB70">min_value</span><span style="color:#F97583">=</span><span style="color:#79B8FF">MIN_</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">max_value</span><span style="color:#F97583">=</span><span style="color:#79B8FF">MAX_</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">places</span><span style="color:#F97583">=</span><span style="color:#79B8FF">PLACES</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">try</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> _ </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> range</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">500</span><span style="color:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#F97583">        try</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">            v </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> strat.example()</span></span>
+<span class="line"><span style="color:#F97583">        except</span><span style="color:#79B8FF"> Exception</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">            continue</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">MIN_</span><span style="color:#F97583"> &#x3C;=</span><span style="color:#E1E4E8"> v </span><span style="color:#F97583">&#x3C;=</span><span style="color:#79B8FF"> MAX_</span><span style="color:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#E1E4E8">            result[</span><span style="color:#9ECBFF">"manual_violations"</span><span style="color:#E1E4E8">].append(</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">(v)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">])</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#79B8FF"> len</span><span style="color:#E1E4E8">(result[</span><span style="color:#9ECBFF">"manual_violations"</span><span style="color:#E1E4E8">]) </span><span style="color:#F97583">>=</span><span style="color:#79B8FF"> 3</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">                break</span></span>
+<span class="line"><span style="color:#F97583">except</span><span style="color:#79B8FF"> Exception</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> e:</span></span>
+<span class="line"><span style="color:#E1E4E8">    result[</span><span style="color:#9ECBFF">"manual_crash"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#F97583"> f</span><span style="color:#9ECBFF">"</span><span style="color:#79B8FF">{type</span><span style="color:#E1E4E8">(e).</span><span style="color:#79B8FF">__name__}</span><span style="color:#9ECBFF">: </span><span style="color:#79B8FF">{str</span><span style="color:#E1E4E8">(e)[:</span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">]</span><span style="color:#79B8FF">}</span><span style="color:#9ECBFF">"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result[</span><span style="color:#9ECBFF">"bound_violated"</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> bool</span><span style="color:#E1E4E8">(result[</span><span style="color:#9ECBFF">"hypothesis_falsifying"</span><span style="color:#E1E4E8">]) </span><span style="color:#F97583">or</span><span style="color:#79B8FF"> bool</span><span style="color:#E1E4E8">(result[</span><span style="color:#9ECBFF">"manual_violations"</span><span style="color:#E1E4E8">])</span></span>
+<span class="line"><span style="color:#E1E4E8">result</span></span></code></pre>
+        </section>
+
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
+
+    </main>
+
+    <script type="module" src="./repro.js"></script>
+  </body>
+</html>

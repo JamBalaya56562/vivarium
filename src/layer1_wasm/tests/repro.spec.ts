@@ -125,6 +125,14 @@ const cases: ReproCase[] = [
     expectedBugIssue: 779,
     expectedRuntimeName: "rust-wasi",
   },
+  {
+    name: "hypothesis-4651 reproduction",
+    url: `${LAYER1}/hypothesis-4651/`,
+    expectedVerdict: "reproduced",
+    expectedBugProject: "hypothesis",
+    expectedBugIssue: 4651,
+    expectedRuntimeName: "pyodide",
+  },
   // Layer 2 — Docker catalogue, verdict snapshot fetched from
   // `verdict.json` next to the page. CI generates `verdict.json` in
   // both `repro-regression.yml` (build + run + write) and

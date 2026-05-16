@@ -39,6 +39,24 @@
       "severity": "spec-violation"
     },
     {
+      "slug": "hypothesis-4651",
+      "layer": 1,
+      "project": "hypothesis",
+      "issue": 4651,
+      "title": "HypothesisWorks/hypothesis#4651",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/hypothesis/4651/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/hypothesis-4651",
+      "language": "python",
+      "tags": [
+        "property-based-testing",
+        "decimal",
+        "strategies",
+        "strategy-invariant"
+      ],
+      "symptom": "strategy-violates-declared-bound",
+      "severity": "bug"
+    },
+    {
       "slug": "mpmath-983",
       "layer": 1,
       "project": "mpmath",
