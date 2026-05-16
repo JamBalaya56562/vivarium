@@ -3,24 +3,6 @@
   "contract": "v1",
   "recipes": [
     {
-      "slug": "astroid-2993",
-      "layer": 1,
-      "project": "astroid",
-      "issue": 2993,
-      "title": "pylint-dev/astroid#2993",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/astroid/2993/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/astroid-2993",
-      "language": "python",
-      "tags": [
-        "ast",
-        "type-comment",
-        "fuzzing",
-        "oss-fuzz"
-      ],
-      "symptom": "memory-error-on-fuzzed-input",
-      "severity": "crash"
-    },
-    {
       "slug": "cpython-137205",
       "layer": 1,
       "project": "cpython",
