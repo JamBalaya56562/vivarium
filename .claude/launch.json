@@ -9,7 +9,7 @@
     },
     {
       "name": "vivarium-layer1",
-      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\uv\\0.11.12\\uv.exe",
+      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\uv\\0.11.14\\uv.exe",
       "runtimeArgs": ["run", "--no-project", "--python", "3.13", "python", "-m", "http.server", "8767", "--directory", "src/layer1_wasm"],
       "port": 8767
     }
