@@ -81,10 +81,13 @@ remains open as of 2026-05-16.
 
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
-| `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. Renders baseline + fix-candidate output panes side-by-side. |
+| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. Drives the two-variant run. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. PEP 723 inline metadata pins `hypothesis==6.152.7`. |
+| `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL, branch ref, and `subdirectory: hypothesis-python` because the installable package lives there in this monorepo). Read by `scripts/build-layer1-wheels.sh`. |
+| `verify_fix.py` | **Maintainer convenience.** PEP 723 native orchestrator that runs the reproduction against **both** the baseline pin and the fix-candidate spec in side-by-side `uv run --no-project --with <spec>` venvs, so a reviewer can see the before/after verdict in one command. Exits 0 iff baseline reproduces AND fix-candidate does not. Deleted once the fix is merged upstream and released on PyPI. |
+| `wheels/`    | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `hypothesis-<version>-py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in the same Pyodide tab. |
 
 ## Verdict contract — `vivarium-contract: v1`
 
@@ -125,6 +128,57 @@ mise install
 mise exec uv -- uv run src/layer1_wasm/hypothesis-4651/repro.py
 # verdict=reproduced — st.decimals(places=…) produced a Decimal outside the declared bounds
 ```
+
+## Fix-candidate verification
+
+A fork+branch carrying a proposed fix is rendered **side-by-side**
+with the baseline on the same page, so a reviewer can see the
+before/after verdict in one page load.
+
+- **Fix branch:**
+  <https://github.com/JamBalaya56562/hypothesis/tree/fix-decimals-places-bounds>
+  (monorepo — the installable Python package lives under
+  `hypothesis-python/`, declared via `source.subdirectory` in
+  `fix-candidate.json`).
+- **What the page shows:**
+  - top right pane (`#output`) — baseline run against PyPI
+    `hypothesis==6.152.7`. Expected `bound_violated: true`.
+  - bottom right pane (`#output-fix`) — fix-candidate run against
+    the wheel built from the branch. Expected `bound_violated: false`.
+  - top-level `#verdict` pill mirrors the baseline so the existing
+    single-verdict Contract v1 surface keeps its prior meaning.
+
+### Local in-browser
+
+```bash
+mise run repro:build:wheels                      # build wheel into src/layer1_wasm/hypothesis-4651/wheels/
+cd src/layer1_wasm
+bun install --frozen-lockfile
+bun run build
+python -m http.server -d . 8767
+# open http://localhost:8767/hypothesis-4651/
+```
+
+### Local native (two-variant)
+
+```bash
+mise exec uv -- uv run src/layer1_wasm/hypothesis-4651/verify_fix.py
+# stdout: JSON envelope with both verdicts side-by-side
+# exit 0 + "verdict=fix-candidate-confirmed" if baseline=reproduced AND fix-candidate=unreproduced
+```
+
+### When the fix lands upstream
+
+Once an upstream-merged hypothesis release lands on PyPI:
+
+1. Bump the `hypothesis==<version>` pin in `repro.py` and `repro.ts`.
+2. Delete `fix-candidate.json`, `verify_fix.py`, and the `wheels/`
+   directory.
+3. Restore `index.html` to a single-output pane (`<pre id="output">`)
+   and drop the `outputFixEl` branch from `repro.ts`.
+
+The page becomes a plain "fixed upstream — verdict flips to
+`unreproduced`" recipe again.
 
 ## Authorship
 

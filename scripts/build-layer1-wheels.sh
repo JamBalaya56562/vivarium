@@ -46,6 +46,13 @@ for src_json in "${sources[@]}"; do
   pkg=$(jq -r '.package' "$src_json")
   url=$(jq -r '.source.url' "$src_json")
   ref=$(jq -r '.source.ref' "$src_json")
+  # `source.subdirectory` is optional; monorepos like
+  # `HypothesisWorks/hypothesis` keep the installable Python package
+  # under a subdirectory (`hypothesis-python/`) rather than at the
+  # repo root, and pip needs PEP 508 `#subdirectory=<dir>` appended
+  # to the VCS spec to find pyproject.toml there. Empty string =
+  # repo root (the common case; astroid-2993 etc.).
+  subdirectory=$(jq -r '.source.subdirectory // ""' "$src_json")
   upstream_pr=$(jq -r '.upstream_pr // ""' "$src_json")
   purpose=$(jq -r '.purpose // ""' "$src_json")
 
@@ -54,7 +61,12 @@ for src_json in "${sources[@]}"; do
     continue
   fi
 
-  echo "[wheels:build] $slug: building $pkg @ git+$url@$ref"
+  pip_spec="${pkg} @ git+${url}@${ref}"
+  if [ -n "$subdirectory" ]; then
+    pip_spec="${pip_spec}#subdirectory=${subdirectory}"
+  fi
+
+  echo "[wheels:build] $slug: building $pip_spec"
 
   # Wipe any stale artefacts so the manifest never points at a wheel
   # filename that no longer exists.
@@ -69,7 +81,7 @@ for src_json in "${sources[@]}"; do
   uv run --no-project --with pip --python 3.13 -- \
     python -m pip wheel --no-deps \
     --wheel-dir "$wheels_dir" \
-    "${pkg} @ git+${url}@${ref}"
+    "$pip_spec"
 
   whl=$(ls "$wheels_dir"/*.whl | head -1)
   if [ -z "$whl" ]; then
@@ -89,7 +101,9 @@ for src_json in "${sources[@]}"; do
     --arg purpose "$purpose" \
     --arg url "$url" \
     --arg ref "$ref" \
+    --arg subdirectory "$subdirectory" \
     --arg commit "$commit" \
+    --arg pip_spec "$pip_spec" \
     --arg upstream_pr "$upstream_pr" \
     --arg fetched_at "$fetched_at" \
     --argjson schema_version 1 \
@@ -99,13 +113,13 @@ for src_json in "${sources[@]}"; do
       filename: $filename,
       version: $version,
       purpose: $purpose,
-      source: {
+      source: ({
         type: "git",
         url: $url,
         ref: $ref,
         commit: $commit,
-        spec: ($pkg + " @ git+" + $url + "@" + $ref)
-      },
+        spec: $pip_spec
+      } + (if $subdirectory == "" then {} else {subdirectory: $subdirectory} end)),
       upstream_pr: $upstream_pr,
       fetched_at: $fetched_at
     }' >"$wheels_dir/manifest.json"
