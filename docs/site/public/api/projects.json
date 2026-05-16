@@ -2,19 +2,6 @@
   "index": "v1",
   "projects": [
     {
-      "project": "astroid",
-      "display_name": "astroid",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/astroid/",
-      "tagline": "AST library that powers pylint.",
-      "description": "Reproductions install astroid from PyPI via micropip into the Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
-      "homepage": "https://pylint.readthedocs.io/projects/astroid/",
-      "github": "https://github.com/pylint-dev/astroid"
-    },
-    {
       "project": "bash",
       "display_name": "bash",
       "recipe_count": 1,

@@ -70,14 +70,6 @@ const cases: ReproCase[] = [
     expectedRuntimeName: "pyodide",
   },
   {
-    name: "astroid-2993 reproduction",
-    url: `${LAYER1}/astroid-2993/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "astroid",
-    expectedBugIssue: 2993,
-    expectedRuntimeName: "pyodide",
-  },
-  {
     name: "mpmath-983 reproduction",
     url: `${LAYER1}/mpmath-983/`,
     expectedVerdict: "reproduced",

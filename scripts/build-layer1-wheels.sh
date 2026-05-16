@@ -51,7 +51,7 @@ for src_json in "${sources[@]}"; do
   # under a subdirectory (`hypothesis-python/`) rather than at the
   # repo root, and pip needs PEP 508 `#subdirectory=<dir>` appended
   # to the VCS spec to find pyproject.toml there. Empty string =
-  # repo root (the common case; astroid-2993 etc.).
+  # repo root (the common case).
   subdirectory=$(jq -r '.source.subdirectory // ""' "$src_json")
   upstream_pr=$(jq -r '.upstream_pr // ""' "$src_json")
   purpose=$(jq -r '.purpose // ""' "$src_json")

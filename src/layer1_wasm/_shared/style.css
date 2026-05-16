@@ -1660,8 +1660,9 @@ body.vh-drawer-open {
   box-sizing: border-box;
 }
 
-/* Multi-variant recipes (e.g. astroid-2993): opt out of chrome.js's
- * single-output grid by adding `vh-output-multi` to the output column.
+/* Multi-variant recipes (recipes that stack several `<pre>` output
+ * panels in one page): opt out of chrome.js's single-output grid by
+ * adding `vh-output-multi` to the output column.
  * The grid that chrome.js applies via `.vh-output-section` assumes one
  * `<pre id="output">` sharing a single cell with the progress bar; a
  * multi-variant recipe has several `<pre>` panels stacked plus extra
