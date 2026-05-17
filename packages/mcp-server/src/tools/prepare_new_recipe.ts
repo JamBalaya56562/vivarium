@@ -4,7 +4,7 @@
 // steps). The MCP server returns the commands and metadata; the
 // agent's shell tool actually invokes mise.
 
-import type { Layer } from '../types.js';
+import type { Layer, RoundtripState } from '../types.js';
 
 export interface PrepareNewRecipeArgs {
   project?: string;
@@ -53,6 +53,13 @@ interface PrepareNewRecipeOk {
     layer_readme: string;
     selection_policy: string;
   };
+  // Initial round-trip state to write into
+  // src/layer<N>_*/<slug>/roundtrip.json after scaffolding. Validates
+  // against roundtrip.schema.json (schema_version 1). Caller (typically
+  // the scaffold-recipe-from-issue skill) is responsible for the write;
+  // the MCP server does no filesystem mutation itself.
+  roundtrip_init: RoundtripState;
+  roundtrip_path: string;
 }
 
 interface PrepareNewRecipeError {
@@ -68,6 +75,13 @@ export type PrepareNewRecipeResult =
 // Single-sourced as a literal here because the MCP package is published
 // independently and cannot import from docs/.
 const SLUG_REGEX = /^([a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*?)-(\d+)$/;
+
+// Mirror of LAYER_DIRNAME in verify_and_report_fix — keep in sync.
+const LAYER_DIRNAME: Record<Layer, string> = {
+  1: 'layer1_wasm',
+  2: 'layer2_docker',
+  3: 'layer3_thirdway',
+};
 
 // Default upstream owner/repo for common projects, mirroring the lookup
 // in docs/scripts/new-recipe.ts. Override via repo_owner.
@@ -200,6 +214,16 @@ export async function prepareNewRecipe(
           `Submit the PR.`,
         ];
 
+  const roundtripInit: RoundtripState = {
+    schema_version: 1,
+    slug,
+    upstream_issue: upstreamIssueUrl,
+    status: 'draft',
+    updated_at: new Date().toISOString(),
+    notes: ['scaffolded from upstream issue'],
+  };
+  const roundtripPath = `src/${LAYER_DIRNAME[layer]}/${slug}/roundtrip.json`;
+
   return {
     ok: true,
     slug,
@@ -216,8 +240,10 @@ export async function prepareNewRecipe(
         'https://github.com/aletheia-works/vivarium/blob/main/.claude/rules/recipe-authoring.md',
       layer_readme: `https://github.com/aletheia-works/vivarium/blob/main/src/layer${layer}_${layer === 1 ? 'wasm' : layer === 2 ? 'docker' : 'thirdway'}/README.md`,
       selection_policy:
-        'https://github.com/aletheia-works/vivarium (issue selection policy is in _context/strategy/issue_selection_policy.md, gitignored)',
+        'caller-defined — issue selection criteria vary by user workflow and are not enforced by the MCP server beyond the slug regex',
     },
+    roundtrip_init: roundtripInit,
+    roundtrip_path: roundtripPath,
   };
 }
 
