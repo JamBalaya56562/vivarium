@@ -9,6 +9,11 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+import {
+  CREATE_FORK_PR_TOOL,
+  createForkPr,
+  type CreateForkPrArgs,
+} from './tools/create_fork_pr.js';
 import { GET_RECIPE_TOOL, getRecipe } from './tools/get_recipe.js';
 import {
   LIST_RECIPES_TOOL,
@@ -58,7 +63,7 @@ const SERVER_NAME = 'vivarium-mcp';
 // description / surface refinements) — the project is still pre-1.0
 // and `prepare_fix_candidate` is meaningful but fully opt-in, so a minor
 // bump would overstate the impact.
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.2.1';
 
 export function createServer(): Server {
   const server = new Server(
@@ -77,6 +82,7 @@ export function createServer(): Server {
       VERIFY_AND_REPORT_FIX_TOOL,
       PREPARE_NEW_RECIPE_TOOL,
       PREPARE_FIX_CANDIDATE_TOOL,
+      CREATE_FORK_PR_TOOL,
     ],
   }));
 
@@ -123,6 +129,9 @@ export function createServer(): Server {
           payload = await prepareFixCandidate(
             args as unknown as PrepareFixCandidateArgs,
           );
+          break;
+        case 'create_fork_pr':
+          payload = await createForkPr(args as unknown as CreateForkPrArgs);
           break;
         default:
           return {
