@@ -2,6 +2,15 @@ import { ArrowRight, Lock } from 'lucide-react';
 import { useState } from 'react';
 import './vivarium-hero.css';
 
+// PINNED SLUGS — intentionally NOT derived from recipes.json.
+// The three slugs below (cpython-137205, postgres-lost-update, ruby-21709)
+// are paired with hand-written hero copy (lede / verdictText / pulling /
+// ready / okLine) that the recipe metadata cannot supply. If one of these
+// recipes must be deleted (e.g. upstream merges or rejects the fix), FIRST
+// pick a same-layer replacement and rewrite the matching STRINGS entry in
+// BOTH en and ja before the deletion lands. See
+// .claude/rules/recipe-authoring.md "Data files to update".
+
 type Lang = 'en' | 'ja';
 
 const STRINGS = {

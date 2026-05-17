@@ -58,6 +58,22 @@ docs/site/_data/recipe-facets.json   ← add a row keyed by <slug>
 docs/site/_data/projects.json        ← add a row keyed by <project> (only if new)
 ```
 
+Before **deleting** a recipe, also check the landing-page hero for a
+pinned reference:
+
+```bash
+grep -F "<slug>" docs/site/_components/VivariumHero.tsx
+```
+
+If the slug appears, it is intentionally pinned to the hero and is
+paired with hand-written copy (`title` / `lede` / `verdictText` /
+`pulling` / `ready` / `okLine`) that the recipe metadata cannot
+supply. Pick a same-layer replacement and rewrite the matching
+`STRINGS` block in **both** `en` and `ja` before the deletion lands.
+Visitor-facing MDX references go through the data-driven
+[`LiveExamples`](../../docs/site/_components/LiveExamples.tsx)
+component and self-heal — only the hero needs manual handover.
+
 Then regenerate every derived artefact in one shot:
 
 ```bash

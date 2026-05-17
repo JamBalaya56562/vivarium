@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -38,7 +39,7 @@ import {
     eyebrow="// 1 · 再現したいバグを決める"
     heading="スラッグは <project>-<issue> 形式。"
   >
-    <p>上流 Issue がある場合は <code>&lt;project&gt;-&lt;issue&gt;</code> （例: <code>pandas-56679</code>）が標準。 ない場合は説明的なケバブケース（例: <code>bash-local-shadows-exit</code>）。 これがディレクトリ名でもあり、Manifest v1 の <code>slug</code> でもあります。</p>
+    <p>上流 Issue がある場合は <code>&lt;project&gt;-&lt;issue&gt;</code> （例: <code><ExampleSlug layer={1} language="python" kind="numeric" /></code>）が標準。 ない場合は説明的なケバブケース（例: <code><ExampleSlug layer={2} kind="descriptive" fallback="bash-local-shadows-exit" /></code>）。 これがディレクトリ名でもあり、Manifest v1 の <code>slug</code> でもあります。</p>
     <p>バグを選ぶときは、Layer 1 で完結するか確認するのがコツです:</p>
     <ul>
       <li>外部 I/O（ネットワーク、ファイル、サブプロセス）を踏まない。</li>
@@ -63,7 +64,7 @@ import {
         },
         {
           lead: '一番近い既存レシピをコピーする。',
-          body: <>言語が同じレシピを丸ごとコピーするのが楽です。Python なら <code>src/layer1_wasm/pandas-56679/</code>、Ruby なら <code>ruby-21709/</code>、PHP なら <code>php-12167/</code>、Rust なら <code>regex-779/</code>。<code>cp -r src/layer1_wasm/pandas-56679 src/layer1_wasm/&lt;あなたの slug&gt;</code> でディレクトリごと複製。</>,
+          body: <>言語が同じレシピを丸ごとコピーするのが楽です。Python なら <code>src/layer1_wasm/<ExampleSlug layer={1} language="python" />/</code>、Ruby なら <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" />/</code>、PHP なら <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" />/</code>、Rust なら <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" />/</code>。<code>cp -r src/layer1_wasm/<ExampleSlug layer={1} language="python" /> src/layer1_wasm/&lt;あなたの slug&gt;</code> でディレクトリごと複製。</>,
         },
       ]}
     />

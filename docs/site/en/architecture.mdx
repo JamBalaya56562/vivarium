@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../_components/PageChrome';
+import { LiveExamples } from '../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -89,7 +90,7 @@ import {
     eyebrow="// 01 · LAYER 1"
     heading="WebAssembly, in the page."
     intro={
-      <p>Reproductions run directly inside your browser tab. No account, no install — open the page and it starts. Phases 0–2 built up Python / Ruby / PHP / Rust recipes like <a href="/vivarium/repro/cpython/137205/">cpython#137205</a> and <a href="/vivarium/repro/pandas/56679/">pandas#56679</a>; this layer is the most "browser-only" surface Vivarium ships.</p>
+      <p>Reproductions run directly inside your browser tab. No account, no install — open the page and it starts. Phases 0–2 built up Python / Ruby / PHP / Rust recipes, e.g. <LiveExamples layer={1} kind="numeric" limit={2} format="inline-prose" lang="en" />; this layer is the most "browser-only" surface Vivarium ships.</p>
     }
     cellLabels={{
       fits: 'Bugs this layer fits',
@@ -122,11 +123,11 @@ import {
     }
     runtimes={
       <ul>
-        <li><strong>Python</strong>: <a href="https://pyodide.org">Pyodide</a> — e.g. <a href="/vivarium/repro/numpy/28287/">numpy#28287</a>, <a href="/vivarium/repro/pandas/56679/">pandas#56679</a>.</li>
-        <li><strong>SQLite</strong>: <a href="https://sqlite.org/wasm/">sqlite-wasm</a> (via Pyodide) — e.g. <a href="/vivarium/repro/cpython/137205/">cpython#137205</a>.</li>
-        <li><strong>Rust</strong>: <code>wasm32-wasip1</code> — e.g. <a href="/vivarium/repro/regex/779/">regex#779</a>.</li>
-        <li><strong>Ruby</strong>: <a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a> — e.g. <a href="/vivarium/repro/ruby/21709/">ruby#21709</a>.</li>
-        <li><strong>PHP</strong>: <a href="https://github.com/WordPress/wordpress-playground">php-wasm</a> — e.g. <a href="/vivarium/repro/php/12167/">php#12167</a>.</li>
+        <li><strong>Python</strong>: <a href="https://pyodide.org">Pyodide</a> — live: <LiveExamples layer={1} language="python" kind="numeric" limit={2} format="inline-prose" lang="en" /></li>
+        <li><strong>Rust</strong>: <code>wasm32-wasip1</code> — live: <LiveExamples layer={1} language="rust" kind="numeric" limit={1} format="inline-prose" lang="en" /></li>
+        <li><strong>Ruby</strong>: <a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a> — live: <LiveExamples layer={1} language="ruby" kind="numeric" limit={1} format="inline-prose" lang="en" /></li>
+        <li><strong>PHP</strong>: <a href="https://github.com/WordPress/wordpress-playground">php-wasm</a> — live: <LiveExamples layer={1} language="php" kind="numeric" limit={1} format="inline-prose" lang="en" /></li>
+        <li><strong>SQLite</strong>: <a href="https://sqlite.org/wasm/">sqlite-wasm</a> (via Pyodide) — recipes that hit the sqlite WASM build via Pyodide live under the Python listing above.</li>
       </ul>
     }
   />
@@ -163,14 +164,7 @@ import {
         <li><strong>Concurrency itself.</strong> Layer 2 runs on real threads, but reproducing heisenbugs reliably is Layer 3 territory.</li>
       </ul>
     }
-    runtimes={
-      <ul>
-        <li><a href="/vivarium/repro/postgres/lost-update/">postgres-lost-update</a> — lost updates straddling a transaction boundary.</li>
-        <li><a href="/vivarium/repro/flock/is-advisory/">flock-is-advisory</a> — file locks are advisory, not mandatory.</li>
-        <li><a href="/vivarium/repro/find/xargs-whitespace/">find-xargs-whitespace</a> — whitespace handling across the pipeline boundary.</li>
-        <li><a href="/vivarium/repro/bash/local-shadows-exit/">bash-local-shadows-exit</a> — <code>local</code> shadows the parent shell's <code>$?</code>.</li>
-      </ul>
-    }
+    runtimes={<LiveExamples layer={2} lang="en" />}
   />
 
   <LayerSection

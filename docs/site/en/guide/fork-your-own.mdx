@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -124,7 +125,7 @@ cd vivarium`}</code></pre>
       <li><code>src/layer1_wasm/&lt;slug&gt;/repro.ts</code> — runs the reproduction in Pyodide / Ruby.wasm / php-wasm / Rust and sets the verdict.</li>
       <li><code>src/layer1_wasm/&lt;slug&gt;/README.md</code> — what the recipe is.</li>
     </ul>
-    <p>The fastest path is to copy an existing recipe like{' '} <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"><code>pandas-56679</code></a>{' '} or{' '} <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779"><code>regex-779</code></a>, change the slug (<code>&lt;project&gt;-&lt;issue&gt;</code> is the convention), and rewrite the reproduction script.</p>
+    <p>The fastest path is to copy an existing recipe like{' '} <code><ExampleSlug layer={1} language="python" /></code>{' '} or{' '} <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" /></code>, change the slug (<code>&lt;project&gt;-&lt;issue&gt;</code> is the convention), and rewrite the reproduction script.</p>
     <Callout>
       The contract a recipe satisfies is{' '}
       <a href="/vivarium/spec/contract-v1">Contract v1</a>. Emit{' '}

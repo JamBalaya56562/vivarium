@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -38,7 +39,7 @@ import {
     eyebrow="// 1 · PICK A BUG"
     heading="Slug shape: <project>-<issue>."
   >
-    <p>If the upstream bug has an issue tracker entry, the slug is{' '} <code>&lt;project&gt;-&lt;issue&gt;</code> (e.g.{' '} <code>pandas-56679</code>). Otherwise, a descriptive kebab-case string (e.g. <code>bash-local-shadows-exit</code>) works. The slug is the directory name and also the Manifest v1 <code>slug</code> field.</p>
+    <p>If the upstream bug has an issue tracker entry, the slug is{' '} <code>&lt;project&gt;-&lt;issue&gt;</code> (e.g.{' '} <code><ExampleSlug layer={1} language="python" kind="numeric" /></code>). Otherwise, a descriptive kebab-case string (e.g.{' '} <code><ExampleSlug layer={2} kind="descriptive" fallback="bash-local-shadows-exit" /></code>) works. The slug is the directory name and also the Manifest v1 <code>slug</code> field.</p>
     <p>A Layer 1-friendly bug usually has these properties:</p>
     <ul>
       <li>No external I/O (no network, no filesystem, no subprocess).</li>
@@ -63,7 +64,7 @@ import {
         },
         {
           lead: 'Copy the closest existing recipe.',
-          body: <>Pick one in the same language: Python → <code>src/layer1_wasm/pandas-56679/</code>, Ruby → <code>ruby-21709/</code>, PHP → <code>php-12167/</code>, Rust → <code>regex-779/</code>. Copy the whole directory: <code>cp -r src/layer1_wasm/pandas-56679 src/layer1_wasm/&lt;your-slug&gt;</code>.</>,
+          body: <>Pick one in the same language: Python → <code>src/layer1_wasm/<ExampleSlug layer={1} language="python" />/</code>, Ruby → <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" />/</code>, PHP → <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" />/</code>, Rust → <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" />/</code>. Copy the whole directory: <code>cp -r src/layer1_wasm/<ExampleSlug layer={1} language="python" /> src/layer1_wasm/&lt;your-slug&gt;</code>.</>,
         },
       ]}
     />

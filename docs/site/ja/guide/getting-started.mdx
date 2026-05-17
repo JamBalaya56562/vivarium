@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -59,11 +60,11 @@ import {
     eyebrow="// 2 · レシピを動かす"
     heading="クリック 1 回。後はブラウザがやる。"
   >
-    <p>初回は何が起きているのか分かりやすいように、<code>pandas-56679</code> を例に進める。 カードの「Open」ボタンを押すと別タブで{' '} <a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer"> /repro/pandas/56679/ </a>{' '} が開く。</p>
-    <p>ページが読み込まれると、まず Pyodide（CPython の WebAssembly ビルド）と pandas を jsDelivr CDN からダウンロードする。verdict バッジは <code>pending</code> 状態で 「ランタイムを読み込み中」と表示される。</p>
+    <p>初回は何が起きているのか分かりやすいように、<code><ExampleSlug layer={1} language="python" linked /></code> を例に進める。 カードの「Open」ボタンを押すと別タブで該当レシピのページが開く。</p>
+    <p>ページが読み込まれると、まず Pyodide（CPython の WebAssembly ビルド）と対象ライブラリを jsDelivr CDN からダウンロードする。verdict バッジは <code>pending</code> 状態で 「ランタイムを読み込み中」と表示される。</p>
     <p>ロード完了後、ページに埋め込まれた再現スクリプトが実行され、verdict が確定する。 初回ロードは数秒〜十数秒（接続速度とブラウザのキャッシュ状態による）、 2 回目以降は CDN キャッシュが効いてミリ秒〜秒で開く。</p>
     <Callout>
-      Layer 1 はブラウザ完結。ローカルに Python も pandas も入れる必要はない。
+      Layer 1 はブラウザ完結。ローカルに Python も対象ライブラリも入れる必要はない。
       Vivarium が宣言する 3 層アーキテクチャは{' '}
       <a href="/vivarium/ja/architecture">アーキテクチャ</a> 参照。
     </Callout>
@@ -74,7 +75,7 @@ import {
     heading="reproduced / unreproduced / pending の 3 値だけ。"
   >
     <p><code>reproduced</code> はアップストリームバグが現在も再現することを示す。 <code>unreproduced</code> は再現しなかったこと——つまりランタイムの新しいビルドが 問題を解消した、あるいは再現条件が変わった——を示す。<code>pending</code> は まだ実行中、もしくは初期化中の中間状態。</p>
-    <p>pandas-56679 を開いて少し待つと、現状（pandas が Pyodide で出荷している版で再現するかどうか） に応じて値が <code>reproduced</code> か <code>unreproduced</code> に落ち着く。 verdict バッジの下に、その判定の根拠となった出力——<code>series_dtype</code> と <code>df_dtype</code> の比較結果——も表示される。</p>
+    <p>レシピを開いて少し待つと、現状（Pyodide が出荷しているライブラリ版で再現するかどうか） に応じて値が <code>reproduced</code> か <code>unreproduced</code> に落ち着く。 verdict バッジの下に、その判定の根拠となった出力——レシピ固有の比較値——も表示される。</p>
     <Callout>
       「pass / fail」ではなく「reproduced / unreproduced」を使う理由: テスト用語の{' '}
       pass / fail はチームによって意味が逆転する。Vivarium の動詞は
@@ -88,7 +89,7 @@ import {
     heading="バッジだけではなく、その根拠も同じページに。"
   >
     <p>verdict バッジの下に「Evidence」セクションがあり、再現スクリプトの実行結果が まとまっている: stdout、stderr、終了コード、所要時間（ms）。Contract v1 リビジョン 2 により、verdict が出る根拠がページから直接読める。</p>
-    <p>たとえば pandas-56679 では、<code>series_dtype</code> と <code>df_dtype</code> の 文字列値、両者が一致しないかどうかの真偽値、pandas と Python のバージョンが JSON で出力される。これがそのまま<strong>evidence</strong> として記録される。</p>
+    <p>典型的な Python レシピでは、両者が一致するかどうかの真偽値、不一致を引き起こす実際の値、ライブラリ／インタプリタのバージョンが JSON で出力される。これがそのまま<strong>evidence</strong> として記録される。</p>
   </Section>
 
   <Section

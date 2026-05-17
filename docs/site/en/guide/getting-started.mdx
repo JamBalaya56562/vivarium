@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -59,7 +60,7 @@ import {
     eyebrow="// 2 · RUN A RECIPE"
     heading="One click. The browser does the rest."
   >
-    <p>Walk through it once with <code>pandas-56679</code> as the running example. Hitting "Open" on the card pops a new tab at the recipe's page, <a href="/vivarium/repro/pandas/56679/" target="_blank" rel="noreferrer"><code>/repro/pandas/56679/</code></a>.</p>
+    <p>Walk through it once with <code><ExampleSlug layer={1} language="python" linked /></code> as the running example. Hitting "Open" on the card pops a new tab at the recipe's page.</p>
     <p>On load the page fetches Pyodide (CPython compiled to WebAssembly) and pandas from the jsDelivr CDN. The verdict badge sits at{' '} <code>pending</code> with "Loading runtime…" while that happens.</p>
     <p>Once loaded, the embedded reproduction script runs and the verdict settles. First load takes a few to a few-tens of seconds depending on connection and cache state; subsequent visits hit the CDN cache and open in milliseconds to a second.</p>
     <Callout>
@@ -74,7 +75,7 @@ import {
     heading="Three values. reproduced / unreproduced / pending."
   >
     <p><code>reproduced</code> means the upstream bug still reproduces. <code>unreproduced</code> means it does not — typically because a newer runtime build resolved the issue, or because the conditions shifted. <code>pending</code> is the in-flight state while the script is running or the runtime is still loading.</p>
-    <p>Open pandas-56679 and the verdict will settle to{' '} <code>reproduced</code> or <code>unreproduced</code> depending on what version of pandas Pyodide currently ships. Underneath the badge you'll see the data the verdict was decided from — the <code>series_dtype</code> vs <code>df_dtype</code> comparison.</p>
+    <p>Open the recipe and the verdict will settle to{' '} <code>reproduced</code> or <code>unreproduced</code> depending on what version of the upstream library the bundled WASM runtime currently ships. Underneath the badge you'll see the data the verdict was decided from — the recipe-specific values whose comparison <em>is</em> the verdict.</p>
     <Callout>
       Why "reproduced / unreproduced" instead of "pass / fail": pass and
       fail flip meaning between teams. Vivarium pins the verb to one
@@ -88,7 +89,7 @@ import {
     heading="Not just the badge — the basis is on the same page."
   >
     <p>Below the verdict badge sits an "Evidence" section bundling the reproduction script's run: stdout, stderr, exit code, duration in milliseconds. Contract v1 revision 2 makes the basis for a verdict readable on-page rather than buried in a separate file.</p>
-    <p>For pandas-56679, that includes the literal <code>series_dtype</code> and <code>df_dtype</code> strings, the boolean for whether they match, and the running pandas / Python versions — all serialised as JSON. That bundle <em>is</em> the evidence.</p>
+    <p>For a typical Python recipe, that includes the literal values whose mismatch <em>is</em> the bug, the boolean for whether they match, and the running library / interpreter versions — all serialised as JSON. That bundle <em>is</em> the evidence.</p>
   </Section>
 
   <Section

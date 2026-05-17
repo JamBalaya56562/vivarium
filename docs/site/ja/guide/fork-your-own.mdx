@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -124,7 +125,7 @@ cd vivarium`}</code></pre>
       <li><code>src/layer1_wasm/&lt;slug&gt;/repro.ts</code> — Pyodide / Ruby.wasm / php-wasm / Rust などで再現スクリプトを実行し、verdict を設定</li>
       <li><code>src/layer1_wasm/&lt;slug&gt;/README.md</code> — レシピの説明</li>
     </ul>
-    <p>既存の <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/pandas-56679"><code>pandas-56679</code></a> や <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779"><code>regex-779</code></a> を雛形にコピーして、 上流バグの slug（<code>&lt;project&gt;-&lt;issue&gt;</code> 推奨）と 再現スクリプトを書き換えるのが最短です。</p>
+    <p>既存の <code><ExampleSlug layer={1} language="python" /></code> や <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" /></code> を雛形にコピーして、 上流バグの slug（<code>&lt;project&gt;-&lt;issue&gt;</code> 推奨）と 再現スクリプトを書き換えるのが最短です。</p>
     <Callout>
       レシピが satisfy するべき仕様は <a href="/vivarium/ja/spec/contract-v1">Contract v1</a>
       に書かれています。<code>&lt;meta name="vivarium-contract" content="v1"&gt;</code> と

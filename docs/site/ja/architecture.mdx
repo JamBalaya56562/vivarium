@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../_components/PageChrome';
+import { LiveExamples } from '../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -89,7 +90,7 @@ import {
     eyebrow="// 01 · LAYER 1"
     heading="WebAssembly、ページの中で。"
     intro={
-      <p>ユーザーのブラウザタブの中で再現が直接実行される層です。アカウントもインストールも不要、ページを開けばすぐ動きます。Phase 0〜2 で <a href="/vivarium/repro/cpython/137205/">cpython#137205</a> や <a href="/vivarium/repro/pandas/56679/">pandas#56679</a> のように複数の Python / Ruby / PHP / Rust レシピを揃え、現在は最も「ブラウザだけで完結する」surface です。</p>
+      <p>ユーザーのブラウザタブの中で再現が直接実行される層です。アカウントもインストールも不要、ページを開けばすぐ動きます。Phase 0〜2 で複数の Python / Ruby / PHP / Rust レシピを揃え（例: <LiveExamples layer={1} kind="numeric" limit={2} format="inline-prose" lang="ja" />）、現在は最も「ブラウザだけで完結する」surface です。</p>
     }
     cellLabels={{
       fits: '向くバグ',
@@ -122,11 +123,11 @@ import {
     }
     runtimes={
       <ul>
-        <li><strong>Python</strong>: <a href="https://pyodide.org">Pyodide</a> — 例: <a href="/vivarium/repro/numpy/28287/">numpy#28287</a>、<a href="/vivarium/repro/pandas/56679/">pandas#56679</a>。</li>
-        <li><strong>SQLite</strong>: <a href="https://sqlite.org/wasm/">sqlite-wasm</a>（Pyodide 経由）— 例: <a href="/vivarium/repro/cpython/137205/">cpython#137205</a>。</li>
-        <li><strong>Rust</strong>: <code>wasm32-wasip1</code> — 例: <a href="/vivarium/repro/regex/779/">regex#779</a>。</li>
-        <li><strong>Ruby</strong>: <a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a> — 例: <a href="/vivarium/repro/ruby/21709/">ruby#21709</a>。</li>
-        <li><strong>PHP</strong>: <a href="https://github.com/WordPress/wordpress-playground">php-wasm</a> — 例: <a href="/vivarium/repro/php/12167/">php#12167</a>。</li>
+        <li><strong>Python</strong>: <a href="https://pyodide.org">Pyodide</a> — live: <LiveExamples layer={1} language="python" kind="numeric" limit={2} format="inline-prose" lang="ja" /></li>
+        <li><strong>Rust</strong>: <code>wasm32-wasip1</code> — live: <LiveExamples layer={1} language="rust" kind="numeric" limit={1} format="inline-prose" lang="ja" /></li>
+        <li><strong>Ruby</strong>: <a href="https://github.com/ruby/ruby.wasm">Ruby.wasm</a> — live: <LiveExamples layer={1} language="ruby" kind="numeric" limit={1} format="inline-prose" lang="ja" /></li>
+        <li><strong>PHP</strong>: <a href="https://github.com/WordPress/wordpress-playground">php-wasm</a> — live: <LiveExamples layer={1} language="php" kind="numeric" limit={1} format="inline-prose" lang="ja" /></li>
+        <li><strong>SQLite</strong>: <a href="https://sqlite.org/wasm/">sqlite-wasm</a>（Pyodide 経由）— sqlite WASM ビルドを Pyodide 経由で叩くレシピは上の Python の項にまとまっている。</li>
       </ul>
     }
   />
@@ -163,14 +164,7 @@ import {
         <li><strong>並行性そのものをデバッグするバグ。</strong> Layer 2 は本物のスレッドで動きますが、ハイゼンバグの再現性確保は Layer 3 の領分。</li>
       </ul>
     }
-    runtimes={
-      <ul>
-        <li><a href="/vivarium/repro/postgres/lost-update/">postgres-lost-update</a> — トランザクション境界をまたぐロスト・アップデート。</li>
-        <li><a href="/vivarium/repro/flock/is-advisory/">flock-is-advisory</a> — ファイルロックの advisory な性質。</li>
-        <li><a href="/vivarium/repro/find/xargs-whitespace/">find-xargs-whitespace</a> — パイプライン経由のホワイトスペース取り扱い。</li>
-        <li><a href="/vivarium/repro/bash/local-shadows-exit/">bash-local-shadows-exit</a> — ローカル変数が <code>$?</code> を覆う罠。</li>
-      </ul>
-    }
+    runtimes={<LiveExamples layer={2} lang="ja" />}
   />
 
   <LayerSection

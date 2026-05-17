@@ -12,6 +12,7 @@ import {
   NextCta,
   BottomNote,
 } from '../../_components/PageChrome';
+import { ExampleSlug } from '../../_components/LiveExamples';
 
 <Page>
   <PageHero
@@ -57,7 +58,7 @@ import {
       items={[
         {
           lead: 'レシピが既に分かっている。',
-          body: <><a href="/vivarium/ja/repro/">ギャラリー</a>を眺めて該当レシピのページに入る。slug をメモする（例: <code>php-12167</code>）。</>,
+          body: <><a href="/vivarium/ja/repro/">ギャラリー</a>を眺めて該当レシピのページに入る。slug をメモする（例: <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" /></code>）。</>,
         },
         {
           lead: 'エラー文があるのでレシピを探したい。',
@@ -71,7 +72,7 @@ import {
     eyebrow="// 2 · PATH A — LAYER 1"
     heading="レシピページに修正をペースト、verdict をキャプチャ。"
   >
-    <p>Path A に opt-in した Layer 1 レシピは、ベースライン出力の下に{' '} <strong>「Try a fix」</strong> パネルを描画する。現時点では <a href="/vivarium/ja/repro/php/12167/"><code>php-12167</code></a>{' '} に出荷済み、形が proven したら他のレシピも続く。</p>
+    <p>Path A に opt-in した Layer 1 レシピは、ベースライン出力の下に{' '} <strong>「Try a fix」</strong> パネルを描画する。現時点では PHP の例示レシピ（<code><ExampleSlug layer={1} language="php" linked fallback="<php-slug>" /></code>）に出荷済み、形が proven したら他のレシピも続く。</p>
     <NumberedList
       items={[
         {
