@@ -91,13 +91,6 @@
       "description": "Layer 2 Docker reproductions targeting open upstream regressions in the Node.js runtime. Each recipe pins a stable `node:<major>-slim` base so the verdict flips from `reproduced` to `unreproduced` once the upstream fix lands in a later patch release.",
       "homepage": "https://nodejs.org/",
       "github": "https://github.com/nodejs/node"
-    },
-    "hypothesis": {
-      "display_name": "Hypothesis",
-      "tagline": "Property-based testing for Python.",
-      "description": "Reproductions install hypothesis from PyPI via micropip into the Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
-      "homepage": "https://hypothesis.readthedocs.io/",
-      "github": "https://github.com/HypothesisWorks/hypothesis"
     }
   }
 }

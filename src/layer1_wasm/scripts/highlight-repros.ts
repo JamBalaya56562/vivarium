@@ -54,7 +54,6 @@ const LAYER1_DIR = dirname(SCRIPT_DIR);
 // the source language for Layer 1 recipes.
 const LANG_BY_PROJECT: Record<string, BundledLanguage> = {
   cpython: 'python',
-  hypothesis: 'python',
   mpmath: 'python',
   numpy: 'python',
   pandas: 'python',

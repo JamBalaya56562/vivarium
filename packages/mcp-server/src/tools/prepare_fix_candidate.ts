@@ -245,35 +245,35 @@ export async function prepareFixCandidate(
 export const PREPARE_FIX_CANDIDATE_TOOL = {
   name: 'prepare_fix_candidate',
   description:
-    "Register a fix-candidate spec on an existing Layer 1 (WASM/Pyodide) Vivarium recipe so the recipe page runs the fix branch's wheel side-by-side with the released build (per ADR-0040). SCAFFOLDING HELPER, not an execution engine — same pattern as prepare_new_recipe and verify_branch_fix. Given a recipe slug + fork repo URL + branch name, returns: the `fix-candidate.json` content the agent should write, the recommended commit subject + PR title, a ready-to-paste PR body (with the AI-authorship and ADR-0040 details tucked inside a `<details>` block), and the exact `gh` / `git` commands to fork-and-clone aletheia-works/vivarium, branch off main, drop the spec in, commit, push, and open the cross-repo PR. Use this immediately after opening an upstream fix branch (e.g. on a fork of HypothesisWorks/hypothesis) when you want Vivarium to verify the fix live in-browser without waiting for upstream merge + a PyPI release. Validates the slug against the bundled catalogue and rejects non-Layer-1 recipes (Layers 2/3 use a different verification path — see verify_branch_fix).",
+    "Register a fix-candidate spec on an existing Layer 1 (WASM/Pyodide) Vivarium recipe so the recipe page runs the fix branch's wheel side-by-side with the released build (per ADR-0040). SCAFFOLDING HELPER, not an execution engine — same pattern as prepare_new_recipe and verify_branch_fix. Given a recipe slug + fork repo URL + branch name, returns: the `fix-candidate.json` content the agent should write, the recommended commit subject + PR title, a ready-to-paste PR body (with the AI-authorship and ADR-0040 details tucked inside a `<details>` block), and the exact `gh` / `git` commands to fork-and-clone aletheia-works/vivarium, branch off main, drop the spec in, commit, push, and open the cross-repo PR. Use this immediately after opening an upstream fix branch (e.g. on a fork of mpmath/mpmath) when you want Vivarium to verify the fix live in-browser without waiting for upstream merge + a PyPI release. Validates the slug against the bundled catalogue and rejects non-Layer-1 recipes (Layers 2/3 use a different verification path — see verify_branch_fix).",
   inputSchema: {
     type: 'object' as const,
     properties: {
       slug: {
         type: 'string' as const,
         description:
-          "Existing Layer 1 recipe slug to register the fix candidate on (e.g. 'hypothesis-4651'). Must resolve to a Layer 1 entry in the bundled catalogue — call list_recipes if you need to discover it.",
+          "Existing Layer 1 recipe slug to register the fix candidate on (e.g. 'mpmath-983'). Must resolve to a Layer 1 entry in the bundled catalogue — call list_recipes if you need to discover it.",
       },
       fork_url: {
         type: 'string' as const,
         pattern: '^https?://github\\.com/[^/]+/[^/]+/?$',
         description:
-          "Bare GitHub repo URL of the fork that hosts the fix branch (e.g. 'https://github.com/JamBalaya56562/hypothesis'). Tree / blob / pull URLs are rejected; pass the canonical clone URL.",
+          "Bare GitHub repo URL of the fork that hosts the fix branch (e.g. 'https://github.com/JamBalaya56562/mpmath'). Tree / blob / pull URLs are rejected; pass the canonical clone URL.",
       },
       branch: {
         type: 'string' as const,
         description:
-          "Branch name on the fork that contains the fix (e.g. 'claude/fix-hypothesis-4651-wVitv').",
+          "Branch name on the fork that contains the fix (e.g. 'claude/fix-mpmath-983-aBcDe').",
       },
       upstream_pr: {
         type: 'string' as const,
         description:
-          "Optional URL of the PR you opened from this fork branch (e.g. 'https://github.com/HypothesisWorks/hypothesis/pull/<n>' or the fork-side draft PR URL while the upstream PR is still in progress). Embedded in the generated fix-candidate.json and surfaced in the page UI.",
+          "Optional URL of the PR you opened from this fork branch (e.g. 'https://github.com/mpmath/mpmath/pull/<n>' or the fork-side draft PR URL while the upstream PR is still in progress). Embedded in the generated fix-candidate.json and surfaced in the page UI.",
       },
       package: {
         type: 'string' as const,
         description:
-          "Optional pip distribution name override. Defaults to the recipe's project name (e.g. 'hypothesis' for the hypothesis-4651 recipe). Override only when the project name and the pip distribution name diverge.",
+          "Optional pip distribution name override. Defaults to the recipe's project name (e.g. 'mpmath' for the mpmath-983 recipe). Override only when the project name and the pip distribution name diverge.",
       },
       purpose: {
         type: 'string' as const,

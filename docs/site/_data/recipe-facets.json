@@ -83,17 +83,6 @@
       "symptom": "intl-month-dropped",
       "severity": "regression",
       "tags": ["intl", "datetimeformat", "iso8601-calendar", "icu"]
-    },
-    "hypothesis-4651": {
-      "language": "python",
-      "symptom": "strategy-violates-declared-bound",
-      "severity": "bug",
-      "tags": [
-        "property-based-testing",
-        "decimal",
-        "strategies",
-        "strategy-invariant"
-      ]
     }
   }
 }

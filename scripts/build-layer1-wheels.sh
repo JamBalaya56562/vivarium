@@ -46,12 +46,11 @@ for src_json in "${sources[@]}"; do
   pkg=$(jq -r '.package' "$src_json")
   url=$(jq -r '.source.url' "$src_json")
   ref=$(jq -r '.source.ref' "$src_json")
-  # `source.subdirectory` is optional; monorepos like
-  # `HypothesisWorks/hypothesis` keep the installable Python package
-  # under a subdirectory (`hypothesis-python/`) rather than at the
-  # repo root, and pip needs PEP 508 `#subdirectory=<dir>` appended
-  # to the VCS spec to find pyproject.toml there. Empty string =
-  # repo root (the common case).
+  # `source.subdirectory` is optional; monorepos that keep the
+  # installable Python package under a subdirectory (e.g.
+  # `package-python/`) rather than at the repo root need pip's PEP 508
+  # `#subdirectory=<dir>` appended to the VCS spec to find
+  # pyproject.toml there. Empty string = repo root (the common case).
   subdirectory=$(jq -r '.source.subdirectory // ""' "$src_json")
   upstream_pr=$(jq -r '.upstream_pr // ""' "$src_json")
   purpose=$(jq -r '.purpose // ""' "$src_json")
