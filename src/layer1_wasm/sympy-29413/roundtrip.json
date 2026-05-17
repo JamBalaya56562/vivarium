@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "slug": "sympy-29413",
+  "upstream_issue": "https://github.com/sympy/sympy/issues/29413",
+  "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/260",
+  "status": "draft",
+  "updated_at": "2026-05-17T10:00:00Z",
+  "notes": [
+    "scaffolded from upstream issue via the round-trip skill walkthrough (sympy-29413 first end-to-end smoke)",
+    "Vivarium PR opened (Stage 4); unfixed verdict will be captured by the CI Playwright suite on this PR's push"
+  ]
+}

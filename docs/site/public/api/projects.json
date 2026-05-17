@@ -169,6 +169,19 @@
       "description": "Reproductions run on ruby.wasm (CRuby compiled to WASI). Host parity is provided by mise-pinned ruby for the repro.rb script.",
       "homepage": "https://www.ruby-lang.org/",
       "github": "https://github.com/ruby/ruby"
+    },
+    {
+      "project": "sympy",
+      "display_name": "SymPy",
+      "recipe_count": 1,
+      "layers": [
+        1
+      ],
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/sympy/",
+      "tagline": "Pure-Python symbolic mathematics.",
+      "description": "Assumption-system and symbolic-evaluation bugs that survive when SymPy is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
+      "homepage": "https://www.sympy.org/",
+      "github": "https://github.com/sympy/sympy"
     }
   ]
 }
