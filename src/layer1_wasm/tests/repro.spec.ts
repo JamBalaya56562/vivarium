@@ -20,10 +20,26 @@
 // Either way, this suite turns that into a CI failure so a human can
 // decide whether to update / retire the page.
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { expect, test, type Page } from "@playwright/test";
 
 const LAYER1 = "http://localhost:8767";
 const LAYER2 = "http://localhost:8768";
+
+const SUPPORTED_VERDICTS = ["reproduced", "unreproduced"] as const;
+const SUPPORTED_RUNTIMES = [
+  "browser",
+  "pyodide",
+  "ruby.wasm",
+  "php-wasm",
+  "rust-wasi",
+  "docker-snapshot",
+] as const;
+
+type ExpectedVerdict = (typeof SUPPORTED_VERDICTS)[number];
+type ExpectedRuntimeName = (typeof SUPPORTED_RUNTIMES)[number];
 
 interface ReproCase {
   /** Display name used in the test title. */
@@ -31,7 +47,7 @@ interface ReproCase {
   /** Absolute URL — pick the Layer 1 or Layer 2 host as appropriate. */
   url: string;
   /** Expected verdict — currently "reproduced" for every case. */
-  expectedVerdict: "reproduced" | "unreproduced";
+  expectedVerdict: ExpectedVerdict;
   /** Envelope `bug.project` field. */
   expectedBugProject: string;
   /** Envelope `bug.issue` field. */
@@ -42,144 +58,93 @@ interface ReproCase {
    * for Layer 1 pages; `"docker-snapshot"` for Layer 2 pages
    * rendering a CI-captured verdict.
    */
-  expectedRuntimeName:
-    | "browser"
-    | "pyodide"
-    | "ruby.wasm"
-    | "php-wasm"
-    | "rust-wasi"
-    | "docker-snapshot";
+  expectedRuntimeName: ExpectedRuntimeName;
 }
 
-const cases: ReproCase[] = [
-  // Layer 1 — WASM in-page runtime.
-  {
+interface RecipeEntry {
+  slug: string;
+  layer: 1 | 2 | 3;
+  project: string;
+  issue: number;
+  expected_verdict?: string;
+  expected_runtime?: string;
+}
+
+interface RecipesIndex {
+  recipes: RecipeEntry[];
+}
+
+function isExpectedVerdict(value: unknown): value is ExpectedVerdict {
+  return SUPPORTED_VERDICTS.some((v) => v === value);
+}
+
+function isExpectedRuntimeName(value: unknown): value is ExpectedRuntimeName {
+  return SUPPORTED_RUNTIMES.some((v) => v === value);
+}
+
+function loadRecipeEntries(): RecipeEntry[] {
+  const indexPath = resolve(
+    process.cwd(),
+    "../../docs/site/public/api/recipes.json",
+  );
+  const raw = readFileSync(indexPath, "utf-8");
+  const parsed = JSON.parse(raw) as RecipesIndex;
+  return parsed.recipes;
+}
+
+function recipeCaseName(recipe: RecipeEntry): string {
+  if (recipe.layer === 1) return `${recipe.slug} reproduction`;
+  return `${recipe.slug} Layer 2 snapshot`;
+}
+
+function recipeUrl(recipe: RecipeEntry): string {
+  const base = recipe.layer === 1 ? LAYER1 : LAYER2;
+  return `${base}/${recipe.slug}/`;
+}
+
+function caseFromRecipe(recipe: RecipeEntry): ReproCase {
+  if (!isExpectedVerdict(recipe.expected_verdict)) {
+    throw new Error(
+      `${recipe.slug}: expected_verdict must be one of ${SUPPORTED_VERDICTS.join(", ")}`,
+    );
+  }
+  if (!isExpectedRuntimeName(recipe.expected_runtime)) {
+    throw new Error(
+      `${recipe.slug}: expected_runtime must be one of ${SUPPORTED_RUNTIMES.join(", ")}`,
+    );
+  }
+  return {
+    name: recipeCaseName(recipe),
+    url: recipeUrl(recipe),
+    expectedVerdict: recipe.expected_verdict,
+    expectedBugProject: recipe.project,
+    expectedBugIssue: recipe.issue,
+    expectedRuntimeName: recipe.expected_runtime,
+  };
+}
+
+function loadRegressionCases(): ReproCase[] {
+  const smoke: ReproCase = {
     name: "_shared/_test smoke test",
     url: `${LAYER1}/_shared/_test/`,
     expectedVerdict: "reproduced",
     expectedBugProject: "vivarium",
     expectedBugIssue: 0,
     expectedRuntimeName: "browser",
-  },
-  {
-    name: "pandas-56679 reproduction",
-    url: `${LAYER1}/pandas-56679/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "pandas",
-    expectedBugIssue: 56679,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "mpmath-983 reproduction",
-    url: `${LAYER1}/mpmath-983/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "mpmath",
-    expectedBugIssue: 983,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "numpy-28287 reproduction",
-    url: `${LAYER1}/numpy-28287/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "numpy",
-    expectedBugIssue: 28287,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "ruby-21709 reproduction",
-    url: `${LAYER1}/ruby-21709/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "ruby",
-    expectedBugIssue: 21709,
-    expectedRuntimeName: "ruby.wasm",
-  },
-  {
-    name: "cpython-137205 reproduction",
-    url: `${LAYER1}/cpython-137205/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "cpython",
-    expectedBugIssue: 137205,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "php-12167 reproduction",
-    url: `${LAYER1}/php-12167/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "php",
-    expectedBugIssue: 12167,
-    expectedRuntimeName: "php-wasm",
-  },
-  {
-    name: "regex-779 reproduction",
-    url: `${LAYER1}/regex-779/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "regex",
-    expectedBugIssue: 779,
-    expectedRuntimeName: "rust-wasi",
-  },
-  {
-    name: "sympy-29413 reproduction",
-    url: `${LAYER1}/sympy-29413/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "sympy",
-    expectedBugIssue: 29413,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "lark-1585 reproduction",
-    url: `${LAYER1}/lark-1585/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "lark",
-    expectedBugIssue: 1585,
-    expectedRuntimeName: "pyodide",
-  },
-  {
-    name: "dateutil-1478 reproduction",
-    url: `${LAYER1}/dateutil-1478/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "dateutil",
-    expectedBugIssue: 1478,
-    expectedRuntimeName: "pyodide",
-  },
-  // Layer 2 — Docker catalogue, verdict snapshot fetched from
-  // `verdict.json` next to the page. CI generates `verdict.json` in
-  // both `repro-regression.yml` (build + run + write) and
-  // `deploy-docs.yml` (build + push + write); locally Playwright sees
-  // the regression-flow output. All current entries are
-  // expected `reproduced` snapshots.
-  {
-    name: "postgres-lost-update Layer 2 snapshot",
-    url: `${LAYER2}/postgres-lost-update/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "postgres",
-    expectedBugIssue: 0,
-    expectedRuntimeName: "docker-snapshot",
-  },
-  {
-    name: "bash-local-shadows-exit Layer 2 snapshot",
-    url: `${LAYER2}/bash-local-shadows-exit/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "bash",
-    expectedBugIssue: 0,
-    expectedRuntimeName: "docker-snapshot",
-  },
-  {
-    name: "flock-is-advisory Layer 2 snapshot",
-    url: `${LAYER2}/flock-is-advisory/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "flock",
-    expectedBugIssue: 0,
-    expectedRuntimeName: "docker-snapshot",
-  },
-  {
-    name: "find-xargs-whitespace Layer 2 snapshot",
-    url: `${LAYER2}/find-xargs-whitespace/`,
-    expectedVerdict: "reproduced",
-    expectedBugProject: "find-xargs",
-    expectedBugIssue: 0,
-    expectedRuntimeName: "docker-snapshot",
-  },
-];
+  };
+  const recipes = loadRecipeEntries()
+    .filter((recipe) => recipe.layer === 1 || recipe.layer === 2)
+    .map(caseFromRecipe);
+  return [smoke, ...recipes];
+}
+
+const cases: ReproCase[] = loadRegressionCases();
+
+// Layer 1 — WASM in-page runtime. Layer 2 — Docker catalogue, verdict
+// snapshot fetched from `verdict.json` next to the page. CI generates
+// `verdict.json` in both `repro-regression.yml` (build + run + write)
+// and `deploy-docs.yml` (build + push + write); locally Playwright sees
+// the regression-flow output.
 
 interface VivariumPageState {
   verdict: string | undefined;
@@ -212,13 +177,17 @@ async function readVivariumState(page: Page): Promise<VivariumPageState> {
 
 function timeoutForRuntime(name: ReproCase["expectedRuntimeName"]): number {
   // Smoke test and Layer 2 verdict-snapshot fetch resolve in milliseconds;
-  // WASM-runtime pages download a multi-MB CDN bundle and instantiate it.
+  // Pyodide pages download and import large wheels, with SymPy on
+  // Firefox sitting near the old 75s ceiling on cold local runs.
   if (name === "browser" || name === "docker-snapshot") return 10_000;
+  if (name === "pyodide") return 120_000;
   return 75_000;
 }
 
 for (const c of cases) {
   test(`${c.name} produces ${c.expectedVerdict}`, async ({ page }) => {
+    test.setTimeout(timeoutForRuntime(c.expectedRuntimeName) + 15_000);
+
     await page.goto(c.url);
 
     // Wait for the verdict to settle. Pages start at `pending` and
