@@ -1,26 +1,33 @@
 // Layer-abstracted round-trip verification helper. Computes the
-// state-machine next_action from a recipe's current round-trip state
-// (passed in via `current_state`, typically the contents of
-// src/layer{1,2,3}_*/<slug>/roundtrip.json) and returns the commands
-// the round-trip skill should run next. Bridges Path A (Layer 1,
-// browser-driven Playwright runs) and Path B (Layer 2/3,
-// branch-fix-verdict.yml workflow dispatch) under a single return
-// shape so callers do not branch on layer.
+// state-machine next_action from a recipe's current round-trip state,
+// optionally executes the appropriate verdict capture (Layer 1
+// Playwright run or Layer 2/3 workflow dispatch), and returns the
+// merged state alongside the commands the caller should run for any
+// non-executing action (open PRs, manual intervention, complete).
 //
-// Phase 1 (this commit): SCAFFOLDING ONLY. The tool returns the
-// canonical roundtrip.json path, the state-machine next_action, and
-// the verify_branch_fix-derived deep-link commands. It does NOT execute
-// verdict capture or mutate roundtrip.json. Phase 3 will replace the
-// command-string return with actual execution for Layer 1
-// (Playwright-driven targeted runs) while keeping the same return
-// shape for Layer 2/3 (GitHub Actions workflow_dispatch wrapping).
+// Phase 3: when `auto_execute` is true (the default), the tool
+// actually runs `verify_unfixed` / `verify_fixed` via the internal
+// `run_layer1_verdict` / `run_layer23_verdict` helpers and merges the
+// captured verdict into the response's `verdicts` field. Pass
+// `auto_execute: false` to get the Phase 1 / 2 behaviour (return
+// commands as strings without running anything).
 
 import { getCatalogue } from '../catalogue.js';
 import type {
   Layer,
   RoundtripNextAction,
   RoundtripState,
+  RoundtripVerdict,
+  VerdictSource,
 } from '../types.js';
+import {
+  runLayer1Verdict,
+  type RunLayer1VerdictResult,
+} from './run_layer1_verdict.js';
+import {
+  runLayer23Verdict,
+  type RunLayer23VerdictResult,
+} from './run_layer23_verdict.js';
 import { verifyBranchFix } from './verify_branch_fix.js';
 
 export interface VerifyAndReportFixArgs {
@@ -29,6 +36,20 @@ export interface VerifyAndReportFixArgs {
   fix_source?: string;
   branch_image?: string;
   current_state?: Partial<RoundtripState>;
+  // Phase 3 additions:
+  auto_execute?: boolean;
+  workspace_path?: string;
+  poll_interval_ms?: number;
+  poll_timeout_ms?: number;
+}
+
+export interface ExecutedInfo {
+  action: 'verify_unfixed' | 'verify_fixed';
+  source: VerdictSource;
+  ok: boolean;
+  duration_ms: number;
+  error?: string;
+  workflow_run_id?: number;
 }
 
 export interface VerifyAndReportFixOk {
@@ -41,6 +62,7 @@ export interface VerifyAndReportFixOk {
   next_action: RoundtripNextAction;
   commands: string[];
   notes: string[];
+  executed?: ExecutedInfo;
 }
 
 export interface VerifyAndReportFixError {
@@ -56,6 +78,12 @@ const LAYER_DIRNAME: Record<Layer, string> = {
   1: 'layer1_wasm',
   2: 'layer2_docker',
   3: 'layer3_thirdway',
+};
+
+const LAYER_SOURCE: Record<Layer, VerdictSource> = {
+  1: 'layer1-headless',
+  2: 'layer2-ghcr',
+  3: 'layer3-trace',
 };
 
 // Pure state-machine transition. Exported so unit tests and any future
@@ -86,9 +114,7 @@ export function computeNextAction(
 }
 
 // Parse `https://github.com/<owner>/<repo>/issues/<n>` (or `/pull/<n>`)
-// to extract the upstream repo coordinates. The fork repo is the
-// contributor's mirror; upstream PRs always target the original owner,
-// not the fork. Returns undefined for non-github / malformed URLs.
+// to extract the upstream repo coordinates.
 export function parseUpstreamIssue(
   url: string | undefined,
 ): { owner: string; repo: string } | undefined {
@@ -194,6 +220,127 @@ function buildCommands(args: BuildCommandsArgs): string[] {
   }
 }
 
+// Layer 1 verdict capture path. fix_url is required when action is
+// verify_fixed (the whole point of "fixed" is to substitute a fix).
+async function executeLayer1(
+  slug: string,
+  action: 'verify_unfixed' | 'verify_fixed',
+  args: VerifyAndReportFixArgs,
+): Promise<{
+  verdictEntry?: RoundtripVerdict;
+  executed: ExecutedInfo;
+}> {
+  if (action === 'verify_fixed' && !args.fix_url) {
+    return {
+      executed: {
+        action,
+        source: 'layer1-headless',
+        ok: false,
+        duration_ms: 0,
+        error: 'fix_url is required for verify_fixed on Layer 1 recipes',
+      },
+    };
+  }
+
+  const result: RunLayer1VerdictResult = await runLayer1Verdict({
+    slug,
+    fix_url: action === 'verify_fixed' ? args.fix_url : undefined,
+    workspace_path: args.workspace_path,
+  });
+
+  if (!result.ok) {
+    return {
+      executed: {
+        action,
+        source: 'layer1-headless',
+        ok: false,
+        duration_ms: result.duration_ms,
+        error: result.error,
+      },
+    };
+  }
+
+  const verdictEntry: RoundtripVerdict = {
+    verdict: result.verdict,
+    captured_at: result.captured_at,
+    source: 'layer1-headless',
+  };
+  return {
+    verdictEntry,
+    executed: {
+      action,
+      source: 'layer1-headless',
+      ok: true,
+      duration_ms: result.duration_ms,
+    },
+  };
+}
+
+// Layer 2/3 verdict capture path. verify_fixed needs branch_image;
+// verify_unfixed reads the deployed verdict.json snapshot.
+async function executeLayer23(
+  slug: string,
+  layer: 2 | 3,
+  action: 'verify_unfixed' | 'verify_fixed',
+  args: VerifyAndReportFixArgs,
+): Promise<{
+  verdictEntry?: RoundtripVerdict;
+  executed: ExecutedInfo;
+}> {
+  const sourceLabel = LAYER_SOURCE[layer];
+
+  if (action === 'verify_fixed' && !args.branch_image) {
+    return {
+      executed: {
+        action,
+        source: sourceLabel,
+        ok: false,
+        duration_ms: 0,
+        error: 'branch_image is required for verify_fixed on Layer 2/3 recipes',
+      },
+    };
+  }
+
+  const mode = action === 'verify_unfixed' ? 'unfixed' : 'fixed';
+  const result: RunLayer23VerdictResult = await runLayer23Verdict({
+    slug,
+    mode,
+    branch_image: args.branch_image,
+    expected_verdict: mode === 'fixed' ? 'unreproduced' : undefined,
+    poll_interval_ms: args.poll_interval_ms,
+    poll_timeout_ms: args.poll_timeout_ms,
+  });
+
+  if (!result.ok) {
+    return {
+      executed: {
+        action,
+        source: sourceLabel,
+        ok: false,
+        duration_ms: result.duration_ms,
+        error: result.error,
+        workflow_run_id: result.workflow_run_id,
+      },
+    };
+  }
+
+  const verdictEntry: RoundtripVerdict = {
+    verdict: result.verdict,
+    captured_at: result.captured_at,
+    source: sourceLabel,
+  };
+  return {
+    verdictEntry,
+    executed: {
+      action,
+      source: sourceLabel,
+      ok: true,
+      duration_ms: result.duration_ms,
+      workflow_run_id: result.workflow_run_id,
+    },
+  };
+}
+
 export async function verifyAndReportFix(
   args: VerifyAndReportFixArgs,
 ): Promise<VerifyAndReportFixResult> {
@@ -217,11 +364,59 @@ export async function verifyAndReportFix(
     return { ok: false, error: verifyResult.error };
   }
 
-  const next = computeNextAction(args.current_state);
-  const verdicts = args.current_state?.verdicts ?? {};
+  const initialNext = computeNextAction(args.current_state);
+  const verdicts: NonNullable<RoundtripState['verdicts']> = {
+    ...(args.current_state?.verdicts ?? {}),
+  };
+
+  const notes = [...verifyResult.notes];
+  let executed: ExecutedInfo | undefined;
+
+  // Auto-execute defaults to true. Only verify_unfixed / verify_fixed
+  // are executable; the other next_actions (open_*_pr,
+  // manual_intervention, complete) are caller actions.
+  const autoExecute = args.auto_execute !== false;
+  const shouldExecute =
+    autoExecute &&
+    (initialNext === 'verify_unfixed' || initialNext === 'verify_fixed');
+
+  if (shouldExecute) {
+    const executable = initialNext as 'verify_unfixed' | 'verify_fixed';
+    const captured =
+      recipe.layer === 1
+        ? await executeLayer1(slug, executable, args)
+        : await executeLayer23(slug, recipe.layer as 2 | 3, executable, args);
+
+    executed = captured.executed;
+    if (captured.verdictEntry) {
+      if (executable === 'verify_unfixed') {
+        verdicts.unfixed = captured.verdictEntry;
+      } else {
+        verdicts.fixed = captured.verdictEntry;
+      }
+    }
+    if (!captured.executed.ok) {
+      notes.push(
+        `auto-execute of ${executable} failed: ${captured.executed.error ?? '<no error message>'}`,
+      );
+    }
+  } else if (!autoExecute) {
+    notes.push(
+      'auto_execute=false: returning command scaffolding without running verdict capture.',
+    );
+  }
+
+  // Recompute next_action against the (possibly updated) verdicts so
+  // the caller sees what to do next now that a verdict was captured.
+  const updatedState: Partial<RoundtripState> = {
+    ...args.current_state,
+    verdicts,
+  };
+  const nextAction = computeNextAction(updatedState);
+
   const roundtripPath = `src/${LAYER_DIRNAME[recipe.layer]}/${slug}/roundtrip.json`;
   const commands = buildCommands({
-    next,
+    next: nextAction,
     slug,
     layer: recipe.layer,
     pathAB: verifyResult.path,
@@ -232,11 +427,6 @@ export async function verifyAndReportFix(
     upstreamIssue: args.current_state?.upstream_issue,
   });
 
-  const notes = [...verifyResult.notes];
-  notes.push(
-    'phase 1 skeleton — verify_and_report_fix returns commands but does not yet execute verdict capture; phase 3 will replace the command return for layer 1 with playwright-driven runs.',
-  );
-
   return {
     ok: true,
     slug: recipe.slug,
@@ -244,16 +434,17 @@ export async function verifyAndReportFix(
     path: verifyResult.path,
     verdicts,
     roundtrip_path: roundtripPath,
-    next_action: next,
+    next_action: nextAction,
     commands,
     notes,
+    ...(executed ? { executed } : {}),
   };
 }
 
 export const VERIFY_AND_REPORT_FIX_TOOL = {
   name: 'verify_and_report_fix',
   description:
-    "Layer-abstracted round-trip verification helper. Computes the state-machine next_action from a recipe's current round-trip state (passed via `current_state`, typically the contents of `src/layer{1,2,3}_*/<slug>/roundtrip.json` against the roundtrip.schema.json shape) and returns the commands the round-trip skill should run next. Bridges Path A (Layer 1, browser-driven Playwright targeted runs) and Path B (Layer 2/3, branch-fix-verdict.yml workflow dispatch) under a single return shape so callers do not branch on layer. The `next_action` enum (`verify_unfixed` → `verify_fixed` → `open_vivarium_pr` → `open_fork_pr` → `complete`) drives the round-trip state machine end-to-end. SCAFFOLDING HELPER as of v0.1.x: the returned `commands[]` are executed by the caller, not by the MCP server. Use `verify_branch_fix` directly when you only need a Path A/B deep-link and not the state-machine layer.",
+    "Layer-abstracted round-trip verification driver. Computes the state-machine next_action from the recipe's current round-trip state and, when `auto_execute` is true (the default), runs the appropriate verdict capture: a Playwright `--grep` targeted run for Layer 1 or a `gh workflow run branch-fix-verdict.yml` dispatch + artefact download for Layer 2/3. Returns the merged state with any captured verdict in `verdicts`, the next state-machine action in `next_action`, and the commands to run for any non-executing action (PR opens, manual intervention, complete) in `commands`. Pass `auto_execute: false` for the earlier Phase 1 / 2 behaviour (return commands without running anything). The `executed` field reports the action that just ran, its source, and any error.",
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -261,28 +452,51 @@ export const VERIFY_AND_REPORT_FIX_TOOL = {
         type: 'string' as const,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$',
         description:
-          "Kebab-case recipe slug (e.g. 'php-12167', 'bash-local-shadows-exit'). Same convention as Manifest v1's `slug`.",
+          "Kebab-case recipe slug (e.g. 'php-12167', 'bash-local-shadows-exit').",
       },
       fix_url: {
         type: 'string' as const,
         description:
-          'Public URL of the candidate fix source. Layer 1 only — forwarded to verify_branch_fix to build the Path A `?fix_url=` deep-link. Mutually exclusive with fix_source.',
+          'Public URL of the candidate fix source. Layer 1 only — injected as `?fix_url=` when capturing the fixed verdict. Required for verify_fixed on Layer 1.',
       },
       fix_source: {
         type: 'string' as const,
         description:
-          'Inline candidate fix source. Layer 1 only — forwarded to verify_branch_fix to build the Path A `?fix=<base64>` deep-link. Mutually exclusive with fix_url. Max 4096 bytes.',
+          'Inline candidate fix source. Layer 1 only — surfaced in the returned `compare_url` for visual inspection; not used by Phase 3 auto-execute (`fix_url` is the executable input).',
       },
       branch_image: {
         type: 'string' as const,
         description:
-          "Layer 2/3 only. GHCR tag of the contributor's branch-fix Docker image (e.g. 'ghcr.io/<user>/vivarium-<slug>:fix-issue-<n>'). Surfaced as a comment in the returned commands when present; substituted into the gh workflow run command in Phase 3.",
+          "Layer 2/3 only. GHCR tag of the contributor's branch-fix Docker image. Required for verify_fixed on Layer 2/3 — passed as the `branch_image` input to `branch-fix-verdict.yml`.",
       },
       current_state: {
         type: 'object' as const,
         description:
-          "Current round-trip state for the slug, matching the roundtrip.schema.json shape. Pass the parsed contents of the recipe's roundtrip.json. Omit (or pass {}) for a fresh round-trip — the tool will return `next_action='verify_unfixed'`.",
+          "Current round-trip state for the slug, matching roundtrip.schema.json. Pass the parsed contents of the recipe's roundtrip.json. Omit for a fresh round-trip — the tool will compute `verify_unfixed` and (with auto_execute) run it.",
         additionalProperties: true,
+      },
+      auto_execute: {
+        type: 'boolean' as const,
+        default: true,
+        description:
+          'Whether to actually run the verify_unfixed / verify_fixed action when the state machine selects one. Defaults to true. Set false to preserve the Phase 1 / 2 behaviour of returning commands without running anything.',
+      },
+      workspace_path: {
+        type: 'string' as const,
+        description:
+          'Layer 1 only. Filesystem path to the `src/layer1_wasm/` workspace (where Playwright config lives). Defaults to the monorepo-relative path `src/layer1_wasm`. Pass an absolute path if the MCP server is launched from elsewhere.',
+      },
+      poll_interval_ms: {
+        type: 'integer' as const,
+        minimum: 1000,
+        description:
+          'Layer 2/3 only. Interval between `gh run view` polls when waiting for branch-fix-verdict.yml to complete. Default 15000ms.',
+      },
+      poll_timeout_ms: {
+        type: 'integer' as const,
+        minimum: 1000,
+        description:
+          'Layer 2/3 only. Hard cap on the total wait for the workflow to complete. Default 600000ms (10 minutes).',
       },
     },
     required: ['slug'],
