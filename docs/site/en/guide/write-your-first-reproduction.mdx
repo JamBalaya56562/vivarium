@@ -26,11 +26,11 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     heading="A minimal Layer 1 (in-browser WASM) recipe."
   >
     <p>Layer 1 pulls the upstream code into the browser via{' '} <a href="https://pyodide.org/">Pyodide</a>,{' '} <a href="https://ruby.wasm.ie/">Ruby.wasm</a>, php-wasm, or the Rust{' '} <code>wasm32-wasip1</code> target, runs the reproduction script the moment the page loads, and returns a verdict. No install, no server — so a Layer 1 recipe is the lowest-cost first contribution to Vivarium.</p>
-    <p>Layer 2 (Docker) and Layer 3 (record-replay) have their own niches in{' '} <a href="/vivarium/en/architecture">architecture</a>, but if you are writing your first recipe, start at Layer 1.</p>
+    <p>Layer 2 (Docker) and Layer 3 (record-replay) have their own niches in{' '} <a href="/vivarium/architecture">architecture</a>, but if you are writing your first recipe, start at Layer 1.</p>
     <Callout>
       This guide ends at "I have a working recipe locally." Where to
       publish it is a separate two-way fork:{' '}
-      <a href="/vivarium/en/guide/fork-your-own">Run on your own fork</a>{' '}
+      <a href="/vivarium/guide/fork-your-own">Run on your own fork</a>{' '}
       or a PR to the upstream repo.
     </Callout>
   </Section>
@@ -56,7 +56,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
       items={[
         {
           lead: 'Pick a clone target.',
-          body: <>For an upstream PR, clone <code>aletheia-works/vivarium</code> directly. To self-publish, follow the <a href="/vivarium/en/guide/fork-your-own">fork guide</a> and clone your fork.</>,
+          body: <>For an upstream PR, clone <code>aletheia-works/vivarium</code> directly. To self-publish, follow the <a href="/vivarium/guide/fork-your-own">fork guide</a> and clone your fork.</>,
         },
         {
           lead: 'Set up the toolchain via mise.',
@@ -83,7 +83,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     <p><strong>Do not touch</strong>:{' '} <code>&lt;meta name="vivarium-contract" content="v1"&gt;</code>, the{' '} <code>#verdict</code> element, or the link to{' '} <code>../_shared/style.css</code>. Those carry Contract v1, and removing any of them breaks machine-readable verdict capture.</p>
     <Callout>
       The authoritative spec lives at{' '}
-      <a href="/vivarium/en/spec/contract-v1">Contract v1</a>. The
+      <a href="/vivarium/spec/contract-v1">Contract v1</a>. The
       allowed values for <code>data-verdict</code> and the schema for the{' '}
       <code>__VIVARIUM_RESULT__</code> envelope come from there.
     </Callout>
@@ -155,7 +155,7 @@ cd docs && bun run generate
 `}</code></pre>
     <p>Check that <code>docs/site/public/api/recipes.json</code> contains your slug. With the docs site running locally, the new recipe shows up as a card on the gallery:</p>
     <pre><code>{`cd docs && bun run dev
-# http://localhost:3000/vivarium/en/repro/`}</code></pre>
+# http://localhost:3000/vivarium/repro/`}</code></pre>
   </Section>
 
   <Section
@@ -170,11 +170,11 @@ cd docs && bun run generate
         },
         {
           lead: 'Self-publish on your fork.',
-          body: <>Push the recipe to your own <code>vivarium</code> fork's main, enable deploy via the <a href="/vivarium/en/guide/fork-your-own">fork guide</a>, and the recipe appears at <code>&lt;you&gt;.github.io/vivarium/</code>. Sharing is just sharing the URL.</>,
+          body: <>Push the recipe to your own <code>vivarium</code> fork's main, enable deploy via the <a href="/vivarium/guide/fork-your-own">fork guide</a>, and the recipe appears at <code>&lt;you&gt;.github.io/vivarium/</code>. Sharing is just sharing the URL.</>,
         },
         {
           lead: 'Track an existing recipe from your project repo.',
-          body: <>If you only want to <em>watch</em> a recipe (no new authoring), you don't need this guide — see <a href="/vivarium/en/guide/integrate-with-your-repo">Integrate with your own repo</a>, which uses Manifest v1 plus the reusable consumer-workflow.</>,
+          body: <>If you only want to <em>watch</em> a recipe (no new authoring), you don't need this guide — see <a href="/vivarium/guide/integrate-with-your-repo">Integrate with your own repo</a>, which uses Manifest v1 plus the reusable consumer-workflow.</>,
         },
       ]}
     />
@@ -196,8 +196,8 @@ cd docs && bun run generate
     </>
   }
   sub="The terms used here — slug, verdict, contract, layer — are pinned to fixed meanings in the glossary."
-  primary={{ label: 'Glossary →', href: '/vivarium/en/guide/glossary' }}
-  ghost={{ label: 'Contract v1 spec', href: '/vivarium/en/spec/contract-v1' }}
+  primary={{ label: 'Glossary →', href: '/vivarium/guide/glossary' }}
+  ghost={{ label: 'Contract v1 spec', href: '/vivarium/spec/contract-v1' }}
 />
 
 <BottomNote
