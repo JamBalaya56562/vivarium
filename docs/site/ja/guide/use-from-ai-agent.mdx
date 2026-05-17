@@ -129,9 +129,11 @@ bun run build
         <strong><code>prepare_new_recipe(project, issue, title, base_image?, repo_owner?, layer?)</code></strong> —
         新しいレシピを 1 ステップで起こすための足場ヘルパー。
         検証済 slug、<code>mise run recipes:new</code> /{' '}
-        <code>mise run recipes:verify</code> の正確なコマンド、
-        <code>docs/site/_data/recipe-facets.json</code>（と新しいプロジェクトのみ
-        <code>docs/site/_data/projects.json</code>）に追加する placeholder 行、
+        <code>mise run recipes:verify</code> の正確なコマンド、レシピ
+        ディレクトリに置く placeholder の{' '}
+        <code>recipe.json</code>（<code>docs/site/public/spec/recipe.schema.json</code>
+        で検証される）、新規プロジェクト時のみ追加する
+        <code>docs/site/_data/projects.json</code> の行、
         コミットメッセージのテンプレート、順序付き next-steps チェックリストを返す。
         Layer 2 にだけ専用スキャフォルダがあり、Layer 1 / 3 は既存レシピを
         コピーする運用。

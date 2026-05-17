@@ -4,7 +4,6 @@ paths:
   - "src/layer1_wasm/**"
   - "src/layer2_docker/**"
   - "src/layer3_thirdway/**"
-  - "docs/site/_data/recipe-facets.json"
   - "docs/site/_data/projects.json"
   - "docs/scripts/generate-recipes-index.ts"
   - "docs/scripts/generate-project-pages.ts"
@@ -51,12 +50,21 @@ Descriptive suffixes belong in the README title, not the slug.
 
 ### Data files to update
 
-Both are hand-curated; edit them in the same PR as the recipe:
+Per-recipe metadata lives **inside the recipe directory** as
+`recipe.json` (schema: [`recipe.schema.json`](../../docs/site/public/spec/recipe.schema.json)).
+The only out-of-recipe edit is `projects.json`, and only when the
+recipe debuts a new upstream project:
 
 ```text
-docs/site/_data/recipe-facets.json   ← add a row keyed by <slug>
-docs/site/_data/projects.json        ← add a row keyed by <project> (only if new)
+src/layer{1,2,3}_*/<slug>/recipe.json   ← author this file with the recipe
+docs/site/_data/projects.json           ← add a row keyed by <project> (only if new)
 ```
+
+`recipe.json` is the single source of truth for the gallery facets
+(`language` / `symptom` / `severity` / `tags`) and the regression
+suite's expectations (`expected_verdict` / `expected_runtime`).
+[`generate-recipes-index.ts`](../../docs/scripts/generate-recipes-index.ts)
+reads it directly; there is no overlay layer to register the recipe in.
 
 Before **deleting** a recipe, also check the landing-page hero for a
 pinned reference:

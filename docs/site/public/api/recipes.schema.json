@@ -48,7 +48,7 @@
         "project": {
           "type": "string",
           "minLength": 1,
-          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; per Phase 6 ADR-0024 (private memo) the slug-derived heuristic is retained — facet fields land via a centralised overlay (docs/site/_data/recipe-facets.json) instead of per-recipe frontmatter."
+          "description": "Upstream project name (e.g. 'pandas', 'bash', 'pthread'). Heuristically derived from the slug pattern in v1; facet fields ride alongside the slug under src/layer*_*/<slug>/recipe.json (schema: docs/site/public/spec/recipe.schema.json) so adding a recipe stays a one-directory change."
         },
         "issue": {
           "type": "integer",
@@ -78,17 +78,17 @@
         "language": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. Primary implementation language, lowercase (e.g. 'python', 'rust', 'shell'). Sourced from docs/site/_data/recipe-facets.json per Phase 6 ADR-0024 (private memo). Added in the 2026-05-03 v1 revision; backwards-compatible, v1 consumers ignore."
+          "description": "Optional. Primary implementation language, lowercase (e.g. 'python', 'rust', 'shell'). Sourced from src/layer*_*/<slug>/recipe.json (the per-recipe metadata file; schema: docs/site/public/spec/recipe.schema.json). Added in the 2026-05-03 v1 revision; the 2026-05-18 revision moved the source from the retired docs/site/_data/recipe-facets.json overlay to the per-recipe file. Backwards-compatible, v1 consumers ignore."
         },
         "symptom": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. Short symptom slug (kebab-case) used by the error → recipe matcher (e.g. 'dtype-mismatch', 'ordering-non-transitive'). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+          "description": "Optional. Short symptom slug (kebab-case) used by the error → recipe matcher (e.g. 'dtype-mismatch', 'ordering-non-transitive'). Sourced from src/layer*_*/<slug>/recipe.json. Added 2026-05-03; backwards-compatible."
         },
         "severity": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. Free-form severity bucket (e.g. 'bug', 'regression', 'spec-violation', 'footgun'). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+          "description": "Optional. Free-form severity bucket (e.g. 'bug', 'regression', 'spec-violation', 'footgun'). Sourced from src/layer*_*/<slug>/recipe.json. Added 2026-05-03; backwards-compatible."
         },
         "tags": {
           "type": "array",
@@ -96,7 +96,16 @@
             "type": "string",
             "minLength": 1
           },
-          "description": "Optional. Free-form tag list scored by the matcher (e.g. ['sqlite3', 'pragma', 'foreign-keys']). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+          "description": "Optional. Free-form tag list scored by the matcher (e.g. ['sqlite3', 'pragma', 'foreign-keys']). Sourced from src/layer*_*/<slug>/recipe.json. Added 2026-05-03; backwards-compatible."
+        },
+        "expected_verdict": {
+          "enum": ["reproduced", "unreproduced"],
+          "description": "Optional. Verdict the regression suite expects the recipe page to produce. Sourced from src/layer*_*/<slug>/recipe.json. Added in the 2026-05-18 v1 revision; backwards-compatible, v1 consumers ignore."
+        },
+        "expected_runtime": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional. Runtime identifier the recipe's verdict envelope reports in __VIVARIUM_RESULT__.runtime.name (e.g. 'pyodide', 'docker-snapshot', 'rr-replay'). Sourced from src/layer*_*/<slug>/recipe.json. Added in the 2026-05-18 v1 revision; backwards-compatible, v1 consumers ignore."
         },
         "roundtrip": {
           "type": "object",

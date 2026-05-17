@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "javascript",
+  "symptom": "intl-month-dropped",
+  "severity": "regression",
+  "tags": ["intl", "datetimeformat", "iso8601-calendar", "icu"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "docker-snapshot"
+}

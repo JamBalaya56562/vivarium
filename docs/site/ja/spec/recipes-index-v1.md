@@ -56,10 +56,12 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2 / 3: docker-run 手順ページ）。 |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |
-| `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。[`docs/site/_data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/_data/recipe-facets.json) のオーバーレイから供給される。2026-05-03 リビジョンで追加。 |
-| `symptom` | 文字列（ケバブケース） | ⏳ | オプション。エラー → レシピマッチャーが利用する短い症状スラッグ（例: `"dtype-mismatch"`、`"ordering-non-transitive"`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
-| `severity` | 文字列 | ⏳ | オプション。自由形式の重大度バケット（例: `"bug"`、`"regression"`、`"spec-violation"`、`"footgun"`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
-| `tags` | 文字列の配列 | ⏳ | オプション。マッチャーがスコア計算に使う自由形式タグリスト（例: `["sqlite3", "pragma", "foreign-keys"]`）。ファセットオーバーレイから供給。2026-05-03 追加。 |
+| `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。`src/layer*_*/<slug>/` 配下のレシピごとの [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) から供給される。2026-05-03 リビジョンで追加。2026-05-18 リビジョンで供給元を廃止された `docs/site/_data/recipe-facets.json` オーバーレイからレシピごとのファイルへ移行。 |
+| `symptom` | 文字列（ケバブケース） | ⏳ | オプション。エラー → レシピマッチャーが利用する短い症状スラッグ（例: `"dtype-mismatch"`、`"ordering-non-transitive"`）。`recipe.json` から供給。2026-05-03 追加。 |
+| `severity` | 文字列 | ⏳ | オプション。自由形式の重大度バケット（例: `"bug"`、`"regression"`、`"spec-violation"`、`"footgun"`）。`recipe.json` から供給。2026-05-03 追加。 |
+| `tags` | 文字列の配列 | ⏳ | オプション。マッチャーがスコア計算に使う自由形式タグリスト（例: `["sqlite3", "pragma", "foreign-keys"]`）。`recipe.json` から供給。2026-05-03 追加。 |
+| `expected_verdict` | 文字列（enum） | ⏳ | オプション。リグレッションスイートが期待する verdict — `"reproduced"` または `"unreproduced"`。`recipe.json` から供給。2026-05-18 リビジョンで追加。 |
+| `expected_runtime` | 文字列 | ⏳ | オプション。レシピの verdict envelope が `__VIVARIUM_RESULT__.runtime.name` に報告するランタイム識別子（例: `"pyodide"`、`"docker-snapshot"`、`"rr-replay"`）。`recipe.json` から供給。2026-05-18 追加。 |
 
 ## バージョニング
 
@@ -77,6 +79,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 日付 | 変更内容 |
 |---|---|
 | 2026-05-03 | レシピエントリにオプションの `language` / `symptom` / `severity` / `tags` フィールドを追加。レシピごとのフロントマタではなく、集中型ファセットオーバーレイ（`docs/site/_data/recipe-facets.json`）から供給される。後方互換 — v1 コンシューマーは無視できる。 |
+| 2026-05-18 | オプションの `expected_verdict` / `expected_runtime` フィールドを追加。同時に既存の `language` / `symptom` / `severity` / `tags` の供給元を、廃止された `docs/site/_data/recipe-facets.json` オーバーレイから、レシピごとの `src/layer*_*/<slug>/recipe.json`（スキーマ: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)）へ移行。後方互換 — v1 コンシューマーは新フィールドを無視し、既存フィールドは変更なく読み続けられる。 |
 
 ## 生成方法
 
@@ -89,9 +92,11 @@ slug パターン（末尾に Issue 番号を持つ slug の場合は `<project>
 `project` / `issue` を導出する。
 
 出力は git でトラッキングされるため、レシピを追加する PR の diff にインデックス更新も表示される。
-オプションのファセットフィールド（`language` / `symptom` / `severity` / `tags`）は
-[`docs/site/_data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/_data/recipe-facets.json)
-から merge される。これは手作業で維持され PR 差分でレビューされる集中型オーバーレイだ。
+オプションのファセットフィールド（`language` / `symptom` / `severity` / `tags` /
+`expected_verdict` / `expected_runtime`）は、レシピごとの
+`src/layer*_*/<slug>/recipe.json` ファイル（スキーマ:
+[`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)）
+から読み込まれる。レシピが自身のメタデータを持つので、レシピ追加は 1 ディレクトリの変更で済む。
 v1 では `project` フィールドは引き続き slug 由来のままにしている。
 
 ## コンフォーマンス

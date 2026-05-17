@@ -1403,7 +1403,13 @@ describe('prepare_new_recipe', () => {
       assert.match(r.scaffold_command, /node 63041/);
       assert.match(r.scaffold_command, /--base "node:26-slim"/);
       assert.equal(r.verify_command, 'mise run recipes:verify -- node-63041');
-      assert.equal(r.recipe_facets_row.key, 'node-63041');
+      assert.equal(
+        r.recipe_json.path,
+        'src/layer2_docker/node-63041/recipe.json',
+      );
+      assert.equal(r.recipe_json.contents.schema_version, 1);
+      assert.equal(r.recipe_json.contents.expected_verdict, 'reproduced');
+      assert.equal(r.recipe_json.contents.expected_runtime, 'docker-snapshot');
       assert.equal(r.projects_row.key, 'node');
       assert.equal(
         r.projects_row.value.github,
