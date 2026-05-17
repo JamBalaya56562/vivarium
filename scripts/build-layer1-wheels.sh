@@ -19,8 +19,6 @@
 # Skips silently if no `fix-candidate.json` files exist. Per-spec
 # failure halts the script (set -e) so CI surfaces the build error
 # instead of deploying a stale page.
-#
-# See ADR-0040 (`_context/decisions/0040-layer1-fix-candidate-wheels-from-ci.md`).
 
 set -euo pipefail
 shopt -s nullglob

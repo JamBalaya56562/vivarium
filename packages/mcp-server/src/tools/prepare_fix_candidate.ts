@@ -1,8 +1,10 @@
 // Scaffolding helper for registering a fix-candidate spec on an
-// existing Layer 1 recipe (per ADR-0040 — fix-candidate.json + CI
-// wheel build). Returns the spec content and the gh / git command
-// bundle the agent should run; no git or network operations happen
-// inside the MCP server.
+// existing Layer 1 recipe — writes a `fix-candidate.json` next to
+// the recipe, and the CI deploy-docs workflow turns the linked fix
+// branch into a wheel built on the runner so the recipe page can run
+// it side-by-side with the released build. Returns the spec content
+// and the gh / git command bundle the agent should run; no git or
+// network operations happen inside the MCP server.
 
 import { getCatalogue } from '../catalogue.js';
 import type { RecipeEntry } from '../types.js';
@@ -39,7 +41,6 @@ interface PrepareFixCandidateOk {
   next_steps: string[];
   references: {
     rules: string;
-    adr: string;
     builder_script: string;
   };
 }
@@ -74,7 +75,7 @@ function buildPrBody(args: {
 }): string {
   const lines: string[] = [];
   lines.push(
-    `Register a fix-candidate spec for \`${args.slug}\` so the recipe page runs the fix branch's wheel side-by-side with the released build (per ADR-0040).`,
+    `Register a fix-candidate spec for \`${args.slug}\` so the recipe page runs the fix branch's wheel side-by-side with the released build.`,
   );
   lines.push('');
   lines.push(`- Recipe: <${args.recipeUrl}>`);
@@ -90,7 +91,7 @@ function buildPrBody(args: {
   lines.push('<summary>How fix-candidate verification works</summary>');
   lines.push('');
   lines.push(
-    "`fix-candidate.json` is a tracked one-screen JSON spec at the recipe root (introduced by ADR-0040 to keep wheel binaries out of the repo). On every push to `main`, the deploy-docs workflow:",
+    "`fix-candidate.json` is a tracked one-screen JSON spec at the recipe root; it keeps wheel binaries out of the repo while still letting the recipe page run the fix branch live. On every push to `main`, the deploy-docs workflow:",
   );
   lines.push('');
   lines.push('1. Reads each `src/layer1_wasm/<slug>/fix-candidate.json`.');
@@ -146,7 +147,7 @@ export async function prepareFixCandidate(
   if (entry.layer !== 1) {
     return {
       ok: false,
-      error: `fix-candidate verification (ADR-0040) is currently only wired up for Layer 1 recipes; "${slug}" is layer ${entry.layer}. Layers 2/3 use a different verification path — see verify_branch_fix.`,
+      error: `fix-candidate verification is currently only wired up for Layer 1 recipes; "${slug}" is layer ${entry.layer}. Layers 2/3 use a different verification path — see verify_branch_fix.`,
     };
   }
 
@@ -235,7 +236,6 @@ export async function prepareFixCandidate(
     references: {
       rules:
         'https://github.com/aletheia-works/vivarium/blob/main/.claude/rules/recipe-authoring.md',
-      adr: 'ADR-0040 — _context/decisions/0040-layer1-fix-candidate-wheels-from-ci.md (private; PR #213 carries the public-facing summary)',
       builder_script:
         'https://github.com/aletheia-works/vivarium/blob/main/scripts/build-layer1-wheels.sh',
     },
@@ -245,7 +245,7 @@ export async function prepareFixCandidate(
 export const PREPARE_FIX_CANDIDATE_TOOL = {
   name: 'prepare_fix_candidate',
   description:
-    "Register a fix-candidate spec on an existing Layer 1 (WASM/Pyodide) Vivarium recipe so the recipe page runs the fix branch's wheel side-by-side with the released build (per ADR-0040). SCAFFOLDING HELPER, not an execution engine — same pattern as prepare_new_recipe and verify_branch_fix. Given a recipe slug + fork repo URL + branch name, returns: the `fix-candidate.json` content the agent should write, the recommended commit subject + PR title, a ready-to-paste PR body (with the AI-authorship and ADR-0040 details tucked inside a `<details>` block), and the exact `gh` / `git` commands to fork-and-clone aletheia-works/vivarium, branch off main, drop the spec in, commit, push, and open the cross-repo PR. Use this immediately after opening an upstream fix branch (e.g. on a fork of mpmath/mpmath) when you want Vivarium to verify the fix live in-browser without waiting for upstream merge + a PyPI release. Validates the slug against the bundled catalogue and rejects non-Layer-1 recipes (Layers 2/3 use a different verification path — see verify_branch_fix).",
+    "Register a fix-candidate spec on an existing Layer 1 (WASM/Pyodide) Vivarium recipe so the recipe page runs the fix branch's wheel side-by-side with the released build. SCAFFOLDING HELPER, not an execution engine — same pattern as prepare_new_recipe and verify_branch_fix. Given a recipe slug + fork repo URL + branch name, returns: the `fix-candidate.json` content the agent should write, the recommended commit subject + PR title, a ready-to-paste PR body (with the AI-authorship and fix-candidate spec details tucked inside a `<details>` block), and the exact `gh` / `git` commands to fork-and-clone aletheia-works/vivarium, branch off main, drop the spec in, commit, push, and open the cross-repo PR. Use this immediately after opening an upstream fix branch (e.g. on a fork of mpmath/mpmath) when you want Vivarium to verify the fix live in-browser without waiting for upstream merge + a PyPI release. Validates the slug against the bundled catalogue and rejects non-Layer-1 recipes (Layers 2/3 use a different verification path — see verify_branch_fix).",
   inputSchema: {
     type: 'object' as const,
     properties: {

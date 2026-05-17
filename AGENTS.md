@@ -21,11 +21,8 @@
 - **AI-delegated development.** Humans set direction and merge; AI agents
   implement, review, and iterate.
 - **Current phase: Phase 8.** Phases 0–7 are closed (see
-  [`docs/site/en/roadmap.mdx`](docs/site/en/roadmap.mdx) and
-  `_context/phase_summaries/` for what shipped).
-
-Deeper strategy context is in `_context/` (local-only, gitignored). Treat those
-documents as canonical when they conflict with anything here.
+  [`docs/site/en/roadmap.mdx`](docs/site/en/roadmap.mdx) for what
+  shipped, and the GitHub issue tracker for the active phase's plan).
 
 ## 2. Non-negotiable guardrails
 
@@ -116,27 +113,20 @@ vivarium/
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
 │   ├── layer3_thirdway/   # Layer 3 reproductions (record-replay, etc.)
 │   └── external_examples/ # reference Manifest v1 fixtures, one per layer
-└── _context/              # gitignored: private strategy memos, handoffs, ADRs, drafts
 ```
 
 `src/` is reserved for reproduction recipes; runtime artefacts the
 project publishes (npm / JSR packages, future CLI, etc.) live under
 `packages/`.
 
-### 4.2 `docs/` vs `_context/`
+### 4.2 `docs/` directory
 
-- `docs/` — tracked. The rspress documentation app lives here; its
-  configuration, scripts, tests, package metadata, and lockfile sit at the
-  top of `docs/`. The site source itself lives under `docs/site/`: markdown
-  content, MDX-mounted UI components, global styles, hand-curated data
-  overlays, generated site-only modules, and public assets. Visitor-facing
-  pages and public machine-readable assets stay under `docs/site/`.
-- `_context/` — gitignored. Private strategy memos, chat handoffs,
-  half-formed drafts, and the project's Architecture Decision Records
-  (`_context/decisions/`). AI agents may *read* these freely for
-  context and *write* new notes here during exploration, but must
-  never propose moving content from `_context/` into `docs/` without
-  explicit human sign-off.
+The rspress documentation app lives here; its configuration, scripts,
+tests, package metadata, and lockfile sit at the top of `docs/`. The
+site source itself lives under `docs/site/`: markdown content, MDX-
+mounted UI components, global styles, hand-curated data overlays,
+generated site-only modules, and public assets. Visitor-facing pages
+and public machine-readable assets stay under `docs/site/`.
 
 ### 4.3 Source-control
 
@@ -257,12 +247,12 @@ When adding a new tool, pin it in `mise.toml` first.
 ### 4.10 Spec evolution policy
 
 Public specs (Contract v1, Manifest v1, Recipes index v1) follow a
-two-tier policy per ADR-0018:
+two-tier policy:
 
 | Change shape | Verdict |
 |---|---|
-| New **optional** field v1 consumers can ignore | Same-page **revision** — append to the revision-history footer with date and ADR reference; version literal stays `"v1"`. |
-| Rename, remove, type change, semantics change, optional → required | **vN+1** — new spec page + JSON Schema sibling + new ADR. Old spec page stays readable so consumers can dispatch on the version literal. |
+| New **optional** field v1 consumers can ignore | Same-page **revision** — append to the revision-history footer with date; version literal stays `"v1"`. |
+| Rename, remove, type change, semantics change, optional → required | **vN+1** — new spec page + JSON Schema sibling. Old spec page stays readable so consumers can dispatch on the version literal. |
 
 Every spec page carries its version literal in the file consumers
 read (`<meta name="vivarium-contract">`, `manifest = "v1"`,
@@ -271,38 +261,13 @@ feature-detect new optional surface.
 
 ### 4.11 Package distribution
 
-Per ADR-0019, runtime artefacts (Vivarium MCP today, future CLI /
-SDK) dual-publish to JSR (canonical) and npm (npx ergonomics) with
-OIDC trusted publishing + Sigstore provenance — no long-lived
-registry tokens. Tag form: `<package-name>-v<semver>`
+Runtime artefacts (Vivarium MCP today, future CLI / SDK) dual-
+publish to JSR (canonical) and npm (npx ergonomics) with OIDC
+trusted publishing + Sigstore provenance — no long-lived registry
+tokens. Tag form: `<package-name>-v<semver>`
 (e.g. `mcp-server-v0.1.0`).
 
-### 4.12 Architecture decision records
-
-Strategic and load-bearing decisions land as ADRs in
-`_context/decisions/NNNN-<short-slug>.md`, using
-`_context/decisions/_template.md` as the starting structure. Numbering
-is sequential and never re-used; superseded ADRs keep their original
-number with a `Status: Superseded by ADR-NNNN` note rather than being
-deleted. ADRs are gitignored — they are private working memos, not
-public docs. Reasoning that should be visitor-facing belongs in
-`docs/site/` (vision, architecture, roadmap, guide, spec).
-
-Write an ADR when:
-
-- The decision has meaningful alternatives a reasonable person could
-  prefer.
-- The decision affects multiple areas of the project (architecture,
-  infrastructure, workflow).
-- The decision is hard to reverse — changing it later costs more
-  than a normal refactor.
-- The decision is load-bearing on other decisions.
-
-A trivial style choice or a day-to-day implementation pick does not
-warrant an ADR; AGENTS.md or tooling configuration is the right home
-for those.
-
-### 4.13 Pre-PR local validation
+### 4.12 Pre-PR local validation
 
 **Run the matching CI checks locally before pushing.** Each PR triggers
 the workflows under `.github/workflows/` whose `paths:` filter matches
@@ -350,9 +315,10 @@ for the per-layer catalogue model.
 
 ## 6. When in doubt
 
-1. Re-read `_context/strategy/ambitious_integrated_platform_strategy.md` —
-   the project's north star.
-2. Re-read the latest `_context/phase_summaries/phase*_*.md` for the
-   most recent operational context.
-3. If still unclear, stop and ask the human. Deferring is cheaper than
-   unwinding a wrong decision on a lifelong project.
+1. Re-read [`docs/site/en/roadmap.mdx`](docs/site/en/roadmap.mdx) for
+   the project's current phase scope and what each prior phase
+   shipped.
+2. Check the active phase's plan on the GitHub issue tracker for
+   the concrete near-term work.
+3. If still unclear, stop and ask the human. Deferring is cheaper
+   than unwinding a wrong decision on a lifelong project.

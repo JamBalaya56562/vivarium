@@ -53,9 +53,7 @@ exclude = [
 #   rspress pages, which trips MD041 even though the rendered page is
 #   well-formed.
 # - MD057 (relative-link-exists): false positives in this repo because
-#   we link `.md` paths that resolve to `.mdx` files in rspress, and
-#   to filenames that exist in `_context/` (gitignored from rumdl's
-#   POV).
+#   we link `.md` paths that resolve to `.mdx` files in rspress.
 disable = ["MD013", "MD033", "MD036", "MD041", "MD057"]
 
 respect-gitignore = true

@@ -84,8 +84,7 @@ not substitutes.
 
 ## Verdict snapshot
 
-Per [ADR-0011 (private memo)](../../../_context/decisions/0011-phase4-first-vertical-rr.md):
-the Layer 3 catalogue degrades the verdict pipeline to a
+The Layer 3 catalogue degrades the verdict pipeline to a
 **maintainer-local** snapshot, committed alongside the recipe.
 
 GitHub Actions hosted runners cannot host either side of the

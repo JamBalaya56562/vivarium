@@ -140,9 +140,6 @@ temp/
 .aider*
 .cursor-server/
 
-# ─── Local-only docs (design/strategy memos) ───
-/_context/
-
 # ─── Test / coverage ─────────────────────────
 coverage/
 .coverage

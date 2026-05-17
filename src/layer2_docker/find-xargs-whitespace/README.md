@@ -61,7 +61,7 @@ apostrophe, or a newline.
 
 ## Verdict contract
 
-Per [ADR-0010](../../_context/decisions/0010-phase3-catalogue-model.md):
+Per [`src/layer2_docker/README.md`](../README.md):
 
 - The gallery surfaces the **last verdict CI captured**.
 - The visitor's local `docker run` is the **live confirmation**.

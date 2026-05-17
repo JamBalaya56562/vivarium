@@ -215,8 +215,7 @@ maintainer host with:
 - Linux/x86_64 (rr does not support arm64, Windows, or macOS).
 - A CPU with an exposed PMU (Intel/AMD bare metal, or VMs that
   pass through performance counters — Hyper-V / WSL2 / GHA hosted
-  Ubuntu **do not** qualify; see ADR-0011 in
-  `_context/decisions/`).
+  Ubuntu **do not** qualify).
 - CPUID faulting enabled in the kernel (Intel Ivy Bridge+ or
   modern AMD with stock recent Linux meets this).
 
@@ -282,9 +281,10 @@ Layer 2. CI does not regenerate it.
   `docs/site/public/api/projects.json` are tracked but generated.
   Always run the generators before committing; never hand-edit.
 - **Recipe selection policy.** Must already match
-  `_context/strategy/issue_selection_policy.md` (gitignored,
-  local-only) before authoring. Selection criteria are not
-  re-litigated at PR time.
+  [`upstream-issue-selection.md`](upstream-issue-selection.md)
+  (Vivarium-internal operating rule, auto-loaded by Claude Code
+  for the same paths as this checklist). Selection criteria are
+  not re-litigated at PR time.
 
 ## When this checklist is wrong
 

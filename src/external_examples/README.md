@@ -63,8 +63,4 @@ similar is helpful.
 
 ## Phase context
 
-Phase 5 sub-stream C per
-[ADR-0013](../../_context/decisions/0013-phase5-opener.md)
-(private memo). Manifest format locked at v1 by
-[ADR-0015](../../_context/decisions/0015-third-party-manifest-format.md)
-(private memo).
+Manifest format is locked at v1.

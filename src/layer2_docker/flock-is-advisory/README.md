@@ -55,8 +55,7 @@ hold. The `flock(2)` man page is explicit:
 
 ## Verdict contract
 
-Per [ADR-0010](../../_context/decisions/0010-phase3-catalogue-model.md)
-and [`src/layer2_docker/README.md`](../README.md):
+Per [`src/layer2_docker/README.md`](../README.md):
 
 - The gallery surfaces the **last verdict CI captured** alongside
   this page (`reproduced` / `unreproduced`, image digest, timestamp).

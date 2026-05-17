@@ -12,6 +12,11 @@ import { matchError } from '../src/tools/match_error.ts';
 import { prepareFixCandidate } from '../src/tools/prepare_fix_candidate.ts';
 import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
 import {
+  _setGhRunnerForTesting,
+  type GhRunResult,
+  searchUpstreamIssues,
+} from '../src/tools/search_upstream_issues.ts';
+import {
   computeNextAction,
   parseUpstreamIssue,
   verifyAndReportFix,
@@ -96,6 +101,7 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = realFetch;
   _resetCacheForTesting();
+  _setGhRunnerForTesting(null);
 });
 
 describe('list_recipes', () => {
@@ -794,6 +800,22 @@ describe('prepare_new_recipe', () => {
         'feat(layer2): node-63041 reproduction (...)',
       );
       assert.ok(r.next_steps.length > 0);
+      // roundtrip_init for the scaffold-recipe-from-issue skill to write.
+      assert.equal(r.roundtrip_init.schema_version, 1);
+      assert.equal(r.roundtrip_init.slug, 'node-63041');
+      assert.equal(
+        r.roundtrip_init.upstream_issue,
+        'https://github.com/nodejs/node/issues/63041',
+      );
+      assert.equal(r.roundtrip_init.status, 'draft');
+      assert.match(r.roundtrip_init.updated_at, /^\d{4}-\d{2}-\d{2}T/);
+      assert.deepEqual(r.roundtrip_init.notes, [
+        'scaffolded from upstream issue',
+      ]);
+      assert.equal(
+        r.roundtrip_path,
+        'src/layer2_docker/node-63041/roundtrip.json',
+      );
     }
   });
 
@@ -813,6 +835,10 @@ describe('prepare_new_recipe', () => {
       assert.equal(
         r.upstream_issue_url,
         'https://github.com/python/cpython/issues/12345',
+      );
+      assert.equal(
+        r.roundtrip_path,
+        'src/layer1_wasm/cpython-12345/roundtrip.json',
       );
     }
   });
@@ -1049,5 +1075,229 @@ describe('prepare_fix_candidate', () => {
         'https://github.com/example-fork/pandas',
       );
     }
+  });
+});
+
+describe('search_upstream_issues', () => {
+  // Build a gh-runner stub returning a fixture issue list. Returns the
+  // last captured argv so tests can assert how gh was invoked.
+  function stubGh(
+    issues: unknown[],
+    overrides: Partial<GhRunResult> = {},
+  ): { capturedArgs: string[][] } {
+    const capturedArgs: string[][] = [];
+    _setGhRunnerForTesting((args) => {
+      capturedArgs.push(args);
+      return {
+        status: 0,
+        stdout: JSON.stringify(issues),
+        stderr: '',
+        ...overrides,
+      };
+    });
+    return { capturedArgs };
+  }
+
+  it('returns ok:false when neither project nor repo is passed', async () => {
+    const r = await searchUpstreamIssues({});
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /project or repo is required/);
+  });
+
+  it('rejects malformed repo shape', async () => {
+    const r = await searchUpstreamIssues({ repo: 'not-a-valid-repo' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /owner\/repo/);
+  });
+
+  it('resolves project → default repo via the shared map', async () => {
+    const { capturedArgs } = stubGh([]);
+    const r = await searchUpstreamIssues({ project: 'node' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.repo, 'nodejs/node');
+      // gh was called with --repo nodejs/node
+      const repoIdx = capturedArgs[0]!.indexOf('--repo');
+      assert.ok(repoIdx >= 0);
+      assert.equal(capturedArgs[0]![repoIdx + 1], 'nodejs/node');
+    }
+  });
+
+  it('strict policy short-circuits when the search repo is in exclude_repos (no gh call)', async () => {
+    const { capturedArgs } = stubGh([
+      {
+        number: 1,
+        title: 'x',
+        url: '',
+        body: '',
+        repository: { nameWithOwner: 'example-org/skip-me' },
+      },
+    ]);
+    const r = await searchUpstreamIssues({
+      repo: 'example-org/skip-me',
+      exclude_repos: ['example-org/skip-me'],
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.count, 0);
+      assert.equal(r.matches.length, 0);
+      assert.equal(capturedArgs.length, 0, 'gh must NOT be called for excluded repos');
+      assert.ok(r.notes.some((n) => /exclude_repos/.test(n)));
+    }
+  });
+
+  it('strict policy appends `-linked:pr` to the gh query', async () => {
+    const { capturedArgs } = stubGh([]);
+    await searchUpstreamIssues({ repo: 'nodejs/node' });
+    // The last positional argument is the query string.
+    const lastArg = capturedArgs[0]![capturedArgs[0]!.length - 1];
+    assert.match(lastArg!, /-linked:pr/);
+  });
+
+  it('permissive policy omits `-linked:pr` and leaves has_pr unset', async () => {
+    const { capturedArgs } = stubGh([
+      {
+        number: 42,
+        title: 'foo',
+        url: 'https://github.com/nodejs/node/issues/42',
+        body: 'snippet body',
+        labels: [{ name: 'bug' }],
+        createdAt: '2026-05-01T00:00:00Z',
+        state: 'open',
+        repository: { nameWithOwner: 'nodejs/node' },
+      },
+    ]);
+    const r = await searchUpstreamIssues({
+      repo: 'nodejs/node',
+      selection_policy: 'permissive',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.selection_policy, 'permissive');
+      assert.equal(r.matches[0]!.has_pr, undefined);
+      // gh args must not contain `-linked:pr`
+      const lastArg = capturedArgs[0]![capturedArgs[0]!.length - 1];
+      assert.ok(!/-linked:pr/.test(lastArg!), 'permissive must NOT inject -linked:pr');
+    }
+  });
+
+  it('parses gh issue JSON into SearchMatch shape', async () => {
+    stubGh([
+      {
+        number: 12345,
+        title: 'Intl.DateTimeFormat drops month',
+        url: 'https://github.com/nodejs/node/issues/12345',
+        body: 'long body '.repeat(100),
+        labels: [{ name: 'bug' }, { name: 'i18n' }],
+        createdAt: '2026-05-12T03:00:00Z',
+        state: 'open',
+        repository: { nameWithOwner: 'nodejs/node' },
+      },
+    ]);
+    const r = await searchUpstreamIssues({ project: 'node', limit: 1 });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.count, 1);
+      const m = r.matches[0]!;
+      assert.equal(m.repo, 'nodejs/node');
+      assert.equal(m.number, 12345);
+      assert.equal(m.posted_at, '2026-05-12T03:00:00Z');
+      assert.deepEqual(m.labels, ['bug', 'i18n']);
+      assert.equal(m.has_pr, false);
+      // body should be truncated to <= 500 chars
+      assert.ok(m.body_snippet.length <= 500);
+    }
+  });
+
+  it('strict policy drops cross-repo matches whose repository is in exclude_repos', async () => {
+    // Search runs against `example-org/main-repo` but a result is from
+    // `example-org/skip-me` (e.g. the user passed an `org:` query
+    // qualifier). Caller-supplied exclude_repos must drop it.
+    stubGh([
+      {
+        number: 1,
+        title: 'a',
+        url: 'https://github.com/example-org/main-repo/issues/1',
+        body: '',
+        repository: { nameWithOwner: 'example-org/main-repo' },
+      },
+      {
+        number: 2,
+        title: 'b',
+        url: 'https://github.com/example-org/skip-me/issues/2',
+        body: '',
+        repository: { nameWithOwner: 'example-org/skip-me' },
+      },
+    ]);
+    const r = await searchUpstreamIssues({
+      repo: 'example-org/main-repo',
+      exclude_repos: ['example-org/skip-me'],
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.count, 1);
+      assert.equal(r.matches[0]!.number, 1);
+      assert.ok(r.notes.some((n) => /excluded 1 match/.test(n)));
+    }
+  });
+
+  it('strict policy with empty exclude_repos returns matches unchanged', async () => {
+    stubGh([
+      {
+        number: 1,
+        title: 'a',
+        url: '',
+        body: '',
+        repository: { nameWithOwner: 'example-org/main-repo' },
+      },
+    ]);
+    const r = await searchUpstreamIssues({
+      repo: 'example-org/main-repo',
+      // exclude_repos omitted — Vivarium ships no defaults
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.count, 1);
+      // The exclude_repos note must NOT appear when no exclusions
+      // were supplied — Vivarium has no built-in list to mention.
+      assert.ok(
+        !r.notes.some((n) => /exclude_repos/.test(n)),
+        'no exclude_repos note when none supplied',
+      );
+    }
+  });
+
+  it('returns ok:false on gh non-zero exit', async () => {
+    stubGh([], { status: 1, stdout: '', stderr: 'auth failed' });
+    const r = await searchUpstreamIssues({ repo: 'nodejs/node' });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /gh exit 1/);
+      assert.match(r.error, /auth failed/);
+    }
+  });
+
+  it('returns ok:false on malformed gh JSON output', async () => {
+    stubGh([], { stdout: 'not-json' });
+    const r = await searchUpstreamIssues({ repo: 'nodejs/node' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /parse gh JSON/);
+  });
+
+  it('clamps limit to [1, 50]', async () => {
+    const { capturedArgs } = stubGh([]);
+    await searchUpstreamIssues({ repo: 'nodejs/node', limit: 9999 });
+    const limitIdx = capturedArgs[0]!.indexOf('--limit');
+    assert.equal(capturedArgs[0]![limitIdx + 1], '50');
+  });
+
+  it('forwards --label flags for each provided label', async () => {
+    const { capturedArgs } = stubGh([]);
+    await searchUpstreamIssues({
+      repo: 'nodejs/node',
+      labels: ['bug', 'good first issue'],
+    });
+    const labelCount = capturedArgs[0]!.filter((a) => a === '--label').length;
+    assert.equal(labelCount, 2);
   });
 });
