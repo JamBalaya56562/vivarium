@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "python",
+  "symptom": "assumption-blind-spot-at-infinity",
+  "severity": "spec-violation",
+  "tags": ["sympy", "ask", "Q.extended_real", "core.relational", "infinity"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "pyodide"
+}

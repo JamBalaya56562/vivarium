@@ -18,11 +18,11 @@
 //   mise run recipes-new -- typescript 61717 "tsc --build --watch produces stray .js" \
 //                          --repo microsoft/TypeScript --base node:24-slim
 //
-// The script intentionally does NOT touch docs/site/_data/recipe-facets.json
-// or docs/site/_data/projects.json — those entries require human metadata
-// judgement (severity, symptom, tags, project tagline, homepage). The
-// next-steps banner reminds you to add those rows manually before
-// committing.
+// The script copies a placeholder `recipe.json` (with TODO-fill-in
+// fields) from the template, and intentionally does NOT touch
+// docs/site/_data/projects.json — both require human metadata judgement
+// (severity, symptom, tags, project tagline, homepage). The next-steps
+// banner reminds you to fill those values manually before committing.
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
@@ -191,7 +191,7 @@ console.log(
   `  4. Edit src/layer2_docker/${slug}/index.html — fill in the lede.`,
 );
 console.log(
-  `  5. Add a row to docs/site/_data/recipe-facets.json keyed by "${slug}" (language / symptom / severity / tags).`,
+  `  5. Edit src/layer2_docker/${slug}/recipe.json — replace the TODO-fill-in fields (language / symptom / severity / tags) with real values; expected_verdict / expected_runtime are pre-filled with the Layer 2 defaults.`,
 );
 console.log(
   `  6. (If "${project}" is a new project) add a row to docs/site/_data/projects.json keyed by "${project}".`,

@@ -24,10 +24,14 @@
 //     the override's project (e.g. "lost-update" → "/repro/pthread/lost-update/").
 //   - title = first H1 of the recipe README, with the leading
 //     "Reproduction —" prefix stripped.
-//   - language / symptom / severity / tags = merged from the facet overlay
-//     at docs/site/_data/recipe-facets.json (ADR-0024). Recipes without an
-//     overlay row default to language: "unknown" and empty tags; the
-//     gallery degrades to "show but unfilterable on language" for those.
+//   - language / symptom / severity / tags / expected_verdict /
+//     expected_runtime = read from the per-recipe `recipe.json` next to
+//     the recipe sources. Validated by recipe.schema.json. Recipes
+//     without a `recipe.json` default to language: "unknown" and empty
+//     tags; the gallery degrades to "show but unfilterable on language"
+//     for those. Retired the docs/site/_data/recipe-facets.json overlay
+//     (2026-05-18) so adding a recipe = creating its directory + the
+//     in-directory recipe.json, with no out-of-recipe edits required.
 //
 // Schema is locked at `index = "v1"` per ADR-0019 §4 and follows
 // ADR-0018's minor-revision policy: optional fields can be added without
@@ -36,6 +40,10 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
+
+// Per-recipe metadata file name. Canonical schema:
+// docs/site/public/spec/recipe.schema.json.
+const RECIPE_META_FILE = 'recipe.json';
 
 // Owner and repository name. Resolved from CI-provided env vars when
 // the script runs in GitHub Actions (so a fork's deploy bundles its
@@ -88,6 +96,8 @@ interface RecipeEntry {
   symptom?: string;
   severity?: string;
   tags: string[];
+  expected_verdict?: string;
+  expected_runtime?: string;
   roundtrip?: RoundtripState;
 }
 
@@ -97,15 +107,14 @@ interface RecipesIndex {
   recipes: RecipeEntry[];
 }
 
-interface FacetEntry {
+interface RecipeMeta {
+  schema_version: 1;
   language: string;
   symptom?: string;
   severity?: string;
   tags?: string[];
-}
-
-interface FacetOverlay {
-  facets: Record<string, FacetEntry>;
+  expected_verdict?: string;
+  expected_runtime?: string;
 }
 
 interface ProjectMetaEntry {
@@ -306,23 +315,40 @@ async function readTitle(
   }
 }
 
-async function loadFacetOverlay(): Promise<FacetOverlay> {
-  const overlayPath = join(SITE_DATA_DIR, 'recipe-facets.json');
+// Per-recipe metadata loader. ENOENT is treated as "this recipe has no
+// recipe.json yet" — the entry is built with the degraded
+// language: "unknown" / empty tags fallback rather than failing the
+// generator. Other read failures (parse error, schema_version mismatch)
+// log a warning and likewise fall back, so recipes.json stays
+// generatable from any half-populated tree. Full schema validation
+// lives in recipe.schema.json and is enforced separately by the
+// ajv-cli step in CI (see test-docs.yml).
+async function loadRecipeMeta(
+  recipeDir: string,
+): Promise<RecipeMeta | undefined> {
+  const path = join(recipeDir, RECIPE_META_FILE);
   try {
-    const raw = await readFile(overlayPath, 'utf-8');
-    const parsed = JSON.parse(raw) as Partial<FacetOverlay>;
-    if (!parsed.facets || typeof parsed.facets !== 'object') {
+    const raw = await readFile(path, 'utf-8');
+    const parsed = JSON.parse(raw) as Partial<RecipeMeta>;
+    if (parsed.schema_version !== 1) {
       console.error(
-        `WARNING: ${overlayPath} did not contain a "facets" object; treating as empty overlay.`,
+        `WARNING: ${path}: schema_version != 1 (got ${parsed.schema_version}); skipping merge.`,
       );
-      return { facets: {} };
+      return undefined;
     }
-    return { facets: parsed.facets };
-  } catch (err) {
+    if (typeof parsed.language !== 'string' || parsed.language.length === 0) {
+      console.error(
+        `WARNING: ${path}: language missing or empty; skipping merge.`,
+      );
+      return undefined;
+    }
+    return parsed as RecipeMeta;
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') return undefined;
     console.error(
-      `WARNING: could not read ${overlayPath} (${err instanceof Error ? err.message : err}); treating as empty overlay.`,
+      `WARNING: could not read ${path} (${err instanceof Error ? err.message : err}); skipping recipe.json merge.`,
     );
-    return { facets: {} };
+    return undefined;
   }
 }
 
@@ -381,13 +407,12 @@ async function buildEntry(
   layer: Layer,
   slug: string,
   recipeDir: string,
-  overlay: FacetOverlay,
 ): Promise<RecipeEntry> {
   const { project, issue, issuePath } = parseSlug(slug);
   const title = await readTitle(join(recipeDir, 'README.md'), slug);
   const pageUrl = `${PAGES_BASE}/repro/${project}/${issuePath}/`;
   const sourceUrl = `${REPO_BASE}/tree/main/src/${LAYER_DIRNAME[layer]}/${slug}`;
-  const facet = overlay.facets[slug];
+  const meta = await loadRecipeMeta(recipeDir);
   const entry: RecipeEntry = {
     slug,
     layer,
@@ -396,11 +421,13 @@ async function buildEntry(
     title,
     page_url: pageUrl,
     source_url: sourceUrl,
-    language: facet?.language ?? 'unknown',
-    tags: facet?.tags ?? [],
+    language: meta?.language ?? 'unknown',
+    tags: meta?.tags ?? [],
   };
-  if (facet?.symptom) entry.symptom = facet.symptom;
-  if (facet?.severity) entry.severity = facet.severity;
+  if (meta?.symptom) entry.symptom = meta.symptom;
+  if (meta?.severity) entry.severity = meta.severity;
+  if (meta?.expected_verdict) entry.expected_verdict = meta.expected_verdict;
+  if (meta?.expected_runtime) entry.expected_runtime = meta.expected_runtime;
   if (layer === 2 || layer === 3) {
     entry.verdict_url = `${PAGES_BASE}/repro/${project}/${issuePath}/verdict.json`;
   }
@@ -410,25 +437,22 @@ async function buildEntry(
 }
 
 async function main(): Promise<void> {
-  const overlay = await loadFacetOverlay();
   const projectsOverlay = await loadProjectsOverlay();
   const recipes: RecipeEntry[] = [];
   for (const { layer, dir } of LAYERS) {
     const layerDir = join(REPO_ROOT, dir);
     const slugs = await listRecipeSlugs(layerDir);
     for (const slug of slugs) {
-      recipes.push(
-        await buildEntry(layer, slug, join(layerDir, slug), overlay),
-      );
+      recipes.push(await buildEntry(layer, slug, join(layerDir, slug)));
     }
   }
-  const missingFacets = recipes
+  const missingMeta = recipes
     .filter((r) => r.language === 'unknown')
     .map((r) => r.slug);
-  if (missingFacets.length > 0) {
+  if (missingMeta.length > 0) {
     console.error(
-      `NOTE: ${missingFacets.length} recipe(s) missing facet overlay rows; ` +
-        `language defaulted to "unknown": ${missingFacets.join(', ')}`,
+      `NOTE: ${missingMeta.length} recipe(s) missing recipe.json; ` +
+        `language defaulted to "unknown": ${missingMeta.join(', ')}`,
     );
   }
 
@@ -443,13 +467,13 @@ async function main(): Promise<void> {
     index: 'v1',
     projects,
   };
-  const missingMeta = projects
+  const missingProjectMeta = projects
     .filter((p) => p.display_name === p.project && !p.tagline && !p.description)
     .map((p) => p.project);
-  if (missingMeta.length > 0) {
+  if (missingProjectMeta.length > 0) {
     console.error(
-      `NOTE: ${missingMeta.length} project(s) missing projects.json overlay rows; ` +
-        `landing pages will fall back to slug-as-display-name: ${missingMeta.join(', ')}`,
+      `NOTE: ${missingProjectMeta.length} project(s) missing projects.json overlay rows; ` +
+        `landing pages will fall back to slug-as-display-name: ${missingProjectMeta.join(', ')}`,
     );
   }
 
