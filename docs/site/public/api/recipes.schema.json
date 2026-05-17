@@ -97,6 +97,10 @@
             "minLength": 1
           },
           "description": "Optional. Free-form tag list scored by the matcher (e.g. ['sqlite3', 'pragma', 'foreign-keys']). Sourced from the facet overlay. Added 2026-05-03; backwards-compatible."
+        },
+        "roundtrip": {
+          "type": "object",
+          "description": "Optional. Per-recipe round-trip workflow state, sourced from src/layer*/<slug>/roundtrip.json. Canonical inner shape is documented in https://aletheia-works.github.io/vivarium/spec/roundtrip.schema.json (schema_version 1); this catalogue schema intentionally leaves the inner shape unconstrained so the round-trip schema can evolve (verdicts, status enum, fork shape) without forcing a recipes-index revision in lockstep. Added in the 2026-05-17 v1 revision; backwards-compatible, v1 consumers ignore."
         }
       }
     }
