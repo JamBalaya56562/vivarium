@@ -35,6 +35,11 @@ import {
   type PrepareNewRecipeArgs,
 } from './tools/prepare_new_recipe.js';
 import {
+  SEARCH_UPSTREAM_ISSUES_TOOL,
+  searchUpstreamIssues,
+  type SearchUpstreamIssuesArgs,
+} from './tools/search_upstream_issues.js';
+import {
   VERIFY_AND_REPORT_FIX_TOOL,
   verifyAndReportFix,
   type VerifyAndReportFixArgs,
@@ -53,7 +58,7 @@ const SERVER_NAME = 'vivarium-mcp';
 // description / surface refinements) — the project is still pre-1.0
 // and `prepare_fix_candidate` is meaningful but fully opt-in, so a minor
 // bump would overstate the impact.
-const SERVER_VERSION = '0.1.2';
+const SERVER_VERSION = '0.1.3';
 
 export function createServer(): Server {
   const server = new Server(
@@ -67,6 +72,7 @@ export function createServer(): Server {
       GET_RECIPE_TOOL,
       LOOKUP_VERDICT_TOOL,
       MATCH_ERROR_TOOL,
+      SEARCH_UPSTREAM_ISSUES_TOOL,
       VERIFY_BRANCH_FIX_TOOL,
       VERIFY_AND_REPORT_FIX_TOOL,
       PREPARE_NEW_RECIPE_TOOL,
@@ -92,6 +98,11 @@ export function createServer(): Server {
           break;
         case 'match_error':
           payload = await matchError(args as unknown as MatchErrorArgs);
+          break;
+        case 'search_upstream_issues':
+          payload = await searchUpstreamIssues(
+            args as unknown as SearchUpstreamIssuesArgs,
+          );
           break;
         case 'verify_branch_fix':
           payload = await verifyBranchFix(
