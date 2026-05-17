@@ -7,6 +7,10 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { _resetCacheForTesting, INDEX_URL } from '../src/catalogue.ts';
+import {
+  _setGhRunnerForTesting as _setCreateForkPrGhRunnerForTesting,
+  createForkPr,
+} from '../src/tools/create_fork_pr.ts';
 import { getRecipe } from '../src/tools/get_recipe.ts';
 import { listRecipes } from '../src/tools/list_recipes.ts';
 import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
@@ -120,6 +124,7 @@ afterEach(() => {
   _setLayer23GhRunnerForTesting(null);
   _setSnapshotFetcherForTesting(null);
   _setSleeperForTesting(null);
+  _setCreateForkPrGhRunnerForTesting(null);
 });
 
 describe('list_recipes', () => {
@@ -970,7 +975,7 @@ describe('run_layer1_verdict', () => {
     });
     _setVerdictReaderForTesting(() =>
       JSON.stringify({
-        slug: 'mpmath-983',
+        slug: 'pandas-56679',
         verdict: 'unreproduced',
         fix_url: 'https://example.invalid/fix.py',
         captured_at: '2026-05-17T10:00:00Z',
@@ -978,7 +983,7 @@ describe('run_layer1_verdict', () => {
     );
 
     const r = await runLayer1Verdict({
-      slug: 'mpmath-983',
+      slug: 'pandas-56679',
       fix_url: 'https://example.invalid/fix.py',
     });
     assert.equal(r.ok, true);
@@ -1019,7 +1024,7 @@ describe('run_layer1_verdict', () => {
       stdout: '',
       stderr: 'Playwright failed',
     }));
-    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    const r = await runLayer1Verdict({ slug: 'pandas-56679' });
     assert.equal(r.ok, false);
     if (!r.ok) {
       assert.match(r.error, /status 1/);
@@ -1030,7 +1035,7 @@ describe('run_layer1_verdict', () => {
   it('returns ok:false when verdict output is malformed JSON', async () => {
     _setSpawnRunnerForTesting(() => ({ status: 0, stdout: '', stderr: '' }));
     _setVerdictReaderForTesting(() => 'not-json');
-    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    const r = await runLayer1Verdict({ slug: 'pandas-56679' });
     assert.equal(r.ok, false);
     if (!r.ok) assert.match(r.error, /not valid JSON/);
   });
@@ -1045,7 +1050,7 @@ describe('run_layer1_verdict', () => {
         captured_at: '2026-05-17T10:00:00Z',
       }),
     );
-    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    const r = await runLayer1Verdict({ slug: 'pandas-56679' });
     assert.equal(r.ok, false);
     if (!r.ok) assert.match(r.error, /does not match/);
   });
@@ -1921,5 +1926,324 @@ describe('search_upstream_issues', () => {
     });
     const labelCount = capturedArgs[0]!.filter((a) => a === '--label').length;
     assert.equal(labelCount, 2);
+  });
+});
+
+describe('create_fork_pr', () => {
+  // A round-trip state that satisfies computeNextAction === 'open_fork_pr':
+  // verdicts are captured with the right polarity, the Vivarium-side PR is
+  // already open, no upstream PR yet, status is not blocked / merged.
+  const verifiedState = {
+    upstream_issue: 'https://github.com/pandas-dev/pandas/issues/56679',
+    vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
+    fork: {
+      owner: 'JamBalaya56562',
+      repo: 'pandas',
+      branch: 'fix-issue-56679',
+    },
+    verdicts: {
+      unfixed: {
+        verdict: 'reproduced' as const,
+        captured_at: '2026-05-17T00:00:00Z',
+        source: 'layer1-headless' as const,
+      },
+      fixed: {
+        verdict: 'unreproduced' as const,
+        captured_at: '2026-05-17T00:10:00Z',
+        source: 'layer1-headless' as const,
+      },
+    },
+  };
+
+  it('returns ok:false on missing slug', async () => {
+    const r = await createForkPr({
+      slug: '',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+  });
+
+  it('returns ok:false on missing pr_title', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: '',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /pr_title is required/);
+  });
+
+  it('returns ok:false on unknown slug', async () => {
+    const r = await createForkPr({
+      slug: 'does-not-exist',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /not found/);
+  });
+
+  it('returns ok:false when verdicts.unfixed is not "reproduced" (state machine = verify_unfixed)', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: {
+        ...verifiedState,
+        verdicts: {
+          unfixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: verifiedState.verdicts.fixed,
+        },
+      },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /verify_unfixed/);
+  });
+
+  it('returns ok:false when verdicts.fixed is missing (state machine = verify_fixed)', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: {
+        ...verifiedState,
+        verdicts: { unfixed: verifiedState.verdicts.unfixed },
+      },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /verify_fixed/);
+  });
+
+  it('returns ok:false when status=blocked (state machine = manual_intervention)', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: { ...verifiedState, status: 'blocked' },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /manual_intervention/);
+  });
+
+  it('returns ok:false when vivarium_pr is missing (state machine = open_vivarium_pr)', async () => {
+    const { vivarium_pr: _drop, ...withoutVivariumPr } = verifiedState;
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: withoutVivariumPr,
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /open_vivarium_pr/);
+  });
+
+  it('returns ok:false when upstream_pr is already recorded (state machine = complete)', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: {
+        ...verifiedState,
+        upstream_pr: 'https://github.com/pandas-dev/pandas/pull/12345',
+      },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /complete/);
+  });
+
+  it('returns ok:false when upstream_issue is malformed', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: { ...verifiedState, upstream_issue: 'not a url' },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /cannot derive upstream/);
+  });
+
+  it('returns ok:false when fork is missing required fields', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: {
+        ...verifiedState,
+        fork: { owner: 'JamBalaya56562', repo: 'pandas', branch: '' },
+      },
+      pr_title: 'fix: x',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /fork must have/);
+  });
+
+  it('dry_run=true (default) returns command without calling gh', async () => {
+    let ghCalled = false;
+    _setCreateForkPrGhRunnerForTesting(() => {
+      ghCalled = true;
+      return { status: 0, stdout: '', stderr: '' };
+    });
+
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: address pandas#56679',
+      pr_body: 'See round-trip verification.',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.dry_run, true);
+      assert.equal(r.upstream_repo, 'pandas-dev/pandas');
+      assert.equal(r.head, 'JamBalaya56562:fix-issue-56679');
+      assert.equal(r.draft, true);
+      assert.match(r.command, /gh pr create --repo pandas-dev\/pandas/);
+      assert.match(r.command, /--head JamBalaya56562:fix-issue-56679/);
+      assert.match(r.command, /--draft/);
+      assert.ok(
+        !/--label/.test(r.command),
+        'upstream PR must NOT carry --label (label permissions and existence are upstream-side concerns)',
+      );
+      assert.match(r.body, /See round-trip verification\./);
+      assert.match(r.body, /Vivarium round-trip automation/);
+      assert.equal(r.pr_url, undefined);
+    }
+    assert.equal(ghCalled, false, 'gh must NOT be called in dry_run mode');
+  });
+
+  it('appends the AI-authorship footer to the PR body (empty body → just the footer)', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+      pr_body: '',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.match(r.body, /Vivarium round-trip automation/);
+      // No leading blank line when the caller body is empty.
+      assert.ok(!r.body.startsWith('\n'));
+    }
+  });
+
+  it('is idempotent: caller-supplied body already containing the footer is not duplicated', async () => {
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+      pr_body:
+        '## Summary\n\nDoes the thing.\n\n*Generated via the Vivarium round-trip automation.*',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      const matches = r.body.match(/Vivarium round-trip automation/g) ?? [];
+      assert.equal(matches.length, 1);
+    }
+  });
+
+  it('dry_run=false → ok:false when gh auth check fails', async () => {
+    _setCreateForkPrGhRunnerForTesting((args) => {
+      if (args[0] === 'auth' && args[1] === 'status') {
+        return { status: 1, stdout: '', stderr: 'not logged in' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+      dry_run: false,
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /gh auth/);
+  });
+
+  it('dry_run=false → ok:false when fork repo is not accessible', async () => {
+    _setCreateForkPrGhRunnerForTesting((args) => {
+      if (args[0] === 'auth') return { status: 0, stdout: '', stderr: '' };
+      if (args[0] === 'repo' && args[1] === 'view') {
+        return { status: 1, stdout: '', stderr: 'not found' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+      dry_run: false,
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /fork .* not found/);
+  });
+
+  it('dry_run=false → ok:false when fork branch does not exist on the fork', async () => {
+    _setCreateForkPrGhRunnerForTesting((args) => {
+      if (args[0] === 'auth') return { status: 0, stdout: '', stderr: '' };
+      if (args[0] === 'repo' && args[1] === 'view') {
+        return { status: 0, stdout: '{"name":"pandas"}', stderr: '' };
+      }
+      if (args[0] === 'api' && args[1]!.includes('branches')) {
+        return { status: 1, stdout: '', stderr: 'branch not found' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: x',
+      dry_run: false,
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /branch .* not found/);
+  });
+
+  it('dry_run=false happy path → opens draft PR with mandatory label, returns PR URL', async () => {
+    const calls: string[][] = [];
+    _setCreateForkPrGhRunnerForTesting((args) => {
+      calls.push(args);
+      if (args[0] === 'auth') return { status: 0, stdout: '', stderr: '' };
+      if (args[0] === 'repo' && args[1] === 'view') {
+        return { status: 0, stdout: '{"name":"pandas"}', stderr: '' };
+      }
+      if (args[0] === 'api') {
+        return { status: 0, stdout: '{}', stderr: '' };
+      }
+      if (args[0] === 'pr' && args[1] === 'create') {
+        return {
+          status: 0,
+          stdout: 'https://github.com/pandas-dev/pandas/pull/12345\n',
+          stderr: '',
+        };
+      }
+      return { status: 1, stdout: '', stderr: 'unexpected' };
+    });
+
+    const r = await createForkPr({
+      slug: 'pandas-56679',
+      current_state: verifiedState,
+      pr_title: 'fix: address pandas#56679',
+      pr_body: 'See round-trip verification.',
+      dry_run: false,
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.dry_run, false);
+      assert.equal(r.pr_url, 'https://github.com/pandas-dev/pandas/pull/12345');
+      assert.equal(r.draft, true);
+      assert.match(r.body, /Vivarium round-trip automation/);
+    }
+
+    // gh pr create call must include --draft, must NOT include --label,
+    // and must target the upstream repo with fork head.
+    const createCall = calls.find((a) => a[0] === 'pr' && a[1] === 'create');
+    assert.ok(createCall, 'expected a gh pr create call');
+    assert.ok(createCall!.includes('--draft'));
+    assert.ok(
+      !createCall!.includes('--label'),
+      '--label must not be passed to gh pr create on upstream repos',
+    );
+    const repoIdx = createCall!.indexOf('--repo');
+    assert.equal(createCall![repoIdx + 1], 'pandas-dev/pandas');
+    const headIdx = createCall!.indexOf('--head');
+    assert.equal(createCall![headIdx + 1], 'JamBalaya56562:fix-issue-56679');
+    // Body sent to gh must already include the authorship footer.
+    const bodyIdx = createCall!.indexOf('--body');
+    assert.match(createCall![bodyIdx + 1]!, /Vivarium round-trip automation/);
   });
 });
