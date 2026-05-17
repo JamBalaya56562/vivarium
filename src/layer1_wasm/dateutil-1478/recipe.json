@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "language": "python",
+  "symptom": "inverted-utc-offset-sign",
+  "severity": "bug",
+  "tags": [
+    "python-dateutil",
+    "parser",
+    "timezone",
+    "iso8601",
+    "utc-offset"
+  ],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "pyodide"
+}

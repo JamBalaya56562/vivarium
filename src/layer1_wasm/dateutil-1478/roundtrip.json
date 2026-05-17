@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "slug": "dateutil-1478",
+  "upstream_issue": "https://github.com/dateutil/dateutil/issues/1478",
+  "status": "draft",
+  "updated_at": "2026-05-17T00:00:00Z",
+  "notes": [
+    "scaffolded from upstream issue dateutil/dateutil#1478 (sign of UTC±N offset inverted when the literal UTC prefix precedes a numeric offset). Native repro.py confirms reproduction against python-dateutil 2.9.0.post0; in-browser repro pinned to the same version via micropip."
+  ]
+}

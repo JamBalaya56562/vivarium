@@ -28,6 +28,19 @@
       "github": "https://github.com/python/cpython"
     },
     {
+      "project": "dateutil",
+      "display_name": "python-dateutil",
+      "recipe_count": 1,
+      "layers": [
+        1
+      ],
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/dateutil/",
+      "tagline": "Extensions to the standard Python datetime module.",
+      "description": "Date/time parsing and arithmetic bugs that survive when python-dateutil is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
+      "homepage": "https://dateutil.readthedocs.io/",
+      "github": "https://github.com/dateutil/dateutil"
+    },
+    {
       "project": "find",
       "display_name": "find / xargs",
       "recipe_count": 1,

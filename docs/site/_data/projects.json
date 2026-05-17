@@ -64,6 +64,13 @@
       "homepage": "https://lark-parser.readthedocs.io/",
       "github": "https://github.com/lark-parser/lark"
     },
+    "dateutil": {
+      "display_name": "python-dateutil",
+      "tagline": "Extensions to the standard Python datetime module.",
+      "description": "Date/time parsing and arithmetic bugs that survive when python-dateutil is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
+      "homepage": "https://dateutil.readthedocs.io/",
+      "github": "https://github.com/dateutil/dateutil"
+    },
     "bash": {
       "display_name": "bash",
       "tagline": "GNU bash and POSIX shell semantics.",
