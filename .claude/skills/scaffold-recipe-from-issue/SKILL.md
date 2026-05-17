@@ -8,6 +8,11 @@ description: Scaffold a new Vivarium reproduction recipe from an upstream GitHub
 Scaffold a new Vivarium reproduction recipe end-to-end from an upstream
 GitHub issue. Phase 2 of the round-trip automation: input side.
 
+> If the user wants the full round-trip loop (scaffold + reproduce +
+> verify + open both PRs), use the
+> [`round-trip`](../round-trip/SKILL.md) skill instead — this skill
+> covers the scaffold step only.
+
 ## When to invoke
 
 The user provides an upstream issue (URL, or `<owner>/<repo>` + issue
