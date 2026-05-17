@@ -50,6 +50,13 @@
       "homepage": "https://mpmath.org/",
       "github": "https://github.com/mpmath/mpmath"
     },
+    "sympy": {
+      "display_name": "SymPy",
+      "tagline": "Pure-Python symbolic mathematics.",
+      "description": "Assumption-system and symbolic-evaluation bugs that survive when SymPy is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
+      "homepage": "https://www.sympy.org/",
+      "github": "https://github.com/sympy/sympy"
+    },
     "bash": {
       "display_name": "bash",
       "tagline": "GNU bash and POSIX shell semantics.",

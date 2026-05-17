@@ -57,6 +57,7 @@ const LANG_BY_PROJECT: Record<string, BundledLanguage> = {
   mpmath: 'python',
   numpy: 'python',
   pandas: 'python',
+  sympy: 'python',
   ruby: 'ruby',
   php: 'php',
   regex: 'rust',

@@ -54,6 +54,12 @@
         "arbitrary-precision"
       ]
     },
+    "sympy-29413": {
+      "language": "python",
+      "symptom": "assumption-blind-spot-at-infinity",
+      "severity": "spec-violation",
+      "tags": ["sympy", "ask", "Q.extended_real", "core.relational", "infinity"]
+    },
     "find-xargs-whitespace": {
       "language": "shell",
       "symptom": "whitespace-unsafe-pipeline",
