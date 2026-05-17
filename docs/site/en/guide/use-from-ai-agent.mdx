@@ -131,7 +131,7 @@ bun run build
         Layer 2 / 3 returns Path B: a <code>/repro/compare</code> deep-link
         plus the <code>gh workflow run branch-fix-verdict.yml</code>{' '}
         command the contributor runs. Full walkthrough:{' '}
-        <a href="/vivarium/en/guide/compare-branch-fix">Verify a branch-fix</a>.
+        <a href="/vivarium/guide/compare-branch-fix">Verify a branch-fix</a>.
       </li>
       <li>
         <strong><code>prepare_new_recipe(project, issue, title, base_image?, repo_owner?, layer?)</code></strong> —
@@ -183,7 +183,7 @@ bun run build
     />
     <Callout>
       The <code>match_error</code> scoring is bit-identical to the{' '}
-      <a href="/vivarium/en/repro/match">error → recipe matcher</a>{' '}
+      <a href="/vivarium/repro/match">error → recipe matcher</a>{' '}
       page. MCP and UI return the same ranked candidates.
     </Callout>
   </Section>
@@ -215,7 +215,7 @@ bun run build
       <li>
         <strong>"Layer 1 verdict isn't a snapshot."</strong> By design
         — Layer 1's site of truth is the browser at view time
-        (<a href="/vivarium/en/spec/contract-v1">Contract v1</a>). The
+        (<a href="/vivarium/spec/contract-v1">Contract v1</a>). The
         agent should treat <code>kind: "live"</code> as "open this URL
         for the human to verify."
       </li>
@@ -230,11 +230,11 @@ bun run build
       items={[
         {
           lead: 'Pair with consumer-side CI.',
-          body: <><a href="/vivarium/en/guide/integrate-with-your-repo">Integrate with your own repo</a> sets up the verdict-watch side from your own CI. The two sides — agent + CI — close the loop.</>,
+          body: <><a href="/vivarium/guide/integrate-with-your-repo">Integrate with your own repo</a> sets up the verdict-watch side from your own CI. The two sides — agent + CI — close the loop.</>,
         },
         {
           lead: 'Verify a branch fix end-to-end.',
-          body: <>Confirming "did my candidate fix flip reproduced → unreproduced?" through the agent in one shot is wired up via <code>verify_branch_fix</code>. Full walkthrough: <a href="/vivarium/en/guide/compare-branch-fix">Verify a branch-fix</a>.</>,
+          body: <>Confirming "did my candidate fix flip reproduced → unreproduced?" through the agent in one shot is wired up via <code>verify_branch_fix</code>. Full walkthrough: <a href="/vivarium/guide/compare-branch-fix">Verify a branch-fix</a>.</>,
         },
       ]}
     />
@@ -255,8 +255,8 @@ bun run build
     </>
   }
   sub="With the agent side wired, adding the consumer-CI side closes the other half of the loop."
-  primary={{ label: 'Integrate guide →', href: '/vivarium/en/guide/integrate-with-your-repo' }}
-  ghost={{ label: 'Glossary', href: '/vivarium/en/guide/glossary' }}
+  primary={{ label: 'Integrate guide →', href: '/vivarium/guide/integrate-with-your-repo' }}
+  ghost={{ label: 'Glossary', href: '/vivarium/guide/glossary' }}
 />
 
 <BottomNote

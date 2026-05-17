@@ -26,6 +26,11 @@
   },
   {
     "type": "file",
+    "name": "round-trip",
+    "label": "Run the full round-trip"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "Run on your own fork"
   },

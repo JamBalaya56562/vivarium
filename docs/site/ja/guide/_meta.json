@@ -26,6 +26,11 @@
   },
   {
     "type": "file",
+    "name": "round-trip",
+    "label": "round-trip ループ全体を回す"
+  },
+  {
+    "type": "file",
     "name": "fork-your-own",
     "label": "自分のフォークで動かす"
   },
