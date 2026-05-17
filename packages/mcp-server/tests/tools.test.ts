@@ -1133,7 +1133,10 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 9999,
               status: 'queued',
-              createdAt: '2026-05-17T10:00:00Z',
+              // Resolved at mock-call time so the post-dispatch cutoff
+              // (Date.now() - 5s clock-drift buffer) always sits *before*
+              // this timestamp regardless of when the test suite runs.
+              createdAt: new Date().toISOString(),
             },
           ]),
           stderr: '',
@@ -1348,7 +1351,9 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 7777,
               status: 'queued',
-              createdAt: '2026-05-17T10:00:00Z',
+              // Resolved at mock-call time — see the parallel happy-path
+              // test above for the rationale.
+              createdAt: new Date().toISOString(),
             },
           ]),
           stderr: '',
