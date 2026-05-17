@@ -282,9 +282,10 @@ Layer 2. CI does not regenerate it.
   `docs/site/public/api/projects.json` are tracked but generated.
   Always run the generators before committing; never hand-edit.
 - **Recipe selection policy.** Must already match
-  `_context/strategy/issue_selection_policy.md` (gitignored,
-  local-only) before authoring. Selection criteria are not
-  re-litigated at PR time.
+  [`upstream-issue-selection.md`](upstream-issue-selection.md)
+  (Vivarium-internal operating rule, auto-loaded by Claude Code
+  for the same paths as this checklist). Selection criteria are
+  not re-litigated at PR time.
 
 ## When this checklist is wrong
 
