@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "sql",
+  "symptom": "lost-update-read-committed",
+  "severity": "datarace",
+  "tags": ["postgresql", "isolation-level", "concurrency"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "docker-snapshot"
+}

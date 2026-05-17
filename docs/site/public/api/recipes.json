@@ -18,7 +18,9 @@
         "autocommit"
       ],
       "symptom": "fk-pragma-silently-dropped",
-      "severity": "spec-violation"
+      "severity": "spec-violation",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide"
     },
     {
       "slug": "mpmath-983",
@@ -36,7 +38,9 @@
         "arbitrary-precision"
       ],
       "symptom": "solver-asymmetry-on-nonsingular-matrix",
-      "severity": "bug"
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide"
     },
     {
       "slug": "numpy-28287",
@@ -53,7 +57,9 @@
         "datetime-units"
       ],
       "symptom": "ordering-non-transitive",
-      "severity": "bug"
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide"
     },
     {
       "slug": "pandas-56679",
@@ -70,7 +76,9 @@
         "type-inference"
       ],
       "symptom": "dtype-mismatch",
-      "severity": "regression"
+      "severity": "regression",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide"
     },
     {
       "slug": "php-12167",
@@ -86,7 +94,9 @@
         "recursion-depth"
       ],
       "symptom": "json-encode-recursion",
-      "severity": "bug"
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "php-wasm"
     },
     {
       "slug": "regex-779",
@@ -102,7 +112,9 @@
         "wasm32-wasip1"
       ],
       "symptom": "regex-engine-edge-case",
-      "severity": "bug"
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "rust-wasi"
     },
     {
       "slug": "ruby-21709",
@@ -119,7 +131,9 @@
         "combining-diacritics"
       ],
       "symptom": "unicode-normalize-nfd",
-      "severity": "bug"
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "ruby.wasm"
     },
     {
       "slug": "sympy-29413",
@@ -139,14 +153,18 @@
       ],
       "symptom": "assumption-blind-spot-at-infinity",
       "severity": "spec-violation",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide",
       "roundtrip": {
         "schema_version": 1,
         "slug": "sympy-29413",
         "upstream_issue": "https://github.com/sympy/sympy/issues/29413",
+        "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/260",
         "status": "draft",
-        "updated_at": "2026-05-17T09:30:00Z",
+        "updated_at": "2026-05-17T10:00:00Z",
         "notes": [
-          "scaffolded from upstream issue via the round-trip skill walkthrough (sympy-29413 first end-to-end smoke)"
+          "scaffolded from upstream issue via the round-trip skill walkthrough (sympy-29413 first end-to-end smoke)",
+          "Vivarium PR opened (Stage 4); unfixed verdict will be captured by the CI Playwright suite on this PR's push"
         ]
       }
     },
@@ -166,6 +184,8 @@
       ],
       "symptom": "local-shadows-exit-status",
       "severity": "footgun",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "docker-snapshot",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/verdict.json"
     },
     {
@@ -185,6 +205,8 @@
       ],
       "symptom": "whitespace-unsafe-pipeline",
       "severity": "footgun",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "docker-snapshot",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/find/xargs-whitespace/verdict.json"
     },
     {
@@ -203,6 +225,8 @@
       ],
       "symptom": "advisory-lock-bypass",
       "severity": "spec-violation",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "docker-snapshot",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/flock/is-advisory/verdict.json"
     },
     {
@@ -222,6 +246,8 @@
       ],
       "symptom": "intl-month-dropped",
       "severity": "regression",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "docker-snapshot",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/node/63041/verdict.json"
     },
     {
@@ -240,6 +266,8 @@
       ],
       "symptom": "lost-update-read-committed",
       "severity": "datarace",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "docker-snapshot",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres/lost-update/verdict.json"
     },
     {
@@ -258,6 +286,8 @@
       ],
       "symptom": "lost-update-data-race",
       "severity": "datarace",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "rr-replay",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/pthread/lost-update/verdict.json"
     }
   ]

@@ -109,10 +109,11 @@ the recipe files:
   Layer 3 specifics — needs a maintainer host with the rr
   preconditions.
 
-Also fill in the facet overlay row in
-`docs/site/_data/recipe-facets.json` (real values, not the
-`TODO-fill-in` defaults from the scaffolder) and the projects row
-in `docs/site/_data/projects.json` if the project is new. Then
+Also write the per-recipe metadata file
+`src/layer{1,2,3}_*/<slug>/recipe.json` (the `recipe_json.contents`
+returned by `prepare_new_recipe`, with the `TODO-fill-in` fields
+replaced by real values), and add the projects row in
+`docs/site/_data/projects.json` if the project is new. Then
 `mise run recipes:index` to regenerate derived artefacts.
 
 When the user confirms the reproduction passes local verification,

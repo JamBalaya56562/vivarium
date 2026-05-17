@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "shell",
+  "symptom": "local-shadows-exit-status",
+  "severity": "footgun",
+  "tags": ["bash", "command-substitution", "exit-code"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "docker-snapshot"
+}

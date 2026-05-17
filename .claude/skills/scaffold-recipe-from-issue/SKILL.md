@@ -129,8 +129,10 @@ The tool returns:
   invocation to run. For Layer 1/3, a comment directing copy-from-
   existing.
 - `verify_command` — the recipe verifier (Layer 2 only today).
-- `recipe_facets_row` — append (after filling in real values) to
-  `docs/site/_data/recipe-facets.json`.
+- `recipe_json` — `{ path, contents }`. Write `contents` (with the
+  TODO-fill-in fields replaced by real values) to `path` inside the
+  recipe directory. Validates against
+  `docs/site/public/spec/recipe.schema.json`.
 - `projects_row` — append to `docs/site/_data/projects.json` ONLY if
   this is the project's first recipe.
 - `roundtrip_init` — the JSON payload to write to `roundtrip_path`.

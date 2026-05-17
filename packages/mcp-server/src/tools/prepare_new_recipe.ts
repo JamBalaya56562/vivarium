@@ -15,13 +15,20 @@ export interface PrepareNewRecipeArgs {
   layer?: Layer;
 }
 
-interface RecipeFacetsRow {
-  key: string;
-  value: {
+// recipe.json contents to write into the recipe directory. Validates
+// against docs/site/public/spec/recipe.schema.json (schema_version 1).
+// Replaces the retired RecipeFacetsRow surface (which fed the now-removed
+// docs/site/_data/recipe-facets.json overlay).
+interface RecipeJsonInit {
+  path: string;
+  contents: {
+    schema_version: 1;
     language: string;
     symptom: string;
     severity: string;
     tags: string[];
+    expected_verdict: 'reproduced' | 'unreproduced';
+    expected_runtime: string;
   };
 }
 
@@ -44,7 +51,7 @@ interface PrepareNewRecipeOk {
   upstream_issue_url: string;
   scaffold_command: string;
   verify_command: string;
-  recipe_facets_row: RecipeFacetsRow;
+  recipe_json: RecipeJsonInit;
   projects_row: ProjectsRow;
   commit_subject: string;
   next_steps: string[];
@@ -166,13 +173,32 @@ export async function prepareNewRecipe(
       ? `mise run recipes:verify -- ${slug}`
       : `# No verifier for Layer ${layer} yet — see src/layer${layer}_*/README.md for per-layer validation.`;
 
-  const recipeFacetsRow: RecipeFacetsRow = {
-    key: slug,
-    value: {
+  // Default expected_runtime by layer. Layer 1 needs a per-runtime
+  // refinement that depends on the language; the agent overrides it
+  // after picking the WASM runtime ('pyodide' / 'ruby.wasm' / 'php-wasm'
+  // / 'rust-wasi'). Layer 2 always uses the verdict-snapshot path
+  // ('docker-snapshot'). Layer 3 uses the rr-replay trace.
+  const defaultRuntimeFor = (l: Layer): string => {
+    switch (l) {
+      case 1:
+        return 'TODO-set-runtime';
+      case 2:
+        return 'docker-snapshot';
+      case 3:
+        return 'rr-replay';
+    }
+  };
+
+  const recipeJson: RecipeJsonInit = {
+    path: `src/${LAYER_DIRNAME[layer]}/${slug}/recipe.json`,
+    contents: {
+      schema_version: 1,
       language: 'TODO-fill-in',
       symptom: 'TODO-fill-in',
       severity: 'TODO-fill-in',
       tags: [],
+      expected_verdict: 'reproduced',
+      expected_runtime: defaultRuntimeFor(layer),
     },
   };
 
@@ -198,7 +224,7 @@ export async function prepareNewRecipe(
           `Edit src/layer2_docker/${slug}/repro.sh — replace the TODO stub with the real probe.`,
           `Edit src/layer2_docker/${slug}/README.md — fill in bug description, verdict contract, references.`,
           `Edit src/layer2_docker/${slug}/index.html — fill in the lede.`,
-          `Add the recipe_facets_row to docs/site/_data/recipe-facets.json with real values.`,
+          `Write ${recipeJson.path} with the recipe_json.contents from this response, replacing each TODO placeholder.`,
           `If "${project}" is a new project, add the projects_row to docs/site/_data/projects.json.`,
           `Run: ${verifyCommand}  (this regenerates indices, runs lint, runs the docker build/run, and the rspress build).`,
           `Commit with subject: ${commitSubject}`,
@@ -206,7 +232,7 @@ export async function prepareNewRecipe(
         ]
       : [
           `Copy from an existing recipe under src/layer${layer}_*/ — the canonical authoring reference.`,
-          `Add the recipe_facets_row to docs/site/_data/recipe-facets.json with real values.`,
+          `Write ${recipeJson.path} with the recipe_json.contents from this response, replacing each TODO placeholder (pick expected_runtime for the layer's WASM target).`,
           `If "${project}" is a new project, add the projects_row to docs/site/_data/projects.json.`,
           `Run: cd docs && mise exec -- bun run generate`,
           `Validate locally per the layer's README + the .claude/rules/recipe-authoring.md checklist.`,
@@ -231,7 +257,7 @@ export async function prepareNewRecipe(
     upstream_issue_url: upstreamIssueUrl,
     scaffold_command: scaffoldCommand,
     verify_command: verifyCommand,
-    recipe_facets_row: recipeFacetsRow,
+    recipe_json: recipeJson,
     projects_row: projectsRow,
     commit_subject: commitSubject,
     next_steps: nextSteps,
@@ -250,7 +276,7 @@ export async function prepareNewRecipe(
 export const PREPARE_NEW_RECIPE_TOOL = {
   name: 'prepare_new_recipe',
   description:
-    "Prepare everything an AI agent needs to author a new Vivarium recipe for a given upstream project + issue. SCAFFOLDING HELPER, not an execution engine — returns the exact `mise run recipes:new` and `mise run recipes:verify` commands the agent should run, plus placeholder rows for docs/site/_data/recipe-facets.json and (if the project is new) docs/site/_data/projects.json, plus a commit-subject template and a sequenced next-steps checklist. Validates the slug at call time against the same regex `docs/scripts/generate-recipes-index.ts` uses, so unparseable slugs are rejected before any work begins. Use this immediately after picking an issue from `gh search`; pair with `match_error` / `list_recipes` if you need to confirm no existing recipe already covers the bug.",
+    "Prepare everything an AI agent needs to author a new Vivarium recipe for a given upstream project + issue. SCAFFOLDING HELPER, not an execution engine — returns the exact `mise run recipes:new` and `mise run recipes:verify` commands the agent should run, plus a placeholder `recipe.json` (validates against docs/site/public/spec/recipe.schema.json) to drop into the recipe directory, an optional `projects.json` row (only when the recipe debuts a new upstream project), a commit-subject template, and a sequenced next-steps checklist. Validates the slug at call time against the same regex `docs/scripts/generate-recipes-index.ts` uses, so unparseable slugs are rejected before any work begins. Use this immediately after picking an issue from `gh search`; pair with `match_error` / `list_recipes` if you need to confirm no existing recipe already covers the bug.",
   inputSchema: {
     type: 'object' as const,
     properties: {
