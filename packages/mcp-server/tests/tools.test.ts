@@ -11,6 +11,10 @@ import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
 import { matchError } from '../src/tools/match_error.ts';
 import { prepareFixCandidate } from '../src/tools/prepare_fix_candidate.ts';
 import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
+import {
+  computeNextAction,
+  verifyAndReportFix,
+} from '../src/tools/verify_and_report_fix.ts';
 import { verifyBranchFix } from '../src/tools/verify_branch_fix.ts';
 
 const FIXTURE_INDEX = {
@@ -402,6 +406,229 @@ describe('verify_branch_fix', () => {
       assert.equal(r.path, 'B');
       assert.equal(r.layer, 3);
       assert.match(r.gh_command!, /-f slug=lost-update/);
+    }
+  });
+});
+
+describe('computeNextAction (state machine)', () => {
+  it('returns verify_unfixed when state is undefined (fresh round-trip)', () => {
+    assert.equal(computeNextAction(undefined), 'verify_unfixed');
+  });
+
+  it('returns verify_unfixed when only status=draft is present', () => {
+    assert.equal(computeNextAction({ status: 'draft' }), 'verify_unfixed');
+  });
+
+  it('returns verify_fixed once unfixed=reproduced is captured', () => {
+    assert.equal(
+      computeNextAction({
+        status: 'verifying',
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      }),
+      'verify_fixed',
+    );
+  });
+
+  it('returns open_vivarium_pr when both verdicts proper polarity and no vivarium_pr', () => {
+    assert.equal(
+      computeNextAction({
+        status: 'verified',
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      }),
+      'open_vivarium_pr',
+    );
+  });
+
+  it('returns open_fork_pr once vivarium_pr is recorded', () => {
+    assert.equal(
+      computeNextAction({
+        status: 'verified',
+        vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      }),
+      'open_fork_pr',
+    );
+  });
+
+  it('returns complete once upstream_pr is opened', () => {
+    assert.equal(
+      computeNextAction({
+        status: 'upstream_open',
+        upstream_pr: 'https://github.com/mpmath/mpmath/pull/984',
+      }),
+      'complete',
+    );
+  });
+
+  it('returns complete once status=merged regardless of other fields', () => {
+    assert.equal(computeNextAction({ status: 'merged' }), 'complete');
+  });
+});
+
+describe('verify_and_report_fix', () => {
+  it('returns ok:false on missing slug', async () => {
+    const r = await verifyAndReportFix({ slug: '' });
+    assert.equal(r.ok, false);
+  });
+
+  it('returns ok:false on unknown slug', async () => {
+    const r = await verifyAndReportFix({ slug: 'nonexistent-recipe' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /not found/);
+  });
+
+  it('Layer 1 + no state → next_action=verify_unfixed, path A, layer1_wasm roundtrip_path', async () => {
+    const r = await verifyAndReportFix({ slug: 'pandas-56679' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 1);
+      assert.equal(r.path, 'A');
+      assert.equal(r.next_action, 'verify_unfixed');
+      assert.equal(
+        r.roundtrip_path,
+        'src/layer1_wasm/pandas-56679/roundtrip.json',
+      );
+      assert.ok(
+        r.commands.some((c) => c.includes('bun x playwright test')),
+        'layer 1 verify_unfixed commands should include playwright invocation',
+      );
+    }
+  });
+
+  it('Layer 2 + no state → next_action=verify_unfixed, path B, mise recipes:verify', async () => {
+    const r = await verifyAndReportFix({ slug: 'bash-local-shadows-exit' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 2);
+      assert.equal(r.path, 'B');
+      assert.equal(r.next_action, 'verify_unfixed');
+      assert.equal(
+        r.roundtrip_path,
+        'src/layer2_docker/bash-local-shadows-exit/roundtrip.json',
+      );
+      assert.ok(
+        r.commands.some((c) =>
+          c.includes('mise run recipes:verify bash-local-shadows-exit'),
+        ),
+      );
+    }
+  });
+
+  it('Layer 3 + no state → roundtrip_path under layer3_thirdway', async () => {
+    const r = await verifyAndReportFix({ slug: 'lost-update' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 3);
+      assert.equal(
+        r.roundtrip_path,
+        'src/layer3_thirdway/lost-update/roundtrip.json',
+      );
+    }
+  });
+
+  it('verified state without vivarium_pr → next_action=open_vivarium_pr + sl pr submit', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        status: 'verified',
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'open_vivarium_pr');
+      assert.ok(r.commands.some((c) => c === 'sl pr submit'));
+    }
+  });
+
+  it('verified + vivarium_pr + fork → next_action=open_fork_pr + draft gh pr create', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        status: 'verified',
+        vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
+        fork: {
+          owner: 'JamBalaya56562',
+          repo: 'pandas',
+          branch: 'fix-issue-56679',
+        },
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'open_fork_pr');
+      const ghCmd = r.commands.find((c) => c.startsWith('gh pr create'));
+      assert.ok(ghCmd, 'open_fork_pr commands should contain a gh pr create line');
+      assert.match(ghCmd!, /--repo JamBalaya56562\/pandas/);
+      assert.match(ghCmd!, /--head JamBalaya56562:fix-issue-56679/);
+      assert.match(ghCmd!, /--draft/);
+      assert.match(ghCmd!, /--label 'ai: generated'/);
+    }
+  });
+
+  it('upstream_pr present → next_action=complete + empty commands', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        status: 'upstream_open',
+        upstream_pr: 'https://github.com/pandas-dev/pandas/pull/12345',
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'complete');
+      assert.equal(r.commands.length, 0);
     }
   });
 });

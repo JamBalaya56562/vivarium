@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aletheia-works.github.io/vivarium/spec/roundtrip.schema.json",
+  "title": "Vivarium round-trip state (schema_version 1)",
+  "description": "Per-recipe round-trip workflow state. Tracked sibling of a recipe's tracked sources (README.md / repro.* / index.html / Dockerfile) under src/layer{1,2,3}_*/<slug>/roundtrip.json. Captures the workflow-level progress of the upstream → reproduction → fix → verification → PR loop that recipes.json (the static catalogue) intentionally does not carry. SSOT boundary: recipes.json holds catalogue facts that solidify at recipe-authoring time (slug existence, layer, page_url); roundtrip.json holds state that keeps moving after the recipe is authored (branch / PR URLs / verdict transitions). The generator at docs/scripts/generate-recipes-index.ts opt-in merges this file into the catalogue entry under a `roundtrip` field; the recipes.json schema literal stays index = 'v1' per the ADR-0018 minor-revision policy. AI agents (the round-trip skill, the verify_and_report_fix MCP tool) write this file; the round-trip workflow's state machine reads `status` to decide the next action.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "slug",
+    "upstream_issue",
+    "status",
+    "updated_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Schema version literal. Always 1 for files validating against this schema; breaking changes ship as a sibling schema (roundtrip.v2.schema.json) per ADR-0018."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case recipe slug. Matches the parent directory name and the slug in recipes.json."
+    },
+    "upstream_issue": {
+      "type": "string",
+      "format": "uri",
+      "description": "Canonical URL of the upstream issue this round-trip resolves (e.g. https://github.com/mpmath/mpmath/issues/983). The single mandatory cross-repo link."
+    },
+    "vivarium_pr": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "URL of the Vivarium-side PR that lands the recipe + this roundtrip.json. Null while the recipe is still in draft / verifying status."
+    },
+    "fork": {
+      "type": ["object", "null"],
+      "description": "Personal fork of the upstream repo where the candidate fix lives. Null until the round-trip reaches the open_fork_pr stage. AI agents create the fork against the user's account, not the aletheia-works org (see Plan §Phase 4 fork strategy).",
+      "required": ["owner", "repo", "branch"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "GitHub login that owns the fork (typically the human contributor's personal account)."
+        },
+        "repo": {
+          "type": "string",
+          "description": "Fork repository name; usually identical to the upstream repo name."
+        },
+        "branch": {
+          "type": "string",
+          "description": "Branch on the fork that holds the candidate fix commits."
+        },
+        "image_tag": {
+          "type": "string",
+          "description": "Optional. For Layer 2/3 round-trips, the branch-fix Docker image tag pushed to GHCR (matches the `branch_image` input of branch-fix-verdict.yml). Absent for Layer 1 round-trips, which substitute fix sources in-browser via Path A."
+        }
+      }
+    },
+    "upstream_pr": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "URL of the upstream PR opened against the upstream repo from the fork branch. Always opened in draft mode by AI agents (see Plan §Phase 4 guardrail 4); a human moves it to ready-for-review. Null until the round-trip reaches the upstream_open stage."
+    },
+    "verdicts": {
+      "type": "object",
+      "description": "Verdict pair that proves the round-trip's claim: `unfixed` shows the bug reproduced against the unmodified upstream, `fixed` shows it stopped reproducing once the candidate fix was applied. A round-trip is only considered verified when both are present and `unfixed.verdict === 'reproduced'` + `fixed.verdict === 'unreproduced'`.",
+      "additionalProperties": false,
+      "properties": {
+        "unfixed": { "$ref": "#/$defs/verdictResult" },
+        "fixed": { "$ref": "#/$defs/verdictResult" }
+      }
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "verifying",
+        "verified",
+        "upstream_open",
+        "merged",
+        "blocked"
+      ],
+      "description": "State-machine position. draft = recipe scaffolded but no verdict yet. verifying = unfixed or fixed verdict capture in progress. verified = both verdicts present and consistent. upstream_open = upstream fork PR opened. merged = upstream PR merged (terminal). blocked = manual intervention required; see `notes` for the reason."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Wall-clock timestamp of the last write to this file, ISO-8601 with 'Z' suffix. Bumped on every state transition. Used by external tooling (round-trip dashboard, verdict-comment-bot) to detect stale state."
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional free-form notes appended on each state transition. Conventionally one entry per `status` change. Used to record `blocked` reasons in particular."
+    }
+  },
+  "$defs": {
+    "verdictResult": {
+      "type": "object",
+      "required": ["verdict", "captured_at", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "enum": ["reproduced", "unreproduced"],
+          "description": "Contract v1 verdict polarity. `reproduced` = the bug triggered; `unreproduced` = it did not. Matches verdict.schema.json."
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Wall-clock timestamp of the verdict capture, ISO-8601 with 'Z' suffix."
+        },
+        "source": {
+          "enum": ["layer1-headless", "layer2-ghcr", "layer3-trace"],
+          "description": "How the verdict was captured. `layer1-headless` = Playwright-driven WASM run targeted by --grep <slug>. `layer2-ghcr` = branch-fix-verdict.yml workflow run consuming a GHCR-pushed image. `layer3-trace` = maintainer-side rr replay against the trace asset pinned in trace.url."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema_version": 1,
+      "slug": "mpmath-983",
+      "upstream_issue": "https://github.com/mpmath/mpmath/issues/983",
+      "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/200",
+      "fork": {
+        "owner": "JamBalaya56562",
+        "repo": "mpmath",
+        "branch": "fix-issue-983"
+      },
+      "upstream_pr": "https://github.com/mpmath/mpmath/pull/984",
+      "verdicts": {
+        "unfixed": {
+          "verdict": "reproduced",
+          "captured_at": "2026-05-17T03:12:00Z",
+          "source": "layer1-headless"
+        },
+        "fixed": {
+          "verdict": "unreproduced",
+          "captured_at": "2026-05-17T03:18:42Z",
+          "source": "layer1-headless"
+        }
+      },
+      "status": "upstream_open",
+      "updated_at": "2026-05-17T03:20:10Z",
+      "notes": [
+        "scaffolded from upstream issue",
+        "unfixed verdict captured via ci:repro --grep mpmath-983",
+        "fixed verdict captured against fix branch fix-issue-983",
+        "upstream PR opened in draft"
+      ]
+    }
+  ]
+}

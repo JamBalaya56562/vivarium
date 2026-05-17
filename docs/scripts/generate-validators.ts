@@ -42,6 +42,11 @@ const TARGETS: Target[] = [
     output: 'verdict-validator.mjs',
     label: 'Verdict v1 (Contract v1)',
   },
+  {
+    schema: 'roundtrip.schema.json',
+    output: 'roundtrip-validator.mjs',
+    label: 'Roundtrip (schema_version 1)',
+  },
 ];
 
 mkdirSync(SITE_GENERATED_VALIDATORS_DIR, { recursive: true });
