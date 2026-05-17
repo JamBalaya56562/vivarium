@@ -1,0 +1,270 @@
+---
+pageType: doc
+title: round-trip ループ全体を回す
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../_components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · ROUND-TRIP"
+    title="再現 → 修正 → 検証 → 両 PR を、ひとつのオーケストレーションで。"
+    sub="Vivarium の round-trip スキルは、上流バグレポートからドラフトの修正 PR を出すまでの全工程を AI エージェントと人間が協調しながら進めるためのものです。Phase 1〜5 の round-trip 自動化計画で実装したツール群を、ここでは人間視点で読み下した手順として記述します。機械可読版は `.claude/skills/round-trip/SKILL.md` に置かれています (Claude Code が自動 load)。"
+  />
+
+  <Section
+    eyebrow="// 0 · このガイドが扱う範囲"
+    heading="round-trip ループの end-to-end オーケストレーション。"
+  >
+    <p>
+      このガイドは round-trip ループを人間視点で説明します — 各 stage で何が起こり、どこまでが自動化され、どこが人間判断のままかを並べます。機械可読の orchestration 本体は{' '}
+      <code>.claude/skills/round-trip/SKILL.md</code>{' '}
+      にあり、Claude Code がトリガー一致時に自動 load します。普段直接読む必要はありません。
+    </p>
+    <p>
+      もしレシピの scaffold だけを行いたい場合 (完全な fix-and-PR ループ不要) は{' '}
+      <a href="/vivarium/ja/guide/getting-started">はじめての 5 分</a>{' '}
+      ガイドを使ってください。
+    </p>
+    <Callout>
+      <strong>このガイドはまだ反復中です。</strong>{' '}
+      メンテナが実際に上流 issue で 1 回ずつ回した結果をフィードバックしながら肉付けしていきます。具体例は今後増えていく想定です。
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · 前提条件"
+    heading="インストールと設定が必要なもの。"
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'gh CLI が repo スコープで authenticated。',
+          body: (
+            <>
+              まだなら <code>gh auth login</code> を実行。スキル内部では{' '}
+              <code>gh issue view</code>、<code>gh pr create</code>、<code>gh workflow run</code>、<code>gh run download</code> を呼ぶので、最低限 <code>repo</code> スコープが必要です。
+            </>
+          ),
+        },
+        {
+          lead: 'MCP サーバーをクライアントに登録済み。',
+          body: (
+            <>
+              <a href="/vivarium/ja/guide/use-from-ai-agent">AI エージェントから使う</a>{' '}
+              を参照。round-trip スキルは内部で{' '}
+              <code>search_upstream_issues</code>、<code>prepare_new_recipe</code>、<code>verify_and_report_fix</code>、(Layer 2 のみ) <code>create_fork_pr</code>{' '}
+              を呼びます。
+            </>
+          ),
+        },
+        {
+          lead: 'Sapling (sl) がインストール済み。',
+          body: (
+            <>
+              Vivarium は SCM として Git ではなく{' '}
+              <a href="https://sapling-scm.com">Sapling</a>{' '}
+              を使います。スキルは Vivarium 側 PR のために{' '}
+              <code>sl addremove</code> / <code>sl commit</code> / <code>sl amend</code> / <code>sl pr submit</code>{' '}
+              を駆動します。
+            </>
+          ),
+        },
+        {
+          lead: 'Layer 2 のみ: GHCR PAT。',
+          body: (
+            <>
+              <code>write:packages</code> スコープを持つ classic PAT を{' '}
+              <code>mise run ghcr:login</code> がドキュメント化している場所に配置。Stage 5.5 の{' '}
+              <code>mise run branch-fix:publish</code> で使います。
+            </>
+          ),
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 2 · 全体の流れ"
+    heading="10 stage、verdict 経路は Layer 依存。"
+  >
+    <p>
+      Stage 0〜5 は Layer 非依存で共通、Stage 6 で Layer 1 (WASM in-browser) と Layer 2 (Docker) に分岐します。Layer 3 (record-replay) は現状 fixed-verdict 取得の対象外 — 詳細は下の cheat sheet を参照。
+    </p>
+    <pre>
+      <code>{`Stage 0    Pre-flight (project 活動度、issue 存在、関連 PR なし)
+Stage 1    Scaffold (prepare_new_recipe + mise run recipes:new)
+Stage 2    再現実装 (人間 + AI)
+Stage 3    unfixed verdict 取得 (verify_and_report_fix)
+Stage 4    Vivarium PR open (sl pr submit、ai: generated ラベル付与)
+Stage 5    Upstream fork + fix branch push (人間)
+Stage 5.5  Layer 2 のみ: branch-fix image を build & push
+             (mise run branch-fix:publish)
+Stage 6    fixed verdict 取得
+             - Layer 1: prepare_fix_candidate → CI wheel build →
+                        live recipe page (人間が visual confirm)
+             - Layer 2: verify_and_report_fix に branch_image を渡す →
+                        branch-fix-verdict.yml + artefact
+Stage 7    Vivarium PR を fixed verdict で更新
+             (Layer 2 のみ; sl amend + sl pr submit)
+Stage 8    Upstream draft PR open
+             - Layer 1: prepare_fix_candidate が返したコマンドを実行
+             - Layer 2: create_fork_pr (dry_run: false)
+Stage 9    最終 Vivarium 側 commit
+             (Layer 2 のみ; sl amend + sl pr submit)`}</code>
+    </pre>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · スキルの起動"
+    heading="一文で投げれば、後はエージェントが進める。"
+  >
+    <p>AI エージェント (Claude Code / Cursor / Cline) に以下のように依頼:</p>
+    <blockquote>
+      <em>
+        https://github.com/owner/repo/issues/N の round-trip を回して。Layer 2、タイトルは「short title」、base image は{' '}
+        <code>node:26-slim</code>。
+      </em>
+    </blockquote>
+    <p>
+      エージェントは <code>round-trip</code> スキル (トリガー一致で自動 load) を選び、各 stage を案内します。人間に渡される箇所 (Stage 2、5、Layer 1 の場合は Stage 6 も) では確認後にエージェントが続行します。失敗時はスキルが{' '}
+      <code>roundtrip.json#/status</code> を{' '}
+      <code>&quot;blocked&quot;</code> に書き換えて停止 — 下の Troubleshooting を参照。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · LAYER 1 vs LAYER 2 cheat sheet"
+    heading="fixed verdict 経路だけが異なる、他は揃う。"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Layer 1 (WASM)</th>
+          <th>Layer 2 (Docker)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unfixed verdict ソース</td>
+          <td>
+            In-browser の Pyodide / Ruby.wasm / php-wasm を Playwright が{' '}
+            <code>src/layer1_wasm/&lt;slug&gt;/</code> に対して実行
+          </td>
+          <td>
+            recipe merge 時に CI が capture した deployed{' '}
+            <code>verdict.json</code> スナップショット
+          </td>
+        </tr>
+        <tr>
+          <td>Fix の届け方</td>
+          <td>
+            Fork branch → CI で wheel build (Vivarium PR merge 時に{' '}
+            <code>deploy-docs.yml</code> が発火)
+          </td>
+          <td>
+            Fork branch → コントリビュータがローカルで Docker image を build → GHCR に push
+          </td>
+        </tr>
+        <tr>
+          <td>Fixed verdict ソース</td>
+          <td>
+            Live recipe page が baseline + fix-candidate を side-by-side で描画、人間が visual に確認
+          </td>
+          <td>
+            <code>branch-fix-verdict.yml</code> workflow の artefact (Contract v1 形式の{' '}
+            <code>branch-fix-verdict.json</code>)
+          </td>
+        </tr>
+        <tr>
+          <td>Upstream PR の open</td>
+          <td>
+            <code>prepare_fix_candidate</code> が返したコマンドを Vivarium PR merge 後に手動実行
+          </td>
+          <td>
+            <code>create_fork_pr</code> MCP ツールに{' '}
+            <code>dry_run: false</code> を渡して draft PR を open (本文に AI 開示 footer を自動付与)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Layer 3 (record-replay) は{' '}
+      <code>verify_and_report_fix</code> 側で{' '}
+      <code>verify_fixed</code> が明示的に拒否されます — 現状{' '}
+      <code>branch-fix-verdict.yml</code> が{' '}
+      <code>src/layer2_docker/&lt;slug&gt;/</code> しか扱えないためです。{' '}
+      <code>src/layer3_thirdway/&lt;slug&gt;/</code> をサポートする workflow 拡張は別 issue で追跡しています。
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · TROUBLESHOOTING"
+    heading="スキルが status: blocked で停止したとき。"
+  >
+    <p>
+      どの stage でも失敗時は{' '}
+      <code>roundtrip.json#/status</code> が{' '}
+      <code>&quot;blocked&quot;</code> に書き換わり、スキルは停止します。同じ slug に対する{' '}
+      <code>/round-trip</code> 再起動は、人間が解除するまで再開を拒否します。
+    </p>
+    <p>解除手順:</p>
+    <ol>
+      <li>
+        <code>roundtrip.json#/notes[]</code> を読んで失敗理由と stage 番号を確認。
+      </li>
+      <li>
+        失敗の根本を修正 (典型的には: 失敗したコマンドを verbose フラグ付きで手動再実行し、何が起きたか掴む)。
+      </li>
+      <li>
+        <code>roundtrip.json</code> を編集 — <code>status</code> を期待値に戻し (進捗具合に応じて{' '}
+        <code>&quot;verifying&quot;</code> か{' '}
+        <code>&quot;verified&quot;</code>)、<code>updated_at</code> を更新。
+      </li>
+      <li>
+        <code>/round-trip</code> を再起動。スキルが{' '}
+        <code>roundtrip.json</code> を再読込し、{' '}
+        <code>verify_and_report_fix</code> の{' '}
+        <code>computeNextAction</code> ステートマシンが適切な stage を選んで再開します。
+      </li>
+    </ol>
+  </Section>
+
+  <Callout>
+    このガイドで触れていない事象に遭遇したら、{' '}
+    <a href="https://github.com/aletheia-works/vivarium/issues">
+      aletheia-works/vivarium
+    </a>{' '}
+    に issue を立ててください。穴を埋めてこのページに反映します。
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      branch-fix verdict を比較する{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="round-trip スキルが branch-fix 検証を内部で回しますが、単発の fix 検証なら手動でも実行できます。"
+  primary={{
+    label: 'ブランチ修正検証ガイド →',
+    href: '/vivarium/ja/guide/compare-branch-fix',
+  }}
+  ghost={{ label: '用語集', href: '/vivarium/ja/guide/glossary' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · SEE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
