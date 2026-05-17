@@ -58,7 +58,7 @@ const SERVER_NAME = 'vivarium-mcp';
 // description / surface refinements) — the project is still pre-1.0
 // and `prepare_fix_candidate` is meaningful but fully opt-in, so a minor
 // bump would overstate the impact.
-const SERVER_VERSION = '0.1.4';
+const SERVER_VERSION = '0.2.0';
 
 export function createServer(): Server {
   const server = new Server(

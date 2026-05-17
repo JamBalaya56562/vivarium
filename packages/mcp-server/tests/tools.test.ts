@@ -3,6 +3,8 @@
 
 import { afterEach, beforeEach, describe, it } from 'bun:test';
 import { strict as assert } from 'node:assert';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { _resetCacheForTesting, INDEX_URL } from '../src/catalogue.ts';
 import { getRecipe } from '../src/tools/get_recipe.ts';
@@ -11,6 +13,17 @@ import { lookupVerdict } from '../src/tools/lookup_verdict.ts';
 import { matchError } from '../src/tools/match_error.ts';
 import { prepareFixCandidate } from '../src/tools/prepare_fix_candidate.ts';
 import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
+import {
+  _setSpawnRunnerForTesting,
+  _setVerdictReaderForTesting,
+  runLayer1Verdict,
+} from '../src/tools/run_layer1_verdict.ts';
+import {
+  _setGhRunnerForTesting as _setLayer23GhRunnerForTesting,
+  _setSleeperForTesting,
+  _setSnapshotFetcherForTesting,
+  runLayer23Verdict,
+} from '../src/tools/run_layer23_verdict.ts';
 import {
   _setGhRunnerForTesting,
   type GhRunResult,
@@ -102,6 +115,11 @@ afterEach(() => {
   globalThis.fetch = realFetch;
   _resetCacheForTesting();
   _setGhRunnerForTesting(null);
+  _setSpawnRunnerForTesting(null);
+  _setVerdictReaderForTesting(null);
+  _setLayer23GhRunnerForTesting(null);
+  _setSnapshotFetcherForTesting(null);
+  _setSleeperForTesting(null);
 });
 
 describe('list_recipes', () => {
@@ -573,7 +591,10 @@ describe('verify_and_report_fix', () => {
   });
 
   it('Layer 1 + no state → next_action=verify_unfixed, path A, layer1_wasm roundtrip_path', async () => {
-    const r = await verifyAndReportFix({ slug: 'pandas-56679' });
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      auto_execute: false,
+    });
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.layer, 1);
@@ -591,7 +612,10 @@ describe('verify_and_report_fix', () => {
   });
 
   it('Layer 2 + no state → next_action=verify_unfixed, path B, mise recipes:verify', async () => {
-    const r = await verifyAndReportFix({ slug: 'bash-local-shadows-exit' });
+    const r = await verifyAndReportFix({
+      slug: 'bash-local-shadows-exit',
+      auto_execute: false,
+    });
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.layer, 2);
@@ -610,7 +634,10 @@ describe('verify_and_report_fix', () => {
   });
 
   it('Layer 3 + no state → roundtrip_path under layer3_thirdway', async () => {
-    const r = await verifyAndReportFix({ slug: 'lost-update' });
+    const r = await verifyAndReportFix({
+      slug: 'lost-update',
+      auto_execute: false,
+    });
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.layer, 3);
@@ -624,6 +651,7 @@ describe('verify_and_report_fix', () => {
   it('verified state without vivarium_pr → next_action=open_vivarium_pr + sl pr submit', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
+      auto_execute: false,
       current_state: {
         status: 'verified',
         verdicts: {
@@ -650,6 +678,7 @@ describe('verify_and_report_fix', () => {
   it('verified + vivarium_pr + fork → open_fork_pr targets upstream repo, not fork', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
+      auto_execute: false,
       current_state: {
         status: 'verified',
         upstream_issue: 'https://github.com/pandas-dev/pandas/issues/56679',
@@ -695,6 +724,7 @@ describe('verify_and_report_fix', () => {
   it('open_fork_pr without upstream_issue surfaces a warning comment instead of executing', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
+      auto_execute: false,
       current_state: {
         status: 'verified',
         vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
@@ -734,6 +764,7 @@ describe('verify_and_report_fix', () => {
   it('blocked state → next_action=manual_intervention with stop-the-line commands', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
+      auto_execute: false,
       current_state: {
         status: 'blocked',
         notes: ['upstream maintainer rejected the fix approach'],
@@ -756,6 +787,7 @@ describe('verify_and_report_fix', () => {
   it('upstream_pr present → next_action=complete + empty commands', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
+      auto_execute: false,
       current_state: {
         status: 'upstream_open',
         upstream_pr: 'https://github.com/pandas-dev/pandas/pull/12345',
@@ -765,6 +797,583 @@ describe('verify_and_report_fix', () => {
     if (r.ok) {
       assert.equal(r.next_action, 'complete');
       assert.equal(r.commands.length, 0);
+    }
+  });
+});
+
+describe('verify_and_report_fix auto-execute (Phase 3)', () => {
+  it('Layer 1 + auto_execute=true → spawns Playwright and merges captured verdict', async () => {
+    _setSpawnRunnerForTesting(() => ({ status: 0, stdout: '', stderr: '' }));
+    _setVerdictReaderForTesting(() =>
+      JSON.stringify({
+        slug: 'pandas-56679',
+        verdict: 'reproduced',
+        fix_url: null,
+        captured_at: '2026-05-17T10:00:00Z',
+      }),
+    );
+
+    const r = await verifyAndReportFix({ slug: 'pandas-56679' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.executed?.action, 'verify_unfixed');
+      assert.equal(r.executed?.ok, true);
+      assert.equal(r.executed?.source, 'layer1-headless');
+      assert.equal(r.verdicts.unfixed?.verdict, 'reproduced');
+      // After capturing unfixed=reproduced, the next action becomes
+      // verify_fixed (the state machine advanced one step).
+      assert.equal(r.next_action, 'verify_fixed');
+    }
+  });
+
+  it('Layer 1 + verify_fixed without fix_url → executed.ok=false, no verdict merged', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.executed?.action, 'verify_fixed');
+      assert.equal(r.executed?.ok, false);
+      assert.match(r.executed?.error ?? '', /fix_url is required/);
+      assert.equal(r.verdicts.fixed, undefined);
+    }
+  });
+
+  it('Layer 1 + auto_execute=true + spawn failure surfaces in executed', async () => {
+    _setSpawnRunnerForTesting(() => ({
+      status: 1,
+      stdout: '',
+      stderr: 'Playwright crashed',
+    }));
+
+    const r = await verifyAndReportFix({ slug: 'pandas-56679' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.executed?.ok, false);
+      assert.match(r.executed?.error ?? '', /status 1/);
+      assert.equal(r.verdicts.unfixed, undefined);
+    }
+  });
+
+  it('Layer 3 + verify_fixed → executed.ok=false (workflow does not yet support Layer 3)', async () => {
+    // lost-update is Layer 3. Force the state machine to verify_fixed
+    // by supplying an unfixed=reproduced verdict, then check the
+    // executor rejects with an informative error rather than dispatching
+    // a workflow that would fail inside branch-fix-verdict.yml.
+    let ghCalled = false;
+    _setLayer23GhRunnerForTesting(() => {
+      ghCalled = true;
+      return { status: 0, stdout: '', stderr: '' };
+    });
+
+    const r = await verifyAndReportFix({
+      slug: 'lost-update',
+      branch_image: 'ghcr.io/test/lost-update:fix',
+      current_state: {
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer3-trace',
+          },
+        },
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.layer, 3);
+      assert.equal(r.executed?.action, 'verify_fixed');
+      assert.equal(r.executed?.ok, false);
+      assert.match(r.executed?.error ?? '', /not yet supported for Layer 3/);
+      assert.equal(r.verdicts.fixed, undefined);
+      assert.equal(ghCalled, false, 'gh must NOT be called when Layer 3 verify_fixed is rejected');
+    }
+  });
+
+  it('Layer 2 + auto_execute=true → fetches deployed snapshot for unfixed', async () => {
+    _setSnapshotFetcherForTesting(async (slug) => ({
+      contract: 'v1',
+      verdict: 'reproduced',
+      exit_code: 0,
+      image_tag: `vivarium-${slug}:test`,
+      image_digest: 'sha256:test',
+      captured_at: '2026-05-17T10:00:00Z',
+      stdout: '',
+      stderr_tail: '',
+    }));
+
+    const r = await verifyAndReportFix({ slug: 'bash-local-shadows-exit' });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.executed?.action, 'verify_unfixed');
+      assert.equal(r.executed?.ok, true);
+      assert.equal(r.executed?.source, 'layer2-ghcr');
+      assert.equal(r.verdicts.unfixed?.verdict, 'reproduced');
+    }
+  });
+
+  it('auto_execute=false → no execution, no executed field', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      auto_execute: false,
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.executed, undefined);
+      assert.equal(r.verdicts.unfixed, undefined);
+    }
+  });
+
+  it('open_*_pr / complete / manual_intervention next actions skip execution', async () => {
+    // status=blocked → manual_intervention. auto_execute=true should
+    // NOT trigger any spawn/gh call because those actions are not
+    // executable verify steps.
+    let spawnCalled = false;
+    _setSpawnRunnerForTesting(() => {
+      spawnCalled = true;
+      return { status: 0, stdout: '', stderr: '' };
+    });
+
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: { status: 'blocked' },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'manual_intervention');
+      assert.equal(r.executed, undefined);
+      assert.equal(spawnCalled, false);
+    }
+  });
+});
+
+describe('run_layer1_verdict', () => {
+  it('returns ok:false on missing slug', async () => {
+    const r = await runLayer1Verdict({ slug: '' });
+    assert.equal(r.ok, false);
+  });
+
+  it('passes PLAYWRIGHT_FIX_URL through env when fix_url is supplied', async () => {
+    let capturedEnv: NodeJS.ProcessEnv = {};
+    _setSpawnRunnerForTesting(({ env }) => {
+      capturedEnv = env;
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    _setVerdictReaderForTesting(() =>
+      JSON.stringify({
+        slug: 'mpmath-983',
+        verdict: 'unreproduced',
+        fix_url: 'https://example.invalid/fix.py',
+        captured_at: '2026-05-17T10:00:00Z',
+      }),
+    );
+
+    const r = await runLayer1Verdict({
+      slug: 'mpmath-983',
+      fix_url: 'https://example.invalid/fix.py',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.verdict, 'unreproduced');
+      assert.equal(r.fix_url, 'https://example.invalid/fix.py');
+    }
+    assert.equal(
+      capturedEnv['PLAYWRIGHT_FIX_URL'],
+      'https://example.invalid/fix.py',
+    );
+  });
+
+  it('targets the recipe via `--grep "verdict-capture: <slug>"`', async () => {
+    let capturedArgs: string[] = [];
+    _setSpawnRunnerForTesting(({ args }) => {
+      capturedArgs = args;
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    _setVerdictReaderForTesting(() =>
+      JSON.stringify({
+        slug: 'pandas-56679',
+        verdict: 'reproduced',
+        fix_url: null,
+        captured_at: '2026-05-17T10:00:00Z',
+      }),
+    );
+
+    await runLayer1Verdict({ slug: 'pandas-56679' });
+    const grepIdx = capturedArgs.indexOf('--grep');
+    assert.ok(grepIdx >= 0);
+    assert.equal(capturedArgs[grepIdx + 1], 'verdict-capture: pandas-56679');
+  });
+
+  it('returns ok:false when spawn exits non-zero', async () => {
+    _setSpawnRunnerForTesting(() => ({
+      status: 1,
+      stdout: '',
+      stderr: 'Playwright failed',
+    }));
+    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /status 1/);
+      assert.equal(r.stderr_tail, 'Playwright failed');
+    }
+  });
+
+  it('returns ok:false when verdict output is malformed JSON', async () => {
+    _setSpawnRunnerForTesting(() => ({ status: 0, stdout: '', stderr: '' }));
+    _setVerdictReaderForTesting(() => 'not-json');
+    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /not valid JSON/);
+  });
+
+  it('returns ok:false when slug in output does not match request', async () => {
+    _setSpawnRunnerForTesting(() => ({ status: 0, stdout: '', stderr: '' }));
+    _setVerdictReaderForTesting(() =>
+      JSON.stringify({
+        slug: 'wrong-slug',
+        verdict: 'reproduced',
+        fix_url: null,
+        captured_at: '2026-05-17T10:00:00Z',
+      }),
+    );
+    const r = await runLayer1Verdict({ slug: 'mpmath-983' });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /does not match/);
+  });
+});
+
+describe('run_layer23_verdict', () => {
+  it('returns ok:false on missing slug', async () => {
+    const r = await runLayer23Verdict({ slug: '', mode: 'unfixed' });
+    assert.equal(r.ok, false);
+  });
+
+  it('returns ok:false on invalid mode', async () => {
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'bogus' as 'unfixed',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /invalid mode/);
+  });
+
+  it('mode=unfixed → fetches deployed snapshot via injected fetcher', async () => {
+    _setSnapshotFetcherForTesting(async (slug) => ({
+      contract: 'v1',
+      verdict: 'reproduced',
+      exit_code: 0,
+      image_tag: `vivarium-${slug}:dev`,
+      image_digest: 'sha256:test',
+      captured_at: '2026-05-17T10:00:00Z',
+      stdout: '',
+      stderr_tail: '',
+    }));
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'unfixed',
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.verdict, 'reproduced');
+      assert.equal(r.source, 'deployed-snapshot');
+      assert.equal(r.mode, 'unfixed');
+    }
+  });
+
+  it('mode=unfixed returns ok:false when no snapshot exists', async () => {
+    _setSnapshotFetcherForTesting(async () => null);
+    const r = await runLayer23Verdict({
+      slug: 'pandas-56679',
+      mode: 'unfixed',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /no deployed verdict/);
+  });
+
+  it('mode=fixed requires branch_image', async () => {
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'fixed',
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.error, /branch_image is required/);
+  });
+
+  it('mode=fixed → dispatches workflow, polls, downloads artefact', async () => {
+    _setSleeperForTesting(async () => {
+      /* skip waits */
+    });
+
+    let viewCount = 0;
+    _setLayer23GhRunnerForTesting((args) => {
+      const cmd = args[0];
+      const sub = args[1];
+
+      if (cmd === 'workflow' && sub === 'run') {
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      if (cmd === 'run' && sub === 'list') {
+        return {
+          status: 0,
+          stdout: JSON.stringify([
+            {
+              databaseId: 9999,
+              status: 'queued',
+              createdAt: '2026-05-17T10:00:00Z',
+            },
+          ]),
+          stderr: '',
+        };
+      }
+      if (cmd === 'run' && sub === 'view') {
+        viewCount++;
+        // First poll: still running. Second poll: completed.
+        if (viewCount === 1) {
+          return {
+            status: 0,
+            stdout: JSON.stringify({
+              status: 'in_progress',
+              conclusion: null,
+            }),
+            stderr: '',
+          };
+        }
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            status: 'completed',
+            conclusion: 'success',
+          }),
+          stderr: '',
+        };
+      }
+      if (cmd === 'run' && sub === 'download') {
+        const dirIdx = args.indexOf('--dir');
+        const dir = args[dirIdx + 1]!;
+        const verdictPath = join(dir, 'branch-fix-verdict.json');
+        writeFileSync(
+          verdictPath,
+          JSON.stringify({
+            contract: 'v1',
+            verdict: 'unreproduced',
+            exit_code: 0,
+            image_tag: 'ghcr.io/test/image:fix',
+            image_digest: 'sha256:test',
+            captured_at: '2026-05-17T10:05:00Z',
+            stdout: '',
+            stderr_tail: '',
+          }),
+          'utf-8',
+        );
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      return {
+        status: 1,
+        stdout: '',
+        stderr: `unexpected gh call: ${args.join(' ')}`,
+      };
+    });
+
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'fixed',
+      branch_image: 'ghcr.io/test/image:fix',
+      poll_interval_ms: 1,
+      poll_timeout_ms: 5000,
+    });
+
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.verdict, 'unreproduced');
+      assert.equal(r.source, 'workflow-artefact');
+      assert.equal(r.workflow_run_id, 9999);
+      assert.equal(r.mode, 'fixed');
+    }
+  });
+
+  it('mode=fixed → picks the post-dispatch run when older runs precede it', async () => {
+    _setSleeperForTesting(async () => {
+      /* skip waits */
+    });
+
+    // gh run list returns 3 runs: two created before dispatch (stale)
+    // and one created after. The implementation must filter by
+    // createdAt and pick the post-dispatch one — NOT the most recent
+    // overall (which would be `runs[0]`, an older queued run).
+    _setLayer23GhRunnerForTesting((args) => {
+      const cmd = args[0];
+      const sub = args[1];
+      if (cmd === 'workflow' && sub === 'run') {
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      if (cmd === 'run' && sub === 'list') {
+        const now = Date.now();
+        const stale1 = new Date(now - 60_000).toISOString();
+        const stale2 = new Date(now - 30_000).toISOString();
+        const ours = new Date(now + 1_000).toISOString();
+        return {
+          status: 0,
+          stdout: JSON.stringify([
+            { databaseId: 1111, status: 'queued', createdAt: stale1 },
+            { databaseId: 2222, status: 'queued', createdAt: stale2 },
+            { databaseId: 3333, status: 'queued', createdAt: ours },
+          ]),
+          stderr: '',
+        };
+      }
+      if (cmd === 'run' && sub === 'view') {
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            status: 'completed',
+            conclusion: 'success',
+          }),
+          stderr: '',
+        };
+      }
+      if (cmd === 'run' && sub === 'download') {
+        const dirIdx = args.indexOf('--dir');
+        const dir = args[dirIdx + 1]!;
+        writeFileSync(
+          join(dir, 'branch-fix-verdict.json'),
+          JSON.stringify({
+            contract: 'v1',
+            verdict: 'unreproduced',
+            exit_code: 0,
+            image_tag: 'ghcr.io/test/image:fix',
+            image_digest: 'sha256:test',
+            captured_at: '2026-05-17T10:05:00Z',
+            stdout: '',
+            stderr_tail: '',
+          }),
+          'utf-8',
+        );
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      return { status: 1, stdout: '', stderr: 'unexpected' };
+    });
+
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'fixed',
+      branch_image: 'ghcr.io/test/image:fix',
+      poll_interval_ms: 1,
+      poll_timeout_ms: 5000,
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      // 3333 is the only post-dispatch run; the older 1111 / 2222
+      // must be ignored even though they appear first in the list.
+      assert.equal(r.workflow_run_id, 3333);
+    }
+  });
+
+  it('mode=fixed → ok:false when every returned run pre-dates the dispatch', async () => {
+    _setSleeperForTesting(async () => {
+      /* skip waits */
+    });
+
+    _setLayer23GhRunnerForTesting((args) => {
+      const cmd = args[0];
+      const sub = args[1];
+      if (cmd === 'workflow' && sub === 'run') {
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      if (cmd === 'run' && sub === 'list') {
+        const now = Date.now();
+        // All runs are well before the dispatch + 5s buffer cutoff.
+        return {
+          status: 0,
+          stdout: JSON.stringify([
+            {
+              databaseId: 1111,
+              status: 'queued',
+              createdAt: new Date(now - 120_000).toISOString(),
+            },
+            {
+              databaseId: 2222,
+              status: 'queued',
+              createdAt: new Date(now - 60_000).toISOString(),
+            },
+          ]),
+          stderr: '',
+        };
+      }
+      return { status: 1, stdout: '', stderr: 'unexpected' };
+    });
+
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'fixed',
+      branch_image: 'ghcr.io/test/image:fix',
+      poll_interval_ms: 1,
+      poll_timeout_ms: 5000,
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /at or after dispatch/);
+      assert.match(r.error, /2 older run/);
+    }
+  });
+
+  it('mode=fixed → reports workflow timeout when polling deadline elapses', async () => {
+    _setSleeperForTesting(async () => {
+      /* skip waits */
+    });
+
+    _setLayer23GhRunnerForTesting((args) => {
+      const cmd = args[0];
+      const sub = args[1];
+      if (cmd === 'workflow' && sub === 'run') {
+        return { status: 0, stdout: '', stderr: '' };
+      }
+      if (cmd === 'run' && sub === 'list') {
+        return {
+          status: 0,
+          stdout: JSON.stringify([
+            {
+              databaseId: 7777,
+              status: 'queued',
+              createdAt: '2026-05-17T10:00:00Z',
+            },
+          ]),
+          stderr: '',
+        };
+      }
+      if (cmd === 'run' && sub === 'view') {
+        // Always still running — drives the loop to timeout.
+        return {
+          status: 0,
+          stdout: JSON.stringify({
+            status: 'in_progress',
+            conclusion: null,
+          }),
+          stderr: '',
+        };
+      }
+      return { status: 1, stdout: '', stderr: 'unexpected' };
+    });
+
+    const r = await runLayer23Verdict({
+      slug: 'bash-local-shadows-exit',
+      mode: 'fixed',
+      branch_image: 'ghcr.io/test/image:fix',
+      poll_interval_ms: 1,
+      poll_timeout_ms: 50,
+    });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /did not complete within/);
+      assert.equal(r.workflow_run_id, 7777);
     }
   });
 });
