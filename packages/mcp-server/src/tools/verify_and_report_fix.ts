@@ -60,12 +60,15 @@ const LAYER_DIRNAME: Record<Layer, string> = {
 
 // Pure state-machine transition. Exported so unit tests and any future
 // MCP client can reuse the same logic without re-implementing the
-// transitions.
+// transitions. `status: blocked` short-circuits to manual_intervention
+// regardless of verdict / PR fields so a paused round-trip cannot drift
+// further on automation.
 export function computeNextAction(
   state: Partial<RoundtripState> | undefined,
 ): RoundtripNextAction {
   if (!state) return 'verify_unfixed';
 
+  if (state.status === 'blocked') return 'manual_intervention';
   if (state.status === 'merged') return 'complete';
   if (state.upstream_pr) return 'complete';
 
@@ -82,6 +85,26 @@ export function computeNextAction(
   return 'verify_unfixed';
 }
 
+// Parse `https://github.com/<owner>/<repo>/issues/<n>` (or `/pull/<n>`)
+// to extract the upstream repo coordinates. The fork repo is the
+// contributor's mirror; upstream PRs always target the original owner,
+// not the fork. Returns undefined for non-github / malformed URLs.
+export function parseUpstreamIssue(
+  url: string | undefined,
+): { owner: string; repo: string } | undefined {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url);
+    if (u.hostname !== 'github.com') return undefined;
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length < 4) return undefined;
+    if (parts[2] !== 'issues' && parts[2] !== 'pull') return undefined;
+    return { owner: parts[0]!, repo: parts[1]! };
+  } catch {
+    return undefined;
+  }
+}
+
 interface BuildCommandsArgs {
   next: RoundtripNextAction;
   slug: string;
@@ -91,11 +114,21 @@ interface BuildCommandsArgs {
   ghCommand?: string;
   branchImage?: string;
   fork?: RoundtripState['fork'];
+  upstreamIssue?: string;
 }
 
 function buildCommands(args: BuildCommandsArgs): string[] {
-  const { next, slug, layer, pathAB, compareUrl, ghCommand, branchImage, fork } =
-    args;
+  const {
+    next,
+    slug,
+    layer,
+    pathAB,
+    compareUrl,
+    ghCommand,
+    branchImage,
+    fork,
+    upstreamIssue,
+  } = args;
   switch (next) {
     case 'verify_unfixed':
       if (pathAB === 'A') {
@@ -125,19 +158,36 @@ function buildCommands(args: BuildCommandsArgs): string[] {
         ghCommand ??
           `gh workflow run branch-fix-verdict.yml --repo aletheia-works/vivarium -f slug=${slug} -f branch_image=<your-image-ref>`,
       ];
-    case 'open_fork_pr':
+    case 'open_fork_pr': {
+      if (!fork) {
+        return [
+          `# Populate roundtrip.json#/fork (owner / repo / branch) before opening the upstream PR.`,
+        ];
+      }
+      const upstream = parseUpstreamIssue(upstreamIssue);
+      if (!upstream) {
+        return [
+          `# Cannot derive upstream repo from roundtrip.json#/upstream_issue ('${upstreamIssue ?? 'missing'}').`,
+          `# Expected form: https://github.com/<owner>/<repo>/issues/<n>.`,
+        ];
+      }
       return [
-        `# Open the upstream fork PR in draft mode (AI agents must keep it --draft per round-trip guardrail 4).`,
-        fork
-          ? `gh pr create --repo ${fork.owner}/${fork.repo} --head ${fork.owner}:${fork.branch} --draft --label 'ai: generated' --title '<title>' --body '<body>'`
-          : `# Populate roundtrip.json#/fork (owner / repo / branch) before opening the upstream PR.`,
+        `# Open the upstream PR in draft mode (AI agents must keep it --draft per round-trip guardrail 4).`,
+        `# Base repo = upstream (${upstream.owner}/${upstream.repo}); head = contributor fork (${fork.owner}:${fork.branch}).`,
+        `gh pr create --repo ${upstream.owner}/${upstream.repo} --head ${fork.owner}:${fork.branch} --draft --label 'ai: generated' --title '<title>' --body '<body>'`,
       ];
+    }
     case 'open_vivarium_pr':
       return [
         `# Submit the Vivarium-side PR carrying the recipe and roundtrip.json update.`,
         `sl addremove`,
         `sl commit -m 'feat(layer${layer}): ${slug} — round-trip verdicts captured'`,
         `sl pr submit`,
+      ];
+    case 'manual_intervention':
+      return [
+        `# status=blocked: round-trip paused for manual review.`,
+        `# Inspect roundtrip.json#/notes for the reason and resolve before resuming automation.`,
       ];
     case 'complete':
       return [];
@@ -179,6 +229,7 @@ export async function verifyAndReportFix(
     ghCommand: verifyResult.gh_command,
     branchImage: args.branch_image,
     fork: args.current_state?.fork ?? undefined,
+    upstreamIssue: args.current_state?.upstream_issue,
   });
 
   const notes = [...verifyResult.notes];

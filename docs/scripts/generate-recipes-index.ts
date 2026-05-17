@@ -229,17 +229,52 @@ function parseSlug(slug: string): {
 // without a roundtrip.json keep the catalogue field absent); any other
 // failure logs a warning and skips the merge rather than failing the
 // generator — recipes.json must stay generatable from any half-populated
-// tree.
+// tree. Mechanical checks below are the minimal set needed to keep the
+// public catalogue from carrying obviously malformed state; the
+// canonical full-schema validation lives in roundtrip.schema.json and
+// is enforced by the verify_and_report_fix MCP tool / Phase 3
+// validators that consume the file.
 async function loadRoundtripState(
   recipeDir: string,
+  expectedSlug: string,
 ): Promise<RoundtripState | undefined> {
   const path = join(recipeDir, 'roundtrip.json');
   try {
     const raw = await readFile(path, 'utf-8');
     const parsed = JSON.parse(raw) as RoundtripState;
-    if (parsed.schema_version !== 1 || typeof parsed.slug !== 'string') {
+    if (parsed.schema_version !== 1) {
       console.error(
-        `WARNING: ${path} did not look like roundtrip schema_version 1; skipping merge.`,
+        `WARNING: ${path}: schema_version != 1 (got ${parsed.schema_version}); skipping merge.`,
+      );
+      return undefined;
+    }
+    if (typeof parsed.slug !== 'string' || parsed.slug !== expectedSlug) {
+      console.error(
+        `WARNING: ${path}: slug "${parsed.slug}" does not match directory name "${expectedSlug}"; skipping merge.`,
+      );
+      return undefined;
+    }
+    if (
+      typeof parsed.upstream_issue !== 'string' ||
+      parsed.upstream_issue.length === 0
+    ) {
+      console.error(
+        `WARNING: ${path}: upstream_issue missing or empty; skipping merge.`,
+      );
+      return undefined;
+    }
+    if (typeof parsed.status !== 'string' || parsed.status.length === 0) {
+      console.error(
+        `WARNING: ${path}: status missing or empty; skipping merge.`,
+      );
+      return undefined;
+    }
+    if (
+      typeof parsed.updated_at !== 'string' ||
+      parsed.updated_at.length === 0
+    ) {
+      console.error(
+        `WARNING: ${path}: updated_at missing or empty; skipping merge.`,
       );
       return undefined;
     }
@@ -369,7 +404,7 @@ async function buildEntry(
   if (layer === 2 || layer === 3) {
     entry.verdict_url = `${PAGES_BASE}/repro/${project}/${issuePath}/verdict.json`;
   }
-  const roundtrip = await loadRoundtripState(recipeDir);
+  const roundtrip = await loadRoundtripState(recipeDir, slug);
   if (roundtrip) entry.roundtrip = roundtrip;
   return entry;
 }

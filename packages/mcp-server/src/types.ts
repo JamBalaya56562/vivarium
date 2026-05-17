@@ -96,10 +96,13 @@ export interface RoundtripState {
 // Next-action keys consumed by the round-trip skill's state machine.
 // Computed by `verify_and_report_fix` from the current RoundtripState
 // so the skill (and any future MCP client) can decide the next call
-// without re-implementing the state transitions.
+// without re-implementing the state transitions. `manual_intervention`
+// is the terminal action for `status: blocked` — callers must surface
+// the roundtrip.json#/notes reason and pause automation.
 export type RoundtripNextAction =
   | 'verify_unfixed'
   | 'verify_fixed'
   | 'open_fork_pr'
   | 'open_vivarium_pr'
+  | 'manual_intervention'
   | 'complete';

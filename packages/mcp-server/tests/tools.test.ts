@@ -13,6 +13,7 @@ import { prepareFixCandidate } from '../src/tools/prepare_fix_candidate.ts';
 import { prepareNewRecipe } from '../src/tools/prepare_new_recipe.ts';
 import {
   computeNextAction,
+  parseUpstreamIssue,
   verifyAndReportFix,
 } from '../src/tools/verify_and_report_fix.ts';
 import { verifyBranchFix } from '../src/tools/verify_branch_fix.ts';
@@ -491,6 +492,66 @@ describe('computeNextAction (state machine)', () => {
   it('returns complete once status=merged regardless of other fields', () => {
     assert.equal(computeNextAction({ status: 'merged' }), 'complete');
   });
+
+  it('returns manual_intervention when status=blocked, even if verdicts look verified', () => {
+    // status: blocked is a tombstone — automation must stop until a
+    // human resolves it, regardless of how progressed other fields look.
+    assert.equal(
+      computeNextAction({
+        status: 'blocked',
+        vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      }),
+      'manual_intervention',
+    );
+  });
+});
+
+describe('parseUpstreamIssue', () => {
+  it('extracts owner/repo from a canonical github.com issue URL', () => {
+    assert.deepEqual(
+      parseUpstreamIssue('https://github.com/pandas-dev/pandas/issues/56679'),
+      { owner: 'pandas-dev', repo: 'pandas' },
+    );
+  });
+
+  it('also accepts the /pull/<n> form', () => {
+    assert.deepEqual(
+      parseUpstreamIssue('https://github.com/mpmath/mpmath/pull/984'),
+      { owner: 'mpmath', repo: 'mpmath' },
+    );
+  });
+
+  it('returns undefined for non-github hosts', () => {
+    assert.equal(
+      parseUpstreamIssue('https://gitlab.com/foo/bar/-/issues/1'),
+      undefined,
+    );
+  });
+
+  it('returns undefined for malformed URLs', () => {
+    assert.equal(parseUpstreamIssue('not a url'), undefined);
+    assert.equal(parseUpstreamIssue(''), undefined);
+    assert.equal(parseUpstreamIssue(undefined), undefined);
+  });
+
+  it('returns undefined for github URLs missing the issues/pull segment', () => {
+    assert.equal(
+      parseUpstreamIssue('https://github.com/pandas-dev/pandas'),
+      undefined,
+    );
+  });
 });
 
 describe('verify_and_report_fix', () => {
@@ -580,7 +641,52 @@ describe('verify_and_report_fix', () => {
     }
   });
 
-  it('verified + vivarium_pr + fork → next_action=open_fork_pr + draft gh pr create', async () => {
+  it('verified + vivarium_pr + fork → open_fork_pr targets upstream repo, not fork', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        status: 'verified',
+        upstream_issue: 'https://github.com/pandas-dev/pandas/issues/56679',
+        vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
+        fork: {
+          owner: 'JamBalaya56562',
+          repo: 'pandas',
+          branch: 'fix-issue-56679',
+        },
+        verdicts: {
+          unfixed: {
+            verdict: 'reproduced',
+            captured_at: '2026-05-17T00:00:00Z',
+            source: 'layer1-headless',
+          },
+          fixed: {
+            verdict: 'unreproduced',
+            captured_at: '2026-05-17T00:10:00Z',
+            source: 'layer1-headless',
+          },
+        },
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'open_fork_pr');
+      const ghCmd = r.commands.find((c) => c.startsWith('gh pr create'));
+      assert.ok(ghCmd, 'open_fork_pr commands should contain a gh pr create line');
+      // The PR's base repo MUST be the upstream owner/repo derived from
+      // upstream_issue, not the contributor's fork. --head still points
+      // at the fork's branch.
+      assert.match(ghCmd!, /--repo pandas-dev\/pandas/);
+      assert.match(ghCmd!, /--head JamBalaya56562:fix-issue-56679/);
+      assert.ok(
+        !/--repo JamBalaya56562\/pandas/.test(ghCmd!),
+        '--repo must NOT be the fork repo',
+      );
+      assert.match(ghCmd!, /--draft/);
+      assert.match(ghCmd!, /--label 'ai: generated'/);
+    }
+  });
+
+  it('open_fork_pr without upstream_issue surfaces a warning comment instead of executing', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
       current_state: {
@@ -608,12 +714,36 @@ describe('verify_and_report_fix', () => {
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.next_action, 'open_fork_pr');
-      const ghCmd = r.commands.find((c) => c.startsWith('gh pr create'));
-      assert.ok(ghCmd, 'open_fork_pr commands should contain a gh pr create line');
-      assert.match(ghCmd!, /--repo JamBalaya56562\/pandas/);
-      assert.match(ghCmd!, /--head JamBalaya56562:fix-issue-56679/);
-      assert.match(ghCmd!, /--draft/);
-      assert.match(ghCmd!, /--label 'ai: generated'/);
+      assert.ok(
+        !r.commands.some((c) => c.startsWith('gh pr create')),
+        'should NOT emit gh pr create when upstream cannot be derived',
+      );
+      assert.ok(
+        r.commands.some((c) => /Cannot derive upstream repo/.test(c)),
+        'should explain why the command was suppressed',
+      );
+    }
+  });
+
+  it('blocked state → next_action=manual_intervention with stop-the-line commands', async () => {
+    const r = await verifyAndReportFix({
+      slug: 'pandas-56679',
+      current_state: {
+        status: 'blocked',
+        notes: ['upstream maintainer rejected the fix approach'],
+      },
+    });
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.next_action, 'manual_intervention');
+      assert.ok(
+        r.commands.some((c) => /status=blocked/.test(c)),
+        'commands should annotate that the round-trip is paused',
+      );
+      assert.ok(
+        !r.commands.some((c) => c.startsWith('gh ') || c.startsWith('sl ')),
+        'manual_intervention must NOT emit executable commands',
+      );
     }
   });
 
