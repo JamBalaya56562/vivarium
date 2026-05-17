@@ -48,21 +48,33 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LAYER1_DIR = dirname(SCRIPT_DIR);
 
-// Slug-prefix → Shiki language ID. The slug shape is
-// `<project>-<issue>` (per AGENTS.md §4.6 / glossary), so the part
-// before the first hyphen identifies the project, which in turn pins
-// the source language for Layer 1 recipes.
-const LANG_BY_PROJECT: Record<string, BundledLanguage> = {
-  cpython: 'python',
-  lark: 'python',
-  mpmath: 'python',
-  numpy: 'python',
-  pandas: 'python',
-  sympy: 'python',
-  ruby: 'ruby',
-  php: 'php',
-  regex: 'rust',
-};
+// Each recipe ships its own Shiki language ID inside the per-recipe
+// metadata file `recipe.json#/language` (schema:
+// docs/site/public/spec/recipe.schema.json, schema_version 1). Reading
+// it from there means adding a new Layer 1 recipe is a one-directory
+// change — no `LANG_BY_PROJECT` map to maintain in this script,
+// independent of the slug shape. The retired map covered the slug
+// prefix → language mapping at PR #264; the per-recipe file replaces
+// it as the single source of truth.
+
+function readRecipeLanguage(recipeDir: string): BundledLanguage | null {
+  const recipePath = join(recipeDir, 'recipe.json');
+  if (!existsSync(recipePath)) return null;
+  try {
+    const meta = JSON.parse(readFileSync(recipePath, 'utf-8'));
+    if (typeof meta?.language === 'string' && meta.language.length > 0) {
+      // Trusted as a valid Shiki BundledLanguage. If it is not, the
+      // `codeToHtml` call below throws and the recipe is skipped with
+      // a clear log line.
+      return meta.language as BundledLanguage;
+    }
+  } catch (err) {
+    console.warn(
+      `[highlight-repros] failed to parse ${recipePath}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  return null;
+}
 
 const SKIP_DIRS = new Set([
   'node_modules',
@@ -134,10 +146,12 @@ for (const slug of slugs) {
   const reproPath = join(LAYER1_DIR, slug, 'repro.ts');
   if (!existsSync(reproPath)) continue;
 
-  const project = slug.split('-')[0] ?? '';
-  const lang = LANG_BY_PROJECT[project];
+  const recipeDir = join(LAYER1_DIR, slug);
+  const lang = readRecipeLanguage(recipeDir);
   if (!lang) {
-    console.warn(`[highlight-repros] no language for project "${project}" (slug ${slug}); skipping.`);
+    console.warn(
+      `[highlight-repros] no recipe.json#/language for slug "${slug}"; skipping.`,
+    );
     skipped += 1;
     continue;
   }
@@ -152,10 +166,19 @@ for (const slug of slugs) {
     continue;
   }
 
-  const wrapped = await codeToHtml(code, {
-    lang,
-    theme: 'github-dark',
-  });
+  let wrapped: string;
+  try {
+    wrapped = await codeToHtml(code, {
+      lang,
+      theme: 'github-dark',
+    });
+  } catch (err) {
+    console.warn(
+      `[highlight-repros] Shiki rejected language "${lang}" for slug "${slug}": ${err instanceof Error ? err.message : String(err)}; skipping.`,
+    );
+    skipped += 1;
+    continue;
+  }
 
   // Strip Shiki's outer `<pre class="shiki ...">…<code>` wrapper —
   // the recipe page already owns the `<pre id="repro-code">`, and
