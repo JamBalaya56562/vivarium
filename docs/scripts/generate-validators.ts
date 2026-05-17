@@ -47,6 +47,11 @@ const TARGETS: Target[] = [
     output: 'roundtrip-validator.mjs',
     label: 'Roundtrip (schema_version 1)',
   },
+  {
+    schema: 'recipe.schema.json',
+    output: 'recipe-validator.mjs',
+    label: 'Recipe (schema_version 1)',
+  },
 ];
 
 mkdirSync(SITE_GENERATED_VALIDATORS_DIR, { recursive: true });

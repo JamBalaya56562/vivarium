@@ -1,5 +1,5 @@
 {
-  "$comment": "Project-level metadata overlay for /repro/<project>/ landing pages. Hand-curated and reviewed in PR diff, mirroring the recipe-facets.json convention from ADR-0024 §1. Project keys must match the `project` field generate-recipes-index.ts derives from each recipe slug. Recipes whose project has no row here fall back to slug-as-display-name with no description.",
+  "$comment": "Project-level metadata overlay for /repro/<project>/ landing pages. Hand-curated and reviewed in PR diff (per-recipe metadata moved into src/layer*_*/<slug>/recipe.json on 2026-05-18; this remaining overlay is intentionally project-scoped, not recipe-scoped, because display_name / tagline / homepage are project facts not recipe facts). Project keys must match the `project` field generate-recipes-index.ts derives from each recipe slug. Recipes whose project has no row here fall back to slug-as-display-name with no description.",
   "projects": {
     "cpython": {
       "display_name": "CPython",

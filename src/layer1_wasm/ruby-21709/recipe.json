@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "ruby",
+  "symptom": "unicode-normalize-nfd",
+  "severity": "bug",
+  "tags": ["string", "unicode", "combining-diacritics"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "ruby.wasm"
+}

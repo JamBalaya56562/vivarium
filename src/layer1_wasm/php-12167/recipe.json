@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "language": "php",
+  "symptom": "json-encode-recursion",
+  "severity": "bug",
+  "tags": ["json_encode", "recursion-depth"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "php-wasm"
+}

@@ -17,7 +17,9 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { Glob } from 'bun';
 import validateManifestRaw from '../../site/_generated/validators/manifest-validator.mjs';
+import validateRecipeRaw from '../../site/_generated/validators/recipe-validator.mjs';
 import validateVerdictRaw from '../../site/_generated/validators/verdict-validator.mjs';
 
 interface AjvErrorObject {
@@ -34,6 +36,7 @@ interface AjvValidateFn {
 
 const validateManifest = validateManifestRaw as unknown as AjvValidateFn;
 const validateVerdict = validateVerdictRaw as unknown as AjvValidateFn;
+const validateRecipe = validateRecipeRaw as unknown as AjvValidateFn;
 
 const SCHEMA_DIR = path.join(
   import.meta.dirname,
@@ -43,6 +46,8 @@ const SCHEMA_DIR = path.join(
   'public',
   'spec',
 );
+
+const REPO_ROOT = path.join(import.meta.dirname, '..', '..', '..');
 
 function loadSchemaExamples(filename: string): unknown[] {
   const schema = JSON.parse(
@@ -179,6 +184,100 @@ describe('Verdict v1 (Contract v1) validator', () => {
       expect.objectContaining({
         keyword: 'format',
         instancePath: '/captured_at',
+      }),
+    );
+  });
+});
+
+describe('Recipe (schema_version 1) validator', () => {
+  test('schema example validates', () => {
+    const examples = loadSchemaExamples('recipe.schema.json');
+    expect(examples.length).toBeGreaterThan(0);
+    for (const example of examples) {
+      const ok = validateRecipe(example);
+      if (!ok) {
+        console.error('Recipe example failed:', validateRecipe.errors);
+      }
+      expect(ok).toBe(true);
+    }
+  });
+
+  test('every shipped recipe.json validates', () => {
+    // Walks src/layer{1,2,3}_*/**/recipe.json — picks up every recipe
+    // directory plus the Layer 2 scaffolder template. This is the
+    // load-bearing check that recipe-facets.json's retirement did not
+    // smuggle malformed metadata into the public catalogue: every file
+    // that generate-recipes-index.ts reads must pass the full schema,
+    // not just the minimal schema_version + language check the
+    // generator's own loader performs.
+    const glob = new Glob('src/layer*_*/**/recipe.json');
+    const files = Array.from(glob.scanSync({ cwd: REPO_ROOT })).sort();
+    expect(files.length).toBeGreaterThan(0);
+    const failures: Array<{ file: string; errors: unknown }> = [];
+    for (const rel of files) {
+      const data = JSON.parse(readFileSync(path.join(REPO_ROOT, rel), 'utf-8'));
+      const ok = validateRecipe(data);
+      if (!ok) failures.push({ file: rel, errors: validateRecipe.errors });
+    }
+    if (failures.length > 0) {
+      console.error('Recipe files that failed validation:', failures);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  test('rejects schema_version != 1', () => {
+    const ok = validateRecipe({
+      schema_version: 2,
+      language: 'python',
+    });
+    expect(ok).toBe(false);
+    expect(validateRecipe.errors).toContainEqual(
+      expect.objectContaining({
+        keyword: 'const',
+        instancePath: '/schema_version',
+      }),
+    );
+  });
+
+  test('rejects empty language', () => {
+    const ok = validateRecipe({
+      schema_version: 1,
+      language: '',
+    });
+    expect(ok).toBe(false);
+    expect(validateRecipe.errors).toContainEqual(
+      expect.objectContaining({
+        keyword: 'minLength',
+        instancePath: '/language',
+      }),
+    );
+  });
+
+  test('rejects unknown expected_verdict value', () => {
+    const ok = validateRecipe({
+      schema_version: 1,
+      language: 'python',
+      expected_verdict: 'pass',
+    });
+    expect(ok).toBe(false);
+    expect(validateRecipe.errors).toContainEqual(
+      expect.objectContaining({
+        keyword: 'enum',
+        instancePath: '/expected_verdict',
+      }),
+    );
+  });
+
+  test('rejects unknown top-level property (additionalProperties: false)', () => {
+    const ok = validateRecipe({
+      schema_version: 1,
+      language: 'python',
+      unexpected_field: 'nope',
+    });
+    expect(ok).toBe(false);
+    expect(validateRecipe.errors).toContainEqual(
+      expect.objectContaining({
+        keyword: 'additionalProperties',
       }),
     );
   });

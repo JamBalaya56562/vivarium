@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aletheia-works.github.io/vivarium/spec/recipe.schema.json",
+  "title": "Vivarium per-recipe metadata (schema_version 1)",
+  "description": "Per-recipe metadata sibling of a recipe's tracked sources (README.md / repro.* / index.html / Dockerfile) under src/layer{1,2,3}_*/<slug>/recipe.json. Single source of truth for the facets the gallery filters on (language / symptom / severity / tags) and the expectations the regression suite will assert (expected_verdict / expected_runtime). Replaces the hand-curated overlay at docs/site/_data/recipe-facets.json (retired 2026-05-18). Currently consumed by docs/scripts/generate-recipes-index.ts, which merges the fields into the public docs/site/public/api/recipes.json catalogue. Follow-up PRs will retire the LANG_BY_PROJECT hardcoded map in src/layer1_wasm/scripts/highlight-repros.ts and the static case list in src/layer1_wasm/tests/repro.spec.ts in favour of reading this file directly; until those land, those callers keep their own duplicate source of truth. Adding a new recipe = creating its directory + this file plus (for now) matching entries in highlight-repros.ts / repro.spec.ts; the projects.json overlay remains the only out-of-recipe edit, and only when a new project debuts.",
+  "type": "object",
+  "required": ["schema_version", "language"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "description": "Schema version literal. Always 1 for files validating against this schema; breaking changes ship as a sibling schema (recipe.v2.schema.json) per ADR-0018."
+    },
+    "language": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary source language of the reproduction. Layer 1 uses the value to pick a Shiki bundle for syntax highlighting (so the value must be a Shiki BundledLanguage ID such as 'python', 'ruby', 'php', 'rust', 'javascript', 'shell', 'sql', 'c'); Layer 2/3 only use it for gallery filtering. 'unknown' is allowed as a degraded default but should be replaced as soon as a maintainer can label the recipe."
+    },
+    "symptom": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short kebab-case label for the bug shape (e.g. 'dtype-mismatch', 'lost-update-data-race'). Surfaced in the gallery as a facet; the value space is intentionally open — pick the most descriptive existing tag if possible, coin a new one if not."
+    },
+    "severity": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short label for the bug's severity class (e.g. 'bug', 'regression', 'spec-violation', 'footgun', 'datarace'). Surfaced as a gallery facet. Like symptom, intentionally open — see existing recipe.json files for the value space in use."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Free-form tags surfaced in the gallery filter chips. Conventionally includes the upstream project name, the language feature involved, and any relevant standards or libraries. Order is preserved as authored."
+    },
+    "expected_verdict": {
+      "enum": ["reproduced", "unreproduced"],
+      "description": "Verdict the regression suite (src/layer1_wasm/tests/repro.spec.ts and equivalents) expects the recipe page to produce. Currently 'reproduced' for every shipped recipe — when an upstream fix lands and the runtime picks it up, the suite turns the flip into a CI failure so a maintainer can decide whether to update / retire the recipe."
+    },
+    "expected_runtime": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name`. For Layer 1: 'pyodide' / 'ruby.wasm' / 'php-wasm' / 'rust-wasi' / 'browser' (the smoke test). For Layer 2: 'docker-snapshot'. For Layer 3: 'rr-replay'. Asserted by the regression suite alongside expected_verdict."
+    }
+  },
+  "examples": [
+    {
+      "schema_version": 1,
+      "language": "python",
+      "symptom": "assumption-blind-spot-at-infinity",
+      "severity": "spec-violation",
+      "tags": ["sympy", "ask", "Q.extended_real", "core.relational", "infinity"],
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide"
+    }
+  ]
+}

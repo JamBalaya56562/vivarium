@@ -58,10 +58,12 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2 / 3: docker-run instructions page). |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 only — deployed `verdict.json` snapshot. Layer 1 verdicts are produced live in-page and have no static snapshot. |
 | `source_url` | URI | ✅ | GitHub link to the recipe directory. |
-| `language` | string | ⏳ | Optional. Primary implementation language, lowercase (e.g. `"python"`, `"rust"`, `"shell"`). Sourced from the [`docs/site/_data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/_data/recipe-facets.json) overlay. Added in the 2026-05-03 revision. |
-| `symptom` | string (kebab-case) | ⏳ | Optional. Short symptom slug used by the error → recipe matcher (e.g. `"dtype-mismatch"`, `"ordering-non-transitive"`). Sourced from the facet overlay. Added 2026-05-03. |
-| `severity` | string | ⏳ | Optional. Free-form severity bucket (e.g. `"bug"`, `"regression"`, `"spec-violation"`, `"footgun"`). Sourced from the facet overlay. Added 2026-05-03. |
-| `tags` | array of strings | ⏳ | Optional. Free-form tag list scored by the matcher (e.g. `["sqlite3", "pragma", "foreign-keys"]`). Sourced from the facet overlay. Added 2026-05-03. |
+| `language` | string | ⏳ | Optional. Primary implementation language, lowercase (e.g. `"python"`, `"rust"`, `"shell"`). Sourced from the per-recipe [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) under `src/layer*_*/<slug>/`. Added in the 2026-05-03 revision; the 2026-05-18 revision moved the source from the retired `docs/site/_data/recipe-facets.json` overlay to the per-recipe file. |
+| `symptom` | string (kebab-case) | ⏳ | Optional. Short symptom slug used by the error → recipe matcher (e.g. `"dtype-mismatch"`, `"ordering-non-transitive"`). Sourced from `recipe.json`. Added 2026-05-03. |
+| `severity` | string | ⏳ | Optional. Free-form severity bucket (e.g. `"bug"`, `"regression"`, `"spec-violation"`, `"footgun"`). Sourced from `recipe.json`. Added 2026-05-03. |
+| `tags` | array of strings | ⏳ | Optional. Free-form tag list scored by the matcher (e.g. `["sqlite3", "pragma", "foreign-keys"]`). Sourced from `recipe.json`. Added 2026-05-03. |
+| `expected_verdict` | string (enum) | ⏳ | Optional. Verdict the regression suite expects the recipe page to produce — `"reproduced"` or `"unreproduced"`. Sourced from `recipe.json`. Added in the 2026-05-18 revision. |
+| `expected_runtime` | string | ⏳ | Optional. Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name` (e.g. `"pyodide"`, `"docker-snapshot"`, `"rr-replay"`). Sourced from `recipe.json`. Added 2026-05-18. |
 
 ## Versioning
 
@@ -79,6 +81,7 @@ There is no current v2.
 | Date | Change |
 |---|---|
 | 2026-05-03 | Added optional `language`, `symptom`, `severity`, `tags` fields to recipe entries. Sourced from a centralised facet overlay (`docs/site/_data/recipe-facets.json`), not per-recipe frontmatter. Backwards-compatible — v1 consumers ignore. |
+| 2026-05-18 | Added optional `expected_verdict` / `expected_runtime` fields, and moved the source of the existing `language` / `symptom` / `severity` / `tags` fields from the retired `docs/site/_data/recipe-facets.json` overlay to per-recipe `src/layer*_*/<slug>/recipe.json` files (schema: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)). Backwards-compatible — v1 consumers ignore the new fields and read the existing ones unchanged. |
 
 ## Generation
 
@@ -93,10 +96,11 @@ recipes whose slug shape diverges).
 
 The output is tracked in git so PRs that add a recipe also show the index
 update in the diff. The optional facet fields (`language`, `symptom`,
-`severity`, `tags`) are merged in from
-[`docs/site/_data/recipe-facets.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/_data/recipe-facets.json),
-a centralised overlay maintained by hand and reviewed in PR diff. The
-`project` field stays slug-derived in v1.
+`severity`, `tags`, `expected_verdict`, `expected_runtime`) are read
+from the per-recipe `src/layer*_*/<slug>/recipe.json` file (schema:
+[`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json));
+the recipe ships its own metadata, so adding a recipe is a one-directory
+change. The `project` field stays slug-derived in v1.
 
 ## Conformance
 

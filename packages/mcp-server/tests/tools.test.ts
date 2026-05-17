@@ -1133,7 +1133,10 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 9999,
               status: 'queued',
-              createdAt: '2026-05-17T10:00:00Z',
+              // Resolved at mock-call time so the post-dispatch cutoff
+              // (Date.now() - 5s clock-drift buffer) always sits *before*
+              // this timestamp regardless of when the test suite runs.
+              createdAt: new Date().toISOString(),
             },
           ]),
           stderr: '',
@@ -1348,7 +1351,9 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 7777,
               status: 'queued',
-              createdAt: '2026-05-17T10:00:00Z',
+              // Resolved at mock-call time — see the parallel happy-path
+              // test above for the rationale.
+              createdAt: new Date().toISOString(),
             },
           ]),
           stderr: '',
@@ -1403,7 +1408,13 @@ describe('prepare_new_recipe', () => {
       assert.match(r.scaffold_command, /node 63041/);
       assert.match(r.scaffold_command, /--base "node:26-slim"/);
       assert.equal(r.verify_command, 'mise run recipes:verify -- node-63041');
-      assert.equal(r.recipe_facets_row.key, 'node-63041');
+      assert.equal(
+        r.recipe_json.path,
+        'src/layer2_docker/node-63041/recipe.json',
+      );
+      assert.equal(r.recipe_json.contents.schema_version, 1);
+      assert.equal(r.recipe_json.contents.expected_verdict, 'reproduced');
+      assert.equal(r.recipe_json.contents.expected_runtime, 'docker-snapshot');
       assert.equal(r.projects_row.key, 'node');
       assert.equal(
         r.projects_row.value.github,
