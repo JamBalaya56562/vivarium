@@ -1,0 +1,302 @@
+---
+pageType: doc
+title: Run the full round-trip
+---
+
+import {
+  Page,
+  PageHero,
+  Section,
+  NumberedList,
+  Callout,
+  NextCta,
+  BottomNote,
+} from '../../_components/PageChrome';
+
+<Page>
+  <PageHero
+    eyebrow="// GUIDE · ROUND-TRIP"
+    title="Reproduce, fix, verify, open both PRs — in one orchestrated loop."
+    sub="The Vivarium round-trip skill walks an AI agent and a human through the full path from an upstream bug report to a draft fix PR. Phases 1-5 of the round-trip automation plan ship the underlying tooling; this guide is the human-readable companion to the `round-trip` Claude Code skill."
+  />
+
+  <Section
+    eyebrow="// 0 · WHAT THIS GUIDE COVERS"
+    heading="End-to-end orchestration of the round-trip loop."
+  >
+    <p>
+      This guide describes the round-trip loop in human-readable form:
+      what happens at each stage, what is automated, and what stays a
+      human decision. The machine-readable orchestration itself lives
+      in <code>.claude/skills/round-trip/SKILL.md</code> — auto-loaded
+      by Claude Code when its triggers match; you usually do not read
+      it directly.
+    </p>
+    <p>
+      If you only want to scaffold a recipe — without the full fix-
+      and-PR loop — use the{' '}
+      <a href="/vivarium/en/guide/getting-started">Getting started</a>{' '}
+      guide instead.
+    </p>
+    <Callout>
+      <strong>This guide is still under iteration.</strong> Concrete
+      examples grow as the maintainer exercises the loop on real
+      upstream issues; expect this page to fill out over time.
+    </Callout>
+  </Section>
+
+  <Section
+    eyebrow="// 1 · PREREQUISITES"
+    heading="What you need installed and configured."
+  >
+    <NumberedList
+      items={[
+        {
+          lead: 'gh CLI authenticated with repo scope.',
+          body: (
+            <>
+              Run <code>gh auth login</code> if not already done. The
+              skill calls <code>gh issue view</code>,{' '}
+              <code>gh pr create</code>, <code>gh workflow run</code>,
+              and <code>gh run download</code>; <code>repo</code> is
+              the minimum scope.
+            </>
+          ),
+        },
+        {
+          lead: 'MCP server registered with your client.',
+          body: (
+            <>
+              See{' '}
+              <a href="/vivarium/en/guide/use-from-ai-agent">
+                Use from your AI agent
+              </a>
+              . The round-trip skill invokes{' '}
+              <code>search_upstream_issues</code>,{' '}
+              <code>prepare_new_recipe</code>,{' '}
+              <code>verify_and_report_fix</code>, and (Layer 2)
+              <code>create_fork_pr</code>.
+            </>
+          ),
+        },
+        {
+          lead: 'Sapling (sl) on this side.',
+          body: (
+            <>
+              Vivarium uses{' '}
+              <a href="https://sapling-scm.com">Sapling</a> as its SCM
+              rather than Git directly. The skill drives{' '}
+              <code>sl addremove</code> / <code>sl commit</code> /{' '}
+              <code>sl amend</code> / <code>sl pr submit</code> for
+              the Vivarium-side PR.
+            </>
+          ),
+        },
+        {
+          lead: 'Layer 2 only: GHCR PAT.',
+          body: (
+            <>
+              A classic PAT with <code>write:packages</code> scope,
+              stored per the one-time setup{' '}
+              <code>mise run ghcr:login</code> documents. Used by{' '}
+              <code>mise run branch-fix:publish</code> at Stage 5.5.
+            </>
+          ),
+        },
+      ]}
+    />
+  </Section>
+
+  <Section
+    eyebrow="// 2 · THE FLOW AT A GLANCE"
+    heading="Ten stages, with a layer-dependent verdict path."
+  >
+    <p>
+      Stages 0 – 5 are layer-independent; the path branches at Stage 6
+      depending on whether the recipe is Layer 1 (WASM in-browser) or
+      Layer 2 (Docker). Layer 3 (record-replay) is currently out of
+      scope for the fixed-verdict capture — see the cheat sheet
+      below.
+    </p>
+    <pre>
+      <code>{`Stage 0    Pre-flight (project activity, issue exists, no linked PR)
+Stage 1    Scaffold (prepare_new_recipe + mise run recipes:new)
+Stage 2    Implement reproduction (human + AI)
+Stage 3    Capture unfixed verdict (verify_and_report_fix)
+Stage 4    Open the Vivarium PR (sl pr submit, label ai: generated)
+Stage 5    Fork upstream + push fix branch (human)
+Stage 5.5  Layer 2 only: build & push branch-fix image
+             (mise run branch-fix:publish)
+Stage 6    Capture fixed verdict
+             - Layer 1: prepare_fix_candidate → CI wheel build →
+                        live recipe page (visual confirm by human)
+             - Layer 2: verify_and_report_fix with branch_image →
+                        branch-fix-verdict.yml + artefact
+Stage 7    Update Vivarium PR with fixed verdict
+             (Layer 2 only; sl amend + sl pr submit)
+Stage 8    Open upstream draft PR
+             - Layer 1: commands returned by prepare_fix_candidate
+             - Layer 2: create_fork_pr (dry_run: false)
+Stage 9    Final Vivarium-side commit
+             (Layer 2 only; sl amend + sl pr submit)`}</code>
+    </pre>
+  </Section>
+
+  <Section
+    eyebrow="// 3 · INVOKING THE SKILL"
+    heading="One sentence, the agent does the rest."
+  >
+    <p>Tell your AI agent (Claude Code, Cursor, Cline) something like:</p>
+    <blockquote>
+      <em>
+        Run the full round-trip on https://github.com/owner/repo/issues/N.
+        It is a Layer 2 bug; the title is &quot;short title&quot;; base
+        image is <code>node:26-slim</code>.
+      </em>
+    </blockquote>
+    <p>
+      The agent picks up the <code>round-trip</code> skill (auto-loaded
+      when its trigger conditions match) and walks you through each
+      stage. At every hand-off back to you (Stages 2, 5, sometimes 6
+      for Layer 1) you confirm and the agent continues. On any failure
+      the skill sets <code>roundtrip.json#/status</code> to{' '}
+      <code>&quot;blocked&quot;</code> and stops — see Troubleshooting
+      below.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 4 · LAYER 1 vs LAYER 2 CHEAT SHEET"
+    heading="The fixed-verdict path differs; everything else lines up."
+  >
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Layer 1 (WASM)</th>
+          <th>Layer 2 (Docker)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unfixed verdict source</td>
+          <td>
+            In-browser Pyodide / Ruby.wasm / php-wasm, captured by
+            Playwright against <code>src/layer1_wasm/&lt;slug&gt;/</code>
+          </td>
+          <td>
+            Deployed <code>verdict.json</code> snapshot CI captured at
+            recipe-merge time
+          </td>
+        </tr>
+        <tr>
+          <td>Fix delivery</td>
+          <td>
+            Fork branch → CI wheel build (fires on Vivarium PR merge
+            via <code>deploy-docs.yml</code>)
+          </td>
+          <td>
+            Fork branch → contributor builds the Docker image locally
+            → GHCR push
+          </td>
+        </tr>
+        <tr>
+          <td>Fixed verdict source</td>
+          <td>
+            Live recipe page renders baseline + fix-candidate
+            side-by-side; human confirms visually
+          </td>
+          <td>
+            <code>branch-fix-verdict.yml</code> workflow artefact
+            (Contract v1 <code>branch-fix-verdict.json</code>)
+          </td>
+        </tr>
+        <tr>
+          <td>Upstream PR opening</td>
+          <td>
+            Commands returned by <code>prepare_fix_candidate</code>,
+            run manually after the Vivarium PR merges
+          </td>
+          <td>
+            <code>create_fork_pr</code> MCP tool with{' '}
+            <code>dry_run: false</code> (draft PR + body footer
+            disclosure)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Layer 3 (record-replay): <code>verify_and_report_fix</code>{' '}
+      rejects Layer 3 <code>verify_fixed</code> with an informative
+      error — <code>branch-fix-verdict.yml</code> only handles{' '}
+      <code>src/layer2_docker/&lt;slug&gt;/</code>. Workflow extension
+      to handle <code>src/layer3_thirdway/&lt;slug&gt;/</code> is
+      tracked separately.
+    </p>
+  </Section>
+
+  <Section
+    eyebrow="// 5 · TROUBLESHOOTING"
+    heading="When the skill bails with status: blocked."
+  >
+    <p>
+      Any stage failure flips{' '}
+      <code>roundtrip.json#/status</code> to{' '}
+      <code>&quot;blocked&quot;</code> and stops the skill. A
+      subsequent <code>/round-trip</code> invocation on the same slug
+      refuses to resume until the human clears it.
+    </p>
+    <p>To resume:</p>
+    <ol>
+      <li>
+        Read <code>roundtrip.json#/notes[]</code> for the failure
+        reason and stage number.
+      </li>
+      <li>
+        Fix the underlying issue (typically: re-run the failed command
+        manually with verbose flags to see what actually went wrong).
+      </li>
+      <li>
+        Edit <code>roundtrip.json</code> — set <code>status</code> back
+        to its expected value (likely <code>&quot;verifying&quot;</code>
+        or <code>&quot;verified&quot;</code> depending on how far you
+        got) and bump <code>updated_at</code>.
+      </li>
+      <li>
+        Re-invoke <code>/round-trip</code>. The skill re-reads{' '}
+        <code>roundtrip.json</code> and resumes from the appropriate
+        stage (the <code>computeNextAction</code> state machine in{' '}
+        <code>verify_and_report_fix</code> picks the resume point).
+      </li>
+    </ol>
+  </Section>
+
+  <Callout>
+    Found something this guide didn't cover? File an issue against{' '}
+    <a href="https://github.com/aletheia-works/vivarium/issues">
+      aletheia-works/vivarium
+    </a>{' '}
+    so we can fold the gap back into this page.
+  </Callout>
+</Page>
+
+<NextCta
+  eyebrow="// NEXT"
+  heading={
+    <>
+      Compare a branch-fix verdict{' '}
+      <span className="v-next-cta__heading-arrow">→</span>
+    </>
+  }
+  sub="The round-trip skill orchestrates branch-fix verification, but you can also drive it manually for one-off fix verification."
+  primary={{
+    label: 'Compare branch-fix guide →',
+    href: '/vivarium/en/guide/compare-branch-fix',
+  }}
+  ghost={{ label: 'Glossary', href: '/vivarium/en/guide/glossary' }}
+/>
+
+<BottomNote
+  text="VIVARIUM IS PART OF ALETHEIA-WORKS · SEE SOURCE ON GITHUB →"
+  href="https://github.com/aletheia-works/vivarium"
+/>
