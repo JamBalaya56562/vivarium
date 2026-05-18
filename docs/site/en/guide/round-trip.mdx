@@ -271,6 +271,129 @@ Stage 9    Final Vivarium-side commit
     </ol>
   </Section>
 
+  <Section
+    eyebrow="// 6 · WORKED EXAMPLE — sympy-29413"
+    heading="A Layer 1 round-trip on a SymPy assumption blind spot."
+  >
+    <p>
+      First end-to-end exercise of the loop after Phases 1 – 5 merged.
+      The recipe lives at{' '}
+      <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/sympy-29413">
+        <code>src/layer1_wasm/sympy-29413/</code>
+      </a>{' '}
+      and reproduces{' '}
+      <a href="https://github.com/sympy/sympy/issues/29413">
+        sympy/sympy#29413
+      </a>
+      : <code>ask(a + 1 &gt; a, Q.extended_real(a))</code> returns{' '}
+      <code>True</code> against sympy 1.14.0, but{' '}
+      <code>Q.extended_real</code> admits <code>a = ±∞</code> where the
+      comparison is undefined, so the correct answer is{' '}
+      <code>None</code>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Result</th>
+          <th>Sticking point</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0 · Pre-flight</td>
+          <td>
+            OK — SymPy had 49 human-merged PRs in the 90 days prior,
+            issue OPEN, no linked PR.
+          </td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>1 · Scaffold</td>
+          <td>Copy-from-existing.</td>
+          <td>
+            Layer 1 has no <code>recipes:new</code> scaffolder yet — the
+            agent copied <code>src/layer1_wasm/pandas-56679/</code> and
+            adapted the slug + bug-specific files.
+          </td>
+        </tr>
+        <tr>
+          <td>2 · Implement</td>
+          <td>
+            <code>repro.ts</code> bootstraps Pyodide, runs SymPy under
+            it, and emits the contract-v1 verdict envelope.
+          </td>
+          <td>
+            SymPy is not in Pyodide's bundled package set; resolved by
+            installing it via <code>micropip</code> at runtime
+            (<code>await micropip.install("sympy==1.14.0")</code>). Pure
+            Python + mpmath only, so two PyPI wheel pulls instead of a
+            recompile.
+          </td>
+        </tr>
+        <tr>
+          <td>3 · Unfixed verdict</td>
+          <td>
+            <code>verify_and_report_fix</code> returned{' '}
+            <code>verdicts.unfixed.verdict === &quot;reproduced&quot;</code>.
+          </td>
+          <td>
+            Smoke confirmed: the targeted Playwright run on Vivarium's
+            own Layer 1 server captured the same envelope the deployed
+            page would emit, with no flakiness on Pyodide cold start.
+          </td>
+        </tr>
+        <tr>
+          <td>4 · Vivarium PR</td>
+          <td>
+            <a href="https://github.com/aletheia-works/vivarium/pull/260">
+              #260
+            </a>{' '}
+            opened, <code>ai: generated</code> label applied,{' '}
+            <code>roundtrip.json#/vivarium_pr</code> recorded.
+          </td>
+          <td>
+            Pre PR{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/264">
+              #264
+            </a>
+            , the recipe still required four out-of-recipe edits —{' '}
+            <code>recipe-facets.json</code> /{' '}
+            <code>projects.json</code> overlays plus{' '}
+            <code>highlight-repros.ts</code> /{' '}
+            <code>repro.spec.ts</code> entries. Those manual touches
+            drove the recipe-metadata cleanup that landed as PRs{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/264">
+              #264
+            </a>{' '}
+            /{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/265">
+              #265
+            </a>{' '}
+            /{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/268">
+              #268
+            </a>
+            , so new recipes from here on are a single-directory change.
+          </td>
+        </tr>
+        <tr>
+          <td>5+ · Fork &amp; fix</td>
+          <td>In progress.</td>
+          <td>
+            Fork on the contributor's personal GitHub account,
+            candidate fix branched, and{' '}
+            <code>prepare_fix_candidate</code> wired to the fork URL.
+            Stage 5 onward is captured in{' '}
+            <code>src/layer1_wasm/sympy-29413/roundtrip.json</code> for
+            the live state; this section will fold in lessons from the
+            upstream PR once the loop closes.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </Section>
+
   <Callout>
     Found something this guide didn't cover? File an issue against{' '}
     <a href="https://github.com/aletheia-works/vivarium/issues">
