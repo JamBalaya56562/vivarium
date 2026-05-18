@@ -40,6 +40,15 @@ jobs:
     # ships from the GHCR public registry on every main deploy,
     # so it has the lowest variance among the current Layer 2
     # entries.
+    #
+    # Skipped on forks: the reusable workflow's `Log in to GHCR`
+    # step authenticates as `github.actor` with the fork's
+    # `GITHUB_TOKEN`, which has no read access to packages under
+    # the `aletheia-works` namespace, so the subsequent
+    # `docker pull` returns "denied" even though the image is
+    # public. Matches the fork-gating pattern used by
+    # `terraform-plan.yml`, `deploy-docs.yml`, etc.
+    if: github.repository_owner == 'aletheia-works'
     uses: ./.github/workflows/vivarium-verdict.yml
     with:
       slug: bash-local-shadows-exit
