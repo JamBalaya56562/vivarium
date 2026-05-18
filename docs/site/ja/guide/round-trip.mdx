@@ -239,6 +239,128 @@ Stage 9    最終 Vivarium 側 commit
     </ol>
   </Section>
 
+  <Section
+    eyebrow="// 6 · 実例 — sympy-29413"
+    heading="SymPy の assumption blind spot を Layer 1 で 1 周。"
+  >
+    <p>
+      Phase 1 – 5 merge 後の最初のエンドツーエンド試行。レシピは{' '}
+      <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/sympy-29413">
+        <code>src/layer1_wasm/sympy-29413/</code>
+      </a>{' '}
+      にあり、{' '}
+      <a href="https://github.com/sympy/sympy/issues/29413">
+        sympy/sympy#29413
+      </a>{' '}
+      ——{' '}
+      <code>ask(a + 1 &gt; a, Q.extended_real(a))</code> が sympy 1.14.0
+      で <code>True</code> を返す不具合を再現します。{' '}
+      <code>Q.extended_real</code> は <code>a = ±∞</code> を含み、
+      その時 <code>a + 1 &gt; a</code> は未定義なので正解は{' '}
+      <code>None</code>。
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>結果</th>
+          <th>詰まったポイント</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0 · Pre-flight</td>
+          <td>
+            OK — SymPy は直近 90 日で 49 件の人手 merge、issue OPEN、
+            linked PR なし。
+          </td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>1 · Scaffold</td>
+          <td>既存レシピからコピー。</td>
+          <td>
+            Layer 1 には <code>recipes:new</code> スキャフォルダが未整備
+            のため、エージェントが <code>src/layer1_wasm/pandas-56679/</code>{' '}
+            をコピーして slug と bug 固有ファイルを差し替え。
+          </td>
+        </tr>
+        <tr>
+          <td>2 · 再現実装</td>
+          <td>
+            <code>repro.ts</code> が Pyodide を起動し、SymPy を読んで
+            contract-v1 verdict envelope を返す。
+          </td>
+          <td>
+            SymPy は Pyodide bundle に含まれないため、ランタイムで{' '}
+            <code>micropip</code> 経由インストール
+            (<code>await micropip.install("sympy==1.14.0")</code>)。pure
+            Python + mpmath のみで完結するので PyPI wheel 2 本の取得で済む。
+          </td>
+        </tr>
+        <tr>
+          <td>3 · unfixed verdict 取得</td>
+          <td>
+            <code>verify_and_report_fix</code> が{' '}
+            <code>verdicts.unfixed.verdict === &quot;reproduced&quot;</code>{' '}
+            を返した。
+          </td>
+          <td>
+            Smoke 確認: targeted Playwright が Vivarium 側 Layer 1 サーバ
+            に対し、デプロイ後ページと同じ envelope を取得。Pyodide cold
+            start の flakiness なし。
+          </td>
+        </tr>
+        <tr>
+          <td>4 · Vivarium PR open</td>
+          <td>
+            <a href="https://github.com/aletheia-works/vivarium/pull/260">
+              #260
+            </a>{' '}
+            open、<code>ai: generated</code> label 付与、{' '}
+            <code>roundtrip.json#/vivarium_pr</code> 反映。
+          </td>
+          <td>
+            PR{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/264">
+              #264
+            </a>{' '}
+            以前はレシピ外の 4 ファイル変更が必要だった ——{' '}
+            <code>recipe-facets.json</code> /{' '}
+            <code>projects.json</code> overlay と{' '}
+            <code>highlight-repros.ts</code> /{' '}
+            <code>repro.spec.ts</code> の登録。この煩雑さがレシピ metadata
+            整理を駆動し、PR{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/264">
+              #264
+            </a>{' '}
+            /{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/265">
+              #265
+            </a>{' '}
+            /{' '}
+            <a href="https://github.com/aletheia-works/vivarium/pull/268">
+              #268
+            </a>{' '}
+            として merge。以降の新規レシピは 1 ディレクトリの変更で済む。
+          </td>
+        </tr>
+        <tr>
+          <td>5+ · fork & fix</td>
+          <td>進行中。</td>
+          <td>
+            contributor 個人 GitHub アカウントに fork、候補修正ブランチ作成、
+            <code>prepare_fix_candidate</code> を fork URL に紐付け。Stage 5
+            以降の live 状態は{' '}
+            <code>src/layer1_wasm/sympy-29413/roundtrip.json</code> を参照。
+            このセクションは upstream PR まで一周した時点で得られた学びを
+            追記していく。
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </Section>
+
   <Callout>
     このガイドで触れていない事象に遭遇したら、{' '}
     <a href="https://github.com/aletheia-works/vivarium/issues">
