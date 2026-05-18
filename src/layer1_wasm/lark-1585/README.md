@@ -37,12 +37,15 @@ sets the verdict to `reproduced`.
 
 | File              | Role                                                          |
 | ----------------- | ------------------------------------------------------------- |
-| `index.html`      | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`        | Main-thread driver. Spawns the worker, races its `result` message against an 8-second budget, updates the verdict + envelope. |
-| `repro.worker.ts` | Worker source. Loads Pyodide, installs `lark==1.3.1` via micropip, then executes the reproduction inside a `try/except` + timing harness. |
+| `index.html`      | Static page; declares `<meta name="vivarium-contract" content="v1">`. Renders baseline + fix-candidate output panes side-by-side. |
+| `repro.ts`        | Main-thread driver. Spawns one worker per variant (baseline, then fix-candidate), races each worker's `result` message against an 8-second budget, updates the per-variant pane and the Contract v1 envelope. |
+| `repro.worker.ts` | Worker source. Loads Pyodide, installs the lark spec passed via the worker URL's query string (`lark==1.3.1` for baseline, `./wheels/<filename>` for fix-candidate) via micropip, then executes the reproduction inside a `try/except` + timing harness. |
 | `repro.js` /      | Generated from the TS sources; gitignored.                    |
 | `repro.worker.js` |                                                               |
 | `repro.py`        | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. Uses `subprocess` + `TimeoutExpired` so the timeout works on Windows as well as POSIX. |
+| `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `scripts/build-layer1-wheels.sh`. |
+| `verify_fix.py`   | **Maintainer convenience.** PEP 723 native orchestrator that runs the reproduction against **both** the baseline pin and the fix-candidate spec in side-by-side `uv run --no-project --with <spec>` venvs, so a reviewer can see the before/after verdict in one command. Exits 0 iff baseline reproduces (hangs past the budget) AND fix-candidate does not. Deleted once the fix is merged upstream and released on PyPI. |
+| `wheels/`         | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `lark-<version>-py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in a second Pyodide worker. |
 | `roundtrip.json`  | Tracked workflow state (round-trip schema_version 1).         |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css);
@@ -116,6 +119,71 @@ mise exec uv -- uv run src/layer1_wasm/lark-1585/repro.py
 # }
 # verdict=reproduced — Lark(...).parse('aa') hung past 8s; the LALR back-end exhibits the infinite loop reported upstream.
 ```
+
+## Fix-candidate verification
+
+A fork+branch carrying a proposed fix is rendered **side-by-side**
+with the baseline on the same page, so a reviewer can see the
+before/after verdict in one page load.
+
+- **Fix branch:**
+  <https://github.com/JamBalaya56562/lark/tree/claude/fix-lark-1585-QLVa7>
+  (lark ships its installable package at the repo root, so no
+  `source.subdirectory` is needed in `fix-candidate.json`).
+- **What the page shows:**
+  - top right pane (`#output`) — baseline run against PyPI
+    `lark==1.3.1` inside its own Pyodide worker. Expected
+    `outcome: "timeout"` (the parse hangs past the 8 s budget;
+    the worker is then terminated).
+  - bottom right pane (`#output-fix`) — fix-candidate run against
+    the wheel built from the branch, inside a fresh Pyodide
+    worker. Expected `outcome: "returned"` (parse returns a tree
+    within the budget).
+  - top-level `#verdict` pill mirrors the baseline so the existing
+    single-verdict Contract v1 surface keeps its prior meaning.
+
+### Local in-browser
+
+```bash
+# Build the fix-candidate wheel into ./wheels/ (gitignored).
+mise install
+mise run repro:build:wheels
+
+# Then build + serve the recipe directory as usual.
+cd src/layer1_wasm
+bun install
+bun run build
+python -m http.server -d lark-1585 8765
+# Open http://localhost:8765/ — the page spawns the baseline
+# worker first, captures the hang verdict, then fetches
+# ./wheels/manifest.json, spawns a second worker that installs the
+# wheel via micropip, and re-runs the probe to populate the
+# fix-candidate pane.
+```
+
+### Native (uv venvs)
+
+```bash
+mise install                                                          # one-time
+mise exec uv -- uv run src/layer1_wasm/lark-1585/verify_fix.py
+# Exits 0 iff baseline reproduces (hang past 8s) AND fix-candidate
+# does not. Prints a single JSON envelope to stdout with both
+# per-variant verdicts.
+```
+
+### Cleanup once the fix lands upstream
+
+When lark releases a wheel that includes this fix on PyPI:
+
+1. Bump the pin in `repro.ts`, `repro.worker.ts`, `repro.py`, and
+   the README to the first fixed release (e.g. `lark==1.3.2`).
+2. Delete `fix-candidate.json`, `verify_fix.py`, and the
+   `wheels/` directory if any local artefacts remain.
+3. Revert `index.html` and `repro.ts` to the single-variant layout
+   (one `#output` pane, no `vh-output-multi` / `#output-fix`).
+4. The recipe page then reports a single `unreproduced` verdict
+   against the fixed release — same shape as a freshly-merged
+   bug-fix recipe.
 
 ## Round-trip state
 

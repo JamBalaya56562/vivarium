@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "package": "lark",
+  "purpose": "fix-candidate verification for lark-parser/lark#1585",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/JamBalaya56562/lark",
+    "ref": "claude/fix-lark-1585-QLVa7"
+  },
+  "upstream_pr": ""
+}
