@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="vivarium-contract" content="v1" />
+    <title>Vivarium · Reproducing mpmath/mpmath#930</title>
+    <!-- vivarium-chrome-injected -->
+    <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/python_stdlib.zip" as="fetch" crossorigin />
+    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide-lock.json" as="fetch" type="application/json" crossorigin />
+    <!-- Warm the TLS/HTTP3 handshake to jsDelivr in parallel with HTML parse. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Keep the version below in sync with DEFAULT_PYODIDE_VERSION in
+         ../_shared/loader.ts. -->
+    <link
+      rel="modulepreload"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
+      crossorigin
+    />
+    <link rel="stylesheet" href="../_shared/style.css" />
+    <template id="bug-context">
+      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <div class="vh-drawer__body" id="vh-drawer-body">
+        <p>
+          At the default precision (<code>mp.dps=15</code>),
+          <code>mpmath.jtheta(2, 99+1j, 0.99)</code> returns a value
+          of magnitude near <strong>1.87×10<sup>9</sup></strong>. The
+          correct value (verified at <code>mp.dps=200</code>, agreeing
+          with Mathematica) is near
+          <strong>1.50×10<sup>-57</sup></strong> — the buggy answer
+          is off by about <em>66 orders of magnitude</em>.
+        </p>
+        <p>
+          The Jacobi theta function of the second kind sums a series
+          whose terms grow exponentially before cancelling. For
+          arguments with large <code>Im(z)</code> and
+          <code>|q|</code> close to 1, default precision is too low
+          to track the cancellation, and mpmath silently returns the
+          uncancelled partial sum instead of warning.
+        </p>
+        <p>
+          The script on this page evaluates the call at default
+          precision and reports the magnitude. If the magnitude is
+          larger than <code>1e6</code>, the bug reproduces; if it
+          falls back to the correct ~<code>10<sup>-57</sup></code>
+          range, the upstream regime has been fixed.
+        </p>
+        <p>
+          The full discussion (upstream history, fix progress) lives
+          in the GitHub issue thread linked below.
+        </p>
+      </div>
+      <hr class="vh-drawer__divider" />
+      <div class="vh-drawer__meta-grid">
+        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-val">mpmath/mpmath</span>
+        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-val">#930</span>
+        <span class="vh-drawer__meta-key">Layer</span>
+        <span class="vh-drawer__meta-val">L1 · WASM</span>
+        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-val">Pyodide v0.29.3 + mpmath 1.4.1 (micropip)</span>
+      </div>
+    </template>
+  </head>
+  <body>
+    <main class="vh-main">
+      <header class="vh-main__header">
+        <div class="vh-main__header-text">
+          <p class="kicker">L1 · Pyodide</p>
+          <h1>Reproducing <a href="https://github.com/mpmath/mpmath/issues/930" target="_blank" rel="noreferrer">mpmath/mpmath#930</a></h1>
+          <div class="vh-main__header-actions">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Bug context
+            </button>
+          </div>
+        </div>
+        <div class="vh-main__header-aside">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+            Loading Pyodide runtime…
+          </div>
+          <p class="meta" id="meta"></p>
+        </div>
+      </header>
+
+      <div class="vh-main__cols">
+        <section class="vh-main__col vh-main__col--script">
+          <h2>Reproduction script</h2>
+          <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> mpmath</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> mpmath </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> mpc</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">result_value </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> mpmath.jtheta(</span><span style="color:#79B8FF">2</span><span style="color:#E1E4E8">, mpc(</span><span style="color:#9ECBFF">'99'</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'1'</span><span style="color:#E1E4E8">), mpc(</span><span style="color:#9ECBFF">'0.99'</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'0'</span><span style="color:#E1E4E8">))</span></span>
+<span class="line"><span style="color:#E1E4E8">real </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> float</span><span style="color:#E1E4E8">(mpmath.re(result_value))</span></span>
+<span class="line"><span style="color:#E1E4E8">imag </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> float</span><span style="color:#E1E4E8">(mpmath.im(result_value))</span></span>
+<span class="line"><span style="color:#E1E4E8">magnitude </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> float</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">abs</span><span style="color:#E1E4E8">(result_value))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#9ECBFF">    "mpmath_version"</span><span style="color:#E1E4E8">: mpmath.</span><span style="color:#79B8FF">__version__</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "python_version"</span><span style="color:#E1E4E8">: sys.version.split()[</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#9ECBFF">    "mp_dps"</span><span style="color:#E1E4E8">: mpmath.mp.dps,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "result_real"</span><span style="color:#E1E4E8">: real,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "result_imag"</span><span style="color:#E1E4E8">: imag,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "result_abs"</span><span style="color:#E1E4E8">: magnitude,</span></span>
+<span class="line"><span style="color:#9ECBFF">    "reproduced"</span><span style="color:#E1E4E8">: magnitude </span><span style="color:#F97583">></span><span style="color:#79B8FF"> 1e6</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+        </section>
+
+        <section class="vh-main__col vh-main__col--output">
+          <h2>Output</h2>
+          <pre id="output">(running)</pre>
+        </section>
+      </div>
+
+    </main>
+
+    <script type="module" src="./repro.js"></script>
+  </body>
+</html>

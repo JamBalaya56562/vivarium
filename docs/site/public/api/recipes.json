@@ -102,6 +102,38 @@
       }
     },
     {
+      "slug": "mpmath-930",
+      "layer": 1,
+      "project": "mpmath",
+      "issue": 930,
+      "title": "mpmath/mpmath#930",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/mpmath/930/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/mpmath-930",
+      "language": "python",
+      "tags": [
+        "mpmath",
+        "jtheta",
+        "jacobi-theta",
+        "precision",
+        "elliptic-functions"
+      ],
+      "symptom": "silent-precision-loss-at-default-dps",
+      "severity": "wrong-result",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "pyodide",
+      "roundtrip": {
+        "schema_version": 1,
+        "slug": "mpmath-930",
+        "upstream_issue": "https://github.com/mpmath/mpmath/issues/930",
+        "status": "draft",
+        "updated_at": "2026-05-19T00:00:00Z",
+        "notes": [
+          "scaffolded from upstream issue mpmath/mpmath#930 (Jacobi Theta Wrong Output)",
+          "verified locally that mpmath 1.4.1 (latest) still reproduces the bug at default dps=15 — jtheta returns ~1.87e9 magnitude vs the dps=200 reference ~1.5e-57"
+        ]
+      }
+    },
+    {
       "slug": "numpy-28287",
       "layer": 1,
       "project": "numpy",
