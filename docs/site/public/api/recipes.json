@@ -93,26 +93,6 @@
       }
     },
     {
-      "slug": "mpmath-983",
-      "layer": 1,
-      "project": "mpmath",
-      "issue": 983,
-      "title": "mpmath/mpmath#983",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/mpmath/983/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/mpmath-983",
-      "language": "python",
-      "tags": [
-        "numerical-linear-algebra",
-        "qr-solve",
-        "householder",
-        "arbitrary-precision"
-      ],
-      "symptom": "solver-asymmetry-on-nonsingular-matrix",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "pyodide"
-    },
-    {
       "slug": "numpy-28287",
       "layer": 1,
       "project": "numpy",

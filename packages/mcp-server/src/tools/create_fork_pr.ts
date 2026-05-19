@@ -309,7 +309,7 @@ export const CREATE_FORK_PR_TOOL = {
         type: 'string' as const,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$',
         description:
-          "Kebab-case recipe slug (e.g. 'mpmath-983', 'bash-local-shadows-exit'). Must exist in the catalogue.",
+          "Kebab-case recipe slug (e.g. 'lark-1585', 'bash-local-shadows-exit'). Must exist in the catalogue.",
       },
       current_state: {
         type: 'object' as const,

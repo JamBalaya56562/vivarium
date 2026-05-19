@@ -117,34 +117,19 @@
   "examples": [
     {
       "schema_version": 1,
-      "slug": "mpmath-983",
-      "upstream_issue": "https://github.com/mpmath/mpmath/issues/983",
-      "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/200",
+      "slug": "lark-1585",
+      "upstream_issue": "https://github.com/lark-parser/lark/issues/1585",
+      "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/263",
       "fork": {
         "owner": "JamBalaya56562",
-        "repo": "mpmath",
-        "branch": "fix-issue-983"
+        "repo": "lark",
+        "branch": "claude/fix-lark-1585-QLVa7"
       },
-      "upstream_pr": "https://github.com/mpmath/mpmath/pull/984",
-      "verdicts": {
-        "unfixed": {
-          "verdict": "reproduced",
-          "captured_at": "2026-05-17T03:12:00Z",
-          "source": "layer1-headless"
-        },
-        "fixed": {
-          "verdict": "unreproduced",
-          "captured_at": "2026-05-17T03:18:42Z",
-          "source": "layer1-headless"
-        }
-      },
-      "status": "upstream_open",
-      "updated_at": "2026-05-17T03:20:10Z",
+      "status": "verifying",
+      "updated_at": "2026-05-17T22:45:00Z",
       "notes": [
-        "scaffolded from upstream issue",
-        "unfixed verdict captured via ci:repro --grep mpmath-983",
-        "fixed verdict captured against fix branch fix-issue-983",
-        "upstream PR opened in draft"
+        "scaffolded from upstream issue lark-parser/lark#1585",
+        "fix-candidate registered for JamBalaya56562/lark@claude/fix-lark-1585-QLVa7"
       ]
     }
   ]

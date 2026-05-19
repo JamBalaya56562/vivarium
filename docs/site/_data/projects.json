@@ -43,13 +43,6 @@
       "homepage": "https://docs.rs/regex/",
       "github": "https://github.com/rust-lang/regex"
     },
-    "mpmath": {
-      "display_name": "mpmath",
-      "tagline": "Pure-Python arbitrary-precision arithmetic.",
-      "description": "Numerical-stability bugs that survive when mpmath is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
-      "homepage": "https://mpmath.org/",
-      "github": "https://github.com/mpmath/mpmath"
-    },
     "sympy": {
       "display_name": "SymPy",
       "tagline": "Pure-Python symbolic mathematics.",

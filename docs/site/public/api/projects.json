@@ -80,19 +80,6 @@
       "github": "https://github.com/lark-parser/lark"
     },
     {
-      "project": "mpmath",
-      "display_name": "mpmath",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/mpmath/",
-      "tagline": "Pure-Python arbitrary-precision arithmetic.",
-      "description": "Numerical-stability bugs that survive when mpmath is installed into Pyodide via micropip. The browser page and the host-Python repro.py share the exact same script and the same pinned wheel.",
-      "homepage": "https://mpmath.org/",
-      "github": "https://github.com/mpmath/mpmath"
-    },
-    {
       "project": "node",
       "display_name": "Node.js",
       "recipe_count": 1,
