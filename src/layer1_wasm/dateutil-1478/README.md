@@ -38,10 +38,13 @@ signed-offset code path. Both the short (`-4`) and the long
 
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
-| `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. Renders baseline + fix-candidate output panes side-by-side. |
+| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. Drives the two-variant run (baseline `micropip` install → fix-candidate wheel install via `./wheels/manifest.json` → baseline restore for `enableRunner`). |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
+| `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `scripts/build-layer1-wheels.sh`. |
+| `wheels/`    | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `python_dateutil-<version>-py2.py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in the same Pyodide tab. |
+| `roundtrip.json` | Tracked workflow state (round-trip schema_version 1). Updated as the recipe moves through verify → Vivarium PR → fork+fix → upstream PR. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css).
 
@@ -56,8 +59,12 @@ The page conforms to the contract canonicalised in
 - `globalThis.__VIVARIUM_VERDICT__` — mirror of the DOM verdict.
 - `globalThis.__VIVARIUM_RESULT__` — a `VivariumResultV1` envelope:
   `{ contract: "v1", bug: { project: "dateutil", issue: 1478, upstream_url },
-  runtime: { name: "pyodide", version, extras: { python, "python-dateutil" } },
-  result: { cases, inverted_count, case_count, reproduced }, timing }`.
+  runtime: { name: "pyodide", version, extras: { python, "python-dateutil", "python-dateutil_fix_candidate"? } },
+  result: { cases, inverted_count, case_count, reproduced, baseline: {...},
+  fix_candidate: {...} | null }, timing }`. The top-level `cases` /
+  `inverted_count` / `reproduced` mirror the **baseline** variant
+  (Contract v1 single-verdict surface preserved); the additive
+  `baseline` / `fix_candidate` sub-objects describe each variant.
 - Visible verdict text starts with `bug reproduced` or
   `bug not reproduced`.
 

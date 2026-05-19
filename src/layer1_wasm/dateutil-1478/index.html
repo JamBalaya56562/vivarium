@@ -50,6 +50,14 @@
           The full discussion (motivation, history, fix progress)
           lives in the GitHub issue thread linked below.
         </p>
+        <p>
+          A fix-candidate branch
+          (<code>JamBalaya56562/dateutil@fix-1478-utc-gmt-offset-sign</code>)
+          is built into a pure-Python wheel under <code>./wheels/</code>
+          and installed into the same Pyodide tab after the baseline
+          run completes, so visitors can compare the before/after
+          verdict in one page load.
+        </p>
       </div>
       <hr class="vh-drawer__divider" />
       <div class="vh-drawer__meta-grid">
@@ -60,7 +68,7 @@
         <span class="vh-drawer__meta-key">Layer</span>
         <span class="vh-drawer__meta-val">L1 · WASM</span>
         <span class="vh-drawer__meta-key">Runtime</span>
-        <span class="vh-drawer__meta-val">Pyodide v0.29.3</span>
+        <span class="vh-drawer__meta-val">Pyodide v0.29.3 + python-dateutil 2.9.0.post0 (micropip)</span>
       </div>
     </template>
   </head>
@@ -75,6 +83,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Bug context
             </button>
+            <a class="vh-chip" href="https://github.com/JamBalaya56562/dateutil/tree/fix-1478-utc-gmt-offset-sign" target="_blank" rel="noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+              Fix candidate branch
+            </a>
           </div>
         </div>
         <div class="vh-main__header-aside">
@@ -122,9 +134,22 @@
 <span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
         </section>
 
-        <section class="vh-main__col vh-main__col--output">
-          <h2>Output</h2>
-          <pre id="output">(running)</pre>
+        <section class="vh-main__col vh-main__col--output vh-output-multi">
+          <header class="vh-variant-head" data-variant="baseline">
+            <h2 class="vh-variant-head__title">Baseline output</h2>
+          </header>
+          <div class="vh-variant-stage" data-variant="baseline">
+            <!-- chrome.js inserts <div class="vh-progress"> before #output;
+                 the stage stacks both children in one grid cell so the
+                 overlay covers the pre during loading without taking
+                 extra column height. -->
+            <pre id="output" class="vh-variant-output">(pending)</pre>
+          </div>
+
+          <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
+            <h2 class="vh-variant-head__title">Fix-candidate output</h2>
+          </header>
+          <pre id="output-fix" class="vh-variant-output">(waiting for baseline)</pre>
         </section>
       </div>
 
