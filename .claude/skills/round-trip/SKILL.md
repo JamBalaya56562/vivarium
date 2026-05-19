@@ -270,9 +270,44 @@ the fix-candidate verdict side-by-side.
 ```
 
 Write the returned `fix_candidate_json` content to
-`src/layer1_wasm/<slug>/fix-candidate.json`. Amend the Stage-4
-Vivarium commit (`sl addremove && sl amend && sl pr submit`) so
-the same PR now also carries the fix-candidate registration.
+`src/layer1_wasm/<slug>/fix-candidate.json`.
+
+**Wire the recipe page to render the fix-candidate variant.** The
+wheel pipeline only builds the artefact — it does **not** modify
+`index.html` / `repro.ts`. Before amending, verify the recipe page
+renders both variants side-by-side:
+
+- `index.html` output section uses
+  `class="vh-main__col vh-main__col--output vh-output-multi"` and
+  contains both `<pre id="output">` (baseline) and
+  `<pre id="output-fix">` (fix-candidate), with
+  `<header class="vh-variant-head" data-variant="baseline">` /
+  `data-variant="fix-candidate"` labels. The shared CSS in
+  `src/layer1_wasm/_shared/style.css` styles these classes;
+  per-recipe CSS is not needed.
+- `repro.ts` fetches `./wheels/manifest.json`, installs the wheel
+  via `micropip.install(<wheel URL>)` after running
+  `micropip.uninstall(...)` + `del sys.modules[...]` for every
+  in-memory module of the target package (Pyodide caches imports
+  in `sys.modules`; `del` is the only reliable way to force
+  re-resolution). It runs the same reproduction source against the
+  fix-candidate, restores the baseline package (so `enableRunner`
+  still operates against the buggy build), and publishes the
+  Contract v1 envelope with additive `result.baseline` and
+  `result.fix_candidate` sub-objects.
+
+If wiring is absent, copy the dual-variant pattern from
+`src/layer1_wasm/sympy-29413/` (silent wrong-result, main-thread
+Pyodide, single-instance + uninstall/reinstall) or
+`src/layer1_wasm/lark-1585/` (hang-class bug requiring per-variant
+Web Worker isolation) and adapt the package name / install spec.
+Without this step the live page will display only the baseline
+pane after merge and Stage 8's visual confirmation will fail.
+
+Then amend the Stage-4 Vivarium commit
+(`sl addremove && sl amend && sl pr submit`) so the same PR now
+carries the fix-candidate registration **and** the recipe-page
+dual-variant wiring.
 
 **Layer 1 stops here for now.** The skill hands back to the
 human. The remaining flow:
