@@ -9,17 +9,7 @@
 // on a sub-eps intermediate sum that the LU path never sees;
 // raising precision via `mp.dps = 10` works around it.
 //
-// The fix candidate this page renders side-by-side is the fork
-// branch `JamBalaya56562/mpmath@claude/fix-mpmath-issue-983-y1k7X`
-// — built into a pure-Python wheel under `./wheels/` and installed
-// into the same Pyodide tab so visitors can compare the before/
-// after verdict in one page load.
-//
-// Verdict semantics (per ADR-0008 / contract v1) — applied to each
-// variant card individually; the top-level `#verdict` pill mirrors
-// the **baseline** variant so the existing Contract v1 single-
-// verdict surface (`__VIVARIUM_VERDICT__`, `data-verdict`) keeps
-// its prior meaning and downstream consumers do not need to branch.
+// Verdict semantics (per ADR-0008 / contract v1):
 //   - "reproduced" — qr_solve raised AND lu_solve succeeded on the
 //     same system (the upstream-reported asymmetry).
 //   - "unreproduced" — the two solvers no longer disagree (qr_solve
@@ -99,30 +89,13 @@ interface PyodideRuntime {
   }>;
 }
 
-interface WheelManifest {
-  schema_version: number;
-  package: string;
-  filename: string;
-  version: string;
-  source: {
-    type: string;
-    url: string;
-    ref: string;
-    commit?: string;
-    spec?: string;
-  };
-  upstream_pr?: string;
-  fetched_at?: string;
-}
-
 const outputBaselineEl = document.getElementById('output');
-const outputFixEl = document.getElementById('output-fix');
 const metaEl = document.getElementById('meta');
 const reproCodeEl = document.getElementById('repro-code');
 
-if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
+if (!outputBaselineEl || !metaEl || !reproCodeEl) {
   throw new Error(
-    'mpmath-983: missing required DOM elements (#output, #output-fix, #meta, #repro-code).',
+    'mpmath-983: missing required DOM elements (#output, #meta, #repro-code).',
   );
 }
 
@@ -154,11 +127,9 @@ function evaluate(result: ReproOutput): {
   };
 }
 
-// Re-shape the dict that came back through `pyodide.toJs(...)` so the
-// stringified form is symmetric across the baseline and fix-candidate
-// variants. Pyodide maps Python `None` to JS `undefined`, and
-// `JSON.stringify` strips `undefined`-valued keys. Normalising here
-// keeps both panels comparable at a glance.
+// Pyodide maps Python `None` to JS `undefined`, and `JSON.stringify`
+// strips `undefined`-valued keys. Normalising here keeps the output
+// stable and readable.
 function normalize(result: ReproOutput): ReproOutput {
   return {
     mpmath_version: result.mpmath_version,
@@ -199,33 +170,10 @@ async function captureRun(
   }
 }
 
-// Drop the in-memory mpmath module tree so the next `import mpmath`
-// resolves the freshly-installed wheel rather than the previously-loaded
-// version. Pyodide caches imports in `sys.modules`; `del` is the only
-// reliable way to force a re-resolution after `micropip.uninstall`.
-async function reinstallMpmath(
-  runtime: PyodideRuntime,
-  installSpec: string,
-): Promise<void> {
-  await runtime.runPythonAsync(`
-import micropip, sys
-try:
-    await micropip.uninstall("mpmath")
-except Exception:
-    pass
-for _name in [n for n in list(sys.modules) if n == "mpmath" or n.startswith("mpmath.")]:
-    del sys.modules[_name]
-await micropip.install(${JSON.stringify(installSpec)})
-`);
-}
-
 const startedAt = new Date();
 
 let baselineCapture: PathACapturedRun | null = null;
 let baselineParsed: ReproOutput | null = null;
-let fixCapture: PathACapturedRun | null = null;
-let fixParsed: ReproOutput | null = null;
-let manifest: WheelManifest | null = null;
 
 try {
   const { pyodide, version } = await loadVivariumPyodide({
@@ -234,7 +182,6 @@ try {
   });
   const runtime = pyodide as PyodideRuntime;
 
-  // -------- Variant 1: baseline (PyPI mpmath==1.4.1) -----------------
   setVerdict('pending', 'Installing mpmath==1.4.1 from PyPI…');
   await runtime.runPythonAsync(`
 import micropip
@@ -250,13 +197,9 @@ await micropip.install("mpmath==1.4.1")
   }
   outputBaselineEl.textContent = baselineCapture.stdout;
 
-  // Build the Contract v1 envelope as a closure that reflects whatever
-  // variant data is currently captured. Called once after baseline (so
-  // `__VIVARIUM_RESULT__` is populated by the time the top-level
-  // `#verdict` pill flips to "reproduced" — Playwright reads the
-  // envelope at that moment and would otherwise see `undefined`), and
-  // again after the fix-candidate run completes so the envelope picks
-  // up the second variant.
+  // Build the Contract v1 envelope before flipping the verdict pill:
+  // Playwright reads `__VIVARIUM_RESULT__` the moment `data-verdict`
+  // leaves `pending`.
   const buildEnvelope = (): VivariumResultV1 | null => {
     if (!baselineParsed || !baselineCapture) return null;
     const finishedAt = new Date();
@@ -273,9 +216,6 @@ await micropip.install("mpmath==1.4.1")
         extras: {
           python: baselineParsed.python_version,
           mpmath: baselineParsed.mpmath_version,
-          ...(fixParsed
-            ? { mpmath_fix_candidate: fixParsed.mpmath_version }
-            : {}),
         },
       },
       result: {
@@ -291,20 +231,6 @@ await micropip.install("mpmath==1.4.1")
           lu_solve_succeeded: baselineParsed.lu_solve_succeeded,
           asymmetry: baselineParsed.asymmetry,
         },
-        fix_candidate:
-          fixParsed && fixCapture && manifest
-            ? {
-                spec:
-                  manifest.source.spec ??
-                  `mpmath @ git+${manifest.source.url}@${manifest.source.ref}`,
-                verdict: fixCapture.verdict,
-                mpmath_version: fixParsed.mpmath_version,
-                qr_solve_raised: fixParsed.qr_solve_raised,
-                lu_solve_succeeded: fixParsed.lu_solve_succeeded,
-                asymmetry: fixParsed.asymmetry,
-                upstream_pr: manifest.upstream_pr ?? null,
-              }
-            : null,
       },
       timing: {
         started_at: startedAt.toISOString(),
@@ -314,14 +240,9 @@ await micropip.install("mpmath==1.4.1")
     };
   };
 
-  // Publish the baseline-only envelope BEFORE flipping the verdict
-  // pill — Playwright's regression suite reads
-  // `__VIVARIUM_RESULT__` the moment `data-verdict` leaves `pending`.
-  const initialEnvelope = buildEnvelope();
-  if (initialEnvelope) setResult(initialEnvelope);
+  const envelope = buildEnvelope();
+  if (envelope) setResult(envelope);
 
-  // Top-level verdict pill mirrors baseline — preserves the
-  // single-verdict Contract v1 surface for downstream consumers.
   setVerdict(baselineCapture.verdict, baselineCapture.message);
 
   metaEl.textContent =
@@ -329,68 +250,6 @@ await micropip.install("mpmath==1.4.1")
     `${baselineParsed?.python_version ?? '?'} (mp.dps=${
       baselineParsed?.mp_dps ?? '?'
     }) via Pyodide v${version}.`;
-
-  // -------- Variant 2: fix-candidate (committed wheel) ---------------
-  outputFixEl.textContent = 'Fetching wheel manifest…';
-  let manifestRes: Response | null = null;
-  try {
-    manifestRes = await fetch('./wheels/manifest.json', { cache: 'no-store' });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    outputFixEl.textContent = `Could not fetch wheel manifest: ${message}`;
-  }
-
-  if (manifestRes && manifestRes.ok) {
-    manifest = (await manifestRes.json()) as WheelManifest;
-    const wheelUrl = new URL(
-      `./wheels/${manifest.filename}`,
-      window.location.href,
-    ).toString();
-    outputFixEl.textContent =
-      `Installing ${manifest.filename} (${manifest.version})…\n` +
-      `from ${manifest.source.url}@${manifest.source.ref}`;
-    try {
-      await reinstallMpmath(runtime, wheelUrl);
-      fixCapture = await captureRun(runtime, REPRO_CODE);
-      try {
-        fixParsed = JSON.parse(fixCapture.stdout) as ReproOutput;
-      } catch {
-        fixParsed = null;
-      }
-      outputFixEl.textContent = fixCapture.stdout;
-    } catch (err) {
-      const errAny = err as { stack?: string; message?: string } | null;
-      const message =
-        (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-      outputFixEl.textContent = `Fix-candidate install/run failed: ${message}`;
-    }
-  } else if (manifestRes && !manifestRes.ok) {
-    outputFixEl.textContent = `Wheel manifest unavailable (HTTP ${manifestRes.status}).`;
-  }
-
-  // Restore baseline mpmath so the visitor-facing runner (Edit + Run)
-  // operates against the buggy build — the runner's documented mental
-  // model is "test your script change against the same broken
-  // interpreter the recipe loaded". Without this, runner.runFix would
-  // execute against the fix-candidate mpmath, which is semantically
-  // surprising for visitors paste-editing the script.
-  try {
-    await reinstallMpmath(runtime, 'mpmath==1.4.1');
-  } catch {
-    console.warn(
-      'mpmath-983: failed to restore baseline for the runner; runner.runFix will run against the fix-candidate.',
-    );
-  }
-
-  // ---- Contract v1 envelope (final) ---------------------------------
-  // Re-publish the envelope now that the fix-candidate variant has
-  // also captured (or definitively failed). `result` keeps the
-  // historical baseline-only fields so consumers reading
-  // `__VIVARIUM_RESULT__.result.asymmetry` continue to work, and the
-  // additive `baseline` / `fix_candidate` sub-objects describe each
-  // variant separately. Additive change — no `contract` version bump.
-  const finalEnvelope = buildEnvelope();
-  if (finalEnvelope) setResult(finalEnvelope);
 
   enableRunner({
     slug: 'mpmath-983',
