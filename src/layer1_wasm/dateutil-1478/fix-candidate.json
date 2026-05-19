@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "package": "python-dateutil",
+  "purpose": "fix-candidate verification for dateutil/dateutil#1478",
+  "source": {
+    "type": "git",
+    "url": "https://github.com/JamBalaya56562/dateutil",
+    "ref": "fix-issue-1478"
+  },
+  "upstream_pr": ""
+}
