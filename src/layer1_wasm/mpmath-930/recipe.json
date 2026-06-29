@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "language": "python",
-  "symptom": "silent-precision-loss-at-default-dps",
-  "severity": "wrong-result",
-  "tags": ["mpmath", "jtheta", "jacobi-theta", "precision", "elliptic-functions"],
-  "expected_verdict": "reproduced",
-  "expected_runtime": "pyodide"
-}
