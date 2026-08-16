@@ -194,12 +194,7 @@ run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
 
 [tasks."repro:native"]
 description = "Run all repros against host interpreters/compilers"
-depends = [
-  "repro:native:python",
-  "repro:native:ruby",
-  "repro:native:php",
-  "repro:native:rust"
-]
+depends = ["repro:native:python", "repro:native:ruby", "repro:native:php", "repro:native:rust"]
 
 # ── Layer 2 — Docker reproduction images ─────────────────────────────────
 
@@ -527,15 +522,7 @@ run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 
 [tasks."ci:all"]
 description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e + commitlint)"
-depends = [
-  "ci:docs",
-  "ci:lint",
-  "ci:mcp",
-  "ci:repro",
-  "ci:docs-unit",
-  "ci:docs-e2e",
-  "ci:commitlint"
-]
+depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e", "ci:commitlint"]
 
 # ── Polyglot Rust-based formatters and linters ───────────────────────────
 
@@ -601,14 +588,7 @@ done
 
 [tasks."lint:all"]
 description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust"
-depends = [
-  "docs:check",
-  "php:check",
-  "python:check",
-  "toml:check",
-  "markdown:check",
-  "rust:check"
-]
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check"]
 
 [tasks."lint:all:fix"]
 description = "Apply all autofixes (in-place) across every language"
@@ -623,11 +603,4 @@ depends = [
 
 [tasks."ci:lint"]
 description = "Local equivalent of test-lint-check.yml (Biome + Mago + Ruff + Tombi + rumdl + Rust)"
-depends = [
-  "docs:check",
-  "php:check",
-  "python:check",
-  "toml:check",
-  "markdown:check",
-  "rust:check"
-]
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check"]
