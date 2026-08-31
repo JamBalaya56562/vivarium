@@ -2,8 +2,8 @@
 // side-by-side comparison on a single Pyodide instance.
 //
 // Two pieces are duplicated across every "main-thread Pyodide" recipe
-// that adopts the dual-variant pattern (sympy-29413, dateutil-1478,
-// future analogues):
+// that adopts the dual-variant pattern (dateutil-1478 and future
+// analogues):
 //
 //   1. `reinstallPyodidePackage` — `micropip.uninstall` followed by
 //      a `sys.modules` purge (to defeat Pyodide's import cache) and
@@ -71,13 +71,13 @@ export interface WheelManifest {
  * the freshly-installed version.
  *
  * - `pipPackageName` is what `micropip` knows the project as
- *   (e.g. `"python-dateutil"`, `"sympy"`).
+ *   (e.g. `"python-dateutil"`, `"lark"`).
  * - `pythonRootModule` is the top-level package name as Python sees
- *   it after import (e.g. `"dateutil"`, `"sympy"`). Often equal to
+ *   it after import (e.g. `"dateutil"`, `"lark"`). Often equal to
  *   `pipPackageName`, but not always — `python-dateutil` exposes
  *   `dateutil`.
  * - `installSpec` is the argument handed to `micropip.install(...)`
- *   — a PyPI pin like `"sympy==1.14.0"` or an absolute wheel URL like
+ *   — a PyPI pin like `"lark==1.3.0"` or an absolute wheel URL like
  *   `"http://localhost:.../wheels/<file>.whl"`.
  *
  * The function is best-effort on uninstall: a project that was never
