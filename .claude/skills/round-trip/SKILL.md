@@ -297,7 +297,7 @@ renders both variants side-by-side:
   `result.fix_candidate` sub-objects.
 
 If wiring is absent, copy the dual-variant pattern from
-`src/layer1_wasm/sympy-29413/` (silent wrong-result, main-thread
+`src/layer1_wasm/dateutil-1478/` (silent wrong-result, main-thread
 Pyodide, single-instance + uninstall/reinstall) or
 `src/layer1_wasm/lark-1585/` (hang-class bug requiring per-variant
 Web Worker isolation) and adapt the package name / install spec.
