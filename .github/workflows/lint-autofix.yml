@@ -2,34 +2,52 @@ name: Polyglot lint autofix
 
 # Runs the polyglot formatter / linter toolchain — Biome (JS/TS/CSS/
 # JSON in docs/), Mago for PHP, Ruff for Python, Tombi for TOML,
-# rumdl for Markdown, cargo fmt for Rust — in autofix mode and pushes
-# any resulting changes back to the PR branch so contributors don't
-# have to fix formatting / lint by hand.
+# rumdl for Markdown, cargo fmt for Rust — in autofix mode and
+# uploads the resulting diff as an artifact. The companion
+# `lint-autofix-apply.yml` picks that artifact up and pushes the fixes
+# back to the PR branch, so contributors don't have to fix formatting
+# / lint by hand.
 #
-# Pattern mirrors `biome-autofix.yml` / `tofu-fmt-autofix.yml`. Inline
-# for now (first instance of polyglot autofix in vivarium); flag for
-# promotion to `aletheia-works/.github/.github/workflows/` when a
-# second repo in the org needs the same logic, per AGENTS.md §4.8.
+# WHY THE SPLIT (the "untrusted build, trusted apply" pattern)
 #
-# `pull_request_target` so fork PRs see autofix run too — `pull_request`
-# from a fork ships with read-only GITHUB_TOKEN, which can't push back.
-# Same TF_TOKEN_GITHUB PAT as biome / tofu autofix; that PAT has
-# write access to the maintainer's personal forks where `sl pr submit`
-# lands every PR.
+# This workflow used to run on `pull_request_target` with the
+# TF_TOKEN_GITHUB PAT so that fork PRs got autofix too. That stopped
+# working when actions/checkout v6.1.0 (backport of the v7 breaking
+# change, GitHub changelog "Safer pull_request_target defaults for
+# GitHub Actions checkout") began refusing fork-PR checkouts from
+# `pull_request_target`.
 #
-# SECURITY NOTE: combined with `secrets: inherit`, fork-PR PHP / Python /
-# TOML / Markdown / Rust source is touched with an org-scoped PAT.
-# Acceptable because each tool here is a textual formatter / linter
-# (no code execution from PR sources during the workflow). Same posture
-# as biome-autofix.yml.
+# Simply re-enabling it with `allow-unsafe-pr-checkout: true` would
+# not be safe here: `mise run lint:all:fix` executes task definitions
+# read from the PR's own `mise.toml` (which this workflow's paths
+# filter deliberately watches), so a malicious fork PR could redefine
+# the task and exfiltrate the PAT. That is exactly the "pwn request"
+# shape the new default protects against.
 #
-# Tooling: like `test-lint-check.yml`, this is the documented exception
-# to AGENTS.md §4.10's "CI does not use mise" rule. A single
+# So the work is split by trust level:
+#
+#   1. THIS workflow — `pull_request`, so a fork PR run gets NO
+#      secrets and a read-only GITHUB_TOKEN. It checks out the PR
+#      head and runs the (arbitrary, PR-controlled) lint tooling.
+#      Nothing here is worth stealing; the only output is a patch
+#      file uploaded as an artifact.
+#   2. `lint-autofix-apply.yml` — `workflow_run`, so it runs from the
+#      default branch with the PAT. It executes NOTHING from the PR:
+#      it only `git apply`s the patch and pushes. See that file for
+#      the full trust argument.
+#
+# Note that `pull_request` alone cannot do the push: GitHub strips
+# secrets and downgrades GITHUB_TOKEN to read-only for fork PRs, and
+# the branch lives on the contributor's fork anyway (every PR here
+# arrives via `sl pr submit` from a personal fork).
+#
+# Tooling: like `test-lint-check.yml`, this is the documented
+# exception to AGENTS.md §4.9's "CI does not use mise" rule. A single
 # `jdx/mise-action` allowlist entry replaces 5 per-tool action
 # registrations.
 
 on:
-  pull_request_target:
+  pull_request:
     paths:
       # Biome (docs/) — JS/TS/CSS/JSON
       - 'docs/**/*.ts'
@@ -59,10 +77,12 @@ on:
       - '.rumdl.toml'
       - 'mise.toml'
       - '.github/workflows/lint-autofix.yml'
+      - '.github/workflows/lint-autofix-apply.yml'
 
+# Read-only: this job produces a patch, it never pushes. The apply
+# half holds the write credential.
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 concurrency:
   group: lint-autofix-${{ github.event.pull_request.number }}
@@ -74,16 +94,18 @@ jobs:
     if: github.repository_owner == 'aletheia-works'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      # The PR head commit, not the merge commit: the patch has to
+      # apply cleanly on top of the branch the apply half pushes to.
+      # `persist-credentials: false` because nothing here talks back
+      # to GitHub over git.
+      - name: Checkout PR head
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          token: ${{ secrets.TF_TOKEN_GITHUB }}
-          persist-credentials: true
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       # Install every lint tool + the Rust toolchain in one step via
-      # mise. See test-lint-check.yml for the AGENTS.md §4.10
+      # mise. See test-lint-check.yml for the AGENTS.md §4.9
       # exception rationale.
       - name: Setup mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
@@ -115,17 +137,27 @@ jobs:
       - name: Run polyglot lint autofix
         run: mise run lint:all:fix || true
 
-      # Commit & push only when something actually changed.
-      - name: Commit and push fixes
-        env:
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      # Always emit the artifact, even when the patch is empty: the
+      # apply half is triggered by this run finishing, so a missing
+      # artifact would turn "nothing to fix" into a download failure.
+      # `--binary` keeps the patch appliable if a tool ever rewrites a
+      # non-UTF-8 file.
+      - name: Capture autofix patch
         run: |
-          if git diff --quiet; then
-            echo "No autofix changes to commit."
-            exit 0
+          set -euo pipefail
+          mkdir -p autofix-out
+          git diff --binary > autofix-out/autofix.patch
+          if [ -s autofix-out/autofix.patch ]; then
+            echo "Autofix produced changes in:"
+            git diff --name-only
+          else
+            echo "No autofix changes."
           fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "style: polyglot lint autofix (biome/mago/ruff/tombi/rumdl/cargo-fmt)"
-          git push origin "HEAD:${PR_HEAD_REF}"
+
+      - name: Upload autofix patch
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lint-autofix-patch
+          path: autofix-out/autofix.patch
+          retention-days: 1
+          if-no-files-found: error
