@@ -112,7 +112,7 @@ for (const slug of slugs) {
       path: relative(REPO_ROOT, indexPath),
       reason: 'index.html is missing — every Layer 1 recipe must ship one.',
       remedy:
-        'Author the recipe page; see src/layer1_wasm/sympy-29413/ or src/layer1_wasm/lark-1585/ for layout templates.',
+        'Author the recipe page; see src/layer1_wasm/dateutil-1478/ or src/layer1_wasm/lark-1585/ for layout templates.',
     });
   } else {
     const indexBody = readFileSync(indexPath, 'utf-8');
@@ -122,7 +122,7 @@ for (const slug of slugs) {
       indexBody,
       'vh-output-multi',
       'output column is missing the `vh-output-multi` class — the baseline + fix-candidate dual-pane layout is not wired up.',
-      'Replace the single `<pre id="output">` with the dual-pane scaffold from src/layer1_wasm/sympy-29413/index.html (two `<header data-variant>` headers + #output + #output-fix).',
+      'Replace the single `<pre id="output">` with the dual-pane scaffold from src/layer1_wasm/dateutil-1478/index.html (two `<header data-variant>` headers + #output + #output-fix).',
     );
     check(
       slug,
@@ -130,7 +130,7 @@ for (const slug of slugs) {
       indexBody,
       'id="output-fix"',
       '`<pre id="output-fix">` is missing — the recipe JS has nowhere to write the fix-candidate output.',
-      'Add the fix-candidate pane: see src/layer1_wasm/sympy-29413/index.html for the exact markup.',
+      'Add the fix-candidate pane: see src/layer1_wasm/dateutil-1478/index.html for the exact markup.',
     );
   }
 
@@ -140,7 +140,7 @@ for (const slug of slugs) {
       path: relative(REPO_ROOT, reproTsPath),
       reason: 'repro.ts is missing — every Layer 1 recipe must ship one.',
       remedy:
-        'Author the recipe driver; see src/layer1_wasm/sympy-29413/repro.ts for the dual-variant template.',
+        'Author the recipe driver; see src/layer1_wasm/dateutil-1478/repro.ts for the dual-variant template.',
     });
   } else {
     const reproBody = readFileSync(reproTsPath, 'utf-8');
@@ -154,7 +154,7 @@ for (const slug of slugs) {
         reason:
           'repro.ts neither calls `fetchWheelManifest` nor fetches `./wheels/manifest.json` — the fix-candidate wheel is never installed.',
         remedy:
-          'Adopt the shared helper from `_shared/fix-candidate.ts` (sympy-29413, dateutil-1478) or the inline fetch pattern (lark-1585).',
+          'Adopt the shared helper from `_shared/fix-candidate.ts` (dateutil-1478) or the inline fetch pattern (lark-1585).',
       });
     }
   }

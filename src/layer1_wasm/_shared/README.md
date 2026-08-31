@@ -27,7 +27,7 @@ and runner — `bun install`, `bun run build`, `bun run typecheck`.
 | --- | --- | --- |
 | `verdict.ts` | `verdict.js` | `setVerdict()` / `setResult()` + `VivariumResultV1` interface. |
 | `loader.ts` | `loader.js` | `loadVivariumPyodide()` — Pyodide bootstrap with version pin and package preload. |
-| `fix-candidate.ts` | `fix-candidate.js` | `reinstallPyodidePackage()` / `fetchWheelManifest()` / `resolveFixCandidateSpec()` + `WheelManifest` interface — shared plumbing for recipes that render baseline + fix-candidate side-by-side on a single Pyodide instance (sympy-29413, dateutil-1478). Worker-based recipes (lark-1585) keep their own per-variant flow. |
+| `fix-candidate.ts` | `fix-candidate.js` | `reinstallPyodidePackage()` / `fetchWheelManifest()` / `resolveFixCandidateSpec()` + `WheelManifest` interface — shared plumbing for recipes that render baseline + fix-candidate side-by-side on a single Pyodide instance (dateutil-1478). Worker-based recipes (lark-1585) keep their own per-variant flow. |
 | `runner.ts` | `runner.js` | `enableRunner()` — Edit/Run/Reset buttons that hand the (possibly edited) source back to the recipe's `captureRun`. |
 | `path_a.ts` | `path_a.js` | `PathACapturedRun` type + the Path A "fix URL?" UI panel. |
 | `_test/repro.ts` | `_test/repro.js` | Smoke test validating the contract-v1 surface (no Pyodide). |

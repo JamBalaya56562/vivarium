@@ -69,7 +69,7 @@ jobs:
       run:
         working-directory: docs
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
@@ -84,7 +84,7 @@ jobs:
         # depends on per ADR-0040: wheels are built fresh from each
         # `src/layer1_wasm/<slug>/wheels/source.json` rather than
         # vendored.
-        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
           cache: true
@@ -107,9 +107,10 @@ jobs:
         # mise-installed bun does not), and without leaking ajv into
         # any tracked package.json.
         run: |
+          BUN="$(mise which bun)"
           cd "$RUNNER_TEMP"
-          bun init -y >/dev/null
-          bun add ajv-cli@5 ajv-formats
+          "$BUN" init -y >/dev/null
+          "$BUN" add ajv-cli@5 ajv-formats
           # Both forms — `$AJV_BIN` for explicit yaml callers, and the
           # bin dir on `$GITHUB_PATH` so shell scripts (e.g.
           # `scripts/capture_layer2_verdict.sh`) can call `ajv` directly

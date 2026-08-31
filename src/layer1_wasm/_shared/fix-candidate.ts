@@ -2,8 +2,8 @@
 // side-by-side comparison on a single Pyodide instance.
 //
 // Two pieces are duplicated across every "main-thread Pyodide" recipe
-// that adopts the dual-variant pattern (sympy-29413, dateutil-1478,
-// future analogues):
+// that adopts the dual-variant pattern (dateutil-1478 and future
+// analogues):
 //
 //   1. `reinstallPyodidePackage` — `micropip.uninstall` followed by
 //      a `sys.modules` purge (to defeat Pyodide's import cache) and

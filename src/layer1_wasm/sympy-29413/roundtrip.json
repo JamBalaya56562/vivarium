@@ -3,16 +3,13 @@
   "slug": "sympy-29413",
   "upstream_issue": "https://github.com/sympy/sympy/issues/29413",
   "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/260",
-  "fork": {
-    "owner": "JamBalaya56562",
-    "repo": "sympy",
-    "branch": "claude/fix-sympy-29413-8Lyc6"
-  },
-  "status": "verifying",
-  "updated_at": "2026-05-17T12:00:00Z",
+  "fork": null,
+  "status": "blocked",
+  "updated_at": "2026-08-30T23:56:53Z",
   "notes": [
     "scaffolded from upstream issue via the round-trip skill walkthrough (sympy-29413 first end-to-end smoke)",
     "Vivarium PR opened (Stage 4); unfixed verdict will be captured by the CI Playwright suite on this PR's push",
-    "fix-candidate registered (Stage 6): JamBalaya56562/sympy@claude/fix-sympy-29413-8Lyc6 — wheel built by CI on PR merge so the live recipe page renders baseline + fix-candidate side-by-side"
+    "fix-candidate registered (Stage 6): JamBalaya56562/sympy@claude/fix-sympy-29413-8Lyc6 — wheel built by CI on PR merge so the live recipe page renders baseline + fix-candidate side-by-side",
+    "blocked (Stage 6 rollback): the fix-candidate fork JamBalaya56562/sympy was deleted upstream-side (GitHub API 404), so scripts/build-layer1-wheels.sh could no longer clone git+https://github.com/JamBalaya56562/sympy@claude/fix-sympy-29413-8Lyc6 and failed both repro-regression and deploy-docs on main from 2026-08-24. fix-candidate.json / verify_fix.py removed and the recipe page reverted to the single-variant baseline layout; sympy/sympy#29413 is still OPEN. Re-register a fix candidate (new fork + branch) to resume the round-trip."
   ]
 }
