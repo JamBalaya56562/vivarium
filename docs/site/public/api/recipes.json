@@ -195,45 +195,6 @@
       "expected_runtime": "ruby.wasm"
     },
     {
-      "slug": "sympy-29413",
-      "layer": 1,
-      "project": "sympy",
-      "issue": 29413,
-      "title": "sympy/sympy#29413",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/sympy/29413/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/sympy-29413",
-      "language": "python",
-      "tags": [
-        "sympy",
-        "ask",
-        "Q.extended_real",
-        "core.relational",
-        "infinity"
-      ],
-      "symptom": "assumption-blind-spot-at-infinity",
-      "severity": "spec-violation",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "pyodide",
-      "roundtrip": {
-        "schema_version": 1,
-        "slug": "sympy-29413",
-        "upstream_issue": "https://github.com/sympy/sympy/issues/29413",
-        "vivarium_pr": "https://github.com/aletheia-works/vivarium/pull/260",
-        "fork": {
-          "owner": "JamBalaya56562",
-          "repo": "sympy",
-          "branch": "claude/fix-sympy-29413-8Lyc6"
-        },
-        "status": "verifying",
-        "updated_at": "2026-05-17T12:00:00Z",
-        "notes": [
-          "scaffolded from upstream issue via the round-trip skill walkthrough (sympy-29413 first end-to-end smoke)",
-          "Vivarium PR opened (Stage 4); unfixed verdict will be captured by the CI Playwright suite on this PR's push",
-          "fix-candidate registered (Stage 6): JamBalaya56562/sympy@claude/fix-sympy-29413-8Lyc6 — wheel built by CI on PR merge so the live recipe page renders baseline + fix-candidate side-by-side"
-        ]
-      }
-    },
-    {
       "slug": "bash-local-shadows-exit",
       "layer": 2,
       "project": "bash",

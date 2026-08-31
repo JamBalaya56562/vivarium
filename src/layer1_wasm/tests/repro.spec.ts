@@ -184,8 +184,9 @@ async function readVivariumState(page: Page): Promise<VivariumPageState> {
 
 function timeoutForRuntime(name: ReproCase["expectedRuntimeName"]): number {
   // Smoke test and Layer 2 verdict-snapshot fetch resolve in milliseconds;
-  // Pyodide pages download and import large wheels, with SymPy on
-  // Firefox sitting near the old 75s ceiling on cold local runs.
+  // Pyodide pages download and import large wheels, with the heaviest
+  // of them on Firefox sitting near the old 75s ceiling on cold local
+  // runs.
   if (name === "browser" || name === "docker-snapshot") return 10_000;
   if (name === "pyodide") return 120_000;
   return 75_000;
