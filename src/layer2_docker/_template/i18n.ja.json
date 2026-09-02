@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "{{SLUG}}",
+  "strings": {
+    "page.title": "Vivarium · {{TITLE}} の再現",
+    "page.h1": "{{TITLE}}",
+    "page.lede": "TODO: バグを 1〜3 文で説明する。訪問者が読む文章。",
+    "section.verdict.h2": "CI verdict スナップショット",
+    "verdict.pending": "verdict スナップショットを読み込み中…",
+    "section.reproduce.h2": "自分で再現する",
+    "section.reproduce.meta": "{0} に <code>Dockerfile</code> と <code>repro.sh</code> がある。",
+    "section.snapshot.h2": "CI スナップショットの出力",
+    "output.placeholder": "(読み込み中…)",
+    "footer.note": "Layer 2 のページは CI スナップショットの verdict を表示する。訪問者のローカルでの <code>docker run</code> がライブの確認になる。カタログは {0} を参照。"
+  }
+}

@@ -11,6 +11,14 @@
 // this helper only owns load-time errors.
 
 import { setVerdict } from "./verdict.js";
+import { pick } from "./i18n.js";
+
+// Default pending copy for this runtime. Partial JA overlay per the
+// `path_a.ts` convention.
+const S = pick(
+  { pending: 'Loading Ruby.wasm runtime…' },
+  { pending: 'Ruby.wasm runtime を読み込み中…' },
+);
 
 /** `@ruby/wasm-wasi` package version. Bumping requires updating the
  *  `<link rel="modulepreload">` in pages that preload this URL. */
@@ -54,10 +62,10 @@ export async function loadVivariumRuby(
 ): Promise<LoadResult> {
   const rubyWasmVersion = options.rubyWasmVersion ?? DEFAULT_RUBY_WASM_VERSION;
   const rubyVersion = options.rubyVersion ?? DEFAULT_RUBY_VERSION;
-  const pendingText = options.pendingText ?? "Loading Ruby.wasm runtime…";
+  const pendingText = options.pendingText ?? S.pending;
   const total = 22.0; // ruby+stdlib.wasm is ~21 MB
 
-  setVerdict("pending", pendingText);
+  setVerdict("pending", pendingText, "loading");
   emitProgress(5, "Initialising…", `0.0 MB / ${total.toFixed(1)} MB`);
 
   const loaderUrl = `https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@${rubyWasmVersion}/dist/browser/+esm`;

@@ -8,6 +8,8 @@
 
 const FIX_PARAM_LIMIT_BYTES = 4 * 1024;
 
+import { pageLang } from "./i18n.js";
+
 export type VerdictLiteral = "reproduced" | "unreproduced";
 
 /** Captured run produced by the recipe's `runFix` / `baseline` callbacks. */
@@ -438,7 +440,14 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
     return;
   }
 
-  const s: PathAStrings = { ...DEFAULT_STRINGS, ...(opts.strings ?? {}) };
+  // Locale comes from `<html lang>` by default, so a recipe never has to
+  // remember to pass the Japanese table (none ever did — the export sat
+  // unused). An explicit `opts.strings` still wins, for a recipe that
+  // wants to override individual strings.
+  const s: PathAStrings = {
+    ...DEFAULT_STRINGS,
+    ...(opts.strings ?? (pageLang() === "ja" ? DEFAULT_STRINGS_JA : {})),
+  };
 
   const state: RuntimeState = {
     baseline: opts.baseline,
@@ -563,6 +572,7 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
   }
 }
 
-/** Pre-bundled Japanese strings — recipes serving a `lang="ja"` page can
- *  pass `enablePathA({ strings: PATH_A_STRINGS_JA, ... })`. */
+/** Pre-bundled Japanese strings. `enablePathA` now selects these
+ *  automatically on a `lang="ja"` page, so recipes do not pass them;
+ *  the export stays for callers that want to extend or override them. */
 export const PATH_A_STRINGS_JA: Partial<PathAStrings> = DEFAULT_STRINGS_JA;
