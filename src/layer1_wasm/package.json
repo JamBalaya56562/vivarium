@@ -15,8 +15,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
-    "@types/node": "^22.20.1",
-    "shiki": "^1.29.2",
-    "typescript": "^5.7.2"
+    "@types/node": "^26.4.1",
+    "shiki": "^4.4.3",
+    "typescript": "^7.0.2"
   }
 }
