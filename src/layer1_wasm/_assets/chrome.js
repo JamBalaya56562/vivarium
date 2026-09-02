@@ -6,6 +6,14 @@
 // Plain JS (no TypeScript build) so Layer 2 — which has no tsc step —
 // can also import it without a compile dance.
 
+// Nav data generated from docs/site/{en,ja}/_nav.json by
+// docs/scripts/generate-repro-chrome.ts, so the reproduction-page header
+// cannot drift from the docs nav. A static import rather than a runtime
+// fetch: chrome.js paints the header before anything else, and this
+// module is resolved by the same graph that already loads chrome.js, so
+// it adds no round-trip.
+import { NAV_ITEMS, SITE_BASE } from './chrome-data.js';
+
 // ── Favicon injection ───────────────────────────────────────────────────
 // Mirrors the rspress docs site config (docs/rspress.config.ts head[]).
 // Repro pages don't go through rspress, so we attach the same icons here
@@ -73,20 +81,12 @@ const moon =
 const github =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.55 0-.27-.01-.99-.02-1.94-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .31.21.67.79.55 4.57-1.53 7.86-5.84 7.86-10.93C23.5 5.65 18.35.5 12 .5z"/></svg>';
 
-// rspress's nav links — keep in sync with docs/site/_nav.json. Hardcoded
-// here so this script doesn't need to fetch a JSON file before the page
-// can paint its chrome.
-const NAV_ITEMS = [
-  { text: 'Vision', link: '/vivarium/vision' },
-  { text: 'Roadmap', link: '/vivarium/roadmap' },
-  { text: 'Architecture', link: '/vivarium/architecture' },
-  { text: 'Spec', link: '/vivarium/spec/' },
-  { text: 'AI workflow', link: '/vivarium/ai-workflow' },
-  { text: 'Reproductions', link: '/vivarium/repro/' },
-  { text: '日本語', link: '/vivarium/ja/' },
-];
-
 const GH_REPO = 'https://github.com/aletheia-works/vivarium';
+
+// Locale of the page being decorated. Reproduction pages are English
+// today; the JA tree sets `<html lang="ja">` and picks the JA nav table
+// through the same switch.
+const LANG = document.documentElement.lang === 'ja' ? 'ja' : 'en';
 
 // ── Inject nav, progress bar, footer ───────────────────────────────────
 
@@ -100,18 +100,28 @@ function injectChrome() {
   const nav = document.createElement('header');
   nav.className = 'vh-topnav';
 
-  const navLinks = NAV_ITEMS.map(
+  const navLinks = NAV_ITEMS[LANG].map(
     (it) => `<a class="vh-topnav__link" href="${it.link}">${it.text}</a>`,
   ).join('');
 
+  // Locale switcher. rspress renders its own via `useLangsMenu()`, which
+  // is why it is NOT an entry in `_nav.json` and must not be faked into
+  // NAV_ITEMS. Shaped to match rspress's markup contract
+  // (`hreflang` / `lang` / `rel="alternate"`) — the same attributes
+  // `docs/tests/i18n.spec.ts` locates the docs-side switcher by.
+  const langHref = LANG === 'ja' ? `${SITE_BASE}` : `${SITE_BASE}ja/`;
+  const langText = LANG === 'ja' ? 'English' : '日本語';
+  const langCode = LANG === 'ja' ? 'en' : 'ja';
+
   nav.innerHTML = `
     <div class="vh-topnav__left">
-      <a class="vh-topnav__brand-link" href="/vivarium/" aria-label="Vivarium home">Vivarium</a>
+      <a class="vh-topnav__brand-link" href="${SITE_BASE}" aria-label="Vivarium home">Vivarium</a>
     </div>
     <nav class="vh-topnav__menu" aria-label="Site navigation">
       ${navLinks}
     </nav>
     <div class="vh-topnav__right">
+      <a class="vh-topnav__link vh-topnav__lang" hreflang="${langCode}" lang="${langCode}" rel="alternate" href="${langHref}">${langText}</a>
       <a class="vh-topnav__icon" href="${GH_REPO}" target="_blank" rel="noreferrer" aria-label="GitHub repository">${github}</a>
       <button class="vh-topnav__theme" type="button" aria-label="Toggle theme">${moon}</button>
     </div>
