@@ -15,6 +15,14 @@
 // `php_loader.ts` (php-wasm).
 
 import { setVerdict } from "./verdict.js";
+import { pick } from "./i18n.js";
+
+// Default pending copy for this runtime. Partial JA overlay per the
+// `path_a.ts` convention.
+const S = pick(
+  { pending: 'Loading Rust wasm via WASI shim…' },
+  { pending: 'WASI shim 経由で Rust wasm を読み込み中…' },
+);
 
 /** `@bjorn3/browser_wasi_shim` package version. Bumping requires
  *  updating the `<link rel="modulepreload">` in pages that preload
@@ -83,9 +91,9 @@ export async function loadVivariumRust(
   options: LoadOptions,
 ): Promise<LoadResult> {
   const wasiShimVersion = options.wasiShimVersion ?? DEFAULT_WASI_SHIM_VERSION;
-  const pendingText = options.pendingText ?? "Loading Rust wasm via WASI shim…";
+  const pendingText = options.pendingText ?? S.pending;
 
-  setVerdict("pending", pendingText);
+  setVerdict("pending", pendingText, "loading");
   emitProgress(5, "Initialising…", "");
 
   const shimUrl = `https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@${wasiShimVersion}/dist/index.js`;

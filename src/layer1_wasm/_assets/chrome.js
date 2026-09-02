@@ -86,6 +86,35 @@ const github =
 // through the same switch.
 const LANG = document.documentElement.lang === 'ja' ? 'ja' : 'en';
 
+// Chrome copy. Plain JS (no build step), so the table is inline rather
+// than importing _shared/i18n.ts — Layer 2 loads this file directly.
+const CHROME_STRINGS = {
+  en: {
+    brandAria: 'Vivarium home',
+    navAria: 'Site navigation',
+    githubAria: 'GitHub repository',
+    themeAria: 'Toggle theme',
+    drawerAria: 'Bug context',
+    drawerCloseAria: 'Close bug context',
+    initialising: 'Initialising\u2026',
+    complete: 'Reproduction complete.',
+    switchTo: '\u65e5\u672c\u8a9e',
+  },
+  ja: {
+    brandAria: 'Vivarium \u30db\u30fc\u30e0',
+    navAria: '\u30b5\u30a4\u30c8\u30ca\u30d3\u30b2\u30fc\u30b7\u30e7\u30f3',
+    githubAria: 'GitHub \u30ea\u30dd\u30b8\u30c8\u30ea',
+    themeAria: '\u30c6\u30fc\u30de\u3092\u5207\u308a\u66ff\u3048\u308b',
+    drawerAria: 'bug \u306e\u80cc\u666f',
+    drawerCloseAria: 'bug \u306e\u80cc\u666f\u3092\u9589\u3058\u308b',
+    initialising: '\u521d\u671f\u5316\u4e2d\u2026',
+    complete: '\u518d\u73fe\u5b8c\u4e86\u3002',
+    switchTo: 'English',
+  },
+};
+
+const T = CHROME_STRINGS[LANG];
+
 // ── Inject nav, progress bar, footer ───────────────────────────────────
 
 function injectChrome() {
@@ -108,20 +137,20 @@ function injectChrome() {
   // (`hreflang` / `lang` / `rel="alternate"`) — the same attributes
   // `docs/tests/i18n.spec.ts` locates the docs-side switcher by.
   const langHref = LANG === 'ja' ? `${SITE_BASE}` : `${SITE_BASE}ja/`;
-  const langText = LANG === 'ja' ? 'English' : '日本語';
+  const langText = T.switchTo;
   const langCode = LANG === 'ja' ? 'en' : 'ja';
 
   nav.innerHTML = `
     <div class="vh-topnav__left">
-      <a class="vh-topnav__brand-link" href="${SITE_BASE}" aria-label="Vivarium home">Vivarium</a>
+      <a class="vh-topnav__brand-link" href="${SITE_BASE}" aria-label="${T.brandAria}">Vivarium</a>
     </div>
-    <nav class="vh-topnav__menu" aria-label="Site navigation">
+    <nav class="vh-topnav__menu" aria-label="${T.navAria}">
       ${navLinks}
     </nav>
     <div class="vh-topnav__right">
       <a class="vh-topnav__link vh-topnav__lang" hreflang="${langCode}" lang="${langCode}" rel="alternate" href="${langHref}">${langText}</a>
-      <a class="vh-topnav__icon" href="${GH_REPO}" target="_blank" rel="noreferrer" aria-label="GitHub repository">${github}</a>
-      <button class="vh-topnav__theme" type="button" aria-label="Toggle theme">${moon}</button>
+      <a class="vh-topnav__icon" href="${GH_REPO}" target="_blank" rel="noreferrer" aria-label="${T.githubAria}">${github}</a>
+      <button class="vh-topnav__theme" type="button" aria-label="${T.themeAria}">${moon}</button>
     </div>
   `;
   document.body.insertBefore(nav, document.body.firstChild);
@@ -156,7 +185,7 @@ function injectChrome() {
     progress.innerHTML = `
       <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
       <div class="vh-progress__row">
-        <span class="vh-progress__label">Initialising…</span>
+        <span class="vh-progress__label">${T.initialising}</span>
         <span class="vh-progress__bytes"></span>
       </div>
     `;
@@ -220,7 +249,7 @@ function hideProgress() {
 document.addEventListener('vh-progress', (e) => {
   const d = e?.detail || {};
   if (d.stage === 'done') {
-    setProgress(100, 'Reproduction complete.', '');
+    setProgress(100, T.complete, '');
     hideProgress();
     return;
   }
@@ -278,14 +307,14 @@ function injectDescriptionDrawer() {
   drawer.className = 'vh-drawer';
   drawer.setAttribute('role', 'dialog');
   drawer.setAttribute('aria-modal', 'true');
-  drawer.setAttribute('aria-label', 'Bug context');
+  drawer.setAttribute('aria-label', T.drawerAria);
   drawer.setAttribute('aria-hidden', 'true');
   drawer.tabIndex = -1;
 
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'vh-drawer__close';
-  close.setAttribute('aria-label', 'Close bug context');
+  close.setAttribute('aria-label', T.drawerCloseAria);
   close.innerHTML = drawerCloseSvg;
   drawer.appendChild(close);
 

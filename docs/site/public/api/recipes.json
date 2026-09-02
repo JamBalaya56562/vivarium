@@ -212,6 +212,7 @@
       "severity": "footgun",
       "expected_verdict": "reproduced",
       "expected_runtime": "docker-snapshot",
+      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/bash/local-shadows-exit/",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/bash/local-shadows-exit/verdict.json"
     },
     {
