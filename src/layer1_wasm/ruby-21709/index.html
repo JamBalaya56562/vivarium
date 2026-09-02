@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="vivarium-contract" content="v1" />
-    <title>Vivarium · Reproducing ruby/ruby#21709</title>
+    <title data-i18n="page.title">Vivarium · Reproducing ruby/ruby#21709</title>
     <!-- vivarium-chrome-injected -->
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
     <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
@@ -20,10 +20,10 @@
     />
     <link rel="stylesheet" href="../_shared/style.css" />
     <template id="bug-context">
-      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
-      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <p class="vh-drawer__eyebrow" data-i18n="drawer.eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading" data-i18n="drawer.heading">Why this reproduction page exists</h2>
       <div class="vh-drawer__body" id="vh-drawer-body">
-        <p>
+        <p data-i18n="drawer.body.p1">
           Ruby's Regexp interpolation rejects fragments of differing
           encodings, while String interpolation silently upgrades them
           to UTF-8. With <code>prefix = '\p{In_Arabic}'</code> and
@@ -32,27 +32,27 @@
           <code>RegexpError</code> while
           <code>"#{prefix}#{suffix}"</code> builds a UTF-8 string.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p2">
           The two interpolation forms should agree on how to combine
           fragments of different encodings. The script on this page
           attempts both, captures whether each raised, and returns
           a JSON summary the verdict logic uses to decide reproduced
           vs unreproduced.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p3">
           The full discussion (motivation, fix progress) lives in the
           GitHub issue thread linked below.
         </p>
       </div>
       <hr class="vh-drawer__divider" />
       <div class="vh-drawer__meta-grid">
-        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k1">Project</span>
         <span class="vh-drawer__meta-val">ruby/ruby</span>
-        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k2">Issue</span>
         <span class="vh-drawer__meta-val">#21709</span>
-        <span class="vh-drawer__meta-key">Layer</span>
-        <span class="vh-drawer__meta-val">L1 · WASM</span>
-        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k3">Layer</span>
+        <span class="vh-drawer__meta-val" data-i18n="drawer.meta.layer">L1 · WASM</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k4">Runtime</span>
         <span class="vh-drawer__meta-val">Ruby.wasm</span>
       </div>
     </template>
@@ -62,16 +62,16 @@
       <header class="vh-main__header">
         <div class="vh-main__header-text">
           <p class="kicker">L1 · Ruby.wasm</p>
-          <h1>Reproducing <a href="https://bugs.ruby-lang.org/issues/21709" target="_blank" rel="noreferrer">ruby/ruby#21709</a></h1>
+          <h1 data-i18n="page.h1">Reproducing <a href="https://bugs.ruby-lang.org/issues/21709" target="_blank" rel="noreferrer">ruby/ruby#21709</a></h1>
           <div class="vh-main__header-actions">
-            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer" data-i18n="chip.bugContext">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Bug context
             </button>
           </div>
         </div>
         <div class="vh-main__header-aside">
-          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite" data-i18n="verdict.pending">
             Loading Ruby.wasm runtime…
           </div>
           <p class="meta" id="meta"></p>
@@ -80,7 +80,7 @@
 
       <div class="vh-main__cols">
         <section class="vh-main__col vh-main__col--script">
-          <h2>Reproduction script</h2>
+          <h2 data-i18n="section.script.h2">Reproduction script</h2>
           <pre><code id="repro-code"><span class="line"><span style="color:#F97583">require</span><span style="color:#9ECBFF"> "json"</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#FFAB70">result</span><span style="color:#E1E4E8"> = { </span><span style="color:#79B8FF">ruby_version:</span><span style="color:#79B8FF"> RUBY_VERSION</span><span style="color:#E1E4E8"> }</span></span>
@@ -112,8 +112,8 @@
         </section>
 
         <section class="vh-main__col vh-main__col--output">
-          <h2>Output</h2>
-          <pre id="output">(running)</pre>
+          <h2 data-i18n="section.output.h2">Output</h2>
+          <pre id="output" data-i18n="output.placeholder">(running)</pre>
         </section>
       </div>
 

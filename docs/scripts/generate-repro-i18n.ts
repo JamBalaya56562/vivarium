@@ -453,6 +453,7 @@ function main(): void {
   const index = loadRecipeIndex();
   let written = 0;
   let skipped = 0;
+  void skipped;
 
   for (const layerDir of LAYER_DIRS) {
     const root = join(REPO_ROOT, 'src', layerDir);
@@ -472,10 +473,15 @@ function main(): void {
       }
 
       if (!existsSync(join(recipeDir, 'i18n.ja.json'))) {
-        // Not yet translated. The strict EN/JA symmetry check lives in
-        // docs/scripts/__tests__/reproI18n.test.ts and is turned on in
-        // the PR that lands all twelve translations.
-        console.error(`NOTE: ${slug} has no i18n.ja.json; skipping.`);
+        // Every reproduction page ships both locales (ADR-0028's i18n
+        // Definition of Done, the same rule docs/tests/i18n.spec.ts
+        // enforces for the rspress tree). A page without a translation
+        // is a half-shipped recipe, not a valid intermediate state.
+        fail(
+          `src/${layerDir}/${slug}`,
+          'no i18n.ja.json. Every reproduction page ships EN + JA in the ' +
+            'same PR; copy the keys out of index.html and translate them.',
+        );
         skipped += 1;
         continue;
       }
@@ -500,9 +506,7 @@ function main(): void {
     process.exit(1);
   }
 
-  console.error(
-    `Wrote ${written} Japanese reproduction page(s); ${skipped} untranslated.`,
-  );
+  console.error(`Wrote ${written} Japanese reproduction page(s).`);
 }
 
 if (import.meta.main) main();

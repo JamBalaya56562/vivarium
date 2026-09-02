@@ -119,15 +119,14 @@ describe('repro i18n — annotation and translation keys agree', () => {
 });
 
 describe('repro i18n — EN/JA coverage', () => {
-  // Not yet strict: the infrastructure lands before the translations.
-  // The PR that adds all twelve `i18n.ja.json` files flips this to
-  // "every recipe page has a translation" and turns the generator's
-  // skip-with-a-note into a hard error.
-  test('every translated recipe is a real reproduction page', () => {
-    const translated = RECIPES.filter((r) => existsSync(r.translation));
-    for (const r of translated) {
-      expect(existsSync(r.html)).toBe(true);
-    }
+  test('every reproduction page ships a translation', () => {
+    // ADR-0028's i18n Definition of Done: EN + JA in the same PR. This
+    // is the reproduction-page counterpart of the docs-tree symmetry
+    // assertion in docs/tests/i18n.spec.ts.
+    const missing = RECIPES.filter((r) => !existsSync(r.translation)).map(
+      (r) => r.label,
+    );
+    expect(missing).toEqual([]);
   });
 
   test('the Layer 2 scaffolder template ships a translation', () => {
