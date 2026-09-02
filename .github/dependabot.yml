@@ -83,6 +83,63 @@ updates:
           - "*"
     open-pull-requests-limit: 5
 
+  # ─── bun — docs ──────────────────────────────
+  # The rspress documentation app: rspress itself, Biome, Playwright and
+  # the ajv toolchain behind the generated validators. Playwright lands
+  # here rather than being bumped by hand — the version decides both the
+  # client and the browser build the E2E lane runs, so it wants a PR with
+  # CI attached, not a drive-by edit.
+  - package-ecosystem: "bun"
+    directory: "/docs"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "type: chore"
+      - "scope: js"
+      - "scope: docs"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      docs-deps:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+
+  # ─── bun — src/layer1_wasm ───────────────────
+  # Layer 1's build and test toolchain (tsc, Shiki, Playwright). The
+  # recipes' own runtimes — Pyodide, Ruby.wasm, php-wasm — are pinned by
+  # URL inside the pages and are not visible to Dependabot; those move
+  # with the recipe, not with this manifest.
+  - package-ecosystem: "bun"
+    directory: "/src/layer1_wasm"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "Asia/Tokyo"
+    labels:
+      - "type: chore"
+      - "scope: js"
+      - "scope: wasm"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      layer1-deps:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+
   # Future ecosystems to enable in Phase 1+:
   #
   # - package-ecosystem: "pip"      # Python deps (Layer 1 Pyodide-side, etc.)
