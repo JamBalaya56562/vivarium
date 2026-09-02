@@ -6,8 +6,73 @@
 // `captureRun` adapter to participate in both the runner and the
 // existing Path A panel.
 
+import { pick } from './i18n.js';
 import type { PathACapturedRun } from './path_a.js';
 import { setVerdict } from './verdict.js';
+
+// UI strings. Same shape as `path_a.ts`'s DEFAULT_STRINGS /
+// DEFAULT_STRINGS_JA pair: the Japanese table is a Partial overlay, so a
+// missing key degrades to English rather than rendering `undefined`.
+// Register per the existing JA prose: plain form (常体), technical terms
+// (verdict, runtime, baseline) left in English.
+interface RunnerStrings {
+  editorAria: string;
+  edit: string;
+  view: string;
+  editAria: string;
+  viewAria: string;
+  run: string;
+  runAria: string;
+  running: string;
+  reset: string;
+  resetAria: string;
+  runningStatus: string;
+  rerunning: string;
+  noOutput: string;
+  runFailed: (message: string) => string;
+  runtimeError: (message: string) => string;
+  resetStatus: string;
+}
+
+const STRINGS: RunnerStrings = {
+  editorAria: 'Reproduction script editor',
+  edit: 'Edit',
+  view: 'View',
+  editAria: 'Edit reproduction script',
+  viewAria: 'View highlighted source',
+  run: 'Run',
+  runAria: 'Run reproduction',
+  running: 'Running…',
+  reset: 'Reset',
+  resetAria: 'Reset to default',
+  runningStatus: 'Running reproduction…',
+  rerunning: 'Re-running reproduction script…',
+  noOutput: '(no output)',
+  runFailed: (m) => `Run failed: ${m}`,
+  runtimeError: (m) => `runtime error: ${m}`,
+  resetStatus: 'Reset to default — re-running baseline…',
+};
+
+const STRINGS_JA: Partial<RunnerStrings> = {
+  editorAria: '再現スクリプトのエディタ',
+  edit: '編集',
+  view: '表示',
+  editAria: '再現スクリプトを編集する',
+  viewAria: 'ハイライト表示に戻す',
+  run: '実行',
+  runAria: '再現を実行する',
+  running: '実行中…',
+  reset: 'リセット',
+  resetAria: '初期状態に戻す',
+  runningStatus: '再現を実行中…',
+  rerunning: '再現スクリプトを再実行中…',
+  noOutput: '(出力なし)',
+  runFailed: (m) => `実行に失敗した: ${m}`,
+  runtimeError: (m) => `runtime エラー: ${m}`,
+  resetStatus: '初期状態に戻した — baseline を再実行中…',
+};
+
+const S = pick(STRINGS, STRINGS_JA);
 
 export interface RunnerOptions {
   /** Recipe slug — informational, included in the runner mount-point id. */
@@ -100,7 +165,7 @@ export function enableRunner(opts: RunnerOptions): void {
     spellcheck: 'false',
     autocapitalize: 'off',
     autocorrect: 'off',
-    'aria-label': 'Reproduction script editor',
+    'aria-label': S.editorAria,
   }) as HTMLTextAreaElement;
   textarea.value = opts.baselineSource;
 
@@ -117,10 +182,10 @@ export function enableRunner(opts: RunnerOptions): void {
     {
       type: 'button',
       class: 'vh-runner__btn vh-runner__btn--ghost',
-      'aria-label': 'Edit reproduction script',
+      'aria-label': S.editAria,
     },
     el('span', { 'aria-hidden': 'true' }),
-    'Edit',
+    S.edit,
   ) as HTMLButtonElement;
   editBtn.firstElementChild!.innerHTML = SVG_PENCIL;
 
@@ -129,10 +194,10 @@ export function enableRunner(opts: RunnerOptions): void {
     {
       type: 'button',
       class: 'vh-runner__btn vh-runner__btn--primary',
-      'aria-label': 'Run reproduction',
+      'aria-label': S.runAria,
     },
     el('span', { 'aria-hidden': 'true' }),
-    'Run',
+    S.run,
   ) as HTMLButtonElement;
   runBtn.firstElementChild!.innerHTML = SVG_PLAY;
 
@@ -141,10 +206,10 @@ export function enableRunner(opts: RunnerOptions): void {
     {
       type: 'button',
       class: 'vh-runner__btn vh-runner__btn--ghost',
-      'aria-label': 'Reset to default',
+      'aria-label': S.resetAria,
     },
     el('span', { 'aria-hidden': 'true' }),
-    'Reset',
+    S.reset,
   ) as HTMLButtonElement;
   resetBtn.firstElementChild!.innerHTML = SVG_RESET;
 
@@ -196,10 +261,10 @@ export function enableRunner(opts: RunnerOptions): void {
     editBtn.textContent = '';
     const span = el('span', { 'aria-hidden': 'true' });
     span.innerHTML = isEditing ? SVG_EYE : SVG_PENCIL;
-    editBtn.append(span, isEditing ? 'View' : 'Edit');
+    editBtn.append(span, isEditing ? S.view : S.edit);
     editBtn.setAttribute(
       'aria-label',
-      isEditing ? 'View highlighted source' : 'Edit reproduction script',
+      isEditing ? S.viewAria : S.editAria,
     );
   };
 
@@ -224,7 +289,7 @@ export function enableRunner(opts: RunnerOptions): void {
     runBtn.textContent = '';
     const span = el('span', { 'aria-hidden': 'true' });
     span.innerHTML = SVG_PLAY;
-    runBtn.append(span, next ? 'Running…' : 'Run');
+    runBtn.append(span, next ? S.running : S.run);
   };
 
   const setStatus = (text: string, kind: 'info' | 'ok' | 'error'): void => {
@@ -243,17 +308,17 @@ export function enableRunner(opts: RunnerOptions): void {
   const runOnce = async (source: string): Promise<void> => {
     if (isBusy) return;
     setBusy(true);
-    setStatus('Running reproduction…', 'info');
-    setVerdict('pending', 'Re-running reproduction script…');
+    setStatus(S.runningStatus, 'info');
+    setVerdict('pending', S.rerunning, 'running');
     try {
       const run = await opts.runFix(source);
-      if (outputEl) outputEl.textContent = run.stdout || '(no output)';
+      if (outputEl) outputEl.textContent = run.stdout || S.noOutput;
       setVerdict(run.verdict, run.message);
       setStatus(`${run.verdict} — ${run.message}`, 'ok');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      setStatus(`Run failed: ${message}`, 'error');
-      setVerdict('unreproduced', `runtime error: ${message}`);
+      setStatus(S.runFailed(message), 'error');
+      setVerdict('unreproduced', S.runtimeError(message));
     } finally {
       setBusy(false);
     }
@@ -274,7 +339,7 @@ export function enableRunner(opts: RunnerOptions): void {
     if (isBusy) return;
     textarea.value = opts.baselineSource;
     setEditing(false);
-    setStatus('Reset to default — re-running baseline…', 'info');
+    setStatus(S.resetStatus, 'info');
     void runOnce(opts.baselineSource);
   });
 

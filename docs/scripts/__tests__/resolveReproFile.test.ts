@@ -125,6 +125,38 @@ describe('resolveReproFile — shared scaffolding (underscore prefix)', () => {
   });
 });
 
+describe('resolveReproFile — Japanese locale', () => {
+  test('a translated recipe serves its index.ja.html sibling', () => {
+    // The JA page is a generated sibling in the same recipe directory,
+    // not a second tree, so only the final filename differs.
+    const ja = path.join(BASH_LOCAL_DIR, 'index.ja.html');
+    if (!existsSync(ja)) return; // generated; absent on a bare checkout
+    expect(resolveReproFile('bash/local-shadows-exit/', 'ja')).toBe(ja);
+  });
+
+  test('an untranslated recipe falls back to English rather than 404ing', () => {
+    const ja = path.join(REGEX_779_DIR, 'index.ja.html');
+    if (existsSync(ja)) return; // already translated; nothing to assert
+    expect(resolveReproFile('regex/779/', 'ja')).toBe(
+      path.join(REGEX_779_DIR, 'index.html'),
+    );
+  });
+
+  test('non-HTML assets resolve identically in both locales', () => {
+    // The JA page carries `<base href>` pointing into the English tree,
+    // so assets are never actually requested under /ja/. Resolving them
+    // the same way anyway costs nothing and keeps hand-typed URLs working.
+    expect(resolveReproFile('regex/779/Cargo.toml', 'ja')).toBe(
+      resolveReproFile('regex/779/Cargo.toml'),
+    );
+  });
+
+  test('the JA gallery and project landing still fall through to rspress', () => {
+    expect(resolveReproFile('', 'ja')).toBe(null);
+    expect(resolveReproFile('regex/', 'ja')).toBe(null);
+  });
+});
+
 describe('resolveReproFile — single-segment project routes', () => {
   test("single-segment with extension that doesn't exist → null (caller returns 404)", () => {
     expect(resolveReproFile('nope.js')).toBe(null);

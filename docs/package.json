@@ -10,7 +10,8 @@
     "generate-project-pages": "bun run scripts/generate-project-pages.ts",
     "generate-site-stats": "bun run scripts/generate-site-stats.ts",
     "generate-repro-chrome": "bun run scripts/generate-repro-chrome.ts",
-    "generate": "bun run generate-repro-chrome && bun run generate-validators && bun run generate-index && bun run generate-project-pages && bun run generate-site-stats",
+    "generate-repro-i18n": "bun run scripts/generate-repro-i18n.ts",
+    "generate": "bun run generate-repro-chrome && bun run generate-validators && bun run generate-index && bun run generate-repro-i18n && bun run generate-project-pages && bun run generate-site-stats",
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
     "dev": "bun run generate && bun run prebuild-repro && rspress dev",
     "build": "bun run generate && rspress build",
@@ -27,7 +28,8 @@
     "ajv": "8.20.0",
     "ajv-cli": "5.0.0",
     "ajv-formats": "3.0.1",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "node-html-parser": "^9.0.2"
   },
   "dependencies": {
     "lucide-react": "^1.14.0"

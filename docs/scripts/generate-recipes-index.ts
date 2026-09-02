@@ -37,6 +37,7 @@
 // ADR-0018's minor-revision policy: optional fields can be added without
 // bumping the literal; breaking changes require v2.
 
+import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
@@ -90,6 +91,7 @@ interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
+  page_url_ja?: string;
   verdict_url?: string;
   source_url: string;
   language: string;
@@ -428,6 +430,17 @@ async function buildEntry(
   if (meta?.severity) entry.severity = meta.severity;
   if (meta?.expected_verdict) entry.expected_verdict = meta.expected_verdict;
   if (meta?.expected_runtime) entry.expected_runtime = meta.expected_runtime;
+  // `page_url_ja` is emitted only when the recipe actually ships a
+  // translation. Its presence is the machine-readable signal that a
+  // Japanese page exists — a consumer that derived the URL by inserting
+  // `/ja/` would hand an agent a 404 for every untranslated recipe.
+  //
+  // The gate is the tracked `i18n.ja.json`, not the generated
+  // `index.ja.html`: this script runs before `repro:i18n`, so the
+  // generated page does not exist yet at this point.
+  if (existsSync(join(recipeDir, 'i18n.ja.json'))) {
+    entry.page_url_ja = `${PAGES_BASE}/ja/repro/${project}/${issuePath}/`;
+  }
   if (layer === 2 || layer === 3) {
     entry.verdict_url = `${PAGES_BASE}/repro/${project}/${issuePath}/verdict.json`;
   }
