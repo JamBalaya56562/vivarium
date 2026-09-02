@@ -95,6 +95,22 @@ describe('resolveReproFile — shared scaffolding (underscore prefix)', () => {
     expect(result).toBe(path.join(LAYER1, '_assets', 'chrome.js'));
   });
 
+  test('Layer 2 page asking for <project>/_assets/chrome.js resolves to the Layer 1 copy', () => {
+    // A Layer 2 page at /repro/bash/local-shadows-exit/ loads
+    // `../_assets/chrome.js`, i.e. /repro/bash/_assets/chrome.js. The
+    // resolver's first candidate (`bash-_assets/chrome.js`) misses, and
+    // the second (`_assets/chrome.js`) hits the Layer 1 root first.
+    //
+    // This is the branch that lets `src/layer2_docker/_assets/` be an
+    // untracked, generated mirror rather than a hand-maintained second
+    // copy (which had already drifted ~90 lines behind Layer 1). It was
+    // untested, so a change to the candidate ordering would have broken
+    // every Layer 2 page in dev with nothing to catch it.
+    const result = resolveReproFile('bash/_assets/chrome.js');
+    expect(result).toBe(path.join(LAYER1, '_assets', 'chrome.js'));
+    expect(existsSync(result!)).toBe(true);
+  });
+
   test('/_layer2-shared/... → Layer 2 file (cross-layer shared lookup)', () => {
     // The resolver tries each layer root in order, so an underscore-
     // prefixed path that exists only under Layer 2 still resolves.
