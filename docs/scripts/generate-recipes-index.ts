@@ -122,7 +122,9 @@ interface RecipeMeta {
 interface ProjectMetaEntry {
   display_name?: string;
   tagline?: string;
+  tagline_ja?: string;
   description?: string;
+  description_ja?: string;
   homepage?: string;
   github?: string;
 }
@@ -135,7 +137,9 @@ interface ProjectEntry {
   project: string;
   display_name: string;
   tagline?: string;
+  tagline_ja?: string;
   description?: string;
+  description_ja?: string;
   homepage?: string;
   github?: string;
   recipe_count: number;
@@ -396,7 +400,9 @@ function aggregateProjects(
       page_url: `${PAGES_BASE}/repro/${project}/`,
     };
     if (meta.tagline) entry.tagline = meta.tagline;
+    if (meta.tagline_ja) entry.tagline_ja = meta.tagline_ja;
     if (meta.description) entry.description = meta.description;
+    if (meta.description_ja) entry.description_ja = meta.description_ja;
     if (meta.homepage) entry.homepage = meta.homepage;
     if (meta.github) entry.github = meta.github;
     projects.push(entry);

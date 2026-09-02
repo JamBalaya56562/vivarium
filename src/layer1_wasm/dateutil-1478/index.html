@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="vivarium-contract" content="v1" />
-    <title>Vivarium · Reproducing dateutil/dateutil#1478</title>
+    <title data-i18n="page.title">Vivarium · Reproducing dateutil/dateutil#1478</title>
     <!-- vivarium-chrome-injected -->
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
     <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
@@ -21,15 +21,15 @@
     />
     <link rel="stylesheet" href="../_shared/style.css" />
     <template id="bug-context">
-      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
-      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <p class="vh-drawer__eyebrow" data-i18n="drawer.eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading" data-i18n="drawer.heading">Why this reproduction page exists</h2>
       <div class="vh-drawer__body" id="vh-drawer-body">
-        <p>
+        <p data-i18n="drawer.body.p1">
           <code>dateutil.parser.parse</code> inverts the sign of a
           numeric UTC offset whenever the offset is preceded by the
           literal <code>UTC</code> prefix.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p2">
           <code>parse('2026-03-11 14:32:45 UTC-4')</code> returns
           <code>2026-03-11T14:32:45+04:00</code> (expected
           <code>-04:00</code>), and <code>parse('… UTC+4')</code>
@@ -39,18 +39,18 @@
           parse correctly, so the inversion is isolated to the
           <code>UTC</code> + signed-offset code path.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p3">
           The script on this page exercises four shapes
           (<code>UTC-4</code>, <code>UTC+4</code>,
           <code>UTC-04:00</code>, <code>UTC+04:00</code>) and
           compares each parsed <code>utcoffset()</code> against the
           expected value.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p4">
           The full discussion (motivation, history, fix progress)
           lives in the GitHub issue thread linked below.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p5">
           A fix-candidate branch
           (<code>JamBalaya56562/dateutil@fix-1478-utc-gmt-offset-sign</code>)
           is built into a pure-Python wheel under <code>./wheels/</code>
@@ -61,13 +61,13 @@
       </div>
       <hr class="vh-drawer__divider" />
       <div class="vh-drawer__meta-grid">
-        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k1">Project</span>
         <span class="vh-drawer__meta-val">dateutil/dateutil</span>
-        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k2">Issue</span>
         <span class="vh-drawer__meta-val">#1478</span>
-        <span class="vh-drawer__meta-key">Layer</span>
-        <span class="vh-drawer__meta-val">L1 · WASM</span>
-        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k3">Layer</span>
+        <span class="vh-drawer__meta-val" data-i18n="drawer.meta.layer">L1 · WASM</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k4">Runtime</span>
         <span class="vh-drawer__meta-val">Pyodide v0.29.3 + python-dateutil 2.9.0.post0 (micropip)</span>
       </div>
     </template>
@@ -77,20 +77,20 @@
       <header class="vh-main__header">
         <div class="vh-main__header-text">
           <p class="kicker">L1 · Pyodide</p>
-          <h1>Reproducing <a href="https://github.com/dateutil/dateutil/issues/1478" target="_blank" rel="noreferrer">dateutil/dateutil#1478</a></h1>
+          <h1 data-i18n="page.h1">Reproducing <a href="https://github.com/dateutil/dateutil/issues/1478" target="_blank" rel="noreferrer">dateutil/dateutil#1478</a></h1>
           <div class="vh-main__header-actions">
-            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer" data-i18n="chip.bugContext">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Bug context
             </button>
-            <a class="vh-chip" href="https://github.com/JamBalaya56562/dateutil/tree/fix-1478-utc-gmt-offset-sign" target="_blank" rel="noreferrer">
+            <a class="vh-chip" href="https://github.com/JamBalaya56562/dateutil/tree/fix-1478-utc-gmt-offset-sign" target="_blank" rel="noreferrer" data-i18n="chip.fixCandidate">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
               Fix candidate branch
             </a>
           </div>
         </div>
         <div class="vh-main__header-aside">
-          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite" data-i18n="verdict.pending">
             Loading Pyodide runtime…
           </div>
           <p class="meta" id="meta"></p>
@@ -99,7 +99,7 @@
 
       <div class="vh-main__cols">
         <section class="vh-main__col vh-main__col--script">
-          <h2>Reproduction script</h2>
+          <h2 data-i18n="section.script.h2">Reproduction script</h2>
           <pre><code id="repro-code"><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> sys</span></span>
 <span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> dateutil</span></span>
 <span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> dateutil.parser </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> parse</span></span>
@@ -136,20 +136,20 @@
 
         <section class="vh-main__col vh-main__col--output vh-output-multi">
           <header class="vh-variant-head" data-variant="baseline">
-            <h2 class="vh-variant-head__title">Baseline output</h2>
+            <h2 class="vh-variant-head__title" data-i18n="section.baseline.h2">Baseline output</h2>
           </header>
           <div class="vh-variant-stage" data-variant="baseline">
             <!-- chrome.js inserts <div class="vh-progress"> before #output;
                  the stage stacks both children in one grid cell so the
                  overlay covers the pre during loading without taking
                  extra column height. -->
-            <pre id="output" class="vh-variant-output">(pending)</pre>
+            <pre id="output" class="vh-variant-output" data-i18n="output.pending">(pending)</pre>
           </div>
 
           <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
-            <h2 class="vh-variant-head__title">Fix-candidate output</h2>
+            <h2 class="vh-variant-head__title" data-i18n="section.fix.h2">Fix-candidate output</h2>
           </header>
-          <pre id="output-fix" class="vh-variant-output">(waiting for baseline)</pre>
+          <pre id="output-fix" class="vh-variant-output" data-i18n="output.waitingBaseline">(waiting for baseline)</pre>
         </section>
       </div>
 

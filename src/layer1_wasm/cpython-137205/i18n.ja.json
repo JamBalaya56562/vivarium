@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "cpython-137205",
+  "strings": {
+    "drawer.eyebrow": "// BUG CONTEXT",
+    "drawer.heading": "このページが存在する理由",
+    "drawer.meta.k1": "プロジェクト",
+    "drawer.meta.k2": "Issue",
+    "drawer.meta.k3": "レイヤ",
+    "drawer.meta.layer": "L1 · WASM",
+    "drawer.meta.k4": "ランタイム",
+    "page.h1": "{0} の再現",
+    "chip.bugContext": "{0} bug の背景",
+    "section.script.h2": "再現スクリプト",
+    "section.output.h2": "出力",
+    "output.placeholder": "(実行中)",
+    "page.title": "Vivarium · python/cpython#137205 の再現",
+    "verdict.pending": "Pyodide runtime を読み込み中…",
+    "drawer.body.p1": "Python の {0} は、{2} で開いた接続では {1} を黙って捨てる。{3} で開いた別の接続では同じ PRAGMA が効くため、本来同じ FK 強制になるはずの 2 つの接続が食い違う。",
+    "drawer.body.p2": "このページのスクリプトは両方の接続を開き、それぞれに同じ PRAGMA を発行して、結果の {0} を読み戻す。2 つの値が食い違えば、いま開いているタブの runtime で bug が再現している。",
+    "drawer.body.p3": "議論の全体（動機、再現のバリエーション、パッチの進捗など）は下の GitHub issue リンクを辿る。そのスレッドがこの bug の正典。"
+  }
+}
