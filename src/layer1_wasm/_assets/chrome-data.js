@@ -22,3 +22,14 @@ export const NAV_ITEMS = {
 };
 
 export const SITE_BASE = "/vivarium/";
+
+export const GH_REPO = "https://github.com/aletheia-works/vivarium";
+
+export const FOOTER_MESSAGE_HTML = "Apache License 2.0 · part of <a href=\"https://github.com/aletheia-works\">aletheia-works</a>";
+
+export const FAVICONS = [
+  {"rel":"icon","type":"image/png","sizes":"32x32","href":"/vivarium/favicon-32x32.png"},
+  {"rel":"icon","type":"image/png","sizes":"16x16","href":"/vivarium/favicon-16x16.png"},
+  {"rel":"icon","type":"image/png","sizes":"192x192","href":"/vivarium/icon-192.png"},
+  {"rel":"apple-touch-icon","sizes":"180x180","href":"/vivarium/apple-touch-icon.png"},
+];

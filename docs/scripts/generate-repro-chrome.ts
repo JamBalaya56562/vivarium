@@ -49,6 +49,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { FAVICONS, FOOTER_MESSAGE_HTML, GITHUB_REPO_URL } from './site-chrome';
 import { SITE_BASE, SITE_ROOT } from './site-paths';
 
 const LOCALES = ['en', 'ja'] as const;
@@ -160,6 +161,18 @@ export function renderChromeData(
   lines.push('};');
   lines.push('');
   lines.push(`export const SITE_BASE = ${JSON.stringify(SITE_BASE)};`);
+  lines.push('');
+  lines.push(`export const GH_REPO = ${JSON.stringify(GITHUB_REPO_URL)};`);
+  lines.push('');
+  lines.push(
+    `export const FOOTER_MESSAGE_HTML = ${JSON.stringify(FOOTER_MESSAGE_HTML)};`,
+  );
+  lines.push('');
+  lines.push('export const FAVICONS = [');
+  for (const icon of FAVICONS) {
+    lines.push(`  ${JSON.stringify(icon)},`);
+  }
+  lines.push('];');
   lines.push('');
   return lines.join('\n');
 }
