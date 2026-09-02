@@ -30,7 +30,9 @@ interface ProjectEntry {
   project: string;
   display_name: string;
   tagline?: string;
+  tagline_ja?: string;
   description?: string;
+  description_ja?: string;
   homepage?: string;
   github?: string;
   recipe_count: number;
@@ -162,6 +164,15 @@ export function ProjectPage({
   }
 
   const displayName = meta?.display_name ?? project;
+  // Locale-specific prose, falling back to English rather than to blank:
+  // a project added before its translation still reads on the JA page.
+  // `display_name`, `homepage` and `github` are locale-invariant.
+  const tagline =
+    lang === 'ja' ? (meta?.tagline_ja ?? meta?.tagline) : meta?.tagline;
+  const description =
+    lang === 'ja'
+      ? (meta?.description_ja ?? meta?.description)
+      : meta?.description;
   const layers =
     meta?.layers ?? Array.from(new Set(recipes.map((r) => r.layer))).sort();
 
@@ -170,9 +181,9 @@ export function ProjectPage({
       <header className="v-pp__hero">
         <p className="v-pp__eyebrow">{s.eyebrow(project)}</p>
         <h1 className="v-pp__title">{displayName}</h1>
-        {meta?.tagline ? <p className="v-pp__tagline">{meta.tagline}</p> : null}
-        {meta?.description ? (
-          <p className="v-pp__description">{meta.description}</p>
+        {tagline ? <p className="v-pp__tagline">{tagline}</p> : null}
+        {description ? (
+          <p className="v-pp__description">{description}</p>
         ) : null}
         <div className="v-pp__chips">
           <span className="v-pp__count-chip">

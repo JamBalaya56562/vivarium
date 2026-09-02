@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "pandas-56679",
+  "strings": {
+    "drawer.eyebrow": "// BUG CONTEXT",
+    "drawer.heading": "このページが存在する理由",
+    "drawer.meta.k1": "プロジェクト",
+    "drawer.meta.k2": "Issue",
+    "drawer.meta.k3": "レイヤ",
+    "drawer.meta.layer": "L1 · WASM",
+    "drawer.meta.k4": "ランタイム",
+    "page.h1": "{0} の再現",
+    "chip.bugContext": "{0} bug の背景",
+    "section.script.h2": "再現スクリプト",
+    "section.output.h2": "出力",
+    "output.placeholder": "(実行中)",
+    "page.title": "Vivarium · pandas-dev/pandas#56679 の再現",
+    "verdict.pending": "Pyodide runtime を読み込み中…",
+    "drawer.body.p1": "{0} は dtype {1} を返すのに、{2} は dtype {3} を返す。この 2 つのコンストラクタは、空の入力に対して一貫した dtype を返すべき。",
+    "drawer.body.p2": "このページのスクリプトは両方の形を構築して dtype を比較する。dtype が食い違えば、Pyodide が現在同梱する pandas ビルドで bug が再現している。",
+    "drawer.body.p3": "議論の全体（動機、経緯、fix の進捗）は下の GitHub issue スレッドにある。"
+  }
+}
