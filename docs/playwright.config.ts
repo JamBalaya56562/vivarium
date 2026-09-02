@@ -57,6 +57,12 @@ export default defineConfig({
 
   use: {
     baseURL: DOCS_BASE,
+    // Pin `navigator.language`. rspress's first-visit locale redirect
+    // (see `route.localeRedirect` in rspress.config.ts) reads it, so an
+    // unpinned locale makes the suite pass or fail depending on the
+    // machine's system language — EN pages would bounce to `/ja/` on a
+    // Japanese workstation while CI's en-US runners stayed green.
+    locale: 'en-US',
     actionTimeout: 30_000,
     navigationTimeout: 30_000,
     trace: 'retain-on-failure',

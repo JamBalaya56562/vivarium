@@ -36,6 +36,17 @@ export default defineConfig({
       description: 'あらゆる言語・環境・スケールに対応するバグ再現基盤。',
     },
   ],
+  route: {
+    // rspress 2.0.21 added a first-visit locale redirect that defaults
+    // to `auto`: a browser whose `navigator.language` differs from the
+    // page's locale is bounced to the matching locale once, keyed on
+    // `localStorage['rspress-visited']`. `auto` hijacks explicit links
+    // — a JA page shared with an EN reader lands them on the EN page —
+    // so the redirect is narrowed to one direction: only a visitor on
+    // the default-locale (EN) path gets moved to their own locale.
+    // `/ja/` URLs are always served as asked.
+    localeRedirect: 'only-default-lang',
+  },
   // Lower the breakpoint at which the nav's GitHub icon + theme toggle
   // collapse into the hamburger menu, so the docs nav matches the
   // reproduction-page nav (which keeps both icons inline at all widths).
