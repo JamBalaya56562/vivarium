@@ -54,6 +54,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。 |
 | `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
 | `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2 / 3: docker-run 手順ページ）。 |
+| `page_url_ja` | URI | ⏳ | オプション。同じページの日本語版で、サイトの `/ja/` ツリー配下にある。**レシピが翻訳（`src/layer*/<slug>/i18n.ja.json`）を持つ場合のみ**出力され、無い場合は日本語ページが存在しないことを意味する。`page_url` に `/ja/` を挿入して導出してはならない——未翻訳のレシピでは 404 になる。2026-09-02 に追加。 |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |
 | `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。`src/layer*_*/<slug>/` 配下のレシピごとの [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) から供給される。2026-05-03 リビジョンで追加。2026-05-18 リビジョンで供給元を廃止された `docs/site/_data/recipe-facets.json` オーバーレイからレシピごとのファイルへ移行。 |
@@ -80,6 +81,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 |---|---|
 | 2026-05-03 | レシピエントリにオプションの `language` / `symptom` / `severity` / `tags` フィールドを追加。レシピごとのフロントマタではなく、集中型ファセットオーバーレイ（`docs/site/_data/recipe-facets.json`）から供給される。後方互換 — v1 コンシューマーは無視できる。 |
 | 2026-05-18 | オプションの `expected_verdict` / `expected_runtime` フィールドを追加。同時に既存の `language` / `symptom` / `severity` / `tags` の供給元を、廃止された `docs/site/_data/recipe-facets.json` オーバーレイから、レシピごとの `src/layer*_*/<slug>/recipe.json`（スキーマ: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)）へ移行。後方互換 — v1 コンシューマーは新フィールドを無視し、既存フィールドは変更なく読み続けられる。 |
+| 2026-09-02 | オプションの `page_url_ja`（レシピ再現ページの日本語版）を追加。翻訳を持つレシピにのみ出力されるため、その存在自体が日本語ページの有無を示すシグナルになる。後方互換 — v1 コンシューマーは無視できる。 |
 
 ## 生成方法
 

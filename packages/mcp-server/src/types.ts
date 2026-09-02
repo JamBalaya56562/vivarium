@@ -15,6 +15,11 @@ export interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
+  // Japanese rendering of the same page (Recipes index v1, 2026-09-02
+  // revision). Present only when the recipe ships a translation, so its
+  // absence means there is no Japanese page — never derive it from
+  // `page_url` by inserting `/ja/`, that 404s for untranslated recipes.
+  page_url_ja?: string;
   verdict_url?: string;
   source_url: string;
   // Facet overlay (optional so older bundled snapshots without the

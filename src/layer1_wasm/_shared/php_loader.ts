@@ -18,6 +18,14 @@
 // reproduction script.
 
 import { setVerdict } from "./verdict.js";
+import { pick } from "./i18n.js";
+
+// Default pending copy for this runtime. Partial JA overlay per the
+// `path_a.ts` convention.
+const S = pick(
+  { pending: 'Loading php-wasm runtime…' },
+  { pending: 'php-wasm runtime を読み込み中…' },
+);
 
 /** `php-wasm` npm package version. Bumping requires updating the
  *  `<link rel="modulepreload">` in pages that preload this URL. */
@@ -72,11 +80,11 @@ export async function loadVivariumPhp(
   options: LoadOptions = {},
 ): Promise<LoadResult> {
   const phpWasmVersion = options.phpWasmVersion ?? DEFAULT_PHP_WASM_VERSION;
-  const pendingText = options.pendingText ?? "Loading php-wasm runtime…";
+  const pendingText = options.pendingText ?? S.pending;
 
   const total = 8.0; // php-wasm bundle is ~7-8 MB
 
-  setVerdict("pending", pendingText);
+  setVerdict("pending", pendingText, "loading");
   emitProgress(5, "Initialising…", `0.0 MB / ${total.toFixed(1)} MB`);
 
   const loaderUrl = `https://cdn.jsdelivr.net/npm/php-wasm@${phpWasmVersion}/PhpWeb.mjs`;
