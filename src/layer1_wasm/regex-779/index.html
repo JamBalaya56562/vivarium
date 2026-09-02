@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="vivarium-contract" content="v1" />
-    <title>Vivarium · Reproducing rust-lang/regex#779</title>
+    <title data-i18n="page.title">Vivarium · Reproducing rust-lang/regex#779</title>
     <!-- vivarium-chrome-injected -->
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
     <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
@@ -20,10 +20,10 @@
     />
     <link rel="stylesheet" href="../_shared/style.css" />
     <template id="bug-context">
-      <p class="vh-drawer__eyebrow">// BUG CONTEXT</p>
-      <h2 class="vh-drawer__heading">Why this reproduction page exists</h2>
+      <p class="vh-drawer__eyebrow" data-i18n="drawer.eyebrow">// BUG CONTEXT</p>
+      <h2 class="vh-drawer__heading" data-i18n="drawer.heading">Why this reproduction page exists</h2>
       <div class="vh-drawer__body" id="vh-drawer-body">
-        <p>
+        <p data-i18n="drawer.body.p1">
           The Rust <code>regex</code> crate violates a basic regex
           algebra: <code>(re)+</code> should equal
           <code>(re)(re)*</code>, but with
@@ -34,7 +34,7 @@
           is an algebraic regex-engine bug rather than a
           regex-language ambiguity.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p2">
           The actual reproduction logic lives in <code>src/main.rs</code>
           and ships as <code>repro.wasm</code>, built from
           <code>Cargo.toml</code> at deploy time. The script panel
@@ -42,7 +42,7 @@
           shows the JSON envelope the wasm prints to stdout when it
           runs.
         </p>
-        <p>
+        <p data-i18n="drawer.body.p3">
           Unlike the Pyodide / Ruby.wasm / php-wasm recipes, this
           page does <strong>not</strong> ship an in-browser
           edit-and-run affordance — the Rust source is compiled
@@ -54,13 +54,13 @@
       </div>
       <hr class="vh-drawer__divider" />
       <div class="vh-drawer__meta-grid">
-        <span class="vh-drawer__meta-key">Project</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k1">Project</span>
         <span class="vh-drawer__meta-val">rust-lang/regex</span>
-        <span class="vh-drawer__meta-key">Issue</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k2">Issue</span>
         <span class="vh-drawer__meta-val">#779</span>
-        <span class="vh-drawer__meta-key">Layer</span>
-        <span class="vh-drawer__meta-val">L1 · WASM</span>
-        <span class="vh-drawer__meta-key">Runtime</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k3">Layer</span>
+        <span class="vh-drawer__meta-val" data-i18n="drawer.meta.layer">L1 · WASM</span>
+        <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k4">Runtime</span>
         <span class="vh-drawer__meta-val">Rust wasm32-wasip1</span>
       </div>
     </template>
@@ -70,16 +70,16 @@
       <header class="vh-main__header">
         <div class="vh-main__header-text">
           <p class="kicker">L1 · Rust wasm32-wasip1</p>
-          <h1>Reproducing <a href="https://github.com/rust-lang/regex/issues/779" target="_blank" rel="noreferrer">rust-lang/regex#779</a></h1>
+          <h1 data-i18n="page.h1">Reproducing <a href="https://github.com/rust-lang/regex/issues/779" target="_blank" rel="noreferrer">rust-lang/regex#779</a></h1>
           <div class="vh-main__header-actions">
-            <button type="button" class="vh-chip" data-vh-action="open-drawer">
+            <button type="button" class="vh-chip" data-vh-action="open-drawer" data-i18n="chip.bugContext">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Bug context
             </button>
           </div>
         </div>
         <div class="vh-main__header-aside">
-          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+          <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite" data-i18n="verdict.pending">
             Loading Rust wasm32-wasip1 artefact via WASI shim…
           </div>
           <p class="meta" id="meta"></p>
@@ -88,7 +88,7 @@
 
       <div class="vh-main__cols">
         <section class="vh-main__col vh-main__col--script">
-          <h2>Reproduction script (Rust)</h2>
+          <h2 data-i18n="section.script.h2">Reproduction script (Rust)</h2>
           <pre><code id="repro-code"><span class="line"><span style="color:#6A737D">// src/main.rs (excerpt — see this directory for the full crate)</span></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> haystack </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> "a</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">aaa</span><span style="color:#79B8FF">\n</span><span style="color:#9ECBFF">"</span><span style="color:#E1E4E8">;</span></span>
 <span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> re_plus     </span><span style="color:#F97583">=</span><span style="color:#B392F0"> Regex</span><span style="color:#F97583">::</span><span style="color:#B392F0">new</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"(?m)(^|a)+"</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">.</span><span style="color:#B392F0">unwrap</span><span style="color:#E1E4E8">();</span></span>
@@ -103,8 +103,8 @@
         </section>
 
         <section class="vh-main__col vh-main__col--output">
-          <h2>Output</h2>
-          <pre id="output">(running)</pre>
+          <h2 data-i18n="section.output.h2">Output</h2>
+          <pre id="output" data-i18n="output.placeholder">(running)</pre>
         </section>
       </div>
 
