@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "lark-1585",
+  "strings": {
+    "drawer.eyebrow": "// BUG CONTEXT",
+    "drawer.heading": "このページが存在する理由",
+    "drawer.meta.k1": "プロジェクト",
+    "drawer.meta.k2": "Issue",
+    "drawer.meta.k3": "レイヤ",
+    "drawer.meta.layer": "L1 · WASM",
+    "drawer.meta.k4": "ランタイム",
+    "page.h1": "{0} の再現",
+    "chip.bugContext": "{0} bug の背景",
+    "section.script.h2": "再現スクリプト",
+    "page.title": "Vivarium · lark-parser/lark#1585 の再現",
+    "verdict.pending": "Pyodide runtime を読み込み中…",
+    "drawer.body.p1": "lark の文法 {0} は、{1} を要求すると lark の LALR バックエンド（および CYK）を無限ループに陥らせる。Earley は正常に終了する。{3} への {2} 優先度が無いと lark は代わりに {4} を送出するので、優先度と再帰的な alt の組み合わせだけが hang を引き起こす。",
+    "drawer.body.p2": "この bug は誤った結果ではなく hang なので、このページは Pyodide と lark を Web Worker 内で走らせ、メインスレッドが実時間の予算を課す。worker が時間内に結果を返さなければ verdict は {0} となり worker は終了させられる。予算内に parse が返るか例外を送出すれば verdict は {1} になる。",
+    "drawer.body.p3": "議論の全体は下の GitHub issue スレッドにある。",
+    "drawer.body.p4": "fix 候補のブランチ（{0}）が {1} 配下の pure-Python wheel としてビルドされ、baseline の実行が終わったあとに 2 つ目の Pyodide worker へインストールされる。1 回のページ読み込みで before/after の verdict を比較できる。",
+    "chip.fixCandidate": "{0} fix 候補ブランチ",
+    "section.baseline.h2": "baseline の出力",
+    "output.pending": "(待機中)",
+    "section.fix.h2": "fix 候補の出力",
+    "output.waitingBaseline": "(baseline を待機中)"
+  }
+}

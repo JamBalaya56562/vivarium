@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "postgres-lost-update",
+  "strings": {
+    "section.verdict.h2": "CI verdict スナップショット",
+    "verdict.pending": "verdict スナップショットを読み込み中…",
+    "section.reproduce.h2": "自分で再現する",
+    "link.recipeDir": "レシピディレクトリ",
+    "section.snapshot.h2": "CI スナップショットの出力",
+    "output.placeholder": "(読み込み中…)",
+    "footer.note": "Layer 2 のページは CI スナップショットの verdict を表示する。訪問者のローカルでの {0} がライブの確認になる。カタログは {1} を参照。",
+    "link.gallery": "/repro/",
+    "page.title": "Vivarium · READ COMMITTED 下での PostgreSQL の lost update の再現",
+    "page.h1": "{0} 下での PostgreSQL の lost update",
+    "page.lede": "PostgreSQL の既定である {1} 分離レベルの下では、アプリケーション側の並行する 2 つの {0} トランザクションが increment を 1 回黙って失うことがある。下のページは CI の最新の再現スナップショットを表示する。自分の Docker で同じ挙動を確かめるにはレシピをローカルで実行する。",
+    "section.reproduce.meta": "初回 pull は約 80 MB (postgres:16-alpine)。実行は約 5 秒。{1} と {2} は {0} にある。"
+  }
+}
