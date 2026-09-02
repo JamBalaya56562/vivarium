@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="vivarium-contract" content="v1" />
-    <title>Vivarium · Reproducing PostgreSQL lost update under READ COMMITTED</title>
+    <title data-i18n="page.title">Vivarium · Reproducing PostgreSQL lost update under READ COMMITTED</title>
     <!-- vivarium-chrome-injected -->
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
     <link rel="stylesheet" href="../_shared/style.css" />
@@ -13,8 +13,8 @@
     <main>
       <header>
         <p class="kicker">Vivarium · Layer 2 · Docker (catalogue)</p>
-        <h1>PostgreSQL lost update under <code>READ COMMITTED</code></h1>
-        <p class="lede">
+        <h1 data-i18n="page.h1">PostgreSQL lost update under <code>READ COMMITTED</code></h1>
+        <p class="lede" data-i18n="page.lede">
           Two concurrent application-side <code>read → modify →
           write</code> transactions under PostgreSQL's default
           <code>READ COMMITTED</code> isolation can silently lose one
@@ -25,35 +25,35 @@
       </header>
 
       <section>
-        <h2>CI verdict snapshot</h2>
-        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite">
+        <h2 data-i18n="section.verdict.h2">CI verdict snapshot</h2>
+        <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite" data-i18n="verdict.pending">
           Loading verdict snapshot…
         </div>
         <p class="meta" id="meta"></p>
       </section>
 
       <section>
-        <h2>Reproduce yourself</h2>
+        <h2 data-i18n="section.reproduce.h2">Reproduce yourself</h2>
         <pre><code>docker run --rm ghcr.io/aletheia-works/vivarium-postgres-lost-update:latest</code></pre>
-        <p class="meta">
+        <p class="meta" data-i18n="section.reproduce.meta">
           First-pull cost ~80 MB (postgres:16-alpine). Run takes
           ~5 s. See the
-          <a href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update">
+          <a data-i18n="link.recipeDir" href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update">
             recipe directory</a> for the <code>Dockerfile</code> and
           <code>repro.sh</code>.
         </p>
       </section>
 
       <section>
-        <h2>CI snapshot output</h2>
-        <pre id="output">(loading…)</pre>
+        <h2 data-i18n="section.snapshot.h2">CI snapshot output</h2>
+        <pre id="output" data-i18n="output.placeholder">(loading…)</pre>
       </section>
 
       <footer>
-        <p class="meta">
+        <p class="meta" data-i18n="footer.note">
           Layer 2 pages report a CI-snapshot verdict; the visitor's
           local <code>docker run</code> is the live confirmation.
-          See <a href="../">/repro/</a> for the gallery.
+          See <a data-i18n="link.gallery" href="../">/repro/</a> for the gallery.
         </p>
       </footer>
     </main>
