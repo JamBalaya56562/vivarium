@@ -19,6 +19,7 @@ import {
   NAV_ITEMS,
   SITE_BASE,
 } from './chrome-data.js';
+import { localeCounterpartPath } from './locale.js';
 
 // ── Favicon injection ───────────────────────────────────────────────────
 // The same icons rspress puts in `head[]`, both sourced from
@@ -136,7 +137,14 @@ function injectChrome() {
   // NAV_ITEMS. Shaped to match rspress's markup contract
   // (`hreflang` / `lang` / `rel="alternate"`) — the same attributes
   // `docs/tests/i18n.spec.ts` locates the docs-side switcher by.
-  const langHref = LANG === 'ja' ? `${SITE_BASE}` : `${SITE_BASE}ja/`;
+  // Point at the SAME recipe in the other locale, not at the site root —
+  // the latter is what shipped first and it dropped visitors on the docs
+  // top page. `null` means this page has no counterpart (the
+  // `_shared/_test/` smoke page, or a recipe served outside SITE_BASE by
+  // the per-layer Playwright servers); those keep the site-root link.
+  const counterpart = localeCounterpartPath(location.pathname, SITE_BASE);
+  const langHref =
+    counterpart ?? (LANG === 'ja' ? `${SITE_BASE}` : `${SITE_BASE}ja/`);
   const langText = T.switchTo;
   const langCode = LANG === 'ja' ? 'en' : 'ja';
 

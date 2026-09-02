@@ -1,7 +1,7 @@
 // Unit tests for the reproduction-page nav generator in
 // `docs/scripts/generate-repro-chrome.ts`.
 //
-// Two distinct failures are guarded here.
+// Three distinct failures are guarded here.
 //
 // 1. Dead nav links. The reproduction pages' header used to carry a
 //    hardcoded copy of the docs nav, and it drifted: `Vision` ->
@@ -17,14 +17,25 @@
 //    regenerating. Re-deriving the file here and asserting byte-equality
 //    turns that into a test failure with the exact command to fix it.
 //
+// 3. A locale switcher that goes to the wrong place. The switcher's
+//    href was `${SITE_BASE}ja/` no matter which recipe the visitor was
+//    on, so pressing it landed them on the docs top page instead of the
+//    Japanese rendering of the page they were reading. The original
+//    assertions checked the anchor's `hreflang` / `rel` attributes and
+//    passed the whole time — the destination had no coverage at all.
+//
 // Runs via `bun test scripts/__tests__` (docs `test:unit`).
 
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+// The browser module under test. Plain JS with no DOM access at module
+// scope, which is exactly why it lives next to chrome.js rather than
+// inside it.
+import { localeCounterpartPath } from '../../../src/layer1_wasm/_assets/locale.js';
 import { buildNavByLocale, renderChromeData } from '../generate-repro-chrome';
 import { FAVICONS, FOOTER_MESSAGE_HTML, GITHUB_REPO_URL } from '../site-chrome';
-import { SITE_ROOT } from '../site-paths';
+import { SITE_API_DIR, SITE_BASE, SITE_ROOT } from '../site-paths';
 
 const LOCALES = ['en', 'ja'] as const;
 const CHROME_DATA_PATH = path.join(
@@ -173,5 +184,100 @@ describe('repro nav — chrome.js consumes the generated module', () => {
     const src = readFileSync(CHROME_JS, 'utf-8');
     expect(src).toContain('hreflang=');
     expect(src).toContain('rel="alternate"');
+  });
+
+  test('chrome.js derives the switcher target rather than hardcoding it', () => {
+    // The regression this file now guards: the switcher's href was
+    // `${SITE_BASE}ja/` regardless of which recipe you were on, so
+    // pressing it took the visitor to the docs top page. The attribute
+    // assertions above passed throughout — only the destination was
+    // wrong — so the destination gets its own coverage below.
+    const src = readFileSync(CHROME_JS, 'utf-8');
+    expect(src).toContain("from './locale.js'");
+    expect(src).toContain('localeCounterpartPath(location.pathname');
+  });
+});
+
+describe('repro nav — locale switcher points at the same recipe', () => {
+  test('EN recipe page maps to its JA sibling', () => {
+    expect(
+      localeCounterpartPath('/vivarium/repro/pandas/56679/', SITE_BASE),
+    ).toBe('/vivarium/ja/repro/pandas/56679/');
+  });
+
+  test('JA recipe page maps back to its EN sibling', () => {
+    expect(
+      localeCounterpartPath('/vivarium/ja/repro/flock/is-advisory/', SITE_BASE),
+    ).toBe('/vivarium/repro/flock/is-advisory/');
+  });
+
+  test('EN -> JA -> EN round-trips to the original path', () => {
+    const en = '/vivarium/repro/cpython/137205/';
+    const ja = localeCounterpartPath(en, SITE_BASE);
+    expect(ja).not.toBeNull();
+    expect(localeCounterpartPath(ja as string, SITE_BASE)).toBe(en);
+  });
+
+  test('trailing slash and explicit index.html normalise the same way', () => {
+    const want = '/vivarium/ja/repro/numpy/28287/';
+    expect(
+      localeCounterpartPath('/vivarium/repro/numpy/28287', SITE_BASE),
+    ).toBe(want);
+    expect(
+      localeCounterpartPath(
+        '/vivarium/repro/numpy/28287/index.html',
+        SITE_BASE,
+      ),
+    ).toBe(want);
+  });
+
+  for (const [label, pathname] of [
+    // `_shared/_test/` loads the same chrome but ships no translation.
+    ['shared smoke page', '/vivarium/repro/numpy/_shared/_test/'],
+    ['flat shared scaffolding', '/vivarium/repro/_shared/_test/'],
+    // rspress renders these and brings its own switcher.
+    ['project landing', '/vivarium/repro/pandas/'],
+    ['gallery', '/vivarium/repro/'],
+    ['site root', '/vivarium/'],
+    ['JA site root', '/vivarium/ja/'],
+    // The Layer 1 / Layer 2 Playwright servers serve recipes at the
+    // filesystem root, outside SITE_BASE entirely.
+    ['layer static server', '/pandas-56679/'],
+    // Assets under a recipe are not pages.
+    ['recipe asset', '/vivarium/repro/numpy/28287/wheels/manifest.json'],
+  ] as const) {
+    test(`${label} has no counterpart`, () => {
+      expect(localeCounterpartPath(pathname, SITE_BASE)).toBeNull();
+    });
+  }
+
+  test('every published recipe URL pair agrees with the derivation', () => {
+    // The contract case: recipes.json is what the docs gallery, the MCP
+    // server and external consumers navigate by. Deriving one side from
+    // the other here means a new recipe is covered the moment it lands,
+    // without anyone remembering to extend this file.
+    interface Entry {
+      slug: string;
+      page_url: string;
+      page_url_ja?: string;
+    }
+    const index = JSON.parse(
+      readFileSync(path.join(SITE_API_DIR, 'recipes.json'), 'utf-8'),
+    ) as { recipes: Entry[] };
+
+    const translated = index.recipes.filter((r) => r.page_url_ja);
+    expect(translated.length).toBeGreaterThan(0);
+
+    const mismatches = translated.flatMap((r) => {
+      const en = new URL(r.page_url).pathname;
+      const ja = new URL(r.page_url_ja as string).pathname;
+      const out: string[] = [];
+      const toJa = localeCounterpartPath(en, SITE_BASE);
+      if (toJa !== ja) out.push(`${r.slug}: ${en} -> ${toJa}, want ${ja}`);
+      const toEn = localeCounterpartPath(ja, SITE_BASE);
+      if (toEn !== en) out.push(`${r.slug}: ${ja} -> ${toEn}, want ${en}`);
+      return out;
+    });
+    expect(mismatches).toEqual([]);
   });
 });
