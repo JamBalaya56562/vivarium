@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "dateutil-1478",
+  "strings": {
+    "drawer.eyebrow": "// BUG CONTEXT",
+    "drawer.heading": "このページが存在する理由",
+    "drawer.meta.k1": "プロジェクト",
+    "drawer.meta.k2": "Issue",
+    "drawer.meta.k3": "レイヤ",
+    "drawer.meta.layer": "L1 · WASM",
+    "drawer.meta.k4": "ランタイム",
+    "page.h1": "{0} の再現",
+    "chip.bugContext": "{0} bug の背景",
+    "section.script.h2": "再現スクリプト",
+    "page.title": "Vivarium · dateutil/dateutil#1478 の再現",
+    "verdict.pending": "Pyodide runtime を読み込み中…",
+    "drawer.body.p1": "{0} は、数値の UTC オフセットの直前に {1} という接頭辞が付いていると、その符号を反転させてしまう。",
+    "drawer.body.p2": "{0} は {1} を返す（期待値は {2}）、{3} は {4} を返す（期待値は {5}）。素の ISO 8601 形式（{8} 接頭辞のない {6} / {7}）は正しく parse されるので、この反転は {9} と符号付きオフセットの組み合わせの code path に限定される。",
+    "drawer.body.p3": "このページのスクリプトは 4 つの形（{0}、{1}、{2}、{3}）を試し、parse された {4} をそれぞれ期待値と比較する。",
+    "drawer.body.p4": "議論の全体（動機、経緯、fix の進捗）は下の GitHub issue スレッドにある。",
+    "drawer.body.p5": "fix 候補のブランチ（{0}）が {1} 配下の pure-Python wheel としてビルドされ、baseline の実行が終わったあとに同じ Pyodide タブへインストールされる。1 回のページ読み込みで before/after の verdict を比較できる。",
+    "chip.fixCandidate": "{0} fix 候補ブランチ",
+    "section.baseline.h2": "baseline の出力",
+    "output.pending": "(待機中)",
+    "section.fix.h2": "fix 候補の出力",
+    "output.waitingBaseline": "(baseline を待機中)"
+  }
+}
