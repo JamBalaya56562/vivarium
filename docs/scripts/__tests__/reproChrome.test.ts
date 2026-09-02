@@ -23,6 +23,7 @@ import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildNavByLocale, renderChromeData } from '../generate-repro-chrome';
+import { FAVICONS, FOOTER_MESSAGE_HTML, GITHUB_REPO_URL } from '../site-chrome';
 import { SITE_ROOT } from '../site-paths';
 
 const LOCALES = ['en', 'ja'] as const;
@@ -108,6 +109,41 @@ describe('repro nav — generated module matches the source', () => {
     }
     for (const item of nav.ja) {
       expect(item.link.startsWith('/vivarium/ja/')).toBe(true);
+    }
+  });
+});
+
+describe('site chrome — repro pages and rspress agree', () => {
+  // The footer line, the favicon set and the GitHub URL are rendered
+  // twice: once by rspress (themeConfig / head[]) and once by chrome.js
+  // on reproduction pages. Both now read docs/scripts/site-chrome.ts.
+  // These cases assert the config really consumes it, so a future edit
+  // that re-inlines a literal into rspress.config.ts is caught.
+  test('rspress config renders the shared footer message', async () => {
+    const config = (await import('../../rspress.config')).default;
+    expect(config.themeConfig?.footer?.message).toBe(FOOTER_MESSAGE_HTML);
+  });
+
+  test('rspress config renders the shared favicons', async () => {
+    const config = (await import('../../rspress.config')).default;
+    const heads = (config.head ?? []) as unknown[];
+    for (const icon of FAVICONS) {
+      const found = heads.some(
+        (h) =>
+          Array.isArray(h) &&
+          h[0] === 'link' &&
+          (h[1] as Record<string, string>)?.href === icon.href,
+      );
+      expect(found).toBe(true);
+    }
+  });
+
+  test('generated module carries the same values as the config module', () => {
+    const rendered = renderChromeData(buildNavByLocale());
+    expect(rendered).toContain(JSON.stringify(FOOTER_MESSAGE_HTML));
+    expect(rendered).toContain(JSON.stringify(GITHUB_REPO_URL));
+    for (const icon of FAVICONS) {
+      expect(rendered).toContain(JSON.stringify(icon.href));
     }
   });
 });
