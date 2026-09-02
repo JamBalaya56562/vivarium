@@ -53,6 +53,10 @@ on:
       # that chrome.js still consumes it. Without this path the guard
       # would not run on the very edits it exists to catch.
       - 'src/layer1_wasm/_assets/**'
+      # playwrightImage.test.ts asserts the docs container tag and both
+      # bun.lock files agree on one Playwright release. Without this
+      # path a Layer 1 Playwright bump would not run the guard.
+      - 'src/layer1_wasm/bun.lock'
       - '.github/workflows/test-docs.yml'
   push:
     branches: [main]
@@ -63,6 +67,10 @@ on:
       # that chrome.js still consumes it. Without this path the guard
       # would not run on the very edits it exists to catch.
       - 'src/layer1_wasm/_assets/**'
+      # playwrightImage.test.ts asserts the docs container tag and both
+      # bun.lock files agree on one Playwright release. Without this
+      # path a Layer 1 Playwright bump would not run the guard.
+      - 'src/layer1_wasm/bun.lock'
       - '.github/workflows/test-docs.yml'
   workflow_dispatch:
 
@@ -107,12 +115,32 @@ jobs:
     # the maintainer wants to see Firefox's verdict too rather than
     # starting another round of fixes blind.
     #
-    # Each runner installs **only its own browser** (not the full
-    # chromium+firefox+webkit triplet), trimming runner setup time by
-    # ~2/3. The per-engine `--with-deps` pulls the matching OS-level
-    # libraries that engine needs.
+    # Browsers and their OS libraries come from the official Playwright
+    # image rather than `playwright install --with-deps`. That step was
+    # the lane's dominant and least predictable cost, and the expensive
+    # half was apt, not the browser: for Firefox it fetched 48.8 MB of
+    # Ubuntu packages (codecs, CJK fonts) from azure.archive.ubuntu.com,
+    # observed at both 24.8 MB/s (2 s) and 37.7 kB/s (21 min 35 s) on
+    # otherwise identical runs an hour apart. The browser download off
+    # cdn.playwright.dev took ~3 s in both. Pulling a pinned image
+    # trades that variance for a predictable pull.
+    #
+    # The image tag MUST match the @playwright/test version in
+    # docs/bun.lock — Playwright locates browsers by a version-stamped
+    # directory, so a mismatch fails with "browser executable doesn't
+    # exist". Dependabot does not update `container.image` in workflow
+    # files (dependabot-core#5819), so the pairing is guarded
+    # mechanically by docs/scripts/__tests__/playwrightImage.test.ts.
+    #
+    # `--ipc=host` is Playwright's documented requirement for Chromium
+    # in a container: without it Chromium runs out of /dev/shm and dies
+    # mid-suite. Running as root disables the Chromium sandbox, which
+    # is what Playwright's own CI guidance accepts for trusted E2E.
     name: E2E (${{ matrix.browser }})
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      options: --ipc=host
     strategy:
       fail-fast: false
       matrix:
@@ -123,22 +151,34 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: latest
+      - name: Install Bun
+        # NOT oven-sh/setup-bun here. That action expands Bun's release
+        # archive through @actions/tool-cache's extractZip, which shells
+        # out to `unzip` — a binary the Playwright image does not ship
+        # (see utils/docker/Dockerfile.noble: curl, wget, gpg, git,
+        # openssh-client and Node 24, no unzip). Installing through the
+        # image's own npm needs no extra package, which matters because
+        # taking apt off the critical path is the point of this
+        # container. The unit lane above stays on setup-bun — it runs on
+        # the plain runner, where the action works and caches.
+        run: npm install --global bun
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Install Playwright browser (${{ matrix.browser }})
-        run: bunx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run Playwright suite (${{ matrix.browser }})
         # `--project=<name>` matches the project entry in
         # docs/playwright.config.ts (one per engine), so this runner
         # exercises only the engine matching its matrix slot.
         run: bun run test:e2e -- --project=${{ matrix.browser }}
+        env:
+          # Actions points $HOME at /github/home, which the image's
+          # `pwuser` owns while the job runs as root. Firefox refuses to
+          # start in that state ("Running as root in a regular user's
+          # session is not supported"); Playwright's own error text
+          # prescribes this variable. Chromium and WebKit do not care,
+          # but the value is job-wide so all three stay on one path.
+          HOME: /root
 
       - name: Upload Playwright report on failure
         if: failure()
