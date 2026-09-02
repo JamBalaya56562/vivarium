@@ -171,6 +171,14 @@ jobs:
         # docs/playwright.config.ts (one per engine), so this runner
         # exercises only the engine matching its matrix slot.
         run: bun run test:e2e -- --project=${{ matrix.browser }}
+        env:
+          # Actions points $HOME at /github/home, which the image's
+          # `pwuser` owns while the job runs as root. Firefox refuses to
+          # start in that state ("Running as root in a regular user's
+          # session is not supported"); Playwright's own error text
+          # prescribes this variable. Chromium and WebKit do not care,
+          # but the value is job-wide so all three stay on one path.
+          HOME: /root
 
       - name: Upload Playwright report on failure
         if: failure()
