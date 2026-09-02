@@ -12,23 +12,23 @@
 // fetch: chrome.js paints the header before anything else, and this
 // module is resolved by the same graph that already loads chrome.js, so
 // it adds no round-trip.
-import { NAV_ITEMS, SITE_BASE } from './chrome-data.js';
+import {
+  FAVICONS,
+  FOOTER_MESSAGE_HTML,
+  GH_REPO,
+  NAV_ITEMS,
+  SITE_BASE,
+} from './chrome-data.js';
 
 // ── Favicon injection ───────────────────────────────────────────────────
-// Mirrors the rspress docs site config (docs/rspress.config.ts head[]).
-// Repro pages don't go through rspress, so we attach the same icons here
-// once per page load. Absolute /vivarium/ paths because SITE_BASE is
-// fixed at /vivarium/ (docs/scripts/site-paths.ts) and repro URLs nest
-// two levels deep (/vivarium/repro/<project>/<issue>/), so absolute
-// paths sidestep brittle relative-path arithmetic.
+// The same icons rspress puts in `head[]`, both sourced from
+// docs/scripts/site-chrome.ts. Repro pages don't go through rspress, so
+// we attach them here once per page load. The hrefs are absolute
+// (SITE_BASE-prefixed) because repro URLs nest two levels deep
+// (/vivarium/repro/<project>/<issue>/), so absolute paths sidestep
+// brittle relative-path arithmetic.
 (function injectFavicons() {
-  const icons = [
-    { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/vivarium/favicon-32x32.png' },
-    { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/vivarium/favicon-16x16.png' },
-    { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/vivarium/icon-192.png' },
-    { rel: 'apple-touch-icon', sizes: '180x180', href: '/vivarium/apple-touch-icon.png' },
-  ];
-  for (const spec of icons) {
+  for (const spec of FAVICONS) {
     // Skip if an equivalent link already exists (e.g. a future template
     // adds a static <link> for the same rel+sizes pair).
     if (document.head.querySelector(`link[rel="${spec.rel}"][sizes="${spec.sizes}"]`)) continue;
@@ -80,8 +80,6 @@ const moon =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 const github =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.55 0-.27-.01-.99-.02-1.94-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .31.21.67.79.55 4.57-1.53 7.86-5.84 7.86-10.93C23.5 5.65 18.35.5 12 .5z"/></svg>';
-
-const GH_REPO = 'https://github.com/aletheia-works/vivarium';
 
 // Locale of the page being decorated. Reproduction pages are English
 // today; the JA tree sets `<html lang="ja">` and picks the JA nav table
@@ -165,14 +163,16 @@ function injectChrome() {
     outputEl.parentElement.insertBefore(progress, outputEl);
   }
 
-  // Footer — matches the docs site (themeConfig.footer.message): a
-  // centred single line of light copy, no big wordmark / link grid.
+  // Footer — the same line rspress renders via
+  // `themeConfig.footer.message`, both from docs/scripts/site-chrome.ts:
+  // a centred single line of light copy, no big wordmark / link grid.
+  // `target`/`rel` are added here because a reproduction page is a leaf
+  // the visitor is actively running something on and shouldn't lose.
   const footer = document.createElement('footer');
   footer.className = 'vh-footer';
   footer.innerHTML = `
     <p class="vh-footer__msg">
-      Apache License 2.0 · part of
-      <a href="https://github.com/aletheia-works" target="_blank" rel="noreferrer">aletheia-works</a>
+      ${FOOTER_MESSAGE_HTML.replace('<a ', '<a target="_blank" rel="noreferrer" ')}
     </p>
   `;
   document.body.appendChild(footer);
