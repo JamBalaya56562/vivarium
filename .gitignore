@@ -118,6 +118,15 @@ packages/mcp-server/src/bundled/recipes.json
 # verdict.json is CI-generated and shipped to Pages, not tracked.
 src/layer2_docker/**/verdict.json
 
+# Mirrored from src/layer1_wasm/{_assets,_shared} by
+# src/layer1_wasm/scripts/sync-layer2-assets.ts (chained into
+# `bun run test` there). Layer 2's Playwright server is rooted at
+# src/layer2_docker/ and cannot hop layers, so the files must exist
+# here physically. The canonical, tracked copies live under
+# src/layer1_wasm/. Never edit or commit these.
+src/layer2_docker/_assets/
+src/layer2_docker/_shared/
+
 # ─── Layer 3 (rr record-replay) build artefacts ────
 # Trace tarballs are scratch; the Release asset is the canonical artefact.
 # Layer 3 verdict.json is INTENTIONALLY tracked (CI cannot regenerate;

@@ -1,9 +1,15 @@
 // Side-effect: imports the shared reproduction-page chrome (nav, footer,
-// theme toggle, progress bar, service-worker registration). Each layer
-// keeps its own copy of `chrome.js` under `_assets/` so per-layer
-// Playwright servers (rooted at `src/layer{1,2}_*`) can serve the file
-// without a cross-layer hop. The two copies stay byte-identical — keep
-// them in sync when editing.
+// theme toggle, progress bar, service-worker registration).
+//
+// The canonical, tracked copy lives at `src/layer1_wasm/_assets/`.
+// `src/layer2_docker/_assets/` is a GENERATED MIRROR (gitignored, written
+// by `src/layer1_wasm/scripts/sync-layer2-assets.ts`) that exists only so
+// the Layer 2 Playwright server — a plain static server rooted at
+// `src/layer2_docker/`, which cannot hop layers — can serve this path.
+// rspress dev resolves `_`-prefixed paths across all layer roots, and the
+// deploy stages the Layer 1 copy into each Layer 2 project directory, so
+// neither of those needs the mirror. Do not edit the mirror: edit
+// `src/layer1_wasm/_assets/chrome.js`.
 import "../_assets/chrome.js";
 
 // Vivarium Layer 2 — verdict snapshot renderer.
