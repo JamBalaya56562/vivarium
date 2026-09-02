@@ -10,7 +10,8 @@
     "highlight": "bun run scripts/highlight-repros.ts",
     "watch": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",
-    "test": "playwright test"
+    "sync-layer2-assets": "bun run scripts/sync-layer2-assets.ts",
+    "test": "bun run sync-layer2-assets && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",

@@ -374,8 +374,14 @@ jobs:
               shared_name="$(basename "$shared")"
               # `_template/` is the scaffolder seed (used by
               # `mise run recipes:new`), not a shared runtime module.
-              # Don't ship it under each project's deploy dir.
-              case "$shared_name" in _template) continue ;; esac
+              # `_assets/` and `_shared/` under src/layer2_docker/ are
+              # gitignored mirrors of the Layer 1 originals, written by
+              # src/layer1_wasm/scripts/sync-layer2-assets.ts purely so
+              # the Layer 2 Playwright server can serve them. Skip them
+              # here and stage the canonical Layer 1 copies below, so a
+              # `workflow_dispatch` run from a dirty tree can never let a
+              # local mirror shadow the source of truth.
+              case "$shared_name" in _template|_assets|_shared) continue ;; esac
               echo "Staging Layer 2 shared module: ${shared_name} → ${dest}/${project}/${shared_name}"
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done
@@ -388,6 +394,16 @@ jobs:
             if [ -d "src/layer1_wasm/_shared" ]; then
               echo "Staging Layer 1 _shared/ for Layer 2 project: ${dest}/${project}/_shared"
               cp -R "src/layer1_wasm/_shared" "$dest/$project/_shared"
+            fi
+            # Same for `../_assets/chrome.js` (nav, footer, theme toggle,
+            # progress bar) and `sw.js`. Layer 2 no longer tracks its own
+            # copy — the tracked original is under src/layer1_wasm/ — so
+            # this copy is what makes the deployed Layer 2 pages render
+            # their chrome at all. Without it every Layer 2 page 404s on
+            # `<project>/_assets/chrome.js` and the module graph dies.
+            if [ -d "src/layer1_wasm/_assets" ]; then
+              echo "Staging Layer 1 _assets/ for Layer 2 project: ${dest}/${project}/_assets"
+              cp -R "src/layer1_wasm/_assets" "$dest/$project/_assets"
             fi
           done
           # Bundle each individual Layer 2 recipe.
