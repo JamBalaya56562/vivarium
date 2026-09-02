@@ -65,14 +65,23 @@ declare global {
  * Update the verdict element + the `__VIVARIUM_VERDICT__` global atomically.
  *
  * @param state Verdict state.
- * @param text  Human-readable verdict. For `pending` it is shown verbatim
- *   on the pill (loading / running messages). For `reproduced` /
- *   `unreproduced` only the state literal renders on the pill; the full
- *   message is stashed on `__VIVARIUM_VERDICT_MESSAGE__` for tooling
- *   (Path A, runner status line, etc.). The pill stays short because
- *   the output panel carries the detailed explanation.
+ * @param text  Human-readable verdict. Only the state literal renders on
+ *   the pill; the full message is stashed on
+ *   `__VIVARIUM_VERDICT_MESSAGE__` for tooling (Path A, runner status
+ *   line, etc.). The pill stays short because the output panel carries
+ *   the detailed explanation.
+ * @param phase For `pending`, whether the page is still loading its
+ *   runtime or already running the script. Callers that know should say
+ *   so. Omitting it falls back to sniffing the English word "running"
+ *   out of `text`, which is what every call site relied on before the
+ *   Japanese pages existed — and which silently degrades to `LOADING…`
+ *   once `text` is Japanese. New call sites should pass it explicitly.
  */
-export function setVerdict(state: VerdictState, text: string): void {
+export function setVerdict(
+  state: VerdictState,
+  text: string,
+  phase?: 'loading' | 'running',
+): void {
   const el = document.getElementById('verdict');
   if (!el) {
     throw new Error('vivarium contract v1: missing element with id="verdict".');
@@ -80,14 +89,19 @@ export function setVerdict(state: VerdictState, text: string): void {
   el.classList.remove('reproduced', 'unreproduced', 'pending');
   el.classList.add(state);
   el.dataset['verdict'] = state;
-  // Keep the pill short so the header row never wraps to two lines. Long pending messages
-  // ("Loading Pyodide runtime and sqlite3…") still go to
+  // Keep the pill short so the header row never wraps to two lines. Long
+  // pending messages ("Loading Pyodide runtime and sqlite3…") still go to
   // `__VIVARIUM_VERDICT_MESSAGE__` for tooling that wants the full
-  // string. We disambiguate "loading" vs "running" by inspecting the
-  // caller-supplied text.
+  // string.
+  //
+  // The four literals stay English on every locale: they are Contract v1
+  // vocabulary that `__VIVARIUM_VERDICT__` and the regression suite
+  // dispatch on, and the Japanese register keeps technical terms in
+  // English anyway.
   let label: string;
   if (state === 'pending') {
-    label = /running/i.test(text) ? 'RUNNING…' : 'LOADING…';
+    const resolved = phase ?? (/running/i.test(text) ? 'running' : 'loading');
+    label = resolved === 'running' ? 'RUNNING…' : 'LOADING…';
   } else if (state === 'reproduced') {
     label = 'REPRODUCED';
   } else {

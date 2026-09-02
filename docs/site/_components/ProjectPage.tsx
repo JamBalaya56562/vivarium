@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import './project-page.css';
 import projectsIndex from '../public/api/projects.json';
 import recipesIndex from '../public/api/recipes.json';
+import { recipeUrl } from './recipe-url';
 
 interface RecipeEntry {
   slug: string;
@@ -10,6 +11,7 @@ interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
+  page_url_ja?: string;
   source_url: string;
   verdict_url?: string;
   language: string;
@@ -109,22 +111,6 @@ const STRINGS: Record<Lang, Strings> = {
     unfiledIssue: '（アップストリーム issue 番号なし）',
   },
 };
-
-// Rewrite the production-host URL baked into recipes.json so that, when
-// served from a different origin (local rspress dev at localhost:3000,
-// a fork's Pages deploy, an rspress preview), the "Open" link points
-// at this page's own host instead of the upstream Pages site. The
-// pathname (`/<base>/repro/<project>/<issue>/`) is preserved verbatim;
-// only the origin is swapped. SSR is left untouched.
-function localizeRecipeUrl(url: string): string {
-  if (typeof window === 'undefined') return url;
-  try {
-    const u = new URL(url);
-    return window.location.origin + u.pathname + u.search + u.hash;
-  } catch {
-    return url;
-  }
-}
 
 function LayerPill({ lang, layer }: { lang: Lang; layer: 1 | 2 | 3 }) {
   const accent = layer === 1 ? 'teal' : layer === 2 ? 'violet' : 'coral';
@@ -255,7 +241,7 @@ export function ProjectPage({
                 <td className="v-pp__actions-cell">
                   <a
                     className="v-pp__btn v-pp__btn--primary"
-                    href={localizeRecipeUrl(recipe.page_url)}
+                    href={recipeUrl(recipe, lang)}
                     target="_blank"
                     rel="noreferrer"
                   >

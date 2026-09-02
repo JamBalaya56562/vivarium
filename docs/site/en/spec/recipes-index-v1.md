@@ -56,6 +56,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `issue` | integer | ✅ | Upstream issue number; `0` if no upstream tracker entry. |
 | `title` | string | ✅ | Human-readable title, from the recipe README's first H1. |
 | `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2 / 3: docker-run instructions page). |
+| `page_url_ja` | URI | ⏳ | Optional. The Japanese rendering of the same page, under the site's `/ja/` tree. Present **only when the recipe ships a translation** (`src/layer*/<slug>/i18n.ja.json`); its absence means no Japanese page exists. Do not derive this URL by inserting `/ja/` into `page_url` — an untranslated recipe would 404. Added 2026-09-02. |
 | `verdict_url` | URI | ⏳ | Layer 2 / 3 only — deployed `verdict.json` snapshot. Layer 1 verdicts are produced live in-page and have no static snapshot. |
 | `source_url` | URI | ✅ | GitHub link to the recipe directory. |
 | `language` | string | ⏳ | Optional. Primary implementation language, lowercase (e.g. `"python"`, `"rust"`, `"shell"`). Sourced from the per-recipe [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) under `src/layer*_*/<slug>/`. Added in the 2026-05-03 revision; the 2026-05-18 revision moved the source from the retired `docs/site/_data/recipe-facets.json` overlay to the per-recipe file. |
@@ -82,6 +83,7 @@ There is no current v2.
 |---|---|
 | 2026-05-03 | Added optional `language`, `symptom`, `severity`, `tags` fields to recipe entries. Sourced from a centralised facet overlay (`docs/site/_data/recipe-facets.json`), not per-recipe frontmatter. Backwards-compatible — v1 consumers ignore. |
 | 2026-05-18 | Added optional `expected_verdict` / `expected_runtime` fields, and moved the source of the existing `language` / `symptom` / `severity` / `tags` fields from the retired `docs/site/_data/recipe-facets.json` overlay to per-recipe `src/layer*_*/<slug>/recipe.json` files (schema: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)). Backwards-compatible — v1 consumers ignore the new fields and read the existing ones unchanged. |
+| 2026-09-02 | Added optional `page_url_ja`, the Japanese rendering of a recipe's reproduction page. Emitted only for recipes that ship a translation, so its presence is the signal that a Japanese page exists. Backwards-compatible — v1 consumers ignore it. |
 
 ## Generation
 

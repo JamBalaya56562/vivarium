@@ -3,6 +3,49 @@
 // still own their own reproduction-time try/catch.
 
 import { setVerdict } from "./verdict.js";
+import { pick } from "./i18n.js";
+
+// Progress-bar and verdict copy. Partial JA overlay per the `path_a.ts`
+// convention, so a missing key falls back to English.
+interface LoaderStrings {
+  pending: string;
+  initialising: string;
+  fetchingModule: string;
+  loadingRuntime: string;
+  loadedPackages: (n: number) => string;
+  runtimeReady: string;
+  loadFailed: string;
+  loadError: (message: string) => string;
+  complete: string;
+}
+
+const STRINGS: LoaderStrings = {
+  pending: "Loading Pyodide runtime\u2026",
+  initialising: "Initialising\u2026",
+  fetchingModule: "Fetching Pyodide module\u2026",
+  loadingRuntime: "Loading runtime + stdlib\u2026",
+  // English pluralises; Japanese does not, which is why this is a
+  // function rather than a string with an interpolated count.
+  loadedPackages: (n) => `Loaded ${n} package${n > 1 ? "s" : ""}.`,
+  runtimeReady: "Runtime ready.",
+  loadFailed: "Load failed.",
+  loadError: (m) => `bug not reproduced \u2014 runtime error during Pyodide load: ${m}`,
+  complete: "Reproduction complete.",
+};
+
+const STRINGS_JA: Partial<LoaderStrings> = {
+  pending: "Pyodide runtime \u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026",
+  initialising: "\u521d\u671f\u5316\u4e2d\u2026",
+  fetchingModule: "Pyodide \u30e2\u30b8\u30e5\u30fc\u30eb\u3092\u53d6\u5f97\u4e2d\u2026",
+  loadingRuntime: "runtime \u3068 stdlib \u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u2026",
+  loadedPackages: (n) => `${n} \u500b\u306e\u30d1\u30c3\u30b1\u30fc\u30b8\u3092\u8aad\u307f\u8fbc\u3093\u3060\u3002`,
+  runtimeReady: "runtime \u306e\u6e96\u5099\u5b8c\u4e86\u3002",
+  loadFailed: "\u8aad\u307f\u8fbc\u307f\u306b\u5931\u6557\u3057\u305f\u3002",
+  loadError: (m) => `bug \u306f\u518d\u73fe\u3057\u306a\u304b\u3063\u305f \u2014 Pyodide \u306e\u8aad\u307f\u8fbc\u307f\u4e2d\u306b runtime \u30a8\u30e9\u30fc: ${m}`,
+  complete: "\u518d\u73fe\u5b8c\u4e86\u3002",
+};
+
+const S = pick(STRINGS, STRINGS_JA);
 
 export const DEFAULT_PYODIDE_VERSION = "0.29.3";
 
@@ -74,13 +117,13 @@ export async function loadVivariumPyodide(
 ): Promise<LoadResult> {
   const version = options.version ?? DEFAULT_PYODIDE_VERSION;
   const packages = options.packages ?? [];
-  const pendingText = options.pendingText ?? "Loading Pyodide runtime…";
+  const pendingText = options.pendingText ?? S.pending;
   const total = totalEstimatedMB(packages.length);
 
-  setVerdict("pending", pendingText);
+  setVerdict("pending", pendingText, "loading");
   emitProgress({
     pct: 5,
-    label: "Initialising…",
+    label: S.initialising,
     bytes: `0.0 MB / ${total.toFixed(1)} MB`,
     stage: "init",
   });
@@ -91,7 +134,7 @@ export async function loadVivariumPyodide(
   try {
     emitProgress({
       pct: 18,
-      label: "Fetching Pyodide module…",
+      label: S.fetchingModule,
       bytes: `0.0 MB / ${total.toFixed(1)} MB`,
       stage: "runtime",
     });
@@ -105,7 +148,7 @@ export async function loadVivariumPyodide(
 
     emitProgress({
       pct: 35,
-      label: "Loading runtime + stdlib…",
+      label: S.loadingRuntime,
       bytes: `0.0 MB / ${total.toFixed(1)} MB`,
       stage: "runtime",
     });
@@ -116,8 +159,8 @@ export async function loadVivariumPyodide(
       pct: 92,
       label:
         packages.length > 0
-          ? `Loaded ${packages.length} package${packages.length > 1 ? "s" : ""}.`
-          : "Runtime ready.",
+          ? S.loadedPackages(packages.length)
+          : S.runtimeReady,
       bytes: `${total.toFixed(1)} MB / ${total.toFixed(1)} MB`,
       stage: "packages",
     });
@@ -129,11 +172,11 @@ export async function loadVivariumPyodide(
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
     setVerdict(
       "unreproduced",
-      `bug not reproduced — runtime error during Pyodide load: ${message}`,
+      S.loadError(message),
     );
     emitProgress({
       pct: 100,
-      label: "Load failed.",
+      label: S.loadFailed,
       bytes: "",
       stage: "done",
     });
@@ -149,7 +192,7 @@ export async function loadVivariumPyodide(
 export function markReproductionDone(): void {
   emitProgress({
     pct: 100,
-    label: "Reproduction complete.",
+    label: S.complete,
     bytes: "",
     stage: "done",
   });
