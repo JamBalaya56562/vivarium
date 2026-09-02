@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import './error-recipe-matcher.css';
 import recipesIndex from '../public/api/recipes.json';
+import { recipeUrl } from './recipe-url';
 
 interface RecipeEntry {
   slug: string;
@@ -9,6 +10,7 @@ interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
+  page_url_ja?: string;
   source_url: string;
   language: string;
   symptom?: string;
@@ -440,7 +442,7 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
       <div className="v-rg__actions">
         <a
           className="v-rg__btn v-rg__btn--primary"
-          href={r.page_url}
+          href={recipeUrl(r, lang)}
           target="_blank"
           rel="noreferrer"
         >

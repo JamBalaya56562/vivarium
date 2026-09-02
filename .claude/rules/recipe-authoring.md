@@ -57,8 +57,44 @@ recipe debuts a new upstream project:
 
 ```text
 src/layer{1,2,3}_*/<slug>/recipe.json   ← author this file with the recipe
+src/layer{1,2}_*/<slug>/i18n.ja.json    ← Japanese for every data-i18n key (Layer 1/2 only)
 docs/site/_data/projects.json           ← add a row keyed by <project> (only if new)
 ```
+
+### Bilingual reproduction pages (Layer 1 / Layer 2)
+
+`index.html` is the **English source of truth for structure and markup**;
+there is no second HTML file to keep in step. Visitor-facing prose nodes
+carry `data-i18n="<key>"`, the Japanese lives in `i18n.ja.json` next to
+it, and `mise run repro:i18n` splices them into a gitignored
+`index.ja.html` served at `/vivarium/ja/repro/<project>/<issue>/`.
+
+Rules:
+
+- **Key sets must match exactly.** A `data-i18n` with no entry, or an
+  entry with no `data-i18n`, fails the generator and
+  `docs/scripts/__tests__/reproI18n.test.ts`.
+- **Never put an attribute-bearing node in a translated string.** Links
+  and inline SVG come through numbered slots — `{0}`, `{1}`, … are the
+  source element's child elements in document order, inserted verbatim.
+  So `<h1>Reproducing <a …>numpy#28287</a></h1>` translates as
+  `"{0} を再現する"`, and the href never reaches the translator.
+  To translate a link's *label*, put `data-i18n` on the `<a>` itself —
+  nested keys are resolved before the parent's slot is filled.
+- Allowed inline tags in a value: `<code> <em> <strong> <br> <kbd>
+  <abbr> <span>`, all attribute-free. `page.title` must be plain text
+  (markup inside `<title>` renders literally).
+- Keys are **structural, not content-derived**: `page.title`, `page.h1`,
+  `page.lede`, `drawer.body.p1`…, `section.*.h2`, `footer.note`.
+- Don't translate technical labels that are the same in both locales
+  (the `.kicker`, drawer meta values like `Pyodide v0.29.3`); leave them
+  unannotated.
+- Register: follow `src/layer1_wasm/_shared/path_a.ts`'s
+  `DEFAULT_STRINGS_JA` — plain form (常体), technical terms (verdict,
+  fix, runtime, baseline) left in English.
+- `recipes.json` gains `page_url_ja` **only** for recipes that ship
+  `i18n.ja.json`. Its absence is the signal that no Japanese page
+  exists, so never derive that URL by inserting `/ja/`.
 
 `recipe.json` is the single source of truth for the gallery facets
 (`language` / `symptom` / `severity` / `tags`) and the regression
@@ -89,8 +125,9 @@ mise run recipes:index
 ```
 
 This task runs `bun run generate` inside `docs/`, which chains
-`generate-validators` → `generate-index` → `generate-project-pages`
-→ `generate-site-stats`. Outputs:
+`generate-repro-chrome` → `generate-validators` → `generate-index` →
+`generate-repro-i18n` → `generate-project-pages` → `generate-site-stats`.
+Outputs:
 
 - `docs/site/public/api/recipes.json` (**tracked**) — the diff shows
   every recipe addition.
@@ -102,6 +139,13 @@ This task runs `bun run generate` inside `docs/`, which chains
   auto-generated project landing pages.
 - `docs/site/_generated/validators/*.mjs` (**gitignored**) — ajv
   standalone validators built from `docs/site/public/spec/`.
+- `src/layer1_wasm/_assets/chrome-data.js` (**tracked**) — the
+  reproduction-page nav, generated from `docs/site/{en,ja}/_nav.json`.
+  A stale copy fails the unit suite; regenerate and commit it.
+- `src/layer{1,2}_*/<slug>/index.ja.html` (**gitignored**) — the
+  Japanese page, spliced from `index.html` + `i18n.ja.json`. Note this
+  one needs the Shiki inlining from `mise run repro:build` to have
+  happened first, which is why it also has its own `mise run repro:i18n`.
 
 Do not fall back to bare `bun run generate-index` (or any single
 sub-step): partial runs leave at least one of the four outputs stale,

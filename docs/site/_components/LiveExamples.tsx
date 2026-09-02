@@ -11,6 +11,7 @@
 // here, and are pinned with a header comment + checklist entry.
 
 import recipesIndex from '../public/api/recipes.json';
+import { recipeUrl } from './recipe-url';
 
 interface RecipeEntry {
   slug: string;
@@ -19,6 +20,7 @@ interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
+  page_url_ja?: string;
   source_url: string;
   verdict_url?: string;
   language: string;
@@ -36,20 +38,6 @@ interface RecipesIndex {
 const INDEX = recipesIndex as RecipesIndex;
 
 type Lang = 'en' | 'ja';
-
-// Mirror RecipeGallery's localizeRecipeUrl: when the docs are served
-// from a non-production origin (rspress dev, a fork's Pages deploy),
-// rewrite the recipe's baked-in absolute URL to the current origin so
-// in-page links stay clickable.
-function localizeRecipeUrl(url: string): string {
-  if (typeof window === 'undefined') return url;
-  try {
-    const u = new URL(url);
-    return window.location.origin + u.pathname + u.search + u.hash;
-  } catch {
-    return url;
-  }
-}
 
 interface SelectFilters {
   layer: 1 | 2 | 3;
@@ -135,7 +123,7 @@ export function LiveExamples({
         {picked.map((r, i) => (
           <span key={r.slug}>
             {i > 0 ? (i === picked.length - 1 ? sep.and : sep.comma) : null}
-            <a href={localizeRecipeUrl(r.page_url)}>
+            <a href={recipeUrl(r, lang)}>
               {r.project}#{r.issue}
             </a>
           </span>
@@ -148,7 +136,7 @@ export function LiveExamples({
     <ul>
       {picked.map((r) => (
         <li key={r.slug}>
-          <a href={localizeRecipeUrl(r.page_url)}>{r.title}</a>
+          <a href={recipeUrl(r, lang)}>{r.title}</a>
         </li>
       ))}
     </ul>
@@ -162,6 +150,9 @@ interface ExampleSlugProps {
   kind?: 'numeric' | 'descriptive';
   linked?: boolean;
   fallback?: string;
+  /** Locale for the linked page. Callers in the JA tree pass "ja"; the
+   *  default keeps every existing EN call site unchanged. */
+  lang?: Lang;
 }
 
 export function ExampleSlug({
@@ -171,6 +162,7 @@ export function ExampleSlug({
   kind,
   linked = false,
   fallback,
+  lang = 'en',
 }: ExampleSlugProps) {
   const matches = selectRecipes({ layer, language, project, kind });
   const picked = matches[0];
@@ -181,7 +173,7 @@ export function ExampleSlug({
   }
 
   if (linked) {
-    return <a href={localizeRecipeUrl(picked.page_url)}>{picked.slug}</a>;
+    return <a href={recipeUrl(picked, lang)}>{picked.slug}</a>;
   }
   return <>{picked.slug}</>;
 }

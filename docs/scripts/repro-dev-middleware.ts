@@ -1,15 +1,20 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
-import { REPO_ROOT, REPRO_BASE_PATH } from './site-paths';
+import { REPO_ROOT, REPRO_BASE_PATH, SITE_BASE } from './site-paths';
 
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
   path.join(REPO_ROOT, 'src', 'layer2_docker'),
   path.join(REPO_ROOT, 'src', 'layer3_thirdway'),
 ];
+// Matches both locales: `/vivarium/repro/<sub>` and
+// `/vivarium/ja/repro/<sub>`. The optional `ja` group is captured so the
+// handler knows which page variant to serve; everything after `/repro/`
+// resolves identically in both, because the JA page is a sibling file
+// (`index.ja.html`) in the same recipe directory, not a second tree.
 const REPRO_URL_RE = new RegExp(
-  `^${escapeRegExp(REPRO_BASE_PATH)}/([^?#]*)(?:[?#].*)?$`,
+  `^${escapeRegExp(SITE_BASE.replace(/\/$/, ''))}(?:/(ja))?/repro/([^?#]*)(?:[?#].*)?$`,
 );
 
 const REPRO_MIME: Record<string, string> = {
@@ -43,7 +48,10 @@ interface MiddlewareHost {
 //
 // Exported so docs/scripts/__tests__/resolveReproFile.test.ts can verify
 // each branch without spinning up the dev middleware.
-export function resolveReproFile(rawSubpath: string): string | null {
+export function resolveReproFile(
+  rawSubpath: string,
+  lang: 'en' | 'ja' = 'en',
+): string | null {
   const subpath = rawSubpath || '';
 
   // Trailing-slash directory URL -> index.html lookup.
@@ -84,13 +92,34 @@ export function resolveReproFile(rawSubpath: string): string | null {
       const s = statSync(abs);
       if (s.isDirectory()) {
         const idx = path.join(abs, 'index.html');
-        if (existsSync(idx)) return idx;
+        if (existsSync(idx)) return localise(idx, lang);
         continue;
       }
-      return abs;
+      return localise(abs, lang);
     }
   }
   return null;
+}
+
+/**
+ * Swap a resolved `index.html` for its generated `index.ja.html` sibling
+ * when the request came in under `/ja/`.
+ *
+ * An untranslated recipe falls back to the English page rather than
+ * 404-ing: in dev that keeps a half-finished translation pass usable,
+ * and the strict EN/JA coverage check lives in the unit suite where it
+ * names the missing file. Deploy never reaches this path — it only
+ * copies `index.ja.html` files that exist.
+ */
+function localise(filePath: string, lang: 'en' | 'ja'): string {
+  if (lang !== 'ja' || !filePath.endsWith('index.html')) return filePath;
+  const ja = filePath.replace(/index\.html$/, 'index.ja.html');
+  if (existsSync(ja)) return ja;
+  console.warn(
+    `[vivarium] no index.ja.html next to ${filePath}; serving English. ` +
+      'Run `mise run repro:i18n` after adding i18n.ja.json.',
+  );
+  return filePath;
 }
 
 function joinDisk(segments: string[], trailingFile: string): string {
@@ -109,8 +138,9 @@ export function setupReproDevMiddleware(
     const url = req.url ?? '';
     const match = url.match(REPRO_URL_RE);
     if (!match) return next();
-    const subpath = match[1] ?? '';
-    const filePath = resolveReproFile(subpath);
+    const lang = match[1] === 'ja' ? 'ja' : 'en';
+    const subpath = match[2] ?? '';
+    const filePath = resolveReproFile(subpath, lang);
     if (!filePath) {
       // Directory-shaped or extensionless URLs are rspress routes. Asset
       // URLs must 404 here so the SPA shell is not served as wasm/JSON/JS.

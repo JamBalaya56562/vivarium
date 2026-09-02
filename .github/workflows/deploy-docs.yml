@@ -135,6 +135,17 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: mise run repro:build
 
+      - name: Regenerate Japanese reproduction pages (mise run repro:i18n)
+        # Splices each recipe's index.html with its i18n.ja.json into a
+        # gitignored index.ja.html. Must run AFTER repro:build, because
+        # that step's `highlight-repros.ts` inlines the Shiki-highlighted
+        # source into index.html and the JA page carries it through
+        # verbatim; and BEFORE the bundling steps below, which copy the
+        # generated file into the Pages artefact. Recipes without a
+        # translation are skipped, not failed.
+        working-directory: ${{ github.workspace }}
+        run: mise run repro:i18n
+
       - name: Drop Rust build artefacts before bundling
         # `target/` is hundreds of MB and would bloat the Pages
         # artefact. The mise task copies repro.wasm into place; the
@@ -283,6 +294,7 @@ jobs:
         run: |
           set -euo pipefail
           dest="docs/doc_build/repro"
+          ja_dest="docs/doc_build/ja/repro"
           if [ ! -d src/layer1_wasm ]; then
             echo "No src/layer1_wasm/ directory; skipping bundling."
             exit 0
@@ -333,6 +345,18 @@ jobs:
             # (not the directory itself), so the recipe lands at $rel/
             # rather than $rel/$slug/.
             cp -R "${recipe}." "$dest/$rel/"
+            # Japanese rendering, when the recipe ships a translation.
+            # ONE file: the generated page carries `<base href>` pointing
+            # at the English directory, so every asset it references —
+            # including runtime fetch() calls, which resolve against
+            # document.baseURI — comes out of the tree above. No
+            # `_shared/`, `_assets/`, wheels or wasm are duplicated here.
+            if [ -f "${recipe}index.ja.html" ]; then
+              echo "Bundling JA reproduction: ${slug} → ${ja_dest}/${rel}/"
+              mkdir -p "$ja_dest/$rel"
+              cp "${recipe}index.ja.html" "$ja_dest/$rel/index.html"
+              rm -f "$dest/$rel/index.ja.html"
+            fi
           done
           ls -la "$dest" || true
 
@@ -354,6 +378,7 @@ jobs:
         run: |
           set -euo pipefail
           dest="docs/doc_build/repro"
+          ja_dest="docs/doc_build/ja/repro"
           if [ ! -d src/layer2_docker ]; then
             echo "No src/layer2_docker/ directory; skipping Layer 2 bundling."
             exit 0
@@ -430,6 +455,13 @@ jobs:
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
             cp -R "${entry}." "$dest/$rel/"
+            # See the Layer 1 step for why this is a single file.
+            if [ -f "${entry}index.ja.html" ]; then
+              echo "Bundling JA reproduction: ${slug} → ${ja_dest}/${rel}/"
+              mkdir -p "$ja_dest/$rel"
+              cp "${entry}index.ja.html" "$ja_dest/$rel/index.html"
+              rm -f "$dest/$rel/index.ja.html"
+            fi
           done
           ls -la "$dest" || true
 

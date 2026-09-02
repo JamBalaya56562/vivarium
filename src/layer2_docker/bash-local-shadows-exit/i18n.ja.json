@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "lang": "ja",
+  "slug": "bash-local-shadows-exit",
+  "strings": {
+    "page.title": "Vivarium · bash の local がコマンド置換の終了コードを覆い隠す問題の再現",
+    "page.h1": "bash の {0} がコマンド置換の終了コードを覆い隠す",
+    "page.lede": "{0} をコマンド置換と組み合わせると、{1} 自身の (常に 0 の) 終了コードが右辺の終了コードを上書きする。そのため {2} は右辺の失敗を黙って素通りさせ、本番スクリプトが静かに壊れる。upstream の defect ではなく bash と POSIX が文書化した挙動だが、このページはその意外さを数秒で再現できるようにする。",
+    "section.verdict.h2": "CI verdict スナップショット",
+    "verdict.pending": "verdict スナップショットを読み込み中…",
+    "section.reproduce.h2": "自分で再現する",
+    "section.reproduce.meta": "初回 pull は約 10 MB (bash:5.2 alpine)。実行は 1 秒未満。{1} と {2} は {0} にある。",
+    "link.recipeDir": "レシピディレクトリ",
+    "section.snapshot.h2": "CI スナップショットの出力",
+    "output.placeholder": "(読み込み中…)",
+    "footer.note": "Layer 2 のページは CI スナップショットの verdict を表示する。訪問者のローカルでの {0} がライブの確認になる。カタログは {1} を参照。",
+    "link.gallery": "/repro/"
+  }
+}

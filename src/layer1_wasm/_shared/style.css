@@ -199,6 +199,15 @@ html.dark body::after {
   border-bottom: 0;
 }
 
+/* Locale switcher. rspress renders its own inside a hover dropdown;
+ * reproduction pages have no router to hang one off, so the partner
+ * locale is a plain inline link in the right-hand cluster. Same type
+ * scale as the nav links, nudged apart from the icon buttons. */
+.vh-topnav__lang {
+  margin-right: 0.25rem;
+  white-space: nowrap;
+}
+
 .vh-topnav__icon,
 .vh-topnav__theme {
   width: 36px;
