@@ -1,5 +1,11 @@
 import { defineConfig } from '@rspress/core';
 import { setupReproDevMiddleware } from './scripts/repro-dev-middleware';
+import {
+  DOC_REPO_BASE_URL,
+  FAVICONS,
+  FOOTER_MESSAGE_HTML,
+  GITHUB_REPO_URL,
+} from './scripts/site-chrome';
 import { NAV_OVERRIDES_CSS, SITE_BASE, SITE_ROOT } from './scripts/site-paths';
 
 // Vivarium docs site configuration.
@@ -40,41 +46,10 @@ export default defineConfig({
     },
   },
   head: [
-    [
-      'link',
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        href: `${SITE_BASE}favicon-32x32.png`,
-      },
-    ],
-    [
-      'link',
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        href: `${SITE_BASE}favicon-16x16.png`,
-      },
-    ],
-    [
-      'link',
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '192x192',
-        href: `${SITE_BASE}icon-192.png`,
-      },
-    ],
-    [
-      'link',
-      {
-        rel: 'apple-touch-icon',
-        sizes: '180x180',
-        href: `${SITE_BASE}apple-touch-icon.png`,
-      },
-    ],
+    // Favicons come from scripts/site-chrome.ts so the reproduction
+    // pages' chrome.js, which injects the same icons, cannot drift.
+    ...FAVICONS.map((attrs) => ['link', attrs] as [string, typeof attrs]),
+    // The font links stay inline: reproduction pages don't use them.
     [
       'link',
       {
@@ -103,16 +78,14 @@ export default defineConfig({
       {
         icon: 'github',
         mode: 'link',
-        content: 'https://github.com/aletheia-works/vivarium',
+        content: GITHUB_REPO_URL,
       },
     ],
     footer: {
-      message:
-        'Apache License 2.0 · part of <a href="https://github.com/aletheia-works">aletheia-works</a>',
+      message: FOOTER_MESSAGE_HTML,
     },
     editLink: {
-      docRepoBaseUrl:
-        'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
+      docRepoBaseUrl: DOC_REPO_BASE_URL,
     },
     enableContentAnimation: true,
     lastUpdated: true,
@@ -126,8 +99,7 @@ export default defineConfig({
         lastUpdatedText: 'Last updated',
         searchPlaceholderText: 'Search',
         editLink: {
-          docRepoBaseUrl:
-            'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
+          docRepoBaseUrl: DOC_REPO_BASE_URL,
           text: 'Edit this page on GitHub',
         },
       },
@@ -140,8 +112,7 @@ export default defineConfig({
         lastUpdatedText: '最終更新',
         searchPlaceholderText: '検索',
         editLink: {
-          docRepoBaseUrl:
-            'https://github.com/aletheia-works/vivarium/tree/main/docs/site',
+          docRepoBaseUrl: DOC_REPO_BASE_URL,
           text: 'GitHub でこのページを編集',
         },
       },
