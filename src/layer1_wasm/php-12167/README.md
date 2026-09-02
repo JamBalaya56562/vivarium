@@ -33,11 +33,30 @@ the page reproduces.
   $pis[0] === ""` — so the page emits a mechanically-distinguishable
   `reproduced` / `unreproduced`.
 - Closed upstream by [PR #12190](https://github.com/php/php-src/pull/12190),
-  merged into `PHP-8.2.12`. Pyodide-style "sentinel" semantics: when
-  php-wasm bumps to a build ≥ 8.2.12, the verdict flips to `unreproduced` and
-  the page becomes a fix-detection signal.
+  merged into `PHP-8.2.12`.
 - Reproduces without I/O, network, or non-default extensions — fits
   the WASM cell shape exactly.
+
+## Why the fix-candidate pane is empty
+
+The fix exists upstream, but no published php-wasm build can run this
+reproduction against it, so the page's second pane says so rather than
+showing a result.
+
+`php-wasm@0.0.8` — the version [`_shared/php_loader.ts`](../_shared/php_loader.ts)
+pins — ships PHP 8.2.11 and reproduces the bug (`count=1`, cast `""`).
+The only newer stable release, `php-wasm@0.1.0`, ships PHP 8.4.1 but
+its `PhpWeb.mjs` build has **no SimpleXML**: `simplexml_load_string()`
+is undefined, so the reproduction cannot run at all, let alone show the
+fix. The single prerelease between them, `0.0.9-alpha-32`, never
+finished initialising when tried (no `ready` event after several
+minutes).
+
+This also corrects an earlier note in this file, which described the
+recipe as a "sentinel" that would flip to `unreproduced` once php-wasm
+bumped past 8.2.12. Bumping the pin does not flip the verdict — it
+breaks the reproduction. Restoring the second pane needs a php-wasm
+build that is both ≥ 8.2.12 **and** compiled with SimpleXML.
 
 ## Files
 

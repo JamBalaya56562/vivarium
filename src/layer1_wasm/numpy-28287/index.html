@@ -103,9 +103,31 @@
 <span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
         </section>
 
-        <section class="vh-main__col vh-main__col--output">
-          <h2 data-i18n="section.output.h2">Output</h2>
-          <pre id="output" data-i18n="output.placeholder">(running)</pre>
+        <section class="vh-main__col vh-main__col--output vh-output-multi">
+          <header class="vh-variant-head" data-variant="baseline">
+            <h2 class="vh-variant-head__title" data-i18n="section.baseline.h2">
+              Baseline output
+            </h2>
+          </header>
+          <div class="vh-variant-stage" data-variant="baseline">
+            <!-- chrome.js inserts <div class="vh-progress"> before #output;
+                 the stage stacks both children in one grid cell so the
+                 overlay covers the pre during loading without taking
+                 extra column height. -->
+            <pre id="output" class="vh-variant-output" data-i18n="output.pending">(pending)</pre>
+          </div>
+
+          <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
+            <h2 class="vh-variant-head__title" data-i18n="section.fix.h2">
+              Fix-candidate output
+            </h2>
+          </header>
+          <pre
+            id="output-fix"
+            class="vh-variant-output vh-variant-output--note"
+            data-fix-status="none"
+            data-i18n="output.noFixCandidate"
+          >(no fix candidate yet — numpy/numpy#28287 is still open upstream)</pre>
         </section>
       </div>
 

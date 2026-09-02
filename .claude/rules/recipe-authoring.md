@@ -187,6 +187,60 @@ Use the helpers in
 [`src/layer1_wasm/_shared/verdict.ts`](../../src/layer1_wasm/_shared/verdict.ts)
 so DOM and globals stay in sync.
 
+**Output section — two panes, always**:
+
+Every Layer 1 page shows the buggy behaviour and the corrected
+behaviour side by side. There is no single-pane variant; a recipe
+with no fix to run still ships both panes and says so in the second
+one. Copy the block from
+[`dateutil-1478/index.html`](../../src/layer1_wasm/dateutil-1478/index.html):
+
+```html
+<section class="vh-main__col vh-main__col--output vh-output-multi">
+  <header class="vh-variant-head" data-variant="baseline">
+    <h2 class="vh-variant-head__title" data-i18n="section.baseline.h2">Baseline output</h2>
+  </header>
+  <div class="vh-variant-stage" data-variant="baseline">
+    <pre id="output" class="vh-variant-output" data-i18n="output.pending">(pending)</pre>
+  </div>
+
+  <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
+    <h2 class="vh-variant-head__title" data-i18n="section.fix.h2">Fix-candidate output</h2>
+  </header>
+  <pre id="output-fix" class="vh-variant-output" data-i18n="output.waitingBaseline">(waiting for baseline)</pre>
+</section>
+```
+
+- `.vh-variant-stage` around `#output` is **required**.
+  [`_assets/chrome.js`](../../src/layer1_wasm/_assets/chrome.js) inserts
+  `<div class="vh-progress">` into `#output`'s parent; without the
+  wrapper the loading overlay pushes the fix pane down the page.
+- All styling lives in
+  [`_shared/style.css`](../../src/layer1_wasm/_shared/style.css)
+  (`.vh-output-multi`, `.vh-variant-*`). Per-recipe CSS is not needed.
+- Three ways to fill the fix pane, in order of preference:
+  1. **Fork wheel** — `fix-candidate.json` + the helpers in
+     [`_shared/fix-candidate.ts`](../../src/layer1_wasm/_shared/fix-candidate.ts).
+     Pure-Python packages only; see `dateutil-1478` (main-thread) and
+     `lark-1585` (one Web Worker per variant).
+  2. **A second artefact built from a fixed dependency version** —
+     e.g. a second `wasm32-wasip1` binary, or a different runtime build.
+  3. **No candidate** — when no fixed build can be executed in the
+     browser. Use `data-i18n="output.noFixCandidate"` plus the
+     `vh-variant-output--note` class (which wraps prose instead of
+     scrolling it), and name the upstream status in the text. **Never
+     hand-write an "expected" output**: the pane must only ever show
+     something that actually ran.
+- The top-level `#verdict` pill mirrors the **baseline only**. A red
+  pill driven by the fix pane would flag its desired `unreproduced`
+  as a failure.
+- `scripts/validate-fix-candidates.ts` checks this markup at build
+  time, but **only on recipes that ship a `fix-candidate.json`** — the
+  no-candidate variant is not yet covered, so review the block by eye
+  until `regex-779` converts and the check widens to every recipe. If
+  you adopt a new variant mechanism, extend that script in the same PR
+  rather than carving the recipe out.
+
 **Local validation**:
 
 ```bash

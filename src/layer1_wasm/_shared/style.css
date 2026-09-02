@@ -1669,6 +1669,16 @@ body.vh-drawer-open {
   box-sizing: border-box;
 }
 
+/* A pane holding a status note rather than program output — the
+ * "no fix candidate yet" state on recipes whose upstream fix cannot
+ * be executed in the browser. `<pre>` defaults to `white-space: pre`,
+ * which is right for JSON output but turns a one-line sentence into a
+ * horizontal scroll that clips mid-word. Prose wraps instead. */
+.vh-variant-output--note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Multi-variant recipes (recipes that stack several `<pre>` output
  * panels in one page): opt out of chrome.js's single-output grid by
  * adding `vh-output-multi` to the output column.

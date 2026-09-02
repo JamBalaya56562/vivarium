@@ -52,6 +52,33 @@ Each new Layer 1 recipe is its own immediate subdirectory of this folder
 contain an `index.html`; companion files (`repro.ts`, `README.md`,
 fixtures, generated-highlight inputs) live alongside.
 
+## Page shape — two output panes
+
+Every recipe page puts the reproduction script on the left and **two**
+output panes on the right: **Baseline output**, the behaviour visitors
+came to see, and **Fix-candidate output**, the same reproduction run
+against a build where the bug is fixed. Seeing both at once is the
+point of the page — a single pane only tells you something is wrong,
+not what "right" looks like.
+
+Not every bug has a fixed build that can run in a browser. When it
+does not — the upstream issue is still open, or the fixed build cannot
+be produced for WASM — the second pane says exactly that and names the
+upstream status. It never shows a hand-written "expected" output:
+Vivarium reproduces, it does not assert.
+
+The markup is shared — copy it from
+[`dateutil-1478/`](./dateutil-1478/), the reference implementation.
+
+Build-time enforcement is currently **partial**:
+[`scripts/validate-fix-candidates.ts`](./scripts/validate-fix-candidates.ts)
+checks the two-pane markup only on recipes that ship a
+`fix-candidate.json`, so a recipe using the no-candidate variant can
+still ship a malformed or missing pane. Widening that check to every
+recipe waits on `regex-779`, the last page still on the single-pane
+markup — a validator that requires the block before every recipe has
+it would fail the build on `main`.
+
 ## Verdict surface
 
 Every Layer 1 reproduction emits its verdict via the in-page surface
