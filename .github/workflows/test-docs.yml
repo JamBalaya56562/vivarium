@@ -131,8 +131,49 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Cache Playwright system packages (${{ matrix.browser }})
+        # `--with-deps` costs two things: the browser off
+        # cdn.playwright.dev (~3 s, reliably) and 48.8 MB of Ubuntu
+        # packages off azure.archive.ubuntu.com. The second one is the
+        # problem — on 2026-09-02 the identical fetch ran at 24.8 MB/s
+        # (2 s) and, an hour later on the same workflow, at 37.7 kB/s
+        # (21 min 35 s). Nothing on our side causes that, and most of
+        # the 40 packages are codecs and CJK fonts a headless run never
+        # opens.
+        #
+        # Caching apt's archive directory turns the slow half into a
+        # cache restore. A miss costs exactly what today costs, so the
+        # worst case is unchanged.
+        #
+        # Key: the dependency set is a function of the Playwright
+        # release (bun.lock) and of the runner image that decides which
+        # libraries are already present (ImageOS).
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/vivarium-pw-apt
+          key: pw-apt-${{ runner.os }}-${{ env.ImageOS }}-${{ matrix.browser }}-${{ hashFiles('docs/bun.lock') }}
+
       - name: Install Playwright browser (${{ matrix.browser }})
-        run: bunx playwright install --with-deps ${{ matrix.browser }}
+        run: |
+          set -euo pipefail
+          # Redirect apt's archive cache into the restored directory, so
+          # the .debs `playwright install --with-deps` wants are already
+          # on disk. apt drops privileges to `_apt` while downloading,
+          # hence the permissive mode on the directory it reads.
+          cache_dir="$HOME/.cache/vivarium-pw-apt"
+          mkdir -p "$cache_dir/partial"
+          chmod -R a+rwX "$cache_dir"
+          printf 'Dir::Cache::archives "%s";\n' "$cache_dir" \
+            | sudo tee /etc/apt/apt.conf.d/99-vivarium-pw-cache > /dev/null
+
+          bunx playwright install --with-deps ${{ matrix.browser }}
+
+          # Hand the directory back to the runner user so the post-job
+          # cache save can read it, and drop apt's lock / partial state,
+          # which must not be restored into a later run.
+          sudo chown -R "$(id -u):$(id -g)" "$cache_dir"
+          rm -rf "$cache_dir/partial" "$cache_dir/lock"
+          echo "Cached $(find "$cache_dir" -maxdepth 1 -name '*.deb' | wc -l) .deb(s)."
 
       - name: Run Playwright suite (${{ matrix.browser }})
         # `--project=<name>` matches the project entry in
