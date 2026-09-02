@@ -14,8 +14,8 @@
     "test": "bun run sync-layer2-assets && playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
-    "@types/node": "^22.10.5",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^22.20.1",
     "shiki": "^1.29.2",
     "typescript": "^5.7.2"
   }
