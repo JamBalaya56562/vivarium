@@ -48,11 +48,21 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      # The repro-nav guard (docs/scripts/__tests__/reproChrome.test.ts)
+      # asserts src/layer1_wasm/_assets/chrome-data.js is regenerated and
+      # that chrome.js still consumes it. Without this path the guard
+      # would not run on the very edits it exists to catch.
+      - 'src/layer1_wasm/_assets/**'
       - '.github/workflows/test-docs.yml'
   push:
     branches: [main]
     paths:
       - 'docs/**'
+      # The repro-nav guard (docs/scripts/__tests__/reproChrome.test.ts)
+      # asserts src/layer1_wasm/_assets/chrome-data.js is regenerated and
+      # that chrome.js still consumes it. Without this path the guard
+      # would not run on the very edits it exists to catch.
+      - 'src/layer1_wasm/_assets/**'
       - '.github/workflows/test-docs.yml'
   workflow_dispatch:
 
