@@ -75,10 +75,9 @@ jobs:
 
       - name: Setup mise (bun, uv, jq)
         # Installs the tools needed before the first `mise run` (bun,
-        # uv, jq). Per-task language toolchains
-        # (`rust@1.84.0` for the wasm32-wasip1 build, etc.) auto-install
-        # on first `mise run` via the task's `use = [...]` declaration in
-        # mise.toml — keeping per-recipe version flexibility. `uv` and
+        # uv, jq). Anything else a task needs auto-installs on first
+        # `mise run` from mise.toml, which stays the single place a
+        # toolchain version is written down. `uv` and
         # `jq` are needed by `repro:build:wheels`
         # (`scripts/build-layer1-wheels.sh`), which `repro:build` now
         # depends on per ADR-0040: wheels are built fresh from each

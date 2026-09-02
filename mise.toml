@@ -7,7 +7,7 @@ ruff = "latest"
 tombi = "latest"
 rumdl = "latest"
 jq = "latest"
-rust = { version = "1.84.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
+rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 # Per-language interpreters (Python, Ruby, PHP) are intentionally
 # NOT pinned at this top level. Each task / command declares the version
 # it needs next to where it is invoked, so different recipes can use

@@ -1,17 +1,9 @@
-# Dependabot configuration.
-#
-# Opens PRs to keep dependencies up to date. Reviewing is delegated to
-# Claude Code's automated review workflow; merging stays human-only.
-
 version: 2
 updates:
-  # ─── GitHub Actions ──────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
-      time: "03:00"
-      timezone: "Asia/Tokyo"
     labels:
       - "type: chore"
       - "scope: ci"
@@ -19,27 +11,16 @@ updates:
     commit-message:
       prefix: "chore(actions)"
       include: "scope"
-    # Skip non-security major version updates — major bumps need targeted
-    # human/AI review rather than automated merging.
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-    # Roll every GitHub Actions update into a single weekly PR
-    # instead of one per action; reviewing the SHA-pinned bumps
-    # together cuts merge overhead substantially.
     groups:
       github-actions:
         patterns:
           - "*"
     open-pull-requests-limit: 5
 
-  # ─── OpenTofu providers ──────────────────────
   - package-ecosystem: "terraform"
     directory: "/infra/github"
     schedule:
       interval: "daily"
-      time: "03:00"
-      timezone: "Asia/Tokyo"
     labels:
       - "type: chore"
       - "scope: infra"
@@ -51,19 +32,11 @@ updates:
       terraform-providers:
         patterns:
           - "*"
-    open-pull-requests-limit: 3
 
-  # ─── bun — packages/mcp-server ───────────────
-  # Vivarium MCP server (@aletheia-works/vivarium-mcp). See ADR-0019
-  # (private memo) for the package's design. Uses Dependabot's `bun`
-  # ecosystem (GA 2025-02), which reads bun.lock directly rather than
-  # treating the project as npm.
   - package-ecosystem: "bun"
     directory: "/packages/mcp-server"
     schedule:
       interval: "daily"
-      time: "03:00"
-      timezone: "Asia/Tokyo"
     labels:
       - "type: chore"
       - "scope: js"
@@ -71,30 +44,15 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Major bumps need targeted human/AI review — covered by AGENTS.md
-    # §4.9's "latest at authoring time" rule when adding or editing
-    # workflows / packages, not by automated dependabot merges.
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
     groups:
       mcp-server-deps:
         patterns:
           - "*"
-    open-pull-requests-limit: 5
 
-  # ─── bun — docs ──────────────────────────────
-  # The rspress documentation app: rspress itself, Biome, Playwright and
-  # the ajv toolchain behind the generated validators. Playwright lands
-  # here rather than being bumped by hand — the version decides both the
-  # client and the browser build the E2E lane runs, so it wants a PR with
-  # CI attached, not a drive-by edit.
   - package-ecosystem: "bun"
     directory: "/docs"
     schedule:
       interval: "daily"
-      time: "03:00"
-      timezone: "Asia/Tokyo"
     labels:
       - "type: chore"
       - "scope: js"
@@ -103,26 +61,15 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
     groups:
       docs-deps:
         patterns:
           - "*"
-    open-pull-requests-limit: 5
 
-  # ─── bun — src/layer1_wasm ───────────────────
-  # Layer 1's build and test toolchain (tsc, Shiki, Playwright). The
-  # recipes' own runtimes — Pyodide, Ruby.wasm, php-wasm — are pinned by
-  # URL inside the pages and are not visible to Dependabot; those move
-  # with the recipe, not with this manifest.
   - package-ecosystem: "bun"
     directory: "/src/layer1_wasm"
     schedule:
       interval: "daily"
-      time: "03:00"
-      timezone: "Asia/Tokyo"
     labels:
       - "type: chore"
       - "scope: js"
@@ -131,14 +78,10 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
     groups:
       layer1-deps:
         patterns:
           - "*"
-    open-pull-requests-limit: 5
 
   # Future ecosystems to enable in Phase 1+:
   #
