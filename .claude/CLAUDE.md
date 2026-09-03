@@ -46,3 +46,18 @@ force-push to `main`, create or rotate secrets, run `tofu apply`
 against production state, or pivot scope without human
 confirmation. End the loop at natural stopping points rather than
 inventing filler tasks.
+
+## 4. Comments
+
+`AGENTS.md` §4.13 is the rule; these are the agent-specific failure
+modes it exists to stop.
+
+- Do not annotate your own work. Why you chose an approach, what you
+  changed, and what you verified belong in the commit message body and
+  the PR description — never in a comment next to the code.
+- When you touch a region that already carries a comment, delete the
+  comment unless it passes one of §4.13's two tests. A half-true
+  comment beside an edited line is worse than either keeping or
+  removing the whole thing.
+- Do not restore a comment an earlier pass removed.
+- Docstrings and JSDoc are comments. The same two tests apply.

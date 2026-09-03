@@ -295,6 +295,48 @@ its `run:` steps from the YAML and execute them by hand. **When CI
 catches something local missed**, extend the matching `ci:*` task —
 local and CI should converge on the same surface in both directions.
 
+### 4.13 Comments
+
+**Default: no comment.** Names, small functions, and types carry the
+explanation. A comment is a second source of truth that no test, type
+checker, or linter validates — when the code it describes moves, the
+comment silently becomes a lie. This repository has already been
+there: comments pointed at `infra/github/labels.tf`,
+`test-docs-build.yml`, and `.github/workflows/ruff-autofix.yml` long
+after those files stopped existing.
+
+Write a comment only when it is one of these two:
+
+| Kind | Test | Example |
+|---|---|---|
+| **Functional** | The file does not work without it | PEP 723 `# /// script` blocks, `// biome-ignore`, `// eslint-disable-next-line`, the `# v6.0.2` version note every SHA pin requires (§4.8) |
+| **Non-recoverable why** | The obvious reading of the code invites a "fix" that would break it, and nothing else records why | `# =1.8.4 — last release before the NFA compiler fixed #779` |
+
+A non-recoverable why is one or two lines. If it needs a paragraph, it
+is not a comment — it is a docs page or a commit message.
+
+Delete rather than write:
+
+- Restatements of the next line.
+- File-header tours: what the module is for, who calls it, what the
+  workflow's three lanes are.
+- Pointers to other files, functions, workflows, or config keys. These
+  rot first. A map that is worth maintaining belongs in `docs/`, where
+  it is a page with an owner.
+- Rationale for the change being made. That is the commit message
+  (§4.4) and the PR body. Code records what is true now, not how it
+  got that way.
+- Section banners (`// ─── Repository ───`), TODOs, changelog notes,
+  and commented-out code.
+
+Where the explanation goes instead: a name (extract a well-named
+function or constant), a type, a test that demonstrates the behaviour,
+the commit message, or a docs page.
+
+This applies to every file the repository builds from — TypeScript,
+Python, Rust, shell, workflow YAML, OpenTofu, TOML configs, CSS, and
+recipe HTML. Markdown and MDX are prose and are out of scope.
+
 ## 5. Three-layer architecture (reference)
 
 Product-level technology choices are framed by these three layers. Do not
