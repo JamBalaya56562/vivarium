@@ -39,7 +39,7 @@ const STRINGS_JA: Partial<LoaderStrings> = {
 
 const S = pick(STRINGS, STRINGS_JA);
 
-export const DEFAULT_PYODIDE_VERSION = "0.29.3";
+export const DEFAULT_PYODIDE_VERSION = "314.0.6";
 
 const SIZE_RUNTIME_MB = 12.0; // wasm + stdlib + lockfile combined
 const SIZE_PER_PACKAGE_MB = 0.6; // typical for sqlite3, pandas-light, etc.

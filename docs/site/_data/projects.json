@@ -5,8 +5,8 @@
       "display_name": "CPython",
       "tagline": "The reference Python interpreter.",
       "tagline_ja": "リファレンス実装の Python インタプリタ。",
-      "description": "Reproductions hit Python 3.13 / sqlite3 in the same Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
-      "description_ja": "ブラウザで動くのと同じ Pyodide ビルドの Python 3.13 / sqlite3 を突く再現。各ページは mise で版を固定した host CPython でも走る CLI 版 repro.py も公開する。",
+      "description": "Reproductions hit Python 3.14 / sqlite3 in the same Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
+      "description_ja": "ブラウザで動くのと同じ Pyodide ビルドの Python 3.14 / sqlite3 を突く再現。各ページは mise で版を固定した host CPython でも走る CLI 版 repro.py も公開する。",
       "homepage": "https://www.python.org/",
       "github": "https://github.com/python/cpython"
     },

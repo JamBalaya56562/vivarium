@@ -25,9 +25,9 @@ contradicts itself is a clear violation.
 - Verdict is a boolean — `(x < y) ∧ (y < z) ∧ ¬(x < z)` — so the page
   emits a mechanically-distinguishable `reproduced` / `unreproduced`.
 - Reported against numpy 2.2.2; no merged fix as of this writing.
-  Pyodide v0.29.3 ships numpy 2.2.5 as an installable package (loaded
-  via `loadPyodide({ packages: ["numpy"] })`), so the bug is expected
-  to reproduce on the build the page loads.
+  Still reproduces on numpy 2.5.2, the latest release. Pyodide
+  v314.0.6 ships numpy 2.4.6 as an installable package (loaded via
+  `loadPyodide({ packages: ["numpy"] })`), and reproduces there too.
 - Pure NumPy, no I/O, no network, no FFI — nothing in the repro path
   touches a browser-restricted surface.
 - Demonstrates that Vivarium's Phase 1 gallery is not pandas-only:
@@ -84,9 +84,10 @@ threading), so a plain server is enough.
 ## Native verification — same reproduction under a real CPython + NumPy
 
 The companion `repro.py` script reproduces the bug without any
-WASM layer. PEP 723 inline metadata pins **`numpy==2.2.5`** — the
-exact version Pyodide v0.29.3 bundles — and the `mise.toml` at the
-repo root pins Python to 3.13:
+WASM layer. PEP 723 inline metadata pins **`numpy==2.5.2`** — the
+latest release, which is what decides whether the bug is still open —
+and the `mise.toml` at the repo root pins Python to 3.14. The page
+itself runs whatever numpy Pyodide bundles (2.4.6 today):
 
 ```bash
 mise install

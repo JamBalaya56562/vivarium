@@ -91,7 +91,7 @@ Rules:
 - Keys are **structural, not content-derived**: `page.title`, `page.h1`,
   `page.lede`, `drawer.body.p1`…, `section.*.h2`, `footer.note`.
 - Don't translate technical labels that are the same in both locales
-  (the `.kicker`, drawer meta values like `Pyodide v0.29.3`); leave them
+  (the `.kicker`, drawer meta values like `Pyodide v314.0.6`); leave them
   unannotated.
 - Register: follow `src/layer1_wasm/_shared/path_a.ts`'s
   `DEFAULT_STRINGS_JA` — plain form (常体), technical terms (verdict,
@@ -273,7 +273,7 @@ PRs 180 / 189 / 192.
 
 **Pitfalls**:
 
-- **Pyodide version drift.** Pyodide currently bundles Python 3.13
+- **Pyodide version drift.** Pyodide currently bundles Python 3.14
   / sqlite 3.39.0. A bug fixed in Python 3.14+ that does not exist
   in 3.13 will show `verdict=unreproduced` here even though
   upstream considers it valid. Layer 2 (`python:3.14-slim`) is

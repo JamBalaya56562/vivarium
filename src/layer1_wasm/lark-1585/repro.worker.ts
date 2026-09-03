@@ -7,7 +7,7 @@ const workerScope = self as unknown as {
   location: { href: string };
 };
 
-const PYODIDE_VERSION = '0.29.3';
+const PYODIDE_VERSION = '314.0.6';
 const DEFAULT_LARK_SPEC = 'lark==1.3.1';
 
 const workerUrl = new URL(workerScope.location.href);

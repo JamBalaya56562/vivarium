@@ -95,7 +95,7 @@ The companion `repro.py` script reproduces the bug without any
 WASM layer, so a contributor can confirm the page is catching a
 *real* upstream behaviour rather than a Pyodide / micropip quirk.
 PEP 723 inline metadata pins **`lark==1.3.1`** and the `mise.toml`
-at the repo root pins Python to 3.13:
+at the repo root pins Python to 3.14:
 
 ```bash
 # One-time per machine / mise.toml change.
@@ -109,7 +109,7 @@ mise exec uv -- uv run src/layer1_wasm/lark-1585/repro.py
 # Expected output (lark 1.3.1):
 # {
 #   "lark_version": "1.3.1",
-#   "python_version": "3.13.x",
+#   "python_version": "3.14.x",
 #   "outcome": "timeout",
 #   "exit_code": null,
 #   "stderr_tail": [...],

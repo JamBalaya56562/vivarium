@@ -6,9 +6,9 @@ const S = pick(
   { pending: 'Ruby.wasm runtime を読み込み中…' },
 );
 
-export const DEFAULT_RUBY_WASM_VERSION = "2.8.1";
+export const DEFAULT_RUBY_WASM_VERSION = "2.10.1";
 
-export const DEFAULT_RUBY_VERSION = "3.3";
+export const DEFAULT_RUBY_VERSION = "3.4";
 
 export interface LoadOptions {
   rubyWasmVersion?: string;

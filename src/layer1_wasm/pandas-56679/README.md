@@ -16,9 +16,9 @@ constructors should produce a consistent dtype for an empty input.
 - Three-line reproduction, zero non-pandas dependencies.
 - Verdict is a `dtype` comparison — a single boolean — so the page emits
   a mechanically-distinguishable `reproduced` / `unreproduced` value.
-- Reported against pandas 2.1.4; verified on pandas 2.3.3, which is the
-  version Pyodide v0.29.3 ships. The bug is expected to reproduce on the
-  same Pyodide build the page loads.
+- Reported against pandas 2.1.4; still reproduces on pandas 3.0.5, the
+  latest release, and on 3.0.2, the version Pyodide v314.0.6 ships and
+  the page loads.
 - Pure pandas core — no I/O, no Arrow, no plotting, no thread-scheduler
   dependence. Nothing in the repro path touches a browser-restricted
   surface.
@@ -78,9 +78,10 @@ Pyodide does **not** require COOP/COEP headers for this page (no
 The companion `repro.py` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a Pyodide quirk.
-PEP 723 inline metadata pins **`pandas==2.3.3`** — the exact
-version Pyodide v0.29.3 bundles — and the `mise.toml` at the repo
-root pins Python to 3.13:
+PEP 723 inline metadata pins **`pandas==3.0.5`** — the latest
+release, which is what decides whether the bug is still open — and the
+`mise.toml` at the repo root pins Python to 3.14. The page itself runs
+whatever pandas Pyodide bundles (3.0.2 today):
 
 ```bash
 # One-time per machine / mise.toml change.
@@ -90,10 +91,10 @@ mise install
 # metadata, builds an ephemeral venv, and runs the script.
 mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
 
-# Expected output (pandas 2.3.3):
+# Expected output (pandas 3.0.5):
 # {
-#   "pandas_version": "2.3.3",
-#   "python_version": "3.13.x",
+#   "pandas_version": "3.0.5",
+#   "python_version": "3.14.x",
 #   "series_dtype": "object",
 #   "df_dtype": "float64",
 #   "mismatch": true,
@@ -115,12 +116,12 @@ when the bundling step copies the directory into the Pages artefact.
 ### Machine-verified (Claude Preview MCP, Chromium-based engine)
 
 - The page parses, loads
-  `https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs`, and
+  `https://cdn.jsdelivr.net/pyodide/v314.0.6/full/pyodide.mjs`, and
   successfully preloads pandas.
 - `__VIVARIUM_RESULT__` envelope on the page (post-retrofit):
   `{ contract: "v1", bug: { project: "pandas", issue: 56679, ... },
-  runtime: { name: "pyodide", version: "0.29.3", extras: { python: "3.13.2",
-  pandas: "2.3.3" } }, result: { series_dtype: "object", df_dtype: "float64",
+  runtime: { name: "pyodide", version: "314.0.6", extras: { python: "3.14.2",
+  pandas: "3.0.2" } }, result: { series_dtype: "object", df_dtype: "float64",
   mismatch: true }, ... }`.
 - `data-verdict="reproduced"`, visible text `bug reproduced — Series
   dtype ≠ DataFrame dtype.`, `__VIVARIUM_VERDICT__ === "reproduced"`.

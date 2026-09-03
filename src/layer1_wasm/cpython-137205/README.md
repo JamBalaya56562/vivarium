@@ -33,8 +33,8 @@ on.execute("PRAGMA foreign_keys").fetchone()[0]   # => 1
   the PRAGMA value — so the page emits a mechanically-distinguishable
   `reproduced` / `unreproduced`.
 - Reported against Python 3.13. Related upstream PRs are doc-only;
-  Pyodide v0.29.3 ships Python 3.13.2 (and SQLite 3.39.0 via the
-  `sqlite3` Pyodide package), which still exhibits the behaviour.
+  Pyodide v314.0.6 ships Python 3.14.2 with SQLite 3.39.0 in the
+  stdlib, which still exhibits the behaviour.
 - Demonstrates that Vivarium handles standard-library bugs (not just
   numerical-library bugs), and adds the **sqlite** vertical that
   [`docs/site/en/roadmap.mdx`](../../docs/site/en/roadmap.mdx) lists as a
@@ -89,7 +89,7 @@ python -m http.server -d . 8767
 The companion `repro.py` script reproduces the bug without any
 WASM layer. The bug lives in the CPython `sqlite3` binding layer,
 not in libsqlite3 itself, so no third-party packages are needed.
-The `mise.toml` at the repo root pins Python to 3.13:
+The `mise.toml` at the repo root pins Python to 3.14:
 
 ```bash
 mise install

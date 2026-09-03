@@ -110,7 +110,7 @@ mise exec uv -- uv run src/layer1_wasm/dateutil-1478/repro.py
 # Expected output (python-dateutil 2.9.0.post0):
 # {
 #   "dateutil_version": "2.9.0.post0",
-#   "python_version": "3.13.x",
+#   "python_version": "3.14.x",
 #   "cases": [
 #     { "input": "UTC-4",     "expected_offset_seconds": -14400, "actual_offset_seconds":  14400, "inverted": true },
 #     { "input": "UTC+4",     "expected_offset_seconds":  14400, "actual_offset_seconds": -14400, "inverted": true },

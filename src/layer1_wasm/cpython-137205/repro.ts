@@ -113,8 +113,7 @@ const startedAt = new Date();
 
 try {
   const { pyodide, version } = await loadVivariumPyodide({
-    packages: ['sqlite3'],
-    pendingText: 'Loading Pyodide runtime and sqlite3…',
+    pendingText: 'Loading Pyodide runtime…',
   });
 
   setVerdict('pending', 'Running reproduction script…');

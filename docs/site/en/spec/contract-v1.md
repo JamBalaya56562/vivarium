@@ -137,7 +137,7 @@ interface VivariumResultV1 {
   };
   runtime: {
     name: string;          // see runtime.name table below
-    version: string;       // e.g. "0.29.3"
+    version: string;       // e.g. "314.0.6"
     extras: Record<string, string>;  // free-form (python/pandas versions etc.)
   };
   result: Record<string, unknown>;   // page-specific structured output

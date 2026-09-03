@@ -45,11 +45,24 @@ function modulePreload(href: string): string {
   ].join('\n');
 }
 
+const RUNTIME_VERSIONS: Record<string, string> = {
+  PYODIDE_VERSION: loaderConstant('loader.ts', 'DEFAULT_PYODIDE_VERSION'),
+  PHP_WASM_VERSION: loaderConstant('php_loader.ts', 'DEFAULT_PHP_WASM_VERSION'),
+  RUBY_WASM_VERSION: loaderConstant(
+    'ruby_loader.ts',
+    'DEFAULT_RUBY_WASM_VERSION',
+  ),
+  WASI_SHIM_VERSION: loaderConstant(
+    'rust_loader.ts',
+    'DEFAULT_WASI_SHIM_VERSION',
+  ),
+};
+
 function runtimeShells(): Record<string, RuntimeShell> {
-  const pyodide = loaderConstant('loader.ts', 'DEFAULT_PYODIDE_VERSION');
-  const php = loaderConstant('php_loader.ts', 'DEFAULT_PHP_WASM_VERSION');
-  const ruby = loaderConstant('ruby_loader.ts', 'DEFAULT_RUBY_WASM_VERSION');
-  const wasi = loaderConstant('rust_loader.ts', 'DEFAULT_WASI_SHIM_VERSION');
+  const pyodide = RUNTIME_VERSIONS.PYODIDE_VERSION as string;
+  const php = RUNTIME_VERSIONS.PHP_WASM_VERSION as string;
+  const ruby = RUNTIME_VERSIONS.RUBY_WASM_VERSION as string;
+  const wasi = RUNTIME_VERSIONS.WASI_SHIM_VERSION as string;
   const pyodideBase = `https://cdn.jsdelivr.net/pyodide/v${pyodide}/full`;
   return {
     pyodide: {
@@ -84,6 +97,17 @@ function runtimeShells(): Record<string, RuntimeShell> {
       verdictPending: 'Loading Rust wasm32-wasip1 artefact via WASI shim…',
     },
   };
+}
+
+function expandVersions(
+  value: string,
+  versions: Record<string, string>,
+): string {
+  let out = value;
+  for (const [key, version] of Object.entries(versions)) {
+    out = out.replaceAll(`{{${key}}}`, version);
+  }
+  return out;
 }
 
 function readSlots(path: string): Record<string, string> {
@@ -221,7 +245,10 @@ function renderLayer1(): void {
       PROJECT: entry.title.split('#')[0] as string,
       ISSUE: String(entry.issue),
       RUNTIME_HEAD: shell.head,
-      RUNTIME_LABEL: slots['runtime-label'] ?? '',
+      RUNTIME_LABEL: expandVersions(
+        slots['runtime-label'] ?? '',
+        RUNTIME_VERSIONS,
+      ),
       KICKER: slots.kicker ?? shell.kicker,
       SCRIPT_HEADING: slots['script-heading'] ?? 'Reproduction script',
       UPSTREAM_URL: upstream,

@@ -124,7 +124,7 @@ interface VivariumResultV1 {
   };
   runtime: {
     name: string;          // 下記の runtime.name テーブル参照
-    version: string;       // 例: "0.29.3"
+    version: string;       // 例: "314.0.6"
     extras: Record<string, string>;  // 自由形式（python/pandas バージョンなど）
   };
   result: Record<string, unknown>;   // ページ固有の構造化出力

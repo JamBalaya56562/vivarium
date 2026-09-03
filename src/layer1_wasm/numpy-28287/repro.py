@@ -1,7 +1,7 @@
 # /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.14"
 # dependencies = [
-#   "numpy==2.2.5",
+#   "numpy==2.5.2",
 # ]
 # ///
 """Vivarium Layer 1 reproduction — numpy/numpy#28287, native variant.
@@ -13,9 +13,10 @@ contributor can re-verify the bug against a real CPython interpreter
     mise install                                                  # one-time
     mise exec uv -- uv run src/layer1_wasm/numpy-28287/repro.py
 
-PEP 723 inline metadata pins numpy to **2.2.5** — the exact version
-Pyodide v0.29.3 ships — so the page and this CLI exercise the same
-code path.
+PEP 723 inline metadata pins numpy to **2.5.2**, the latest release:
+whether the bug survives there is what decides if it is still open.
+The page runs the numpy Pyodide bundles (2.4.6), where it also
+reproduces.
 
 Prints `pass` if the bug REPRODUCES (`timedelta64` ordering is
 non-transitive across the generic unit), `fail` otherwise. Exit
