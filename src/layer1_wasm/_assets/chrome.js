@@ -86,7 +86,9 @@ const T = CHROME_STRINGS[LANG];
 function injectChrome() {
   applyTheme();
 
-  const nav = document.createElement('header');
+  const nav =
+    document.querySelector('header.vh-topnav') ??
+    document.createElement('header');
   nav.className = 'vh-topnav';
 
   const navLinks = NAV_ITEMS[LANG].map(
@@ -112,7 +114,7 @@ function injectChrome() {
       <button class="vh-topnav__theme" type="button" aria-label="${T.themeAria}">${moon}</button>
     </div>
   `;
-  document.body.insertBefore(nav, document.body.firstChild);
+  if (!nav.isConnected) document.body.insertBefore(nav, document.body.firstChild);
 
   const outputEl = document.querySelector('#output');
   if (outputEl?.parentElement) {
@@ -128,26 +130,34 @@ function injectChrome() {
       head.appendChild(colH2);
     }
 
-    const progress = document.createElement('div');
-    progress.className = 'vh-progress';
-    progress.innerHTML = `
-      <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
-      <div class="vh-progress__row">
-        <span class="vh-progress__label">${T.initialising}</span>
-        <span class="vh-progress__bytes"></span>
-      </div>
-    `;
-    outputEl.parentElement.insertBefore(progress, outputEl);
+    const existingProgress = outputCol.querySelector(':scope > .vh-progress');
+    if (existingProgress) {
+      const label = existingProgress.querySelector('.vh-progress__label');
+      if (label) label.textContent = T.initialising;
+    } else {
+      const progress = document.createElement('div');
+      progress.className = 'vh-progress';
+      progress.innerHTML = `
+        <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
+        <div class="vh-progress__row">
+          <span class="vh-progress__label">${T.initialising}</span>
+          <span class="vh-progress__bytes"></span>
+        </div>
+      `;
+      outputEl.parentElement.insertBefore(progress, outputEl);
+    }
   }
 
-  const footer = document.createElement('footer');
+  const footer =
+    document.querySelector('footer.vh-footer') ??
+    document.createElement('footer');
   footer.className = 'vh-footer';
   footer.innerHTML = `
     <p class="vh-footer__msg">
       ${FOOTER_MESSAGE_HTML.replace('<a ', '<a target="_blank" rel="noreferrer" ')}
     </p>
   `;
-  document.body.appendChild(footer);
+  if (!footer.isConnected) document.body.appendChild(footer);
 
   const toggleBtn = nav.querySelector('.vh-topnav__theme');
   function refreshIcon() {

@@ -6,9 +6,14 @@
     <meta name="vivarium-contract" content="v1" />
     <title data-i18n="page.title">Vivarium · Reproducing PostgreSQL lost update under READ COMMITTED</title>
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" />
     <link rel="stylesheet" href="../_shared/style.css" />
+    <script type="module" src="../_assets/chrome.js"></script>
   </head>
   <body>
+    <header class="vh-topnav"></header>
     <main>
       <header>
         <p class="kicker">Vivarium · Layer 2 · Docker (catalogue)</p>
@@ -43,9 +48,16 @@
         </p>
       </section>
 
-      <section>
+      <section class="vh-output-section vh-output-section--snapshot">
         <h2 data-i18n="section.snapshot.h2">CI snapshot output</h2>
-        <pre id="output" data-i18n="output.placeholder">(loading…)</pre>
+        <div class="vh-progress">
+          <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
+          <div class="vh-progress__row">
+            <span class="vh-progress__label">Initialising…</span>
+            <span class="vh-progress__bytes"></span>
+          </div>
+        </div>
+        <pre id="output" class="vh-output" data-i18n="output.placeholder">(loading…)</pre>
       </section>
 
       <footer>
@@ -56,6 +68,8 @@
         </p>
       </footer>
     </main>
+
+    <footer class="vh-footer"></footer>
 
     <script type="module">
       import { renderVerdictSnapshot } from "../_layer2-shared/layer2.js";

@@ -200,8 +200,15 @@ one. Copy the block from
   <header class="vh-variant-head" data-variant="baseline">
     <h2 class="vh-variant-head__title" data-i18n="section.baseline.h2">Baseline output</h2>
   </header>
-  <div class="vh-variant-stage" data-variant="baseline">
-    <pre id="output" class="vh-variant-output" data-i18n="output.pending">(pending)</pre>
+  <div class="vh-variant-stage vh-output-section" data-variant="baseline">
+    <div class="vh-progress">
+      <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
+      <div class="vh-progress__row">
+        <span class="vh-progress__label">Initialising…</span>
+        <span class="vh-progress__bytes"></span>
+      </div>
+    </div>
+    <pre id="output" class="vh-variant-output vh-output" data-i18n="output.pending">(pending)</pre>
   </div>
 
   <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
@@ -212,8 +219,8 @@ one. Copy the block from
 ```
 
 - `.vh-variant-stage` around `#output` is **required**.
-  [`_assets/chrome.js`](../../src/layer1_wasm/_assets/chrome.js) inserts
-  `<div class="vh-progress">` into `#output`'s parent; without the
+  [`_assets/chrome.js`](../../src/layer1_wasm/_assets/chrome.js) drives
+  `<div class="vh-progress">` inside `#output`'s parent; without the
   wrapper the loading overlay pushes the fix pane down the page.
 - All styling lives in
   [`_shared/style.css`](../../src/layer1_wasm/_shared/style.css)
@@ -271,6 +278,35 @@ PRs 180 / 189 / 192.
 - **System calls.** Pyodide ships an MEMFS-like virtual FS, not
   the real one. Anything depending on real filesystem semantics,
   fork/exec, sockets, or signals → Layer 2.
+
+---
+
+### Page shell — the chrome must ship in the HTML
+
+`chrome.js` fills the shell; it must never create it. Anything it has
+to create arrives after first paint and moves the page under the
+reader. Each recipe's `index.html` therefore ships, and
+`validate-output-panes.ts` enforces:
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" />
+<link rel="stylesheet" href="../_shared/style.css" />
+<script type="module" src="../_assets/chrome.js"></script>
+...
+<body>
+  <header class="vh-topnav"></header>
+  <main class="vh-main">…</main>
+  <footer class="vh-footer"></footer>
+```
+
+The font stylesheet is linked from the page, never `@import`-ed from
+`style.css`: an `@import` is a second round trip that blocks first
+paint, and the page renders unstyled until it lands. The empty
+`vh-topnav` and `vh-footer` reserve their final height from CSS
+(`.vh-topnav` is a fixed height, `.vh-footer:empty::before` holds one
+line), so filling them shifts nothing.
 
 ---
 

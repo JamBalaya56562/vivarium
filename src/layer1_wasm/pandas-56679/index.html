@@ -15,7 +15,11 @@
       href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
       crossorigin
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" />
     <link rel="stylesheet" href="../_shared/style.css" />
+    <script type="module" src="../_assets/chrome.js"></script>
     <template id="bug-context">
       <p class="vh-drawer__eyebrow" data-i18n="drawer.eyebrow">// BUG CONTEXT</p>
       <h2 class="vh-drawer__heading" data-i18n="drawer.heading">Why this reproduction page exists</h2>
@@ -50,6 +54,7 @@
     </template>
   </head>
   <body>
+    <header class="vh-topnav"></header>
     <main class="vh-main">
       <header class="vh-main__header">
         <div class="vh-main__header-text">
@@ -94,8 +99,15 @@
               Baseline output
             </h2>
           </header>
-          <div class="vh-variant-stage" data-variant="baseline">
-            <pre id="output" class="vh-variant-output" data-i18n="output.pending">(pending)</pre>
+          <div class="vh-variant-stage vh-output-section" data-variant="baseline">
+            <div class="vh-progress">
+              <div class="vh-progress__bar"><div class="vh-progress__fill"></div></div>
+              <div class="vh-progress__row">
+                <span class="vh-progress__label">Initialising…</span>
+                <span class="vh-progress__bytes"></span>
+              </div>
+            </div>
+            <pre id="output" class="vh-variant-output vh-output" data-i18n="output.pending">(pending)</pre>
           </div>
 
           <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
@@ -113,6 +125,8 @@
       </div>
 
     </main>
+
+    <footer class="vh-footer"></footer>
 
     <script type="module" src="./repro.js"></script>
   </body>
