@@ -1203,7 +1203,8 @@ main > footer code {
   height: 12px;
 }
 
-body.vh-drawer-open {
+body.vh-drawer-open,
+body.vh-drawer-open:has(#path-a-mount) {
   overflow: hidden;
 }
 
@@ -1301,6 +1302,25 @@ body.vh-drawer-open {
 
   body:has(main.vh-main) > main.vh-main > section[id="path-a-mount"] {
     flex-shrink: 0;
+  }
+
+  body:has(#path-a-mount) {
+    height: auto;
+    overflow: visible;
+  }
+
+  body:has(#path-a-mount) > main.vh-main {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  body:has(#path-a-mount) > main.vh-main > .vh-main__cols {
+    flex: 0 0 auto;
+    min-height: 60vh;
+  }
+
+  body:has(#path-a-mount) .vh-main__col {
+    overflow: visible;
   }
 
   .vh-main__col {
