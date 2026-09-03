@@ -1,0 +1,37 @@
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      Python's <code>sqlite3</code> stdlib silently drops
+      <code>PRAGMA foreign_keys = ON</code> when the connection
+      was opened with <code>autocommit=False</code>. The same
+      PRAGMA on a second connection opened with
+      <code>autocommit=True</code> takes effect, so two
+      connections that should have identical FK enforcement
+      disagree.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      The script on this page opens both kinds of connection,
+      issues the same PRAGMA on each, and reads the resulting
+      <code>foreign_keys</code> value back. If the two values
+      disagree, the bug reproduces in the runtime currently
+      loaded in your browser tab.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      For the full discussion (motivation, repro variations,
+      patch progress, etc.), follow the GitHub issue link
+      below — that thread is the canonical home for this bug.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">Pyodide v0.29.3</template>
+
+<template data-slot="kicker">L1 · Pyodide · sqlite3</template>
+
+<template data-slot="fix-pane">
+<pre
+    id="output-fix"
+    class="vh-variant-output vh-variant-output--note"
+    data-fix-status="none"
+    data-i18n="output.noFixCandidate"
+  >(no fix candidate yet — python/cpython#137205 is still open upstream)</pre>
+</template>

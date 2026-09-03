@@ -63,11 +63,15 @@ docs/site/_data/projects.json           ← add a row keyed by <project> (only i
 
 ### Bilingual reproduction pages (Layer 1 / Layer 2)
 
-`index.html` is the **English source of truth for structure and markup**;
-there is no second HTML file to keep in step. Visitor-facing prose nodes
-carry `data-i18n="<key>"`, the Japanese lives in `i18n.ja.json` next to
-it, and `mise run repro:i18n` splices them into a gitignored
-`index.ja.html` served at `/vivarium/ja/repro/<project>/<issue>/`.
+`index.html` is **generated** and gitignored:
+`docs/scripts/generate-repro-pages.ts` renders it from the layer's
+`page.template.html` plus the recipe's `page.en.html`. You edit
+`page.en.html` — the slots only your recipe knows — and run
+`mise run repro:pages`. The generated English page is the input to the
+Japanese one: visitor-facing prose nodes carry `data-i18n="<key>"`, the
+Japanese lives in `i18n.ja.json` next to it, and `mise run repro:i18n`
+splices them into a gitignored `index.ja.html` served at
+`/vivarium/ja/repro/<project>/<issue>/`.
 
 Rules:
 
@@ -241,9 +245,10 @@ one. Copy the block from
 - The top-level `#verdict` pill mirrors the **baseline only**. A red
   pill driven by the fix pane would flag its desired `unreproduced`
   as a failure.
-- `scripts/validate-output-panes.ts` requires this markup on **every**
-  recipe at build time, and rejects the retired single-pane keys
-  (`section.output.h2`, `output.placeholder`) — those slip past
+- The two panes come from the layer template, so no recipe can omit
+  them. `scripts/validate-page-slots.ts` requires the `fix-pane` slot
+  on **every** recipe at build time and rejects the retired single-pane
+  keys (`section.output.h2`, `output.placeholder`) — those slip past
   `reproI18n.test.ts`, which only checks that the two key sets agree
   with each other. If you adopt a new variant mechanism, extend that
   script in the same PR rather than carving the recipe out.
@@ -285,8 +290,8 @@ PRs 180 / 189 / 192.
 
 `chrome.js` fills the shell; it must never create it. Anything it has
 to create arrives after first paint and moves the page under the
-reader. Each recipe's `index.html` therefore ships, and
-`validate-output-panes.ts` enforces:
+reader. The layer template therefore ships it once, and
+`validate-page-slots.ts` enforces it there:
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -307,6 +312,11 @@ paint, and the page renders unstyled until it lands. The empty
 `vh-topnav` and `vh-footer` reserve their final height from CSS
 (`.vh-topnav` is a fixed height, `.vh-footer:empty::before` holds one
 line), so filling them shifts nothing.
+
+This block lives in `_shared/page.template.html` (Layer 1) and
+`_layer2-shared/page.template.html` (Layer 2). A recipe never repeats
+it; a recipe that needs a shape the template cannot express gets a new
+template rather than a hand-written page.
 
 ---
 

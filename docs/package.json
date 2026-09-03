@@ -11,13 +11,14 @@
     "generate-site-stats": "bun run scripts/generate-site-stats.ts",
     "generate-repro-chrome": "bun run scripts/generate-repro-chrome.ts",
     "generate-repro-i18n": "bun run scripts/generate-repro-i18n.ts",
-    "generate": "bun run generate-repro-chrome && bun run generate-validators && bun run generate-index && bun run generate-repro-i18n && bun run generate-project-pages && bun run generate-site-stats",
+    "generate": "bun run generate-repro-chrome && bun run generate-validators && bun run generate-index && bun run generate-repro-pages && bun run generate-repro-i18n && bun run generate-project-pages && bun run generate-site-stats",
     "prebuild-repro": "bun run scripts/prebuild-repro.ts",
     "dev": "bun run generate && bun run prebuild-repro && rspress dev",
     "build": "bun run generate && rspress build",
     "preview": "rspress preview",
     "test:e2e": "playwright test",
-    "test:unit": "bun run generate-validators && bun test scripts/__tests__"
+    "test:unit": "bun run generate-validators && bun run generate-repro-pages && bun test scripts/__tests__",
+    "generate-repro-pages": "bun run scripts/generate-repro-pages.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.11",

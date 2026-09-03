@@ -67,10 +67,11 @@ be produced for WASM — the second pane says exactly that and names the
 upstream status. It never shows a hand-written "expected" output:
 Vivarium reproduces, it does not assert.
 
-The markup is shared — copy it from
-[`dateutil-1478/`](./dateutil-1478/), the reference implementation — and
-[`scripts/validate-output-panes.ts`](./scripts/validate-output-panes.ts)
-requires it on every recipe at build time.
+The markup is shared: it lives once in
+[`_shared/page.template.html`](./_shared/page.template.html), and each
+recipe supplies only its own slots in `page.en.html`.
+[`scripts/validate-page-slots.ts`](./scripts/validate-page-slots.ts)
+requires those slots at build time.
 
 How the pane gets filled is not prescribed. Three shapes exist today:
 

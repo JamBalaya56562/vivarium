@@ -1,0 +1,23 @@
+<template data-slot="title">bash `local` shadows command-substitution exit code</template>
+
+<template data-slot="h1">Bash <code>local</code> shadows command-substitution exit code</template>
+
+<template data-slot="lede">
+  When <code>local</code> is combined with command
+  substitution, <code>local</code>'s own (always-zero) exit
+  code overrides the right-hand side. <code>set -e</code>
+  therefore silently bypasses failures on the RHS, leading
+  to silent breakage in production scripts. Documented
+  bash + POSIX behaviour, not an upstream defect — the
+  page makes the surprise reproducible in seconds.
+</template>
+
+<template data-slot="reproduce-meta">
+  First-pull cost ~10 MB (bash:5.2 alpine). Run takes
+  under a second. See the
+  <a data-i18n="link.recipeDir" href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/bash-local-shadows-exit">
+    recipe directory</a> for the <code>Dockerfile</code> and
+  <code>repro.sh</code>.
+</template>
+
+<template data-slot="upstream-url">https://mywiki.wooledge.org/BashFAQ/105</template>

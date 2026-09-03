@@ -105,7 +105,7 @@ run = '''
 set -euo pipefail
 find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   crate_dir=$(dirname "$cargo_toml")
-  if [ -f "${crate_dir}/index.html" ]; then
+  if [ -f "${crate_dir}/recipe.json" ]; then
     recipe_dir="$crate_dir"
   else
     recipe_dir=$(dirname "$crate_dir")
@@ -123,6 +123,12 @@ description = "Build Layer 1 fix-candidate wheels from each src/layer1_wasm/<slu
 shell = "bash -c"  # script uses `set -o pipefail` + `shopt -s nullglob`
 run = "bash scripts/build-layer1-wheels.sh"
 
+[tasks."repro:pages"]
+description = "Render each recipe's index.html from its layer template + page.en.html (gitignored output)"
+depends = ["docs:install", "repro:build:ts"]
+dir = "docs"
+run = "bun run generate-repro-pages"
+
 [tasks."repro:i18n"]
 description = "Regenerate each recipe's index.ja.html from index.html + i18n.ja.json (gitignored output)"
 depends = ["docs:install"]
@@ -131,7 +137,7 @@ run = "bun run generate-repro-i18n"
 
 [tasks."repro:build"]
 description = "Build all Layer 1 reproductions (TS + Rust wasm + fix-candidate wheels)"
-depends = ["repro:build:ts", "repro:build:rust", "repro:build:wheels"]
+depends = ["repro:build:ts", "repro:pages", "repro:build:rust", "repro:build:wheels"]
 
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"

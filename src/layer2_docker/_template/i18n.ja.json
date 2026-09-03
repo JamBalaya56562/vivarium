@@ -12,6 +12,7 @@
     "section.reproduce.meta": "{0} に <code>Dockerfile</code> と <code>repro.sh</code> がある。",
     "section.snapshot.h2": "CI スナップショットの出力",
     "output.placeholder": "(読み込み中…)",
-    "footer.note": "Layer 2 のページは CI スナップショットの verdict を表示する。訪問者のローカルでの <code>docker run</code> がライブの確認になる。カタログは {0} を参照。"
+    "footer.note": "Layer 2 のページは CI スナップショットの verdict を表示する。訪問者のローカルでの <code>docker run</code> がライブの確認になる。カタログは {0} を参照。",
+    "link.gallery": "/repro/"
   }
 }

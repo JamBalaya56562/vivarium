@@ -1,0 +1,43 @@
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      PHP's SimpleXML can find a processing-instruction node via
+      <code>xpath("//processing-instruction()")</code>, but casting
+      that node to string yields an empty value instead of the
+      PI's content. xpath returns the node — the count is one — so
+      the bug is purely in the string-cast path for
+      processing-instruction nodes.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      The script on this page builds a small XML document with one
+      processing instruction, runs the xpath query, casts the
+      returned node to string, and reports both the count and
+      the cast result. If the count is <code>1</code> and the
+      cast result is empty, the bug reproduces in the php-wasm
+      build this page loads.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      This recipe also carries the <strong>"Try a fix"</strong>
+      panel below. After the baseline run,
+      you can paste an alternative version of the script
+      (e.g. an AI-proposed userland fix) and re-run it through
+      the same in-browser PHP runtime. The full discussion of
+      the bug itself lives in the GitHub issue thread linked
+      below.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">php-wasm</template>
+
+<template data-slot="fix-pane">
+<pre
+    id="output-fix"
+    class="vh-variant-output vh-variant-output--note"
+    data-fix-status="none"
+    data-i18n="output.noFixCandidate"
+  >(fixed upstream in PHP 8.2.12, but no php-wasm build ships the fix with SimpleXML — see the recipe README)</pre>
+</template>
+
+<template data-slot="sections">
+<section id="path-a-mount" hidden></section>
+</template>

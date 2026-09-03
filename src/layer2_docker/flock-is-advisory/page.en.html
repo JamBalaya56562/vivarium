@@ -1,0 +1,24 @@
+<template data-slot="title">flock(2) is advisory only</template>
+
+<template data-slot="h1">Linux <code>flock(2)</code> is advisory only</template>
+
+<template data-slot="lede">
+  A program holding an exclusive <code>flock</code> on a
+  file does not stop <code>cat</code>, <code>cp</code>,
+  <code>grep</code>, or any other tool that doesn't
+  itself call <code>flock</code> from reading or writing
+  the file. Linux file locks are advisory: only programs
+  that opt in see the lock. Many developers
+  misunderstand this; the page lets you confirm the
+  surprise end-to-end.
+</template>
+
+<template data-slot="reproduce-meta">
+  First-pull cost ~10 MB (alpine:3.19 + util-linux). Run
+  takes ~2.5 s. See the
+  <a data-i18n="link.recipeDir" href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/flock-is-advisory">
+    recipe directory</a> for the <code>Dockerfile</code> and
+  <code>repro.sh</code>.
+</template>
+
+<template data-slot="upstream-url">https://man7.org/linux/man-pages/man2/flock.2.html</template>

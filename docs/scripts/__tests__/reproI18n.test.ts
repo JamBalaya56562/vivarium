@@ -53,6 +53,10 @@ function htmlKeys(html: string): string[] {
 const RECIPES = listRecipes(true);
 
 describe('repro i18n — annotation and translation keys agree', () => {
+  test('the rendered pages this suite reads exist', () => {
+    expect(RECIPES.length).toBeGreaterThan(0);
+  });
+
   for (const recipe of RECIPES) {
     if (!existsSync(recipe.translation)) continue;
 

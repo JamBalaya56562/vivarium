@@ -5,8 +5,8 @@
   "description": "Layer 1 (browser-native WASM) reproduction sources for Vivarium. TypeScript sources transpile 1:1 to side-by-side .js files served as ES modules. Playwright tests assert each reproduction's contract-v1 verdict on every push and on a weekly schedule.",
   "type": "module",
   "scripts": {
-    "build": "bun run scripts/validate-output-panes.ts && bun run scripts/highlight-repros.ts && tsc -p tsconfig.json",
-    "validate": "bun run scripts/validate-output-panes.ts",
+    "build": "bun run scripts/validate-page-slots.ts && bun run scripts/highlight-repros.ts && tsc -p tsconfig.json",
+    "validate": "bun run scripts/validate-page-slots.ts",
     "highlight": "bun run scripts/highlight-repros.ts",
     "watch": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",

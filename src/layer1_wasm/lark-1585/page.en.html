@@ -1,0 +1,39 @@
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      The lark grammar <code>start.1: "a" | start start*</code>
+      causes lark's LALR back-end (and CYK) to enter an infinite
+      loop when <code>parser='lalr'</code> is requested. Earley
+      terminates normally. Without the <code>.1</code> priority
+      on <code>start</code>, lark raises <code>GrammarError</code>
+      instead — only the priority-plus-recursive-alt combination
+      triggers the hang.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      Because the bug is a hang rather than a wrong result,
+      this page runs Pyodide + lark inside a Web Worker and the
+      main thread imposes a wall-clock budget. If the worker
+      does not return a result in time, the verdict is
+      <code>reproduced</code> and the worker is terminated; if
+      the parse returns or raises before the budget elapses,
+      the verdict is <code>unreproduced</code>.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      The full discussion lives in the GitHub issue thread
+      linked below.
+    </p>
+    <p data-i18n="drawer.body.p4">
+      A fix-candidate branch
+      (<code>JamBalaya56562/lark@claude/fix-lark-1585-QLVa7</code>)
+      is built into a pure-Python wheel under <code>./wheels/</code>
+      and installed into a second Pyodide worker after the baseline
+      run completes, so visitors can compare the before/after
+      verdict in one page load.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">Pyodide v0.29.3 + lark 1.3.1 (micropip, inside a Web Worker)</template>
+
+<template data-slot="fix-pane">
+<pre id="output-fix" class="vh-variant-output" data-i18n="output.waitingBaseline">(waiting for baseline)</pre>
+</template>

@@ -1,0 +1,22 @@
+<template data-slot="title">PostgreSQL lost update under READ COMMITTED</template>
+
+<template data-slot="h1">PostgreSQL lost update under <code>READ COMMITTED</code></template>
+
+<template data-slot="lede">
+  Two concurrent application-side <code>read → modify →
+  write</code> transactions under PostgreSQL's default
+  <code>READ COMMITTED</code> isolation can silently lose one
+  increment. The page below shows CI's most recent
+  reproduction snapshot. Run the recipe locally to confirm
+  the same behaviour against your own Docker.
+</template>
+
+<template data-slot="reproduce-meta">
+  First-pull cost ~80 MB (postgres:16-alpine). Run takes
+  ~5 s. See the
+  <a data-i18n="link.recipeDir" href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/postgres-lost-update">
+    recipe directory</a> for the <code>Dockerfile</code> and
+  <code>repro.sh</code>.
+</template>
+
+<template data-slot="upstream-url">https://www.postgresql.org/docs/current/transaction-iso.html</template>

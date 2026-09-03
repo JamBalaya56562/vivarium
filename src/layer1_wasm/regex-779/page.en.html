@@ -1,0 +1,44 @@
+<template data-slot="script-heading">Reproduction script (Rust)</template>
+
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      The Rust <code>regex</code> crate violates a basic regex
+      algebra: <code>(re)+</code> should equal
+      <code>(re)(re)*</code>, but with
+      <code>(?m)(^|a)+</code> against the haystack
+      <code>"a\naaa\n"</code> the two equivalent forms produce
+      different match-iteration outputs. RE2 and Go's regexp
+      have the same divergence; PCRE2 gets it right, so this
+      is an algebraic regex-engine bug rather than a
+      regex-language ambiguity.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      The actual reproduction logic lives in <code>src/main.rs</code>
+      and ships as <code>repro.wasm</code>, built from
+      <code>Cargo.toml</code> at deploy time. The script panel
+      on the left shows the relevant excerpt; the output panel
+      shows the JSON envelope the wasm prints to stdout when it
+      runs.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      Unlike the Pyodide / Ruby.wasm / php-wasm recipes, this
+      page does <strong>not</strong> ship an in-browser
+      edit-and-run affordance — the Rust source is compiled
+      into <code>repro.wasm</code> at build time, so live
+      editing would require re-compilation outside the browser.
+      To experiment with variations, fork the crate and rebuild
+      <code>repro.wasm</code>.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">Rust wasm32-wasip1</template>
+
+<template data-slot="fix-pane">
+<pre
+    id="output-fix"
+    class="vh-variant-output"
+    data-fix-status="pending"
+    data-i18n="output.waitingBaseline"
+  >(waiting for baseline)</pre>
+</template>

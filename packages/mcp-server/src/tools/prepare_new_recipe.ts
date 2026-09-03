@@ -191,7 +191,7 @@ export async function prepareNewRecipe(
           `Edit src/layer2_docker/${slug}/Dockerfile — set the real base image.`,
           `Edit src/layer2_docker/${slug}/repro.sh — replace the TODO stub with the real probe.`,
           `Edit src/layer2_docker/${slug}/README.md — fill in bug description, verdict contract, references.`,
-          `Edit src/layer2_docker/${slug}/index.html — fill in the lede.`,
+          `Edit src/layer2_docker/${slug}/page.en.html — fill in the lede, the h1 and the reproduce-meta slots.`,
           `Write ${recipeJson.path} with the recipe_json.contents from this response, replacing each TODO placeholder.`,
           `If "${project}" is a new project, add the projects_row to docs/site/_data/projects.json.`,
           `Run: ${verifyCommand}  (this regenerates indices, runs lint, runs the docker build/run, and the rspress build).`,

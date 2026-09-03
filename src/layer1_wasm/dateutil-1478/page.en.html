@@ -1,0 +1,43 @@
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      <code>dateutil.parser.parse</code> inverts the sign of a
+      numeric UTC offset whenever the offset is preceded by the
+      literal <code>UTC</code> prefix.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      <code>parse('2026-03-11 14:32:45 UTC-4')</code> returns
+      <code>2026-03-11T14:32:45+04:00</code> (expected
+      <code>-04:00</code>), and <code>parse('… UTC+4')</code>
+      returns <code>-04:00</code> (expected <code>+04:00</code>).
+      Bare ISO 8601 forms (<code>+04:00</code> /
+      <code>-04:00</code> without the <code>UTC</code> prefix)
+      parse correctly, so the inversion is isolated to the
+      <code>UTC</code> + signed-offset code path.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      The script on this page exercises four shapes
+      (<code>UTC-4</code>, <code>UTC+4</code>,
+      <code>UTC-04:00</code>, <code>UTC+04:00</code>) and
+      compares each parsed <code>utcoffset()</code> against the
+      expected value.
+    </p>
+    <p data-i18n="drawer.body.p4">
+      The full discussion (motivation, history, fix progress)
+      lives in the GitHub issue thread linked below.
+    </p>
+    <p data-i18n="drawer.body.p5">
+      A fix-candidate branch
+      (<code>JamBalaya56562/dateutil@fix-1478-utc-gmt-offset-sign</code>)
+      is built into a pure-Python wheel under <code>./wheels/</code>
+      and installed into the same Pyodide tab after the baseline
+      run completes, so visitors can compare the before/after
+      verdict in one page load.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">Pyodide v0.29.3 + python-dateutil 2.9.0.post0 (micropip)</template>
+
+<template data-slot="fix-pane">
+<pre id="output-fix" class="vh-variant-output" data-i18n="output.waitingBaseline">(waiting for baseline)</pre>
+</template>

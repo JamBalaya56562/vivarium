@@ -1,0 +1,36 @@
+<template data-slot="drawer-body">
+    <p data-i18n="drawer.body.p1">
+      Ruby's Regexp interpolation rejects fragments of differing
+      encodings, while String interpolation silently upgrades them
+      to UTF-8. With <code>prefix = '\p{In_Arabic}'</code> and
+      <code>suffix = prefix.encode('US-ASCII')</code>,
+      <code>/#{prefix}#{suffix}/</code> raises a
+      <code>RegexpError</code> while
+      <code>"#{prefix}#{suffix}"</code> builds a UTF-8 string.
+    </p>
+    <p data-i18n="drawer.body.p2">
+      The two interpolation forms should agree on how to combine
+      fragments of different encodings. The script on this page
+      attempts both, captures whether each raised, and returns
+      a JSON summary the verdict logic uses to decide reproduced
+      vs unreproduced.
+    </p>
+    <p data-i18n="drawer.body.p3">
+      The full discussion (motivation, fix progress) lives in the
+      GitHub issue thread linked below.
+    </p>
+  
+</template>
+
+<template data-slot="runtime-label">Ruby.wasm</template>
+
+<template data-slot="upstream-url">https://bugs.ruby-lang.org/issues/21709</template>
+
+<template data-slot="fix-pane">
+<pre
+    id="output-fix"
+    class="vh-variant-output vh-variant-output--note"
+    data-fix-status="none"
+    data-i18n="output.noFixCandidate"
+  >(no fix candidate yet — bugs.ruby-lang.org#21709 is still open upstream)</pre>
+</template>

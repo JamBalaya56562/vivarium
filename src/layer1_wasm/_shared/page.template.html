@@ -4,17 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="vivarium-contract" content="v1" />
-    <title data-i18n="page.title">Vivarium · Reproducing lark-parser/lark#1585</title>
+    <title data-i18n="page.title">Vivarium · Reproducing {{TITLE}}</title>
     <script>(function(){try{var s=localStorage.getItem('rspress-theme-appearance'),m=window.matchMedia('(prefers-color-scheme: dark)').matches,d=!s||s==='auto'?m:s==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.classList.toggle('rp-dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()</script>
-    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />
-    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/python_stdlib.zip" as="fetch" crossorigin />
-    <link rel="preload" href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide-lock.json" as="fetch" type="application/json" crossorigin />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link
-      rel="modulepreload"
-      href="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.mjs"
-      crossorigin
-    />
+{{RUNTIME_HEAD}}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" />
@@ -24,47 +16,18 @@
       <p class="vh-drawer__eyebrow" data-i18n="drawer.eyebrow">// BUG CONTEXT</p>
       <h2 class="vh-drawer__heading" data-i18n="drawer.heading">Why this reproduction page exists</h2>
       <div class="vh-drawer__body" id="vh-drawer-body">
-        <p data-i18n="drawer.body.p1">
-          The lark grammar <code>start.1: "a" | start start*</code>
-          causes lark's LALR back-end (and CYK) to enter an infinite
-          loop when <code>parser='lalr'</code> is requested. Earley
-          terminates normally. Without the <code>.1</code> priority
-          on <code>start</code>, lark raises <code>GrammarError</code>
-          instead — only the priority-plus-recursive-alt combination
-          triggers the hang.
-        </p>
-        <p data-i18n="drawer.body.p2">
-          Because the bug is a hang rather than a wrong result,
-          this page runs Pyodide + lark inside a Web Worker and the
-          main thread imposes a wall-clock budget. If the worker
-          does not return a result in time, the verdict is
-          <code>reproduced</code> and the worker is terminated; if
-          the parse returns or raises before the budget elapses,
-          the verdict is <code>unreproduced</code>.
-        </p>
-        <p data-i18n="drawer.body.p3">
-          The full discussion lives in the GitHub issue thread
-          linked below.
-        </p>
-        <p data-i18n="drawer.body.p4">
-          A fix-candidate branch
-          (<code>JamBalaya56562/lark@claude/fix-lark-1585-QLVa7</code>)
-          is built into a pure-Python wheel under <code>./wheels/</code>
-          and installed into a second Pyodide worker after the baseline
-          run completes, so visitors can compare the before/after
-          verdict in one page load.
-        </p>
+{{DRAWER_BODY}}
       </div>
       <hr class="vh-drawer__divider" />
       <div class="vh-drawer__meta-grid">
         <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k1">Project</span>
-        <span class="vh-drawer__meta-val">lark-parser/lark</span>
+        <span class="vh-drawer__meta-val">{{PROJECT}}</span>
         <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k2">Issue</span>
-        <span class="vh-drawer__meta-val">#1585</span>
+        <span class="vh-drawer__meta-val">#{{ISSUE}}</span>
         <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k3">Layer</span>
         <span class="vh-drawer__meta-val" data-i18n="drawer.meta.layer">L1 · WASM</span>
         <span class="vh-drawer__meta-key" data-i18n="drawer.meta.k4">Runtime</span>
-        <span class="vh-drawer__meta-val">Pyodide v0.29.3 + lark 1.3.1 (micropip, inside a Web Worker)</span>
+        <span class="vh-drawer__meta-val">{{RUNTIME_LABEL}}</span>
       </div>
     </template>
   </head>
@@ -73,22 +36,19 @@
     <main class="vh-main">
       <header class="vh-main__header">
         <div class="vh-main__header-text">
-          <p class="kicker">L1 · Pyodide</p>
-          <h1 data-i18n="page.h1">Reproducing <a href="https://github.com/lark-parser/lark/issues/1585" target="_blank" rel="noreferrer">lark-parser/lark#1585</a></h1>
+          <p class="kicker">{{KICKER}}</p>
+          <h1 data-i18n="page.h1">Reproducing <a href="{{UPSTREAM_URL}}" target="_blank" rel="noreferrer">{{TITLE}}</a></h1>
           <div class="vh-main__header-actions">
             <button type="button" class="vh-chip" data-vh-action="open-drawer" data-i18n="chip.bugContext">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               Bug context
             </button>
-            <a class="vh-chip" href="https://github.com/JamBalaya56562/lark/tree/claude/fix-lark-1585-QLVa7" target="_blank" rel="noreferrer" data-i18n="chip.fixCandidate">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
-              Fix candidate branch
-            </a>
+{{FIX_CHIP}}
           </div>
         </div>
         <div class="vh-main__header-aside">
           <div id="verdict" class="verdict pending" data-verdict="pending" role="status" aria-live="polite" data-i18n="verdict.pending">
-            Loading Pyodide runtime…
+            {{VERDICT_PENDING}}
           </div>
           <p class="meta" id="meta"></p>
         </div>
@@ -96,8 +56,8 @@
 
       <div class="vh-main__cols">
         <section class="vh-main__col vh-main__col--script">
-          <h2 data-i18n="section.script.h2">Reproduction script</h2>
-          <pre><code id="repro-code"><span class="line"><span style="color:#E1E4E8">Lark(</span><span style="color:#9ECBFF">'start.1: "a" | start start*'</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">parser</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">'lalr'</span><span style="color:#E1E4E8">).parse(</span><span style="color:#9ECBFF">'aa'</span><span style="color:#E1E4E8">)</span></span></code></pre>
+          <h2 data-i18n="section.script.h2">{{SCRIPT_HEADING}}</h2>
+          <pre><code id="repro-code">{{REPRO_CODE}}</code></pre>
         </section>
 
         <section class="vh-main__col vh-main__col--output vh-output-multi">
@@ -118,10 +78,10 @@
           <header class="vh-variant-head vh-variant-head--secondary" data-variant="fix-candidate">
             <h2 class="vh-variant-head__title" data-i18n="section.fix.h2">Fix-candidate output</h2>
           </header>
-          <pre id="output-fix" class="vh-variant-output" data-i18n="output.waitingBaseline">(waiting for baseline)</pre>
+{{FIX_PANE}}
         </section>
       </div>
-
+{{EXTRA_SECTIONS}}
     </main>
 
     <footer class="vh-footer"></footer>

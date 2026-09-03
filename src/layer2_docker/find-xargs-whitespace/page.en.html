@@ -1,0 +1,25 @@
+<template data-slot="title">find | xargs whitespace splitting</template>
+
+<template data-slot="h1"><code>find … | xargs cmd</code> is unsafe for whitespace in filenames</template>
+
+<template data-slot="lede">
+  <code>xargs</code> splits its stdin on whitespace by
+  default. The pipeline
+  <code>find . -name '*.txt' | xargs grep -l 'secret'</code>
+  silently misses every file whose path contains a space,
+  a tab, or a newline, because <code>xargs</code> hands
+  each whitespace-separated token to <code>grep</code> as a
+  distinct argument. The fix —
+  <code>find … -print0 | xargs -0 …</code> — uses NUL bytes
+  as separators, which can never appear in a filename.
+</template>
+
+<template data-slot="reproduce-meta">
+  First-pull cost ~10 MB (alpine:3.19 + GNU findutils).
+  Run takes well under a second. See the
+  <a data-i18n="link.recipeDir" href="https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker/find-xargs-whitespace">
+    recipe directory</a> for the <code>Dockerfile</code> and
+  <code>repro.sh</code>.
+</template>
+
+<template data-slot="upstream-url">https://mywiki.wooledge.org/BashFAQ/020</template>
