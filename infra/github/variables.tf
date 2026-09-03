@@ -30,26 +30,17 @@ variable "repository_topics" {
   description = "Topics to attach to the repository"
   type        = list(string)
   default = [
-    # Problem domain (keeps the project problem-centered).
     "bug-reproduction",
     "ai-verification",
     "reproducibility",
     "sandbox",
-    # Technical means (multi-layer architecture, not locked into WASM).
     "webassembly",
     "docker",
-    # Categories
     "developer-tools",
     "open-source",
   ]
 }
 
-# Whether to create the project's Phase 0–N milestones on the
-# repository. The phase taxonomy is upstream-only context;
-# fork users running this configuration on their own copy do
-# not need them. Default: false (fork-friendly). The upstream
-# `aletheia-works/vivarium` repo sets this to `true` in its own
-# terraform.tfvars.
 variable "create_phase_milestones" {
   description = "Whether to create the Vivarium Phase milestones (upstream only)"
   type        = bool

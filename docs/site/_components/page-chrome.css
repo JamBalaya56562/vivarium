@@ -1,10 +1,3 @@
-/* Vivarium inner-page chrome — patterns derived from the Stitch Vision
- * mockup. Reused across Vision / Architecture / Roadmap / Spec / AI workflow
- * / Reproductions pages. Uses the same tokens declared in vivarium-hero.css;
- * we redeclare them here so this file works even when the hero CSS is not
- * loaded (e.g. on inner pages that don't render the landing hero).
- */
-
 html.dark {
   --vh-bg: #00110e;
   --vh-text: #ffffff;
@@ -281,11 +274,6 @@ html.dark {
   font-size: inherit;
 }
 
-/* Markdown `> blockquote` syntax automatically renders with the same
- * visual treatment as the explicit <Callout> component — a body-size
- * aside with a teal left rail and Space Grotesk for light typographic
- * differentiation. Authors can write a blockquote in MDX and get the
- * Vivarium callout styling without importing a JSX tag. */
 .v-section__body blockquote {
   margin: 2rem 0;
   padding: 0.75rem 0 0.75rem 2rem;
@@ -462,10 +450,6 @@ html.dark {
   background: var(--vh-card-bg);
 }
 
-/* Pictographic icon shown above the pill on overview LayerCards.
- * Sized to render lucide-react icons cleanly; the icon SVG is the
- * `currentColor`-driven kind, so the per-accent color rules below
- * tint it via the wrapper's `color`. */
 .v-layer__icon {
   display: inline-flex;
   align-items: center;
@@ -627,9 +611,6 @@ html.dark {
   color: var(--vh-text);
 }
 
-/* On mobile, repeat the row label inline above each cell so the meaning
- * doesn't get lost when columns stack vertically. The row-label div in
- * the head row is kept aria-hidden and visually empty there. */
 @media (max-width: 767px) {
   .v-layer-matrix__head .v-layer-matrix__row-label {
     display: none;
@@ -848,9 +829,6 @@ html.dark {
   background: var(--vh-card-bg-hover);
 }
 
-/* Pictographic icon shown above the kicker on RouteCards. Same
- * shape as `.v-layer__icon`; renders lucide-react SVG icons cleanly
- * and consistently across both card families. */
 .v-routes__icon {
   display: inline-flex;
   align-items: center;
@@ -919,10 +897,6 @@ html.dark {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
-  /* Sit clearly below whatever just preceded — typically a LayerCards
-   * row or a body paragraph — without crowding either. The previous
-   * 1.75rem gap looked stuck-on against the LayerCards row at desktop
-   * widths; 3rem matches the v-section default rhythm. */
   margin: 3rem 0 0;
   padding: 0.85rem 1.25rem;
   border-left: 3px solid var(--vh-accent-teal);
@@ -1143,11 +1117,6 @@ html.dark {
 .v-bottom-note:hover {
   color: var(--vh-accent-teal-bright);
 }
-/*
- * Used by guide/glossary pages. <dl><dt><strong>Term</strong></dt>
- * <dd>Definition…</dd></dl>. Definitions are typographically subordinate
- * to terms — the same hierarchy a printed glossary uses.
- */
 
 .v-glossary {
   margin: 0;

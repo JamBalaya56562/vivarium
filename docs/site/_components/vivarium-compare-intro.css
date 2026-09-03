@@ -7,8 +7,6 @@
 }
 
 .v-compare-intro__inner {
-  /* Sits inside rspress's content column, so no max-width clamp needed
-   * here — the doc layout already constrains us. */
   width: 100%;
 }
 

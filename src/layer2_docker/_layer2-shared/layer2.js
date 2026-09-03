@@ -1,22 +1,5 @@
-// Side-effect: imports the shared reproduction-page chrome (nav, footer,
-// theme toggle, progress bar, service-worker registration).
-//
-// The canonical, tracked copy lives at `src/layer1_wasm/_assets/`.
-// `src/layer2_docker/_assets/` is a GENERATED MIRROR (gitignored, written
-// by `src/layer1_wasm/scripts/sync-layer2-assets.ts`) that exists only so
-// the Layer 2 Playwright server — a plain static server rooted at
-// `src/layer2_docker/`, which cannot hop layers — can serve this path.
-// rspress dev resolves `_`-prefixed paths across all layer roots, and the
-// deploy stages the Layer 1 copy into each Layer 2 project directory, so
-// neither of those needs the mirror. Do not edit the mirror: edit
-// `src/layer1_wasm/_assets/chrome.js`.
 import "../_assets/chrome.js";
 
-// Verdict-snapshot copy. Plain JS with no build step (this module is
-// loaded directly by every Layer 2 page), so the table is inline and the
-// locale comes from `<html lang>`, which the generated Japanese page
-// sets. Register per the existing JA prose: plain form, technical terms
-// (verdict, snapshot, digest) left in English.
 const L2_STRINGS = {
   en: {
     fetching: "Fetching CI verdict snapshot\u2026",
@@ -60,35 +43,6 @@ const L2_STRINGS = {
 const L2 =
   L2_STRINGS[document.documentElement.lang === "ja" ? "ja" : "en"];
 
-// Vivarium Layer 2 — verdict snapshot renderer.
-//
-// Each Layer 2 page ships a minimal `index.html` that imports
-// this module and calls `renderVerdictSnapshot({…})` once. The
-// module fetches `./verdict.json` (CI-generated, sitting next to
-// the HTML in the deployed Pages artefact) and:
-//   - flips the DOM `#verdict[data-verdict]` element to
-//     "reproduced" / "unreproduced" with human-readable text
-//     (renamed from "pass"/"fail" in Contract v1 Revision 3 — see
-//     ADR-0029);
-//   - publishes `__VIVARIUM_VERDICT__` and `__VIVARIUM_RESULT__`
-//     globals matching the contract-v1 surface Layer 1 uses, so
-//     the same Playwright suite can later assert against
-//     Layer 2 pages without bespoke wiring;
-//   - injects the captured stdout into `#output` and the
-//     image / digest / exit-code metadata into `#meta`.
-//
-// Per ADR-0010, Layer 2 verdicts are snapshots: the page reports
-// what CI saw the last time the image was built and run. The
-// visitor's local `docker run` is the live confirmation.
-
-/**
- * @param {Object} options
- * @param {string} options.verdictUrl  Path to verdict.json. Defaults to "./verdict.json".
- * @param {{project: string, issue: number | string, upstream_url: string}} options.bug
- *   Page metadata, surfaced through `__VIVARIUM_RESULT__.bug`.
- *   `issue` may be 0 (or a string slug) for catalogue entries
- *   that are documented behaviours rather than numbered defects.
- */
 export async function renderVerdictSnapshot(options) {
   const verdictUrl = options.verdictUrl ?? "./verdict.json";
   const bug = options.bug;
@@ -108,13 +62,6 @@ export async function renderVerdictSnapshot(options) {
     verdictEl.textContent = text;
     globalThis.__VIVARIUM_VERDICT__ = state;
 
-    // Tell chrome.js's progress bar the run is finished. Without this
-    // dispatch, the progress overlay sits on top of `<pre id="output">`
-    // forever showing "Initialising…", hiding the captured stdout. Layer 1
-    // does the same dispatch from `_shared/verdict.ts`'s setVerdict — this
-    // mirrors that, so chrome.js's `vh-progress` listener fires regardless
-    // of whether the page comes from Layer 1 (Pyodide / Ruby.wasm / etc.)
-    // or Layer 2 (Docker snapshot).
     if (state !== "pending") {
       document.dispatchEvent(
         new CustomEvent("vh-progress", {
@@ -133,11 +80,6 @@ export async function renderVerdictSnapshot(options) {
         `failed to fetch ${verdictUrl}: HTTP ${response.status} ${response.statusText}`,
       );
     }
-    // CI generates verdict.json on the deploy pipeline, but in local dev
-    // the file isn't there — the rspress middleware falls through to the
-    // SPA shell and we get HTML instead of JSON. Detect that case and
-    // surface a friendly "snapshot unavailable in dev" instead of a
-    // JSON parse error.
     const text = await response.text();
     let snap;
     try {
@@ -149,7 +91,6 @@ export async function renderVerdictSnapshot(options) {
       );
       if (metaEl) metaEl.textContent = "";
       if (outputEl) outputEl.textContent = L2.devOutput;
-      // Mark progress complete so the bar doesn't linger.
       document.dispatchEvent(
         new CustomEvent("vh-progress", {
           detail: { stage: "done", pct: 100, label: L2.devProgress },
@@ -184,8 +125,6 @@ export async function renderVerdictSnapshot(options) {
         L2.exitCode(snap.exit_code),
         L2.captured(snap.captured_at),
       ].filter(Boolean);
-      // `<br>` between lines so the meta line-breaks render visibly.
-      // textContent collapses newlines under default `<p>` styling.
       metaEl.replaceChildren();
       lines.forEach((line, i) => {
         if (i > 0) metaEl.appendChild(document.createElement("br"));
@@ -214,9 +153,6 @@ export async function renderVerdictSnapshot(options) {
         stderr_tail: snap.stderr_tail || "",
       },
       timing: {
-        // Layer 2 pages don't run the reproduction in-page; the
-        // timing fields below all reference the CI snapshot's
-        // capture time.
         started_at: snap.captured_at,
         finished_at: snap.captured_at,
         duration_ms: 0,

@@ -1,17 +1,3 @@
-// Layer-abstracted round-trip verification helper. Computes the
-// state-machine next_action from a recipe's current round-trip state,
-// optionally executes the appropriate verdict capture (Layer 1
-// Playwright run or Layer 2/3 workflow dispatch), and returns the
-// merged state alongside the commands the caller should run for any
-// non-executing action (open PRs, manual intervention, complete).
-//
-// Phase 3: when `auto_execute` is true (the default), the tool
-// actually runs `verify_unfixed` / `verify_fixed` via the internal
-// `run_layer1_verdict` / `run_layer23_verdict` helpers and merges the
-// captured verdict into the response's `verdicts` field. Pass
-// `auto_execute: false` to get the Phase 1 / 2 behaviour (return
-// commands as strings without running anything).
-
 import { getCatalogue } from '../catalogue.js';
 import type {
   Layer,
@@ -36,7 +22,6 @@ export interface VerifyAndReportFixArgs {
   fix_source?: string;
   branch_image?: string;
   current_state?: Partial<RoundtripState>;
-  // Phase 3 additions:
   auto_execute?: boolean;
   workspace_path?: string;
   poll_interval_ms?: number;
@@ -86,11 +71,6 @@ const LAYER_SOURCE: Record<Layer, VerdictSource> = {
   3: 'layer3-trace',
 };
 
-// Pure state-machine transition. Exported so unit tests and any future
-// MCP client can reuse the same logic without re-implementing the
-// transitions. `status: blocked` short-circuits to manual_intervention
-// regardless of verdict / PR fields so a paused round-trip cannot drift
-// further on automation.
 export function computeNextAction(
   state: Partial<RoundtripState> | undefined,
 ): RoundtripNextAction {
@@ -113,8 +93,6 @@ export function computeNextAction(
   return 'verify_unfixed';
 }
 
-// Parse `https://github.com/<owner>/<repo>/issues/<n>` (or `/pull/<n>`)
-// to extract the upstream repo coordinates.
 export function parseUpstreamIssue(
   url: string | undefined,
 ): { owner: string; repo: string } | undefined {
@@ -220,8 +198,6 @@ function buildCommands(args: BuildCommandsArgs): string[] {
   }
 }
 
-// Layer 1 verdict capture path. fix_url is required when action is
-// verify_fixed (the whole point of "fixed" is to substitute a fix).
 async function executeLayer1(
   slug: string,
   action: 'verify_unfixed' | 'verify_fixed',
@@ -276,8 +252,6 @@ async function executeLayer1(
   };
 }
 
-// Layer 2/3 verdict capture path. verify_fixed needs branch_image;
-// verify_unfixed reads the deployed verdict.json snapshot.
 async function executeLayer23(
   slug: string,
   layer: 2 | 3,
@@ -289,10 +263,6 @@ async function executeLayer23(
 }> {
   const sourceLabel = LAYER_SOURCE[layer];
 
-  // Layer 3 fixed verdicts are not supported yet. branch-fix-verdict.yml
-  // checks `src/layer2_docker/<slug>/` only; running it for a Layer 3
-  // recipe would fail inside the workflow. Reject up front so the
-  // failure is informative instead of a confusing workflow exit code.
   if (layer === 3 && action === 'verify_fixed') {
     return {
       executed: {
@@ -389,9 +359,6 @@ export async function verifyAndReportFix(
   const notes = [...verifyResult.notes];
   let executed: ExecutedInfo | undefined;
 
-  // Auto-execute defaults to true. Only verify_unfixed / verify_fixed
-  // are executable; the other next_actions (open_*_pr,
-  // manual_intervention, complete) are caller actions.
   const autoExecute = args.auto_execute !== false;
   const shouldExecute =
     autoExecute &&
@@ -423,8 +390,6 @@ export async function verifyAndReportFix(
     );
   }
 
-  // Recompute next_action against the (possibly updated) verdicts so
-  // the caller sees what to do next now that a verdict was captured.
   const updatedState: Partial<RoundtripState> = {
     ...args.current_state,
     verdicts,

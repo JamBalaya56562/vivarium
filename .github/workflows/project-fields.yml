@@ -1,31 +1,5 @@
 name: Project field updates
 
-# Updates per-item date fields on the org-level Projects v2 board
-# (`aletheia-works/projects/1`, "vivarium roadmap"). The board hosts both
-# pull requests and issues, with a separate field pair per content type
-# so each Roadmap view can use vocabulary that fits the lifecycle:
-#
-#   Pull requests
-#     • Started At — set on `pull_request_target: opened`.
-#     • Merged At  — set on `pull_request_target: closed` *and* merged.
-#                    Closed-without-merge is skipped (no value written).
-#
-#   Issues
-#     • Opened At — set on `issues: opened`.
-#     • Closed At — set on `issues: closed` *and* `state_reason ==
-#                   "completed"`. `not_planned` is skipped (no value
-#                   written), mirroring the PR closed-without-merge rule.
-#
-# The two Roadmap views (one filtered to `is:pr`, one to `is:issue`) use
-# their respective field pair as the date axis, while sharing the
-# milestone swimlanes defined in `infra/github/milestones.tf`.
-# Milestones themselves are deliberately *not* updated per item; phase
-# boundaries stay directional.
-#
-# The default GITHUB_TOKEN cannot mutate org-scoped Projects v2, so a
-# fine-grained PAT scoped to `aletheia-works` (Organization permissions
-# → Projects: Read and write) is read from the PROJECTS_TOKEN secret.
-
 on:
   pull_request_target:
     types: [opened, closed]
@@ -64,9 +38,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 1. Decide what to write based on the triggering event/action.
-          # CONTENT_ID, FIELD_NAME, DATE_VALUE are the three pieces the
-          # downstream GraphQL flow needs.
           case "$EVENT_NAME" in
             pull_request_target)
               CONTENT_ID="$PR_NODE_ID"
@@ -97,8 +68,6 @@ jobs:
                   DATE_VALUE="${ISSUE_OPENED_AT%%T*}"
                   ;;
                 closed)
-                  # `state_reason` is lowercase in the issues webhook
-                  # payload (completed | not_planned | reopened | null).
                   if [[ "$ISSUE_STATE_REASON" != "completed" ]]; then
                     echo "Issue closed as '${ISSUE_STATE_REASON:-null}' (not completed); nothing to update."
                     exit 0
@@ -118,7 +87,6 @@ jobs:
               ;;
           esac
 
-          # 2. Resolve project ID and the target field ID.
           project_data=$(gh api graphql \
             -f owner="$PROJECT_OWNER" \
             -F number="$PROJECT_NUMBER" \
@@ -154,9 +122,6 @@ jobs:
             exit 1
           fi
 
-          # 3. Add the item to the board. addProjectV2ItemById is
-          # idempotent and returns the existing item if Auto-add already
-          # inserted it, so this race is harmless.
           add_result=$(gh api graphql \
             -f projectId="$PROJECT_ID" \
             -f contentId="$CONTENT_ID" \
@@ -168,7 +133,6 @@ jobs:
               }')
           ITEM_ID=$(echo "$add_result" | jq -r '.data.addProjectV2ItemById.item.id')
 
-          # 4. Write the field value.
           gh api graphql \
             -f projectId="$PROJECT_ID" \
             -f itemId="$ITEM_ID" \

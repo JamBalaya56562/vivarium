@@ -1,10 +1,5 @@
 name: Check Conventional Commit
 
-# Validates commit messages against the Conventional Commits specification.
-# Delegates to the reusable workflow in aletheia-works/.github; the
-# reusable workflow also posts the PR result as a comment, so no separate
-# listener is needed here.
-
 on:
   pull_request:
   push:

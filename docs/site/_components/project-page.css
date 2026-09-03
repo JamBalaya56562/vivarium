@@ -1,9 +1,3 @@
-/* Project landing page (/repro/<project>/).
- * Tokens inherit from page-chrome.css; layer accent classes mirror
- * recipe-gallery.css's `--teal/--violet/--coral` chips so the same
- * colour means the same layer everywhere on the site.
- */
-
 .v-pp {
   margin: 1.25rem 0 2.5rem;
   font-family:

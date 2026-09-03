@@ -1,14 +1,3 @@
-// Vivarium Layer 1 reproduction — pandas-dev/pandas#56679.
-//
-// `pd.Series([])` returns dtype `object`, but `pd.DataFrame({'a': []})['a']`
-// returns dtype `float64`. The two constructors should produce a consistent
-// dtype for an empty input.
-//
-// Verdict semantics (per ADR-0008 / contract v1):
-//   - "reproduced" — the bug REPRODUCES (Series dtype ≠ DataFrame dtype on the
-//     pandas build that Pyodide ships).
-//   - "unreproduced" — the bug does NOT reproduce (or the runtime errored).
-
 import {
   DEFAULT_PYODIDE_VERSION,
   loadVivariumPyodide,
@@ -62,10 +51,6 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -174,7 +159,6 @@ try {
   };
   setResult(envelope);
 
-  // Wire the editable script + Run button.
   enableRunner({
     slug: 'pandas-56679',
     baselineSource: REPRO_CODE,
@@ -185,9 +169,6 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  // `loadVivariumPyodide` already sets the verdict to "unreproduced" on load-time
-  // errors. Cover the case where the runtime loaded but the reproduction
-  // itself errored — e.g. an unexpected pandas API change.
   if (globalThis.__VIVARIUM_VERDICT__ !== 'unreproduced') {
     setVerdict(
       'unreproduced',
@@ -196,6 +177,4 @@ try {
   }
 }
 
-// Suppress "DEFAULT_PYODIDE_VERSION imported but unused" — keeping the
-// re-export visible so the version pin is discoverable from this file.
 void DEFAULT_PYODIDE_VERSION;

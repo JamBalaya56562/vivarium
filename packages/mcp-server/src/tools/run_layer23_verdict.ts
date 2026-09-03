@@ -1,18 +1,3 @@
-// Internal helper for `verify_and_report_fix` on Layer 2/3 recipes.
-//
-// Two paths:
-//   - mode=unfixed → fetch the deployed `verdict.json` snapshot (the
-//     same snapshot the gallery already serves; no docker run needed).
-//   - mode=fixed   → dispatch `branch-fix-verdict.yml`, poll for the
-//     workflow run to complete, download the verdict artefact, and
-//     return the captured verdict.
-//
-// Not exposed as an MCP tool: callers go through `verify_and_report_fix`
-// for the layer-abstracted entrypoint.
-//
-// Phase 3 of the round-trip automation plan. Replaces the Phase 1
-// "return commands as strings" Layer 2/3 path with real execution.
-
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -64,8 +49,6 @@ export type GhRunner = (args: string[]) => GhRunResult;
 const defaultGhRunner: GhRunner = (args) => {
   const r = spawnSync('gh', args, {
     encoding: 'utf-8',
-    // Hard cap so a stuck `gh` cannot wedge the MCP server. The polling
-    // loop's own timeout governs the total wait; this is per-call.
     timeout: 5 * 60 * 1000,
   });
   return {
@@ -81,9 +64,6 @@ export function _setGhRunnerForTesting(runner: GhRunner | null): void {
   ghRunner = runner ?? defaultGhRunner;
 }
 
-// Snapshot fetcher injectable for tests; the real impl resolves the
-// slug's `verdict_url` from the catalogue and fetches Contract v1
-// JSON.
 export type SnapshotFetcher = (slug: string) => Promise<VerdictSnapshot | null>;
 
 const defaultSnapshotFetcher: SnapshotFetcher = async (slug) => {
@@ -101,7 +81,6 @@ export function _setSnapshotFetcherForTesting(
   snapshotFetcher = fetcher ?? defaultSnapshotFetcher;
 }
 
-// Sleeper injectable so polling tests can advance time instantly.
 export type Sleeper = (ms: number) => Promise<void>;
 
 const defaultSleeper: Sleeper = (ms) =>
@@ -116,9 +95,6 @@ export function _setSleeperForTesting(s: Sleeper | null): void {
 const DEFAULT_REPO = 'aletheia-works/vivarium';
 const DEFAULT_POLL_INTERVAL_MS = 15_000;
 const DEFAULT_POLL_TIMEOUT_MS = 10 * 60 * 1000;
-// Sleep after dispatch before listing runs so the dispatched run has
-// time to register on the API side. 3 seconds is empirically enough
-// without making the happy path noticeably slower.
 const POST_DISPATCH_WAIT_MS = 3_000;
 
 function isVerdict(value: unknown): value is Verdict {
@@ -171,7 +147,6 @@ export async function runLayer23Verdict(
     };
   }
 
-  // mode === 'fixed'
   if (!args.branch_image?.trim()) {
     return {
       ok: false,
@@ -193,15 +168,8 @@ export async function runLayer23Verdict(
   const pollInterval = args.poll_interval_ms ?? DEFAULT_POLL_INTERVAL_MS;
   const pollTimeout = args.poll_timeout_ms ?? DEFAULT_POLL_TIMEOUT_MS;
 
-  // Record the dispatch boundary BEFORE the gh call. The list step
-  // below filters runs to `createdAt >= dispatchBoundary - buffer`
-  // so we never pick up a pre-existing stale run for the same slug
-  // (which would have an old artefact and yield a misleading
-  // verdict). The 5-second buffer absorbs API clock drift between
-  // the local machine and GitHub.
   const dispatchBoundary = Date.now();
 
-  // 1. Dispatch workflow.
   const dispatch = ghRunner([
     'workflow',
     'run',
@@ -223,11 +191,6 @@ export async function runLayer23Verdict(
     };
   }
 
-  // 2. Locate the run we just dispatched. Short sleep avoids racing
-  // against the API picking the run up. We pull up to 10 recent
-  // runs (rather than `--limit 1`) and filter by createdAt so a
-  // concurrent dispatch or a stale older run cannot smuggle in a
-  // wrong run_id.
   await sleeper(POST_DISPATCH_WAIT_MS);
   const list = ghRunner([
     'run',
@@ -265,9 +228,6 @@ export async function runLayer23Verdict(
       duration_ms: Date.now() - startedAt,
     };
   }
-  // Only runs created at or after dispatch (with a small clock-drift
-  // buffer) are candidates — older runs are pre-existing artefacts
-  // we must never confuse with this dispatch.
   const CLOCK_BUFFER_MS = 5_000;
   const cutoff = dispatchBoundary - CLOCK_BUFFER_MS;
   const candidates = runs
@@ -284,15 +244,9 @@ export async function runLayer23Verdict(
       duration_ms: Date.now() - startedAt,
     };
   }
-  // Earliest createdAt among the post-dispatch candidates. If there
-  // are concurrent dispatches for the same workflow within a few
-  // seconds we may still race to the wrong run, but the time bound
-  // limits the blast radius. A correlation_id input on the workflow
-  // would close this hole; tracked as a follow-up.
   candidates.sort((a, b) => a.createdAtMs - b.createdAtMs);
   const runId = candidates[0]!.databaseId;
 
-  // 3. Poll until completion or timeout.
   const pollDeadline = startedAt + pollTimeout;
   let conclusion: string | null = null;
   while (Date.now() < pollDeadline) {
@@ -339,10 +293,6 @@ export async function runLayer23Verdict(
     };
   }
 
-  // 4. Download the verdict artefact regardless of conclusion — the
-  // workflow's "Assert expected verdict" step exits non-zero when the
-  // captured verdict mismatches `expected_verdict`, but the artefact
-  // is still uploaded so we can surface the actual verdict.
   const artefactName = `branch-fix-verdict-${slug}-${runId}`;
   const downloadDir = mkdtempSync(join(tmpdir(), `vivarium-artefact-${slug}-`));
 
@@ -413,7 +363,6 @@ export async function runLayer23Verdict(
     try {
       rmSync(downloadDir, { recursive: true, force: true });
     } catch {
-      /* ignore tmpdir cleanup failures */
     }
   }
 }

@@ -1,10 +1,3 @@
-/* Vivarium landing — sections that sit below the existing hero.
- *
- * All tokens (--vh-bg, --vh-text, accents, hairline) come from
- * vivarium-hero.css, which the hero ships into the page first. Both
- * dark and light theme tokens are inherited automatically.
- */
-
 .v-land-numbers,
 .v-land-layers,
 .v-land-personas,
@@ -68,7 +61,6 @@
 }
 
 .v-land-numbers__inner {
-  /* tighter vertical for the numbers band */
   padding-top: 2.5rem;
   padding-bottom: 2.5rem;
 }

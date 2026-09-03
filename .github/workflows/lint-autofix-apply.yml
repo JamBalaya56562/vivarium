@@ -1,55 +1,15 @@
 name: Polyglot lint autofix apply
 
-# Trusted half of the polyglot autofix pair. `lint-autofix.yml` runs
-# the formatters on the PR head with no secrets and uploads the
-# resulting diff; this workflow pushes that diff back to the PR
-# branch.
-#
-# WHY THIS IS SAFE TO RUN WITH THE PAT
-#
-# `workflow_run` runs from the default branch with repository secrets
-# available, which is normally the classic "pwn request" trap. The
-# trap only closes when the trusted job executes something the PR
-# author controls. This job executes nothing from the PR:
-#
-#   - no mise, no package manager, no build, no task runner;
-#   - the only PR-derived input is `autofix.patch`, and it is fed to
-#     `git apply`, which treats it as data, not as code;
-#   - the identity of the target (repo / branch / head SHA) is read
-#     from the `workflow_run` event payload — set by GitHub — never
-#     from the artifact, so a tampered artifact cannot redirect the
-#     push at another repository the PAT can write to;
-#   - the push target is the PR's own head branch on the contributor's
-#     fork, i.e. the one place the patch is supposed to land.
-#
-# `allow-unsafe-pr-checkout: true` is therefore a deliberate opt-in:
-# actions/checkout v6.1.0+ blocks fork-PR checkouts from
-# `workflow_run` by default (see `assertSafePrCheckout`), and the risk
-# it guards against — running fork code in a trusted context — is
-# structurally absent here. Keep it that way: if this job ever needs
-# to *run* something out of the checkout, the split has been broken
-# and the credential must move out of this workflow.
-#
-# The PAT (TF_TOKEN_GITHUB) is required rather than GITHUB_TOKEN
-# because the branch lives on the contributor's personal fork; the
-# base repository token cannot push there.
-
 on:
   workflow_run:
     workflows: ['Polyglot lint autofix']
     types:
       - completed
 
-# `actions: read` to download the artifact from the triggering run.
-# No `contents: write`: the push uses the PAT, and GITHUB_TOKEN has no
-# business writing anywhere here.
 permissions:
   contents: read
   actions: read
 
-# Serialize per head branch so two runs for the same PR cannot race on
-# the push. Not cancel-in-progress: a cancelled apply would silently
-# drop fixes that were already computed.
 concurrency:
   group: >-
     lint-autofix-apply-${{ github.event.workflow_run.head_repository.full_name }}-${{
@@ -59,10 +19,6 @@ concurrency:
 jobs:
   apply:
     name: Apply polyglot lint autofix
-    # Only for successful `pull_request` runs of the producer
-    # workflow. A failed producer has no trustworthy patch, and any
-    # other trigger (a push to main, a manual dispatch) has no PR
-    # branch to push to.
     if: |
       github.repository_owner == 'aletheia-works' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -77,14 +33,6 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Two gates before the credential is handed to anything:
-      #   1. an empty patch means "nothing to fix" — the common case,
-      #      and the case on the re-run our own push triggers, so it
-      #      must exit cleanly rather than fail;
-      #   2. no formatter in `lint:all:fix` touches YAML, so a patch
-      #      that rewrites a workflow file is a signal that something
-      #      other than formatting happened. Refuse it loudly instead
-      #      of pushing it.
       - name: Inspect patch
         id: patch
         run: |
@@ -103,8 +51,6 @@ jobs:
           grep -E '^diff --git ' "${patch}" | sed 's/^diff --git a\///; s/ b\/.*$//'
           echo "apply=true" >> "${GITHUB_OUTPUT}"
 
-      # Checked out into `pr/` so the untrusted tree never overlaps the
-      # workspace root that holds the downloaded artifact.
       - name: Checkout PR branch
         if: steps.patch.outputs.apply == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -113,8 +59,6 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
           token: ${{ secrets.TF_TOKEN_GITHUB }}
           persist-credentials: true
-          # See the security note at the top of this file. Nothing from
-          # this checkout is executed.
           allow-unsafe-pr-checkout: true
           path: pr
 
@@ -127,10 +71,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The branch may have moved since the producer run computed
-          # the patch. Applying it anyway would either conflict or, at
-          # worst, revert newer work — skip and let the push that moved
-          # the branch produce its own autofix run.
           current="$(git rev-parse HEAD)"
           if [ "${current}" != "${HEAD_SHA}" ]; then
             echo "Branch moved (${HEAD_SHA} -> ${current}); skipping stale patch."

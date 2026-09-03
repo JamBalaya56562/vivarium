@@ -1,20 +1,7 @@
-// Editable reproduction script + Run / Reset buttons. Recipes call
-// `enableRunner({...})` after the baseline run; on Edit the Shiki
-// `<pre>` swaps to a `<textarea>`, on Run the runner invokes the
-// recipe's `runFix(source)` and updates `#output` + the verdict pill
-// in place. Reuses `PathACapturedRun` so a recipe needs only one
-// `captureRun` adapter to participate in both the runner and the
-// existing Path A panel.
-
 import { pick } from './i18n.js';
 import type { PathACapturedRun } from './path_a.js';
 import { setVerdict } from './verdict.js';
 
-// UI strings. Same shape as `path_a.ts`'s DEFAULT_STRINGS /
-// DEFAULT_STRINGS_JA pair: the Japanese table is a Partial overlay, so a
-// missing key degrades to English rather than rendering `undefined`.
-// Register per the existing JA prose: plain form (常体), technical terms
-// (verdict, runtime, baseline) left in English.
 interface RunnerStrings {
   editorAria: string;
   edit: string;
@@ -75,21 +62,10 @@ const STRINGS_JA: Partial<RunnerStrings> = {
 const S = pick(STRINGS, STRINGS_JA);
 
 export interface RunnerOptions {
-  /** Recipe slug — informational, included in the runner mount-point id. */
   slug: string;
-  /** The recipe's canonical reproduction source (plaintext). Used as the
-   *  initial textarea value and the Reset target. */
   baselineSource: string;
-  /** Run the (possibly edited) source through the same already-loaded
-   *  WASM interpreter. Owns the actual re-run; the runner only
-   *  marshals the source string and surfaces the captured result. */
   runFix: (source: string) => Promise<PathACapturedRun>;
-  /** DOM id of the existing `<pre><code>` block holding the
-   *  Shiki-highlighted baseline source. Defaults to `repro-code`. */
   codeBlockId?: string;
-  /** DOM id of the `<pre>` block that holds the run output (the
-   *  same element existing chrome.js wires the progress overlay over).
-   *  Defaults to `output`. */
   outputId?: string;
 }
 
@@ -131,9 +107,6 @@ export function enableRunner(opts: RunnerOptions): void {
     return;
   }
 
-  // The Shiki-rendered code lives inside `<pre><code id="repro-code">`.
-  // We wrap the `<pre>` in a viewport that also contains a hidden
-  // `<textarea>` for edit mode.
   const preEl = codeEl.closest('pre');
   if (!preEl) {
     console.warn(
@@ -148,16 +121,10 @@ export function enableRunner(opts: RunnerOptions): void {
     return;
   }
 
-  // Capture the script column + its <h2> BEFORE moving <pre> into the
-  // viewport — once <pre> is detached and re-parented under viewport,
-  // `closest('.vh-main__col')` would return null because viewport has
-  // no parent yet.
   const colEl = preEl.closest<HTMLElement>('.vh-main__col');
   const h2El = colEl?.querySelector('h2') ?? null;
 
   const outputEl = document.getElementById(outputId);
-
-  // ---- Build viewport (pre + textarea) -------------------------------------
 
   const viewport = el('div', { class: 'vh-runner__viewport' });
   const textarea = el('textarea', {
@@ -169,13 +136,9 @@ export function enableRunner(opts: RunnerOptions): void {
   }) as HTMLTextAreaElement;
   textarea.value = opts.baselineSource;
 
-  // Lift the existing `<pre>` into the viewport, then append the textarea.
-  // CSS toggles which surface is visible based on `.vh-runner.is-editing`.
   const placeholder = document.createComment('vh-runner-mount');
   preParent.insertBefore(placeholder, preEl);
   viewport.append(preEl, textarea);
-
-  // ---- Build action group (Edit / Run / Reset) -----------------------------
 
   const editBtn = el(
     'button',
@@ -221,27 +184,20 @@ export function enableRunner(opts: RunnerOptions): void {
     resetBtn,
   );
 
-  // ---- Status line ---------------------------------------------------------
-
   const statusEl = el('p', {
     class: 'vh-runner__status',
     role: 'status',
     'aria-live': 'polite',
   });
 
-  // ---- Mount: head row (h2 + actions) + viewport + status ------------------
-  // colEl + h2El were captured above, before we moved <pre>.
-
   if (h2El?.parentElement) {
     const headRow = el('div', { class: 'vh-runner__head' });
     h2El.parentElement.insertBefore(headRow, h2El);
     headRow.append(h2El, actions);
   } else {
-    // Fallback — append actions before the viewport.
     viewport.parentElement?.insertBefore(actions, viewport);
   }
 
-  // Build the runner shell and place it where the original `<pre>` lived.
   const shell = el(
     'div',
     { class: 'vh-runner', id: `vh-runner-${opts.slug}` },
@@ -251,8 +207,6 @@ export function enableRunner(opts: RunnerOptions): void {
 
   preParent.insertBefore(shell, placeholder);
   placeholder.remove();
-
-  // ---- State + behaviour --------------------------------------------------
 
   let isEditing = false;
   let isBusy = false;
@@ -273,8 +227,6 @@ export function enableRunner(opts: RunnerOptions): void {
     shell.classList.toggle('is-editing', next);
     updateEditButtonLabel();
     if (next) {
-      // When entering edit mode, focus the textarea so the visitor
-      // can start typing without an extra click.
       textarea.focus();
       const len = textarea.value.length;
       textarea.setSelectionRange(len, len);
@@ -324,8 +276,6 @@ export function enableRunner(opts: RunnerOptions): void {
     }
   };
 
-  // ---- Wire ---------------------------------------------------------------
-
   editBtn.addEventListener('click', () => {
     if (isBusy) return;
     setEditing(!isEditing);
@@ -343,7 +293,6 @@ export function enableRunner(opts: RunnerOptions): void {
     void runOnce(opts.baselineSource);
   });
 
-  // Initial paint of buttons (the textContent shuffle inside set*())
   setEditing(false);
   setBusy(false);
   setStatus('', 'info');

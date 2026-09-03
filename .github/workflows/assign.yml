@@ -1,11 +1,5 @@
 name: Auto Assign Owner
 
-# Auto-assigns the org owner to newly opened or reopened issues and pull
-# requests. Skips if the item already has an assignee, so manual
-# reassignment is never overwritten. There is no native GitHub feature
-# (branch rules, repo settings) that does this for issues, hence the
-# workflow.
-
 on:
   issues:
     types: [opened, reopened]

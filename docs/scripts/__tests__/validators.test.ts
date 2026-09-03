@@ -1,19 +1,3 @@
-// Unit tests for the ajv-standalone-generated validators used by
-// `ManifestScaffolder.tsx` (Manifest v1) and `ReproCompare.tsx`
-// (Verdict / Contract v1). See ADR-0034 for the migration rationale.
-//
-// The tests are deliberately small and read directly from the schema
-// files: each schema's `examples` array MUST validate, and a hand-
-// curated set of invalid fixtures MUST fail with the expected
-// `instancePath`. If a future schema edit accidentally drops a
-// constraint or breaks the bundled example, this suite catches it
-// before the codegen output ships.
-//
-// The validators are imported from `docs/site/_generated/validators/`, which
-// is gitignored — running this suite without first running
-// `bun run generate-validators` (or `bun run dev` / `build`, both of
-// which trigger codegen) returns a clear "no module found" error.
-
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -133,7 +117,6 @@ describe('Verdict v1 (Contract v1) validator', () => {
       contract: 'v1',
       verdict: 'reproduced',
       exit_code: 0,
-      // image_tag missing
       image_digest: '',
       captured_at: '2026-04-27T03:44:39Z',
       stdout: '',
@@ -203,13 +186,6 @@ describe('Recipe (schema_version 1) validator', () => {
   });
 
   test('every shipped recipe.json validates', () => {
-    // Walks src/layer{1,2,3}_*/**/recipe.json — picks up every recipe
-    // directory plus the Layer 2 scaffolder template. This is the
-    // load-bearing check that recipe-facets.json's retirement did not
-    // smuggle malformed metadata into the public catalogue: every file
-    // that generate-recipes-index.ts reads must pass the full schema,
-    // not just the minimal schema_version + language check the
-    // generator's own loader performs.
     const glob = new Glob('src/layer*_*/**/recipe.json');
     const files = Array.from(glob.scanSync({ cwd: REPO_ROOT })).sort();
     expect(files.length).toBeGreaterThan(0);

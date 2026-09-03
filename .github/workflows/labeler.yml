@@ -1,31 +1,5 @@
 name: PR Labeler
 
-# Applies labels to PRs from two complementary mechanical signals:
-#
-#   1. Changed file paths → `scope: *` labels (driven by the rules in
-#      .github/labeler.yml in this repo, consumed by actions/labeler).
-#   2. PR title's Conventional Commits prefix → `type: *` label (the
-#      inline step below; gh CLI driven). `release.yml` consumes the
-#      `type: *` labels for `gh release --generate-notes` so feature /
-#      fix / refactor PRs land in the right release-notes section
-#      instead of "Other changes".
-#
-# Both signals are mechanical (AGENTS.md §4.5 mechanical-labelling
-# policy). PR title is the right source for `type: *` because the
-# commitlint workflow already enforces the Conventional Commits
-# prefix at PR open time, so the prefix is reliable.
-#
-# `sync-labels: true` on the actions/labeler step removes labels the
-# action previously applied when the matching rule no longer matches
-# (e.g. after a PR push removes the last docs change). Manually
-# applied labels are untouched. The title-based step manages its own
-# `type: *` lifecycle (removes the stale one before applying the new
-# one when the title is edited).
-#
-# `edited` is in the trigger types so a title change after open
-# (e.g. feat → fix) re-fires the title step and the label updates
-# accordingly.
-
 on:
   pull_request_target:
     types: [opened, edited, synchronize, reopened]
@@ -54,7 +28,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Extract the Conventional Commits type from `type(scope)?(!)?: subject`.
           ctype=$(printf '%s' "$PR_TITLE" | sed -nE 's/^([a-z]+)(\([^)]+\))?!?: .*/\1/p')
 
           if [ -z "$ctype" ]; then
@@ -63,8 +36,6 @@ jobs:
             exit 0
           fi
 
-          # CC-type → repo label. Aligns with release.yml categories
-          # and the labels declared in infra/github/main.tf.
           case "$ctype" in
             feat)                          label="type: feature"  ;;
             fix)                           label="type: bug"      ;;
@@ -78,10 +49,6 @@ jobs:
               ;;
           esac
 
-          # Remove any other `type: *` label first — the title may
-          # have been edited (e.g. feat → fix), and we want exactly
-          # one `type: *` per PR so release.yml categorises it
-          # deterministically.
           mapfile -t stale < <(
             gh pr view "$PR_NUMBER" --repo "$REPO" \
               --json labels --jq '.labels[].name' \

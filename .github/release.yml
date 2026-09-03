@@ -1,17 +1,3 @@
-# Release notes category config for GitHub's auto-generated notes.
-# Used by `gh release create --generate-notes` from release.yml.
-#
-# Labels referenced here must exist in infra/github/main.tf so that
-# PRs can be categorized automatically. `type: *` labels are applied
-# by the title-parsing step in .github/workflows/labeler.yml from the
-# PR's Conventional Commits prefix; `scope: *` labels are applied by
-# the path-based step in the same workflow.
-#
-# Categories are matched first-wins, so order matters. The current
-# order puts the most user-visible changes first (Features, Bug
-# Fixes), then internal-only changes (Refactoring, Tests,
-# Infrastructure, Maintenance), then "Other changes" as the catch-all.
-
 changelog:
   categories:
     - title: Features

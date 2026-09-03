@@ -1,17 +1,3 @@
-// Vivarium Layer 1 reproduction — numpy/numpy#28287.
-//
-// `timedelta64` ordering is non-transitive when one of the values uses
-// the generic unit. With:
-//   x = np.timedelta64(1, "ms")
-//   y = np.timedelta64(2)         # generic unit
-//   z = np.timedelta64(5, "ns")
-// NumPy reports x < y and y < z but x > z — a transitivity violation.
-//
-// Verdict semantics (per ADR-0008 / contract v1):
-//   - "reproduced" — the bug REPRODUCES (numpy reports the non-transitive
-//     ordering on the build Pyodide ships).
-//   - "unreproduced" — the bug does NOT reproduce (or the runtime errored).
-
 import { loadVivariumPyodide } from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
 import { enableRunner } from '../_shared/runner.js';
@@ -69,10 +55,6 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -130,9 +112,6 @@ async function captureRun(
 const startedAt = new Date();
 
 try {
-  // numpy is shipped with the Pyodide distribution but must be installed
-  // explicitly via `loadPackage` / the `packages` option — it is not
-  // imported at runtime startup.
   const { pyodide, version } = await loadVivariumPyodide({
     packages: ['numpy'],
     pendingText: 'Loading Pyodide runtime and numpy…',
@@ -187,7 +166,6 @@ try {
   };
   setResult(envelope);
 
-  // Wire the editable script + Run button.
   enableRunner({
     slug: 'numpy-28287',
     baselineSource: REPRO_CODE,
@@ -198,8 +176,6 @@ try {
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  // `loadVivariumPyodide` already sets "unreproduced" on load-time errors. Cover
-  // the case where the runtime loaded but the reproduction itself errored.
   if (globalThis.__VIVARIUM_VERDICT__ !== 'unreproduced') {
     setVerdict(
       'unreproduced',

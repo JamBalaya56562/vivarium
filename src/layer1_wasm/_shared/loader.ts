@@ -1,12 +1,6 @@
-// Pyodide loader. Sets the verdict to "unreproduced" on load-time
-// errors and re-throws so the caller can short-circuit; recipe pages
-// still own their own reproduction-time try/catch.
-
 import { setVerdict } from "./verdict.js";
 import { pick } from "./i18n.js";
 
-// Progress-bar and verdict copy. Partial JA overlay per the `path_a.ts`
-// convention, so a missing key falls back to English.
 interface LoaderStrings {
   pending: string;
   initialising: string;
@@ -24,8 +18,6 @@ const STRINGS: LoaderStrings = {
   initialising: "Initialising\u2026",
   fetchingModule: "Fetching Pyodide module\u2026",
   loadingRuntime: "Loading runtime + stdlib\u2026",
-  // English pluralises; Japanese does not, which is why this is a
-  // function rather than a string with an interpolated count.
   loadedPackages: (n) => `Loaded ${n} package${n > 1 ? "s" : ""}.`,
   runtimeReady: "Runtime ready.",
   loadFailed: "Load failed.",
@@ -49,10 +41,6 @@ const S = pick(STRINGS, STRINGS_JA);
 
 export const DEFAULT_PYODIDE_VERSION = "0.29.3";
 
-// Approximate sizes (MB) for the progress-bar UI. These are the
-// CDN-reported transfer sizes for v0.29.3 and don't need to be
-// pinpoint-accurate — the bar is for "did the load progress?" feedback,
-// not telemetry. Update if a future Pyodide bump shifts them noticeably.
 const SIZE_RUNTIME_MB = 12.0; // wasm + stdlib + lockfile combined
 const SIZE_PER_PACKAGE_MB = 0.6; // typical for sqlite3, pandas-light, etc.
 
@@ -80,38 +68,18 @@ function emitProgress(opts: {
 }
 
 export interface LoadOptions {
-  /**
-   * Pyodide version to load (default "0.29.3"). Keep in sync with the
-   * `<link rel="modulepreload">` in the page's `<head>`.
-   */
   version?: string;
-  /**
-   * Packages to preload alongside the runtime (e.g. `["pandas"]`).
-   * Loaded in parallel with the Pyodide bootstrap.
-   */
   packages?: string[];
-  /** Verdict message shown while loading (default "Loading Pyodide runtime…"). */
   pendingText?: string;
 }
 
-/**
- * Pyodide instance. Typed as `unknown` for now because there is no
- * lightweight `@types/pyodide` package; reproductions cast or refine
- * locally where they call into the runtime.
- */
 export type PyodideInstance = unknown;
 
 export interface LoadResult {
   pyodide: PyodideInstance;
-  /** Version string actually used (echoes `options.version` or the default). */
   version: string;
 }
 
-/**
- * Load Pyodide and return the runtime instance.
- *
- * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
- */
 export async function loadVivariumPyodide(
   options: LoadOptions = {},
 ): Promise<LoadResult> {
@@ -184,11 +152,6 @@ export async function loadVivariumPyodide(
   }
 }
 
-/**
- * Mark the in-page reproduction as fully complete. Calls this from a
- * reproduction page once it has set its final verdict — the chrome.js
- * progress bar fades out.
- */
 export function markReproductionDone(): void {
   emitProgress({
     pct: 100,

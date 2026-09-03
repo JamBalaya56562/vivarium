@@ -1,11 +1,3 @@
-// Public machine-readable endpoints and static assets served from docs/doc_build.
-//
-// `bun run build` lets rspress copy docs/site/public into doc_build so
-// GitHub Pages can serve /api/*.json, /spec/*.schema.json, and favicon
-// assets unchanged under /vivarium/. These checks catch the failure mode
-// where the human docs build succeeds but public assets are missing from
-// the deployed artifact.
-
 import { expect, test } from '@playwright/test';
 
 interface JsonEndpointCase {

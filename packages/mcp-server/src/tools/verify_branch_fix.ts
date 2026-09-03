@@ -1,10 +1,3 @@
-// Scaffolding helper for the AI-slop branch-fix verification loop.
-// Returns deep-link URLs / commands; execution happens in the
-// visitor's browser (Layer 1 → path A: `?fix_url=` / `?fix=<base64>`)
-// or in GitHub Actions (Layer 2/3 → path B: a
-// `branch-fix-verdict.yml` workflow_dispatch line). The MCP server
-// itself runs no wasm and dispatches no jobs.
-
 import { getCatalogue } from '../catalogue.js';
 import type { Layer, RecipeEntry } from '../types.js';
 
@@ -43,13 +36,9 @@ const D5_DOC_URL_JA =
   'https://aletheia-works.github.io/vivarium/ja/guide/compare-branch-fix';
 
 function base64UrlEncode(text: string): string {
-  // Use TextEncoder + manual base64 to preserve UTF-8 semantics; Node's
-  // Buffer is available but the package targets a portable ES surface.
   const bytes = new TextEncoder().encode(text);
   let bin = '';
   for (const b of bytes) bin += String.fromCharCode(b);
-  // Bun and Node both expose `btoa` globally; the package's `engines`
-  // pins them.
   const b64 =
     typeof btoa === 'function'
       ? btoa(bin)
@@ -65,8 +54,6 @@ interface PathAUrlInputs {
 
 interface PathBUrlInputs {
   slug: string;
-  // Layer 2/3 deep-link template — visitor pastes the artefact URL
-  // into branch_url after the workflow run finishes.
   compareBaseUrl: string;
 }
 
@@ -84,10 +71,6 @@ function pathBCompareUrl(inputs: PathBUrlInputs): string {
 }
 
 function deriveCompareBaseFromPageUrl(pageUrl: string): string {
-  // page_url is e.g.
-  // https://aletheia-works.github.io/vivarium/repro/<project>/<issue_path>/.
-  // The compare page sits at /repro/compare under both /en and /ja chrome.
-  // R.3 mounts the same component in both locales.
   try {
     const u = new URL(pageUrl);
     return `${u.origin}/vivarium/repro/compare`;
@@ -122,7 +105,6 @@ function buildInstructions(inputs: InstructionInputs): string {
     ].join('\n');
   }
 
-  // Path B
   return [
     `**${inputs.recipe.title}** — Layer ${inputs.recipe.layer} (Path B: Docker image-based).`,
     '',
@@ -172,7 +154,6 @@ export async function verifyBranchFix(
 
   if (recipe.layer === 1) {
     if (args.fix_url || args.fix_source) {
-      // Path A inputs are valid; pre-load.
     } else {
       notes.push(
         'no fix_url or fix_source supplied — compare_url opens the recipe page; the user pastes manually into the "Try a fix" panel',
@@ -201,7 +182,6 @@ export async function verifyBranchFix(
     };
   }
 
-  // Layer 2 / 3 → Path B.
   if (args.fix_url || args.fix_source) {
     notes.push(
       'fix_url and fix_source are ignored for Layer 2/3 recipes — the contributor builds and pushes a Docker image themselves; see ADR-0020 §1 for the image-as-input boundary',

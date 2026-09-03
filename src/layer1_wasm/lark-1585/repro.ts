@@ -1,33 +1,3 @@
-// Vivarium Layer 1 reproduction — lark-parser/lark#1585.
-//
-// The grammar `start.1: "a" | start start*` causes an infinite
-// loop in lark's LALR back-end when `parser='lalr'` is supplied.
-// CYK exhibits the same hang; Earley terminates normally.
-//
-// Because the bug is a hang rather than a wrong result, the repro
-// runs Pyodide + lark inside a Web Worker. The main thread races
-// the worker's result message against a wall-clock budget and
-// terminates the worker if it does not return within the budget —
-// that termination is the verdict signal.
-//
-// Verdict semantics (per Contract v1) — applied to each variant
-// pane individually; the top-level `#verdict` pill mirrors the
-// **baseline** variant so the existing Contract v1 single-verdict
-// surface (`__VIVARIUM_VERDICT__`, `data-verdict`) keeps its prior
-// meaning and downstream consumers do not need to branch.
-//   - "reproduced"   — the worker did not return within TIMEOUT_MS;
-//                      the infinite loop is confirmed.
-//   - "unreproduced" — the worker returned (parse completed; bug
-//                      fixed upstream) or raised an exception (bug
-//                      behaviour changed; the specific hang did
-//                      not trigger) before the budget elapsed.
-//
-// The fix-candidate this page renders side-by-side is a pure-Python
-// wheel under `./wheels/` built from the fork+branch
-// `JamBalaya56562/lark@claude/fix-lark-1585-QLVa7` by
-// `scripts/build-layer1-wheels.sh` (run by CI on PR merge and by
-// `mise run repro:build:wheels` locally).
-
 import {
   setResult,
   setVerdict,
@@ -38,11 +8,6 @@ const TIMEOUT_MS = 8000;
 const PYODIDE_VERSION = '0.29.3';
 const BASELINE_SPEC = 'lark==1.3.1';
 
-// Canonical reproduction source. The worker wraps it in a
-// `try/except` + timing harness, but this is the part the recipe
-// page surfaces in `<pre id="repro-code">` and the highlight-repros
-// build step extracts. Editing this constant changes both the
-// rendered source and the parse the worker actually runs.
 const REPRO_CODE = `
 Lark('start.1: "a" | start start*', parser='lalr').parse('aa')
 `.trim();
@@ -125,10 +90,6 @@ if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
-/** Write into the fix pane and stamp the machine-readable state the
- *  Playwright suite asserts on. The attribute is locale-independent,
- *  unlike the copy, and "pending" left standing means the page rendered
- *  the pane and then never drove it. */
 function setFixPane(
   text: string,
   status: 'pending' | 'ok' | 'error',
@@ -153,10 +114,6 @@ let baseline: VariantOutcome | null = null;
 let fixCandidate: VariantOutcome | null = null;
 let manifest: WheelManifest | null = null;
 
-/** Write into whichever pane the variant owns. Routing through
- *  `setFixPane` for the fix-candidate keeps `data-fix-status` in step
- *  with the copy: a bare `textContent =` on the fix pane would leave
- *  the attribute at "pending" even after the variant had settled. */
 function writePane(
   variant: Variant,
   text: string,
@@ -398,16 +355,10 @@ try {
     `Baseline lark ${baseline.larkVersion} on Python ${baseline.pythonVersion} ` +
     `via Pyodide v${baseline.pyodideVersion}; budget ${TIMEOUT_MS} ms.`;
 
-  // Publish baseline-only envelope before flipping the top-level
-  // pill — Playwright reads `__VIVARIUM_RESULT__` the moment
-  // `data-verdict` leaves `pending`.
   publishEnvelope();
 
-  // Top-level verdict pill mirrors baseline — preserves the
-  // single-verdict Contract v1 surface for downstream consumers.
   setVerdict(baseline.verdict, baseline.message);
 
-  // ---- Fix-candidate variant ----------------------------------------
   setFixPane('Fetching wheel manifest…', 'pending');
   let manifestRes: Response | null = null;
   try {
@@ -447,8 +398,6 @@ try {
     setFixPane(`Wheel manifest unavailable (HTTP ${manifestRes.status}).`, 'error');
   }
 
-  // Re-publish the envelope now that the fix-candidate variant
-  // has also captured (or definitively failed).
   publishEnvelope();
 } catch (err: unknown) {
   console.error(err);

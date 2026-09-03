@@ -1,45 +1,22 @@
-// Vivarium contract v1 verdict + result envelope helpers.
-//
-// Surface (consumed by Playwright tests, /repro/compare, the docs
-// matcher, and external readers):
-// - DOM: `#verdict[data-verdict]` ∈ {"pending","reproduced","unreproduced"}
-// - Globals: `__VIVARIUM_VERDICT__`, `__VIVARIUM_RESULT__`
-//
-// `reproduced` means the bug REPRODUCES in the runtime this page
-// loads; `unreproduced` means it does not (fixed runtime, or the run
-// errored before producing a verdict).
-//
-// Side-effect: imports the shared chrome (nav / footer / theme
-// toggle / progress bar / service-worker) so every language family's
-// loader picks it up without an explicit opt-in.
 import '../_assets/chrome.js';
 
 export type VerdictState = 'pending' | 'reproduced' | 'unreproduced';
 
 export interface VivariumResultV1Bug {
-  /** Upstream project short name (e.g. "pandas"). */
   project: string;
-  /** Upstream issue number, no `#` prefix. */
   issue: number;
-  /** URL to the upstream issue or PR. */
   upstream_url: string;
 }
 
 export interface VivariumResultV1Runtime {
-  /** Runtime name (e.g. "pyodide"). */
   name: string;
-  /** Runtime version (e.g. "0.29.3"). */
   version: string;
-  /** Free-form extras (python, pandas versions, etc.). */
   extras: Record<string, string>;
 }
 
 export interface VivariumResultV1Timing {
-  /** ISO-8601 timestamp. */
   started_at: string;
-  /** ISO-8601 timestamp. */
   finished_at: string;
-  /** Wall-clock duration in milliseconds. */
   duration_ms: number;
 }
 
@@ -47,7 +24,6 @@ export interface VivariumResultV1 {
   contract: 'v1';
   bug: VivariumResultV1Bug;
   runtime: VivariumResultV1Runtime;
-  /** Page-specific structured output. */
   result: Record<string, unknown>;
   timing: VivariumResultV1Timing;
 }
@@ -61,22 +37,6 @@ declare global {
   var __VIVARIUM_RESULT__: VivariumResultV1 | undefined;
 }
 
-/**
- * Update the verdict element + the `__VIVARIUM_VERDICT__` global atomically.
- *
- * @param state Verdict state.
- * @param text  Human-readable verdict. Only the state literal renders on
- *   the pill; the full message is stashed on
- *   `__VIVARIUM_VERDICT_MESSAGE__` for tooling (Path A, runner status
- *   line, etc.). The pill stays short because the output panel carries
- *   the detailed explanation.
- * @param phase For `pending`, whether the page is still loading its
- *   runtime or already running the script. Callers that know should say
- *   so. Omitting it falls back to sniffing the English word "running"
- *   out of `text`, which is what every call site relied on before the
- *   Japanese pages existed — and which silently degrades to `LOADING…`
- *   once `text` is Japanese. New call sites should pass it explicitly.
- */
 export function setVerdict(
   state: VerdictState,
   text: string,
@@ -89,15 +49,6 @@ export function setVerdict(
   el.classList.remove('reproduced', 'unreproduced', 'pending');
   el.classList.add(state);
   el.dataset['verdict'] = state;
-  // Keep the pill short so the header row never wraps to two lines. Long
-  // pending messages ("Loading Pyodide runtime and sqlite3…") still go to
-  // `__VIVARIUM_VERDICT_MESSAGE__` for tooling that wants the full
-  // string.
-  //
-  // The four literals stay English on every locale: they are Contract v1
-  // vocabulary that `__VIVARIUM_VERDICT__` and the regression suite
-  // dispatch on, and the Japanese register keeps technical terms in
-  // English anyway.
   let label: string;
   if (state === 'pending') {
     const resolved = phase ?? (/running/i.test(text) ? 'running' : 'loading');
@@ -111,9 +62,6 @@ export function setVerdict(
   globalThis.__VIVARIUM_VERDICT__ = state;
   globalThis.__VIVARIUM_VERDICT_MESSAGE__ = text;
 
-  // Tell the chrome.js progress bar the run is finished. Pending updates
-  // (which arrive multiple times during loading) are ignored by chrome.js
-  // because it only cares about pct + label fields.
   if (state !== 'pending') {
     document.dispatchEvent(
       new CustomEvent('vh-progress', {
@@ -123,9 +71,6 @@ export function setVerdict(
   }
 }
 
-/**
- * Publish the structured result envelope on `__VIVARIUM_RESULT__`.
- */
 export function setResult(envelope: VivariumResultV1): void {
   if (!envelope || envelope.contract !== 'v1') {
     throw new Error(

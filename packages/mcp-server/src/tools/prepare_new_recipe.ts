@@ -1,9 +1,3 @@
-// Scaffolding helper that bundles every artefact an agent needs to
-// author a new recipe (validated slug, scaffold + verify commands,
-// placeholder facets / projects rows, commit-subject template, next
-// steps). The MCP server returns the commands and metadata; the
-// agent's shell tool actually invokes mise.
-
 import type { Layer, RoundtripState } from '../types.js';
 
 export interface PrepareNewRecipeArgs {
@@ -15,10 +9,6 @@ export interface PrepareNewRecipeArgs {
   layer?: Layer;
 }
 
-// recipe.json contents to write into the recipe directory. Validates
-// against docs/site/public/spec/recipe.schema.json (schema_version 1).
-// Replaces the retired RecipeFacetsRow surface (which fed the now-removed
-// docs/site/_data/recipe-facets.json overlay).
 interface RecipeJsonInit {
   path: string;
   contents: {
@@ -60,11 +50,6 @@ interface PrepareNewRecipeOk {
     layer_readme: string;
     selection_policy: string;
   };
-  // Initial round-trip state to write into
-  // src/layer<N>_*/<slug>/roundtrip.json after scaffolding. Validates
-  // against roundtrip.schema.json (schema_version 1). Caller (typically
-  // the scaffold-recipe-from-issue skill) is responsible for the write;
-  // the MCP server does no filesystem mutation itself.
   roundtrip_init: RoundtripState;
   roundtrip_path: string;
 }
@@ -78,20 +63,14 @@ export type PrepareNewRecipeResult =
   | PrepareNewRecipeOk
   | PrepareNewRecipeError;
 
-// Same regex as parseSlug() in docs/scripts/generate-recipes-index.ts.
-// Single-sourced as a literal here because the MCP package is published
-// independently and cannot import from docs/.
 const SLUG_REGEX = /^([a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*?)-(\d+)$/;
 
-// Mirror of LAYER_DIRNAME in verify_and_report_fix — keep in sync.
 const LAYER_DIRNAME: Record<Layer, string> = {
   1: 'layer1_wasm',
   2: 'layer2_docker',
   3: 'layer3_thirdway',
 };
 
-// Default upstream owner/repo for common projects, mirroring the lookup
-// in docs/scripts/new-recipe.ts. Override via repo_owner.
 const DEFAULT_REPO: Record<string, string> = {
   node: 'nodejs/node',
   cpython: 'python/cpython',
@@ -104,9 +83,6 @@ const DEFAULT_REPO: Record<string, string> = {
   regex: 'rust-lang/regex',
 };
 
-// Layer scope conventions: feat(wasm) for Layer 1, feat(layer2) for
-// Layer 2, feat(layer3) for Layer 3 — established by PRs #92/#94/#98/
-// #194 (Layer 2), #180/#189/#192 (Layer 1 = wasm), #106 (Layer 3).
 function commitScopeFor(layer: Layer): string {
   switch (layer) {
     case 1:
@@ -154,9 +130,6 @@ export async function prepareNewRecipe(
   const ownerRepo = (args.repo_owner ?? defaultRepoFor(project)).trim();
   const upstreamIssueUrl = `https://github.com/${ownerRepo}/issues/${issueNum}`;
 
-  // Layer 2 has the canonical scaffolder today (mise run recipes:new).
-  // Layer 1 / 3 scaffolders do not yet exist — for those, the agent
-  // copies from an existing recipe; we still return scaffolding intent.
   const baseFlag = args.base_image
     ? ` --base "${args.base_image}"`
     : '';
@@ -173,11 +146,6 @@ export async function prepareNewRecipe(
       ? `mise run recipes:verify -- ${slug}`
       : `# No verifier for Layer ${layer} yet — see src/layer${layer}_*/README.md for per-layer validation.`;
 
-  // Default expected_runtime by layer. Layer 1 needs a per-runtime
-  // refinement that depends on the language; the agent overrides it
-  // after picking the WASM runtime ('pyodide' / 'ruby.wasm' / 'php-wasm'
-  // / 'rust-wasi'). Layer 2 always uses the verdict-snapshot path
-  // ('docker-snapshot'). Layer 3 uses the rr-replay trace.
   const defaultRuntimeFor = (l: Layer): string => {
     switch (l) {
       case 1:

@@ -1,44 +1,4 @@
 #!/usr/bin/env bun
-//
-// Pre-tsc step for Layer 1 reproduction pages.
-//
-// Each `src/layer1_wasm/<slug>/repro.ts` declares a `REPRO_CODE` (or
-// `REPRO_SOURCE_HINT` for compiled-language recipes) template-literal
-// string that the recipe page renders inside `<pre id="repro-code">`.
-// Until ADR-0028 §V′, that string was injected verbatim via
-// `reproCodeEl.textContent = REPRO_CODE` — readable enough, but
-// plain monochrome text on a dark background.
-//
-// This script extracts that template literal at build time, runs it
-// through Shiki (the same highlighter rspress uses for MDX code
-// blocks), and writes the rendered token HTML to
-// `<slug>/repro.highlighted.html`. It also **inlines the same
-// highlighted HTML directly into `<slug>/index.html`** by replacing
-// the empty `<code id="repro-code"></code>` placeholder with
-// `<code id="repro-code">${innerHighlighted}</code>`. Inlining at
-// build time means the recipe page renders syntax-highlighted source
-// at HTML-parse time, before any module script runs and before the
-// `fetch('./repro.highlighted.html')` async upgrade — visitors no
-// longer see an empty code block during the WASM cold load.
-//
-// The inline write is **idempotent**: the script reads the existing
-// inner of the placeholder, regenerates the highlighted content from
-// the live `REPRO_CODE` / `REPRO_SOURCE_HINT` template literal, and
-// only writes when the two differ. Shiki's output is deterministic
-// for a given (code, lang, theme) tuple, so re-running the script
-// against an already-inlined index.html is a no-op (no spurious
-// `sl status` diff). The `repro.highlighted.html` sidecar is kept
-// for the runtime fallback path in case future template-literal
-// edits drift between the inlined source and what the page expects.
-//
-// Wiring: invoked via `bun run build` (see this directory's
-// package.json) before tsc compiles repro.ts. CI deploy reaches it
-// through `mise run repro:build` → `repro:build:ts`.
-//
-// Failure mode: if Shiki cannot resolve a slug's language, or the
-// template literal cannot be parsed, the script logs and skips that
-// recipe. The recipe page's plain-text fallback path keeps working,
-// so the recipe still ships a verdict — only without colouring.
 
 import { codeToHtml, type BundledLanguage } from 'shiki';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -48,24 +8,12 @@ import { fileURLToPath } from 'node:url';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LAYER1_DIR = dirname(SCRIPT_DIR);
 
-// Each recipe ships its own Shiki language ID inside the per-recipe
-// metadata file `recipe.json#/language` (schema:
-// docs/site/public/spec/recipe.schema.json, schema_version 1). Reading
-// it from there means adding a new Layer 1 recipe is a one-directory
-// change — no `LANG_BY_PROJECT` map to maintain in this script,
-// independent of the slug shape. The retired map covered the slug
-// prefix → language mapping at PR #264; the per-recipe file replaces
-// it as the single source of truth.
-
 function readRecipeLanguage(recipeDir: string): BundledLanguage | null {
   const recipePath = join(recipeDir, 'recipe.json');
   if (!existsSync(recipePath)) return null;
   try {
     const meta = JSON.parse(readFileSync(recipePath, 'utf-8'));
     if (typeof meta?.language === 'string' && meta.language.length > 0) {
-      // Trusted as a valid Shiki BundledLanguage. If it is not, the
-      // `codeToHtml` call below throws and the recipe is skipped with
-      // a clear log line.
       return meta.language as BundledLanguage;
     }
   } catch (err) {
@@ -91,13 +39,6 @@ function looksLikeRecipe(name: string): boolean {
   return true;
 }
 
-// Extract a `const NAME = \`...\`(.trim())?;` template literal value
-// from a TS source. Also supports `String.raw\`…\`` (used by recipes
-// whose payload contains `\p{…}` and similar regex-literal escapes).
-// Template substitutions (${…}) inside the literal are not supported —
-// they are intentionally treated as already-substituted text, since the
-// recipes that use them treat ${prefix} / ${suffix} as Ruby's literal
-// `#{prefix}` etc., not as TS interpolation.
 function extractTemplateLiteral(src: string, name: string): string | null {
   const re = new RegExp(
     `const\\s+${name}\\s*=\\s*(String\\.raw)?\\s*\`([\\s\\S]*?)\``,
@@ -110,9 +51,6 @@ function extractTemplateLiteral(src: string, name: string): string | null {
   return (isRaw ? raw : unescapeTemplate(raw)).trim();
 }
 
-// Resolve TS template-literal escapes left-to-right so `\\n` in source
-// stays as `\n` (literal backslash + n) rather than collapsing to a
-// newline. Critical for regex-779's REPRO_SOURCE_HINT.
 function unescapeTemplate(s: string): string {
   return s.replace(/\\([\s\S])/g, (_, c) => {
     switch (c) {
@@ -180,11 +118,6 @@ for (const slug of slugs) {
     continue;
   }
 
-  // Strip Shiki's outer `<pre class="shiki ...">…<code>` wrapper —
-  // the recipe page already owns the `<pre id="repro-code">`, and
-  // injecting Shiki's pre would double up the chrome. We keep the
-  // inner `<code>…spans…</code>` and replace `reproCodeEl.innerHTML`
-  // with it.
   const inner = wrapped
     .replace(/^[\s\S]*?<code[^>]*>/, '<code>')
     .replace(/<\/code>[\s\S]*$/, '</code>');
@@ -194,19 +127,9 @@ for (const slug of slugs) {
   written += 1;
   console.log(`[highlight-repros] ${slug} (${lang}) -> repro.highlighted.html`);
 
-  // Inline the highlighted block into the recipe's index.html so the
-  // code is visible at HTML-parse time (no module-script wait, no
-  // network round-trip). The outer `<code id="repro-code">` element
-  // stays as-is; only its inner content is replaced. The substitution
-  // is idempotent: if the inner content already matches the freshly
-  // generated highlighted HTML, no write occurs (no `sl status`
-  // diff on subsequent builds).
   const indexPath = join(LAYER1_DIR, slug, 'index.html');
   if (!existsSync(indexPath)) continue;
   const indexHtml = readFileSync(indexPath, 'utf-8');
-  // Strip Shiki's inner `<code>...</code>` wrapper to get just the
-  // span tree — the recipe HTML's existing `<code id="repro-code">`
-  // is the wrapper.
   const innerSpans = inner
     .replace(/^<code[^>]*>/, '')
     .replace(/<\/code>\s*$/, '');
@@ -217,7 +140,6 @@ for (const slug of slugs) {
     continue;
   }
   if (m[2] === innerSpans) {
-    // Already inlined and matches — idempotent no-op.
     continue;
   }
   const updated = indexHtml.replace(placeholderRe, `$1${innerSpans}$3`);

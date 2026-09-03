@@ -1,22 +1,4 @@
-/* Vivarium reproduction page styles — shared across all
- * src/layer1_wasm/<slug>/index.html and src/layer2_docker/<slug>/index.html
- * pages. Matches the Vivarium Core design system established by the
- * docs/landing site (teal #00d4aa accents, Space Grotesk + Inter +
- * JetBrains Mono fonts, dark canvas with bioluminescent atmosphere).
- *
- * Light/dark switching follows the user's OS preference via
- * prefers-color-scheme — these pages are usually opened in a fresh tab
- * from a verdict link, so we cannot rely on a cross-page theme toggle.
- */
-
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap");
-
-/* Theme tokens — matches rspress's pattern: html gets a `dark` class when
- * the user (or the inline early-theme script) decides dark mode is on,
- * else stays at the default :root values. The toggle in chrome.js writes
- * to localStorage['rspress-theme-appearance'] and flips html.dark, so
- * docs site and reproduction pages share one source of truth.
- */
 
 :root {
   color-scheme: light;
@@ -62,12 +44,6 @@ html.dark {
   --vh-accent-violet: #7c5cff;
   --vh-accent-violet-bright: #a18eff;
   --vh-accent-coral: #ff716c;
-  /* Bumped from 8% to 22% white so chip / ghost-button borders
-   * (kicker tag, "Bug context" / "Upstream issue" / "Fix candidate
-   * PR" chips, runner Edit / Reset, Path A buttons) read against the
-   * dark background. The previous 8% was visually flush with the
-   * page background in dark mode, leaving the buttons looking
-   * border-less even though the rule was applied. */
   --vh-hairline: rgba(255, 255, 255, 0.22);
   --vh-card-bg: rgba(255, 255, 255, 0.025);
   --vh-window-chrome: #18181b;
@@ -92,8 +68,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle radial atmosphere — matches the home hero's "lit from within"
- * teal/violet glow. Only painted on dark mode where it has impact. */
 html.dark body::before {
   content: "";
   position: fixed;
@@ -199,10 +173,6 @@ html.dark body::after {
   border-bottom: 0;
 }
 
-/* Locale switcher. rspress renders its own inside a hover dropdown;
- * reproduction pages have no router to hang one off, so the partner
- * locale is a plain inline link in the right-hand cluster. Same type
- * scale as the nav links, nudged apart from the icon buttons. */
 .vh-topnav__lang {
   margin-right: 0.25rem;
   white-space: nowrap;
@@ -253,14 +223,6 @@ main {
   }
 }
 
-/*
- *
- * The progress bar and the `<pre id="output">` share a grid cell so
- * swapping between them doesn't shift the rest of the page. Min-height
- * keeps the cell at a comfortable size even before either element has
- * any content.
- */
-
 .vh-output-section {
   display: grid;
   grid-template-columns: 1fr;
@@ -268,7 +230,6 @@ main {
 }
 
 .vh-output-section h2 {
-  /* keep the section heading on its own row above the swap zone */
   grid-row: 1 / 2;
 }
 
@@ -281,7 +242,6 @@ main {
 }
 
 .vh-output {
-  /* Hidden until the reproduction is done; chrome.js adds .is-revealed */
   opacity: 0;
   pointer-events: none;
 }
@@ -348,15 +308,6 @@ main {
 .vh-progress__bytes {
   color: var(--vh-text-dim);
 }
-
-/*
- *
- * Originally this targeted the bare `<header>` inside `<main>`, but
- * `chrome.js` now also injects a `.vh-topnav` `<header>` at the top
- * of `<body>`. Scoping to `.vh-main__header` keeps the original
- * spacing for the recipe content header without bleeding into the
- * topnav (which had a `margin-bottom: 1.75rem` ghost gap below it
- * before this fix). */
 
 .vh-main__header {
   margin-bottom: 1.75rem;
@@ -578,13 +529,6 @@ main > footer code {
 .vh-footer__msg a:hover {
   border-bottom-color: var(--vh-accent-teal);
 }
-
-/*
- *
- * Mounted by `_shared/path_a.ts` into a `<section id="path-a-mount">` that
- * recipes opt into. Shares the same teal/violet token language as the rest
- * of the recipe page chrome.
- */
 
 .vh-path-a {
   margin-top: 2rem;
@@ -819,29 +763,6 @@ main > footer code {
   color: var(--vh-text-muted);
 }
 
-/* ============================================================================
- * Desktop two-pane split + right-overlay description drawer.
- * Activates at >=1024px; below that breakpoint the recipe page
- * keeps its existing single-column stack (no class needed for the
- * fallback — the existing rules above already paint that path).
- *
- * Recipes opt in by structuring their `<main>` as:
- *
- *   <main class="vh-main">
- *     <header class="vh-main__header"> ... </header>
- *     <div    class="vh-main__cols">
- *       <section class="vh-main__col vh-main__col--script"> ... </section>
- *       <section class="vh-main__col vh-main__col--output"> ... </section>
- *     </div>
- *     <footer> ... </footer>
- *   </main>
- *
- * The drawer (`<aside class="vh-drawer">`) and its wash
- * (`<div class="vh-drawer-wash">`) are injected from `_assets/chrome.js`
- * at runtime, populated from a per-recipe `<template id="bug-context">`
- * the recipe HTML inlines in `<head>`.
- * ========================================================================== */
-
 @media (min-width: 1024px) {
   main.vh-main {
     max-width: 1280px;
@@ -1045,12 +966,6 @@ main > footer code {
 }
 
 .vh-runner__btn--primary {
-  /* Match the REPRODUCED pill / kicker colour family — the previous
-   * full-saturation accent teal swallowed the dark "Run" label, and a
-   * partly-transparent teal still felt out of step with the rest of
-   * the chrome. Reusing `--vh-reproduced-bg/fg/border` keeps the
-   * button visually grouped with the verdict pills and the kicker
-   * tag, and the teal text on the soft teal wash stays legible. */
   border: 1px solid var(--vh-reproduced-border);
   background: var(--vh-reproduced-bg);
   color: var(--vh-reproduced-fg);
@@ -1116,9 +1031,6 @@ main > footer code {
   right: 0;
   bottom: 0;
   width: min(480px, 100vw);
-  /* Theme-aware surface — white in light mode, near-black in dark.
-   * Earlier draft used --vh-window-bg (always deep-dark, matches the
-   * code editor) but that broke the page's light-mode contract. */
   background: var(--vh-bg-deep);
   border-left: 1px solid var(--vh-hairline);
   transform: translateX(100%);
@@ -1273,39 +1185,11 @@ main > footer code {
   height: 12px;
 }
 
-/* Body scroll lock when drawer is open. */
 body.vh-drawer-open {
   overflow: hidden;
 }
 
-/* ============================================================================
- * Header and viewport-fit refinements.
- *
- * The base split-pane layout needs these constraints to avoid two common
- * failures:
- *   1. The header took 3 rows (kicker + title + action chips) plus a
- *      verdict-aside column; on a laptop screen this pushed the script
- *      and output below the fold.
- *   2. The reproduction script's `<pre>` inflated to fit its content,
- *      so a long script made the page itself scroll — which the
- *      maintainer wants to avoid (page-scroll degrades the
- *      script-vs-output side-by-side framing).
- *
- * This block:
- *   - Folds the header into a single row at desktop width: kicker (now
- *     inline as a small pill prefix to the h1), title, action chips,
- *     verdict pill — all inline-aligned.
- *   - Hides the meta line on desktop (the runtime version info is in
- *     the drawer's metadata grid; replaying it under the verdict on
- *     the page itself wastes vertical space).
- *   - Constrains both columns to a viewport-relative max-height so the
- *     reproduction script and the output panel each become independent
- *     scroll containers.
- * ========================================================================== */
-
 @media (min-width: 1024px) {
-  /* Header: collapse the previous grid (text-column / aside-column)
-   * into a single inline row. Override the rule defined above. */
   .vh-main__header {
     display: flex;
     align-items: center;
@@ -1354,9 +1238,6 @@ body.vh-drawer-open {
     gap: 0.5rem;
   }
 
-  /* Compact verdict pill — fixed-width so LOADING… / RUNNING… /
-   * REPRODUCED / UNREPRODUCED all paint at the same horizontal extent
-   * (no layout shift on state change, no row-wrap on long labels). */
   .vh-main__header-aside .verdict {
     padding: 0.25rem 0.65rem;
     font-size: 0.72rem;
@@ -1364,21 +1245,10 @@ body.vh-drawer-open {
     justify-content: center;
   }
 
-  /* Meta line ("Python 3.13 · SQLite 3.46 · …") moved into the drawer's
-   * metadata grid; hide on desktop so it doesn't compete for vertical
-   * room next to the verdict pill. */
   .vh-main__header-aside .meta {
     display: none;
   }
 
-  /*
-   *
-   * Approach: turn the body into a flex column so the topnav + main +
-   * site-footer chain occupies *exactly* one viewport. Inside `main`,
-   * the slim header and the recipe footer are flex-shrink:0; the
-   * `.vh-main__cols` row consumes the remaining vertical space. Inside
-   * each column, the runner's `<pre>` / `<textarea>` and the output
-   * panel scroll internally. Body itself never scrolls. */
   body:has(main.vh-main) {
     height: 100vh;
     margin: 0;
@@ -1410,9 +1280,6 @@ body.vh-drawer-open {
     min-height: 0;
   }
 
-  /* If recipe HTML places `<section id="path-a-mount">` between cols and
-   * footer (php-12167),
-   * keep it shrink-zero so it doesn't squash cols. */
   body:has(main.vh-main) > main.vh-main > section[id="path-a-mount"] {
     flex-shrink: 0;
   }
@@ -1432,7 +1299,6 @@ body.vh-drawer-open {
     flex-shrink: 0;
   }
 
-  /* Runner & viewport stretch to fill the script column. */
   .vh-runner {
     flex: 1 1 auto;
     min-height: 0;
@@ -1462,29 +1328,17 @@ body.vh-drawer-open {
     flex-shrink: 0;
   }
 
-  /* Output column — chrome.js adds the `vh-output-section` class to the
-   * same `<section>`. The base `.vh-main__col` rule sets
-   * `display: flex` (for the script column's runner stack); restore
-   * grid here, with an explicit two-row template so the head row
-   * stays at content height and the output/progress row fills the
-   * rest via `1fr`. */
   .vh-output-section.vh-main__col--output {
     display: grid;
     grid-template-rows: auto 1fr;
   }
 
-  /* Output `<pre id="output">` — full-fill the grid cell, scroll
-   * internally if JSON is long. */
   .vh-output-section.vh-main__col--output .vh-output {
     min-height: 0;
     height: 100%;
     overflow: auto;
   }
 
-  /* Progress overlay — same grid cell as output. Force `height: 100%`
-   * so the box fills the column during loading instead of collapsing
-   * to its content size. Centred flex layout (existing) keeps the
-   * bar + label visually centered inside the tall box. */
   .vh-output-section.vh-main__col--output .vh-progress {
     min-height: 0;
     height: 100%;
@@ -1496,8 +1350,6 @@ body.vh-drawer-open {
     max-height: none;
   }
 
-  /* Tighter `main` chrome — title close to the top, footer line just
-   * a hair below the cols. */
   main.vh-main {
     padding-top: 0;
     padding-bottom: 0.3rem;
@@ -1508,10 +1360,6 @@ body.vh-drawer-open {
     padding-bottom: 0.25rem;
   }
 
-  /* Output column `.vh-runner__head` (chrome.js wraps its <h2> for
-   * height parity with the script column). On desktop, give it a
-   * fixed min-height matching the actions row so the script and
-   * output content areas line up exactly. */
   .vh-main__col--output > .vh-runner__head {
     min-height: 30px;
   }
@@ -1519,8 +1367,6 @@ body.vh-drawer-open {
     min-height: 30px;
   }
 
-  /* Apache License footer — keep visible but compact (2026-05-09
-   * maintainer ask). Drops from ~128px to ~28px. */
   body:has(main.vh-main) > .vh-footer {
     margin-top: 0;
     padding: 0.35rem 1rem;
@@ -1532,9 +1378,6 @@ body.vh-drawer-open {
     line-height: 1.2;
   }
 
-  /* Action buttons (Run / Reset) move next to the script column's h2
-   * so the action row stops eating column height. The runner injects
-   * a `.vh-runner__head` flex row that wraps both. */
   .vh-runner__head {
     display: flex;
     align-items: center;
@@ -1565,29 +1408,18 @@ body.vh-drawer-open {
     height: 12px;
   }
 
-  /* Hide hint chip on desktop — the always-editable textarea is
-   * obvious enough; the hint just costs a button slot. */
   .vh-runner__head .vh-runner__hint {
     display: none;
   }
 
-  /* Hide the runner status line on desktop V″ so the script column's
-   * black viewport fills the same vertical area as the output column's
-   * `<pre id="output">`. The verdict pill carries the state literal and
-   * `__VIVARIUM_VERDICT_MESSAGE__` carries the full message for any
-   * tooling / future overlay that wants it. */
   .vh-runner__status {
     display: none;
   }
 
-  /* Slimmer top nav — Vivarium / Vision / Roadmap / etc. The 60px
-   * default is a desktop-shell convention; for the V″ recipe page
-   * it eats too much real-estate above the title. */
   body:has(main.vh-main) > .vh-topnav {
     height: 44px;
   }
 
-  /* Drawer top offset must follow the top-nav height. */
   body:has(main.vh-main) ~ .vh-drawer,
   body:has(main.vh-main) > .vh-drawer {
     top: 44px;
@@ -1599,17 +1431,6 @@ body.vh-drawer-open {
   }
 }
 
-/*
- * Used by recipes that run the same reproduction script against two
- * package builds (baseline vs fix-candidate). Each variant has a small
- * heading block — title + spec — placed OUTSIDE the `<pre>` so the
- * JSON inside is the only thing in the dark output box. The page-level
- * `#verdict` pill in the top header still mirrors the baseline; the
- * fix-candidate's verdict is read from the JSON's `crashed` field
- * (intentional: a per-variant pill in red would visually flag the
- * fix-candidate's `unreproduced` as a problem when in this context it
- * is the desired outcome). */
-
 .vh-variant-head {
   display: flex;
   flex-direction: column;
@@ -1618,17 +1439,9 @@ body.vh-drawer-open {
 }
 
 .vh-variant-head--secondary {
-  /* Generous breathing room between the two variants on tall / square
-   * monitors; tight viewports compress this below (see media block). */
   margin-top: 1.4rem;
 }
 
-/* Wide-and-short displays (16:10, 16:9 laptops, e.g. 1440x900) feel
- * cramped vertically — the second variant head's 1.4rem top margin
- * pushes the fix-candidate `<pre>` further down than the column has
- * room for. Match it to the baseline head's natural 0-margin top in
- * those viewports so both heads sit flush against their respective
- * panels. */
 @media (min-aspect-ratio: 16/10), (max-height: 900px) {
   .vh-variant-head--secondary {
     margin-top: 0.4rem;
@@ -1649,18 +1462,6 @@ body.vh-drawer-open {
   padding: 0;
 }
 
-/* Each variant's `<pre>` consumes an equal share of the output
- * column's remaining space (= column height minus the two
- * `.vh-variant-head` blocks). Achieved with `flex: 1` once the
- * column is set to `display: flex; flex-direction: column` via
- * the `vh-output-multi` opt-out below — that two-piece arrangement
- * adapts to any viewport without hard-coding a pixel or `vh`
- * value. The `min-height` is intentionally small (8rem ≈ 128px,
- * roughly 5 JSON lines + padding) so very wide-and-short
- * viewports — e.g. 21:9 / 2:1 ultra-wides where the overall
- * column already ends up short — do not have the floor force
- * the fix-candidate panel below the fold. Long output scrolls
- * inside the box instead of pushing the rest of the page down. */
 .vh-variant-output {
   margin: 0;
   flex: 1 1 0;
@@ -1669,29 +1470,11 @@ body.vh-drawer-open {
   box-sizing: border-box;
 }
 
-/* A pane holding a status note rather than program output — the
- * "no fix candidate yet" state on recipes whose upstream fix cannot
- * be executed in the browser. `<pre>` defaults to `white-space: pre`,
- * which is right for JSON output but turns a one-line sentence into a
- * horizontal scroll that clips mid-word. Prose wraps instead. */
 .vh-variant-output--note {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-/* Multi-variant recipes (recipes that stack several `<pre>` output
- * panels in one page): opt out of chrome.js's single-output grid by
- * adding `vh-output-multi` to the output column.
- * The grid that chrome.js applies via `.vh-output-section` assumes one
- * `<pre id="output">` sharing a single cell with the progress bar; a
- * multi-variant recipe has several `<pre>` panels stacked plus extra
- * `.vh-variant-head` rows, which the single-cell grid does not
- * accommodate (`#output`'s `height: 25rem` collapses to its content
- * size when it is treated as a sized grid item). The opt-out clears
- * the explicit `grid-row` / `grid-column` placements chrome.js style
- * applies to `.vh-progress` and `.vh-output`, and forces the column
- * back to plain block flow. The progress bar (still inserted before
- * `#output`) shows above the baseline pre during the load. */
 .vh-main__col--output.vh-output-multi {
   display: flex;
   flex-direction: column;
@@ -1703,23 +1486,10 @@ body.vh-drawer-open {
   grid-column: auto;
 }
 
-/* Variant heads (h2 + future spec text) sit at content height so the
- * two `<pre>` panels divide the rest of the column. */
 .vh-main__col--output.vh-output-multi .vh-variant-head {
   flex: 0 0 auto;
 }
 
-/* The baseline variant wraps its `<pre>` in `.vh-variant-stage`. The
- * stage is a flex item that takes its 1fr share of the column AND
- * acts as a positioning context so chrome.js's progress overlay
- * (which the chrome injects before #output) stacks ON TOP of #output
- * instead of taking its own row in the column. That keeps the column
- * height constant across the load lifecycle (no CLS while the overlay
- * appears / fades out) and lets the overlay's "loading…" UI cover
- * the full baseline panel during install. Children are absolute-
- * positioned so the stage's own flex sizing stays clean (a `display:
- * grid` stage interacted poorly with `flex: 1 1 0`, biasing the
- * column's split between baseline and fix-candidate). */
 .vh-main__col--output.vh-output-multi .vh-variant-stage {
   position: relative;
   flex: 1 1 0;
@@ -1742,12 +1512,6 @@ body.vh-drawer-open {
   z-index: 2;
 }
 
-/* Override the wide-viewport `@media (min-width: 1024px)` rule that
- * stretches `.vh-output` (and `#output` directly) to `height: 100%`,
- * and the desktop-flex layout `.vh-runner__viewport pre { max-height
- * 32rem }` constraint that would otherwise cap our share. Specificity
- * here (3 classes / 2 classes+1 id) is enough to win over the
- * @media rule. */
 .vh-main__col--output.vh-output-multi #output-fix {
   height: auto;
   flex: 1 1 0;

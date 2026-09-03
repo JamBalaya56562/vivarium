@@ -2,15 +2,6 @@ import { ArrowRight, Lock } from 'lucide-react';
 import { useState } from 'react';
 import './vivarium-hero.css';
 
-// PINNED SLUGS — intentionally NOT derived from recipes.json.
-// The three slugs below (cpython-137205, postgres-lost-update, ruby-21709)
-// are paired with hand-written hero copy (lede / verdictText / pulling /
-// ready / okLine) that the recipe metadata cannot supply. If one of these
-// recipes must be deleted (e.g. upstream merges or rejects the fix), FIRST
-// pick a same-layer replacement and rewrite the matching STRINGS entry in
-// BOTH en and ja before the deletion lands. See
-// .claude/rules/recipe-authoring.md "Data files to update".
-
 type Lang = 'en' | 'ja';
 
 const STRINGS = {
@@ -103,10 +94,6 @@ const STRINGS = {
     },
   },
 } as const;
-
-/* WasmGlyph + DockerGlyph stay inline because they are brand-evoking
- * marks tied to specific runtimes, not generic UI icons. The two
- * generic icons (cta arrow + URL-bar lock) come from lucide-react. */
 
 const WasmGlyph = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -370,12 +357,6 @@ export function VivariumHero({ lang = 'en' }: { lang?: Lang } = {}) {
   const [slots, setSlots] = useState<Record<TabId, SlotName>>(INITIAL_SLOTS);
   const s = STRINGS[lang];
 
-  /**
-   * Click a non-front window → swap it with whichever window currently sits
-   * in the front slot. The clicked window's old slot is taken by the previous
-   * front window. The third window stays in place. CSS transitions on the
-   * slot-position styles do the animation.
-   */
   const swapToFront = (clickedId: TabId) => {
     if (slots[clickedId] === 'front') return;
     const oldFrontId = TAB_ORDER.find((id) => slots[id] === 'front')!;

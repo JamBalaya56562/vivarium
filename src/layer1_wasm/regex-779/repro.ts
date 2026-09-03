@@ -1,34 +1,3 @@
-// Vivarium Layer 1 reproduction — rust-lang/regex#779.
-//
-// `(re)+` should be equivalent to `(re)(re)*`. With `(?m)(^|a)+`
-// against the haystack "a\naaa\n", the two equivalent forms produce
-// different match-iteration outputs in the rust-lang/regex crate
-// (and in RE2, Go's regexp). PCRE2 gets it right, so this is an
-// algebraic regex-engine bug, not a regex-language ambiguity.
-//
-// The reproduction logic lives in `src/repro.rs` and is compiled twice
-// from that one source, differing only in the `regex` version each
-// crate pins:
-//
-//   Cargo.toml      regex =1.8.4    -> repro.wasm      (baseline)
-//   fix/Cargo.toml  regex =1.13.1   -> repro-fix.wasm  (fix candidate)
-//
-// This TypeScript file loads both artefacts through the WASI shim and
-// writes each one's JSON into its own pane, so a visitor sees the wrong
-// answer and the right one side by side.
-//
-// Verdict semantics (per ADR-0008 / contract v1) describe the BASELINE
-// only:
-//   - "reproduced" — the bug REPRODUCES (the two patterns disagree).
-//   - "unreproduced" — the bug does NOT reproduce (regex now agrees, the
-//     wasm artefact errored, or the WASI shim could not load).
-//
-// The fix-candidate build is expected to disagree with the baseline —
-// that is the point — so it never touches the verdict pill. Its load
-// passes `announceVerdict: false`, and a failure to fetch or run it
-// leaves the baseline verdict standing and reports the error in the
-// fix pane.
-
 import { loadVivariumRust } from "../_shared/rust_loader.js";
 import {
   setResult,
@@ -71,15 +40,9 @@ if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
-/** The `regex` releases the two crates pin. Keep in sync with
- *  `Cargo.toml` and `fix/Cargo.toml` — the pages report these strings,
- *  and the wasm builds report their own, so a drift is visible rather
- *  than silent. */
 const BASELINE_REGEX_VERSION = "1.8.4";
 const FIX_REGEX_VERSION = "1.13.1";
 
-/** Write into the fix pane and stamp the machine-readable state the
- *  Playwright suite asserts on (locale-independent, unlike the text). */
 function setFixPane(
   text: string,
   status: "pending" | "ok" | "error",
@@ -88,12 +51,6 @@ function setFixPane(
   outputFixEl!.dataset["fixStatus"] = status;
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty —
-// e.g. dev hot-reload before the highlight script has run, or a
-// mid-edit state where the inline got lost.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_SOURCE_HINT;
   fetch("./repro.highlighted.html")
@@ -140,10 +97,6 @@ try {
     );
   }
 
-  // Publish a baseline-only envelope BEFORE the fix-candidate run.
-  // The Playwright suite reads `__VIVARIUM_RESULT__` the moment
-  // `data-verdict` leaves "pending", so the envelope has to be there
-  // already; the fix-candidate fields are added in a second publish.
   const buildEnvelope = (
     finishedAt: Date,
     fix: ReproOutput | null,
@@ -160,17 +113,11 @@ try {
       version: wasiShimVersion,
       extras: {
         regex_crate: result.regex_crate_version,
-        // Omitted rather than nulled when the fix build did not run —
-        // `extras` is `Record<string, string>`, and an absent key reads
-        // the same way to a consumer feature-detecting the field.
         ...(fix ? { regex_crate_fix_candidate: fix.regex_crate_version } : {}),
         wasi_target: "wasm32-wasip1",
       },
     },
     result: {
-      // Flat fields describe the baseline, unchanged for existing
-      // consumers. `baseline` / `fix_candidate` are additive — Contract
-      // v1 revision, no version bump (AGENTS.md 4.10).
       pattern_plus: result.pattern_plus,
       pattern_expanded: result.pattern_expanded,
       matches_plus: result.matches_plus,
@@ -203,10 +150,6 @@ try {
 
   setResult(buildEnvelope(new Date(), null, null));
 
-  // ── Fix-candidate build ────────────────────────────────────────────
-  // Never allowed to move the verdict pill: `announceVerdict: false`
-  // keeps a 404 on repro-fix.wasm from flipping a correct "reproduced"
-  // into a fix that was never observed.
   setFixPane(`Loading regex ${FIX_REGEX_VERSION} build…`, "pending");
   let fixResult: ReproOutput | null = null;
   let fixExitCode: number | null = null;

@@ -1,50 +1,4 @@
 #!/usr/bin/env bun
-//
-// Generate the Japanese variant of every reproduction page.
-//
-// Model
-// -----
-// `<recipe>/index.html` stays the single English source of truth for
-// structure, markup and the Shiki-highlighted script block. Prose nodes
-// carry `data-i18n="<key>"`; the translations live in
-// `<recipe>/i18n.ja.json`. This script splices the two into
-// `<recipe>/index.ja.html`, which is gitignored.
-//
-// Keeping the JA page generated rather than tracked is what makes drift
-// structurally impossible: a structural edit to index.html reaches both
-// locales automatically, and a translator only ever touches JSON. The
-// reviewable artefact in a PR is the JSON, which is what a reviewer
-// should actually be reading.
-//
-// `<base href>` — why the JA tree is one file per recipe
-// ------------------------------------------------------
-// The JA page is served from a second URL tree
-// (/vivarium/ja/repro/<project>/<issue>/) while all of its assets live in
-// the EN tree. Rewriting `<script src>` / `<link href>` would not be
-// enough: `fetch()` resolves against `document.baseURI`, and recipes
-// fetch `./repro.highlighted.html`, `./wheels/manifest.json`,
-// `./repro.wasm` and `./verdict.json` at runtime. A single `<base href>`
-// pointing at the EN directory fixes every one of those at once, plus
-// `../_shared/style.css` and the `../_assets/sw.js` registration. ES
-// module imports inside repro.js resolve against their own URL, so the
-// rest of the graph follows.
-//
-// The consequence is that the deployed JA tree needs no `_shared/`, no
-// `_assets/`, no wheels and no wasm — just the HTML.
-//
-// `<base>` does change how in-page `<a href>` resolves, so anchors
-// starting with `.` or `/` are rewritten to their JA-absolute form.
-//
-// Splicing, not re-serialising
-// ----------------------------
-// `<code id="repro-code">` holds hundreds of Shiki `<span>`s inlined by
-// `src/layer1_wasm/scripts/highlight-repros.ts`. Any normalising
-// serializer would churn them and fight that script on every build. So
-// the parser is used only to locate byte ranges, and the original string
-// is spliced.
-//
-// Wiring: `docs/package.json` `generate` chain, `mise run repro:i18n`,
-// and a dedicated step in deploy-docs.yml after `mise run repro:build`.
 
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -53,7 +7,6 @@ import { REPO_ROOT, SITE_API_DIR } from './site-paths';
 
 const LAYER_DIRS = ['layer1_wasm', 'layer2_docker'] as const;
 
-/** Inline tags a translated string may contain. Attribute-free. */
 const ALLOWED_TAGS = new Set([
   'code',
   'em',
@@ -83,21 +36,14 @@ function fail(where: string, message: string): void {
   problems.push(`${where}: ${message}`);
 }
 
-/** Site-absolute path of a recipe's EN page, e.g. `/vivarium/repro/numpy/28287/`. */
 function pagePath(pageUrl: string): string {
   return new URL(pageUrl).pathname;
 }
 
-/** The JA sibling of an EN page path. */
 function jaPagePath(enPath: string): string {
   return enPath.replace(/^(\/[^/]+)\//, '$1/ja/');
 }
 
-/**
- * Validate a translated value: allowlisted, attribute-free inline tags
- * only. A `<a href>` or an inline `<svg>` must come through a `{n}` slot
- * instead, so URLs and icons never reach the translation JSON.
- */
 function checkValue(
   where: string,
   key: string,
@@ -109,8 +55,6 @@ function checkValue(
   while (m !== null) {
     const tag = (m[1] ?? '').toLowerCase();
     const attrs = (m[2] ?? '').replace(/\/\s*$/, '').trim();
-    // `<title>` is a text-only element: markup inside it is not parsed as
-    // markup, it is shown literally in the browser tab.
     if (hostTag === 'title') {
       fail(where, `key "${key}" is a <title>; it must be plain text`);
     } else if (!ALLOWED_TAGS.has(tag)) {
@@ -123,7 +67,6 @@ function checkValue(
   }
 }
 
-/** Substitute `{0}`, `{1}`, ... with the EN element's child elements. */
 function fillSlots(
   where: string,
   key: string,
@@ -157,10 +100,6 @@ function applySplices(
   onOverlap: (a: Splice, b: Splice) => void,
 ): string {
   const ordered = [...splices].sort((a, b) => b.start - a.start);
-  // Splices are applied back-to-front so earlier offsets stay valid.
-  // That only holds while the ranges are disjoint; an overlap would
-  // silently truncate one of them (and leave untranslated English
-  // behind), so it is an error rather than a best effort.
   for (let i = 1; i < ordered.length; i += 1) {
     const later = ordered[i - 1];
     const earlier = ordered[i];
@@ -175,15 +114,6 @@ function applySplices(
   return out;
 }
 
-/**
- * Byte range of an element's inner content in the ORIGINAL source.
- *
- * Derived from the element's source offsets, not from
- * `outerHTML.indexOf(innerHTML)`: node-html-parser re-serialises those
- * properties, so they do not necessarily appear verbatim in the source
- * and `indexOf` can land on the wrong offset (or miss), silently
- * truncating the splice and leaving English text behind.
- */
 function innerRange(
   source: string,
   el: HTMLElement,
@@ -234,7 +164,6 @@ function translateRecipe(
   const enPath = pagePath(entry.page_url);
   const jaPath = jaPagePath(enPath);
 
-  /** Re-point a document-relative href at the JA tree. */
   function rewriteHrefInOpenTag(openTag: string): string {
     return openTag.replace(/(\shref=")([^"]*)(")/, (whole, pre, href, post) => {
       if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href) || href.startsWith('#')) {
@@ -245,14 +174,6 @@ function translateRecipe(
     });
   }
 
-  // ── data-i18n: replace inner content ────────────────────────────────
-  //
-  // Translation is depth-first, and only OUTERMOST annotated elements
-  // produce a splice. A nested `data-i18n` — typically an `<a>` whose
-  // label needs translating while its href must never reach the
-  // translation JSON — is rendered by its parent's `{n}` slot, already
-  // translated. Splicing both would have the parent's range overwrite
-  // the child's.
   const annotated = root.querySelectorAll('[data-i18n]');
 
   function hasAnnotatedAncestor(el: HTMLElement): boolean {
@@ -266,14 +187,9 @@ function translateRecipe(
     return false;
   }
 
-  /** Translated outerHTML of an element, recursing into slot children. */
   function renderTranslated(el: HTMLElement): string {
     const key = el.getAttribute('data-i18n');
     const openEnd = el.outerHTML.indexOf('>') + 1;
-    // Nested anchors are re-emitted here rather than spliced, so their
-    // href has to be localised here too — the `<a href>` pass below
-    // deliberately skips them to avoid two splices claiming overlapping
-    // ranges (which silently truncates the outer one).
     const openTag = rewriteHrefInOpenTag(el.outerHTML.slice(0, openEnd));
     const closeTag = `</${el.rawTagName}>`;
     if (!key) return openTag + el.innerHTML + closeTag;
@@ -317,7 +233,6 @@ function translateRecipe(
     splices.push({ ...range, text: filled });
   }
 
-  // ── data-i18n-attr: replace attribute values ────────────────────────
   for (const el of root.querySelectorAll('[data-i18n-attr]')) {
     const spec = el.getAttribute('data-i18n-attr') ?? '';
     for (const pair of spec.split(';')) {
@@ -365,7 +280,6 @@ function translateRecipe(
     }
   }
 
-  // ── <html lang> ─────────────────────────────────────────────────────
   const htmlEl = root.querySelector('html');
   if (htmlEl) {
     const [s] = htmlEl.range;
@@ -387,14 +301,11 @@ function translateRecipe(
     }
   }
 
-  // ── page-relative <a href> ──────────────────────────────────────────
   for (const a of root.querySelectorAll('a[href]')) {
     const href = a.getAttribute('href') ?? '';
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href) || href.startsWith('#')) {
       continue;
     }
-    // Handled by renderTranslated when the anchor sits inside a
-    // translated element.
     if (hasAnnotatedAncestor(a)) continue;
     const resolved = new URL(href, `https://x${jaPath}`);
     const [aStart] = a.range;
@@ -409,11 +320,6 @@ function translateRecipe(
     });
   }
 
-  // ── <base href> ─────────────────────────────────────────────────────
-  // Inserted right after <head> so every document-relative reference —
-  // including runtime fetch() calls, which resolve against baseURI and
-  // cannot be fixed by rewriting attributes — points back into the EN
-  // tree where the assets actually live.
   const headEl = root.querySelector('head');
   if (headEl === null) {
     fail(label, 'no <head> element to anchor <base> to');
@@ -473,10 +379,6 @@ function main(): void {
       }
 
       if (!existsSync(join(recipeDir, 'i18n.ja.json'))) {
-        // Every reproduction page ships both locales (ADR-0028's i18n
-        // Definition of Done, the same rule docs/tests/i18n.spec.ts
-        // enforces for the rspress tree). A page without a translation
-        // is a half-shipped recipe, not a valid intermediate state.
         fail(
           `src/${layerDir}/${slug}`,
           'no i18n.ja.json. Every reproduction page ships EN + JA in the ' +

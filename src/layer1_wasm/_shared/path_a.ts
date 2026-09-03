@@ -1,32 +1,16 @@
-// Path A — Layer 1 source-substitution branch-fix panel. Recipe pages
-// opt in via `enablePathA({...})` after their baseline run; the
-// captured run + visitor's "fix" both serialise to the Contract v1
-// verdict shape so the /repro/compare page consumes them without
-// schema branching. Layer-1-specific fields are synthesised:
-// image_tag = `layer1:<slug>:<sha256(source)[0..12]>`,
-// image_digest / stderr_tail = "" (schema-allowed).
-
 const FIX_PARAM_LIMIT_BYTES = 4 * 1024;
 
 import { pageLang } from "./i18n.js";
 
 export type VerdictLiteral = "reproduced" | "unreproduced";
 
-/** Captured run produced by the recipe's `runFix` / `baseline` callbacks. */
 export interface PathACapturedRun {
-  /** Process exit code (0 for clean exit). */
   exitCode: number;
-  /** Verdict literal for this run. */
   verdict: VerdictLiteral;
-  /** Human-readable explanation, surfaced in the recipe-page UI and
-   *  in the captured verdict's metadata. */
   message: string;
-  /** Stdout string (typically JSON-stringified result). Goes into the
-   *  Contract v1 `stdout` field. */
   stdout: string;
 }
 
-/** Contract v1 verdict shape (mirrors Layer 2/3 verdict.json shape). */
 export interface ContractV1Verdict {
   contract: "v1";
   verdict: VerdictLiteral;
@@ -39,9 +23,7 @@ export interface ContractV1Verdict {
 }
 
 export interface PathAStrings {
-  /** Section heading rendered above the panel. */
   heading: string;
-  /** Lead paragraph below the heading. */
   lead: string;
   pasteLabel: string;
   pastePlaceholder: string;
@@ -130,26 +112,12 @@ const DEFAULT_STRINGS_JA: Partial<PathAStrings> = {
 };
 
 export interface PathAOptions {
-  /** Recipe slug — used in the synthesised image_tag and the
-   *  comparison-page deep-link. */
   slug: string;
-  /** The recipe's default reproduction source. Used to compute a
-   *  source-hash differentiator and as the placeholder text in the
-   *  panel's textarea. */
   baselineSource: string;
-  /** The captured baseline run (the recipe's normal verdict). The
-   *  panel renders this as the "original" side for downloads. */
   baseline: PathACapturedRun;
-  /** Run the substituted source through the same WASM interpreter
-   *  the recipe page already loaded. The callback owns the actual
-   *  re-run. */
   runFix: (source: string) => Promise<PathACapturedRun>;
-  /** UI strings. Pages can override per-language; the panel does not
-   *  read `<html lang>` itself to keep the surface explicit. */
   strings?: Partial<PathAStrings>;
-  /** Mount selector. Defaults to `#path-a-mount`. */
   mountSelector?: string;
-  /** Override `window.location` for tests. */
   locationOverride?: { search: string; origin: string; pathname: string };
 }
 
@@ -394,7 +362,6 @@ function buildPanel(
     compareEl.append(a);
   };
 
-  // Initial render: original-only.
   renderDownloads(null);
   renderCompareLink();
 
@@ -432,18 +399,12 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
   const mountSelector = opts.mountSelector ?? "#path-a-mount";
   const mount = document.querySelector<HTMLElement>(mountSelector);
   if (!mount) {
-    // Recipe page didn't include the mount-point — silently no-op so a
-    // typo in the recipe HTML doesn't tank the entire page.
     console.warn(
       `path_a: mount-point "${mountSelector}" not found; Path A panel not rendered.`,
     );
     return;
   }
 
-  // Locale comes from `<html lang>` by default, so a recipe never has to
-  // remember to pass the Japanese table (none ever did — the export sat
-  // unused). An explicit `opts.strings` still wins, for a recipe that
-  // wants to override individual strings.
   const s: PathAStrings = {
     ...DEFAULT_STRINGS,
     ...(opts.strings ?? (pageLang() === "ja" ? DEFAULT_STRINGS_JA : {})),
@@ -506,7 +467,6 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
     }
   };
 
-  // Wiring — paste / URL / file pick / Run / Reset.
   panel.runBtn.addEventListener("click", async () => {
     const pasteValue = panel.pasteEl.value.trim();
     const urlValue = panel.urlEl.value.trim();
@@ -547,7 +507,6 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
     panel.fileEl.value = "";
   });
 
-  // URL-param auto-trigger: `?fix=<base64url>` (≤4 KiB) or `?fix_url=<url>`.
   const loc = opts.locationOverride ?? (typeof window !== "undefined" ? window.location : null);
   if (loc) {
     const params = new URLSearchParams(loc.search);
@@ -572,7 +531,4 @@ export async function enablePathA(opts: PathAOptions): Promise<void> {
   }
 }
 
-/** Pre-bundled Japanese strings. `enablePathA` now selects these
- *  automatically on a `lang="ja"` page, so recipes do not pass them;
- *  the export stays for callers that want to extend or override them. */
 export const PATH_A_STRINGS_JA: Partial<PathAStrings> = DEFAULT_STRINGS_JA;

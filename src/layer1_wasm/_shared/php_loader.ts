@@ -1,60 +1,29 @@
-// Vivarium contract v1 — php-wasm loader.
-//
-// Loads `php-wasm` from jsDelivr, instantiates `PhpWeb`, and returns a
-// thin `runPhp` wrapper that captures stdout via the runtime's
-// `output` event and resolves to `{ exitCode, stdout }`. On any
-// load-time failure the helper sets the verdict to "unreproduced" with the
-// error text and re-throws — mirroring `loader.ts` (Pyodide) and
-// `ruby_loader.ts` (Ruby.wasm).
-//
-// Pages should still wrap their reproduction code in `try/catch` and
-// call `setVerdict("unreproduced", ...)` themselves on REPRODUCTION-time errors;
-// this helper only owns load-time errors.
-//
-// php-wasm@0.0.8 ships PHP 8.2.11 (Linux, 32-bit, Zend 4.2.11) with
-// 27 bundled extensions including SimpleXML, sqlite3, mbstring, json,
-// PDO, and pdo_sqlite — confirmed in-browser; do not rely on this
-// version mapping without re-checking via `PHP_VERSION` in the
-// reproduction script.
-
 import { setVerdict } from "./verdict.js";
 import { pick } from "./i18n.js";
 
-// Default pending copy for this runtime. Partial JA overlay per the
-// `path_a.ts` convention.
 const S = pick(
   { pending: 'Loading php-wasm runtime…' },
   { pending: 'php-wasm runtime を読み込み中…' },
 );
 
-/** `php-wasm` npm package version. Bumping requires updating the
- *  `<link rel="modulepreload">` in pages that preload this URL. */
 export const DEFAULT_PHP_WASM_VERSION = "0.0.8";
 
 export interface LoadOptions {
-  /** Override the `php-wasm` package version. */
   phpWasmVersion?: string;
-  /** Verdict message shown while loading (default "Loading php-wasm runtime…"). */
   pendingText?: string;
 }
 
 export interface PhpRunResult {
-  /** Exit code returned by `PhpWeb.run`. 0 indicates a clean run. */
   exitCode: number;
-  /** Concatenated stdout across all `output` events emitted during the
-   *  run. Includes trailing newlines if the script wrote them. */
   stdout: string;
 }
 
 export interface PhpRunner {
-  /** Execute a PHP source string (must include the `<?php` open tag)
-   *  and resolve to the exit code + captured stdout. */
   run(code: string): Promise<PhpRunResult>;
 }
 
 export interface LoadResult {
   php: PhpRunner;
-  /** Echoes `options.phpWasmVersion` or the default. */
   phpWasmVersion: string;
 }
 
@@ -71,11 +40,6 @@ interface PhpWebInstance {
   run(code: string): Promise<number>;
 }
 
-/**
- * Load php-wasm and return a thin runner.
- *
- * @throws Re-throws the underlying error after setting the verdict to "unreproduced".
- */
 export async function loadVivariumPhp(
   options: LoadOptions = {},
 ): Promise<LoadResult> {

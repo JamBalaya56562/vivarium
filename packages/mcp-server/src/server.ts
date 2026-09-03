@@ -1,7 +1,3 @@
-// MCP server wiring — registers the v1 tools and connects a stdio
-// transport. The tool surface is documented in README.md; each tool
-// module owns its own description literal.
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -56,13 +52,6 @@ import {
 } from './tools/verify_branch_fix.js';
 
 const SERVER_NAME = 'vivarium-mcp';
-// Keep in sync with package.json + jsr.json. The MCP `initialize`
-// handshake exposes this string to clients, so unsynced values across
-// these three files produce a confusing client experience. Bump the
-// patch component for additive changes within v0.x (additional tools,
-// description / surface refinements) — the project is still pre-1.0
-// and `prepare_fix_candidate` is meaningful but fully opt-in, so a minor
-// bump would overstate the impact.
 const SERVER_VERSION = '0.2.1';
 
 export function createServer(): Server {

@@ -1,15 +1,3 @@
-// Data-driven recipe references for visitor-facing docs.
-//
-// Reads `docs/site/public/api/recipes.json` at build time (same import
-// pattern as RecipeGallery) and resolves slug references against the
-// current catalogue, so deleting a recipe under `src/layer*_*/` no
-// longer requires a parallel docs sweep. See ADR-0035-equivalent
-// rationale in PR #235 (generator → MDX-consumer pattern).
-//
-// The hero (`VivariumHero.tsx`) is the deliberate exception — its
-// three slugs are paired with hand-written copy that can't be derived
-// here, and are pinned with a header comment + checklist entry.
-
 import recipesIndex from '../public/api/recipes.json';
 import { recipeUrl } from './recipe-url';
 
@@ -150,8 +138,6 @@ interface ExampleSlugProps {
   kind?: 'numeric' | 'descriptive';
   linked?: boolean;
   fallback?: string;
-  /** Locale for the linked page. Callers in the JA tree pass "ja"; the
-   *  default keeps every existing EN call site unchanged. */
   lang?: Lang;
 }
 

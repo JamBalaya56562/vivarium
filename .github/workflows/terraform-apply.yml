@@ -1,11 +1,5 @@
 name: Terraform Apply
 
-# Thin caller for the org-wide reusable workflow at
-# aletheia-works/.github/.github/workflows/terraform-apply.yml.
-#
-# The workflow name above must stay as "Terraform Apply" because
-# terraform-state-backup.yml's `workflow_run` listener matches on it.
-
 on:
   push:
     branches:
@@ -17,26 +11,15 @@ on:
 
 permissions:
   contents: read
-  # Required by the reusable workflow to read and write the state artifact.
   actions: write
-  # Required by the reusable workflow to file an apply-failure issue.
   issues: write
 
 jobs:
   apply:
-    # Skip on forks. Apply mutates real org infrastructure and depends on
-    # repo-scoped secrets/variables (TF_TOKEN_GITHUB, LATEST_APPLY_RUN_ID)
-    # that don't exist in forks, so an upstream-sync push to a fork's main
-    # would otherwise trigger a guaranteed failure run.
     if: github.repository_owner == 'aletheia-works'
-    # Pinned by commit SHA (org enforces sha_pinning_required).
     uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github
-      # Phase milestones are upstream-only context (variables.tf comment).
-      # The caller-side `if: github.repository_owner == 'aletheia-works'`
-      # already gates this whole job to upstream, so opting in here is
-      # safe — fork applies never run this workflow.
       tfvar_assignments: |
         create_phase_milestones=true
     secrets: inherit

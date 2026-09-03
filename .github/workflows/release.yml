@@ -1,12 +1,5 @@
 name: Release
 
-# Publishes a GitHub release when a `v*.*.*` tag is pushed, or on manual
-# dispatch with an explicit version. Release notes are auto-generated
-# using the category rules in .github/release.yml.
-#
-# Pre-release detection: versions containing a hyphen (e.g. v0.1.0-rc1)
-# are published as pre-releases.
-
 on:
   push:
     tags:
@@ -54,7 +47,6 @@ jobs:
       - name: Create release
         if: steps.exists.outputs.exists == 'false'
         run: |
-          # Treat any version with a hyphen as a pre-release.
           PRERELEASE_FLAG=""
           if [[ "$VERSION" == *-* ]]; then
             PRERELEASE_FLAG="--prerelease"

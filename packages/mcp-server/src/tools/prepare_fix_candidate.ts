@@ -1,11 +1,3 @@
-// Scaffolding helper for registering a fix-candidate spec on an
-// existing Layer 1 recipe — writes a `fix-candidate.json` next to
-// the recipe, and the CI deploy-docs workflow turns the linked fix
-// branch into a wheel built on the runner so the recipe page can run
-// it side-by-side with the released build. Returns the spec content
-// and the gh / git command bundle the agent should run; no git or
-// network operations happen inside the MCP server.
-
 import { getCatalogue } from '../catalogue.js';
 import type { RecipeEntry } from '../types.js';
 
@@ -54,10 +46,6 @@ export type PrepareFixCandidateResult =
   | PrepareFixCandidateOk
   | PrepareFixCandidateError;
 
-// Bare GitHub repo URL — `https://github.com/<owner>/<repo>` with
-// optional trailing slash. Tree / blob / pull URLs are rejected so the
-// generated `fix-candidate.json` always carries the canonical clone
-// URL.
 const GITHUB_REPO_URL_REGEX = /^https?:\/\/github\.com\/[^/]+\/[^/]+\/?$/i;
 
 function recipePageUrl(entry: RecipeEntry): string {
@@ -181,9 +169,6 @@ export async function prepareFixCandidate(
     pkg,
   });
 
-  // Heredoc inside the single-quoted strings below (`<<'EOF'`) keeps
-  // the JSON literal byte-for-byte intact when the agent pastes the
-  // command bundle into a shell.
   const commands = [
     '# 1. Make sure you have a clone of aletheia-works/vivarium (fork it first if you do not have write access).',
     'gh repo fork aletheia-works/vivarium --clone --remote=false',

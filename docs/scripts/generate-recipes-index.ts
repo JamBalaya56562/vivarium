@@ -1,54 +1,12 @@
 #!/usr/bin/env bun
-//
-// Walks vivarium's recipe directories under src/layer1_wasm,
-// src/layer2_docker, and src/layer3_thirdway (each holding kebab-case
-// recipe sub-directories) and emits docs/site/public/api/recipes.json — the
-// catalogue index consumed by the Vivarium MCP server (ADR-0019, private
-// memo) and any other programmatic tool that wants to list, filter, or
-// look up reproductions.
-//
-// The output is tracked in git so PRs adding a recipe also show the index
-// update in the diff. Run by `bun run generate-index` (wired into the
-// `dev` and `build` scripts in docs/package.json).
-//
-// Heuristics for v1:
-//   - slug = recipe directory name.
-//   - project / issue = parsed from "<project>-<digits>" slug pattern;
-//     for slugs without a trailing number, project = first dash-segment,
-//     issue = 0.
-//   - page_url = "<pages-base>/repro/<project>/<issue_path>/", where
-//     issue_path = the upstream issue number when slug ends in "-<digits>",
-//     otherwise the slug suffix after the project prefix (e.g. slug
-//     "bash-local-shadows-exit" -> "/repro/bash/local-shadows-exit/"). For
-//     PROJECT_OVERRIDES entries the disk slug becomes the issue_path under
-//     the override's project (e.g. "lost-update" → "/repro/pthread/lost-update/").
-//   - title = first H1 of the recipe README, with the leading
-//     "Reproduction —" prefix stripped.
-//   - language / symptom / severity / tags / expected_verdict /
-//     expected_runtime = read from the per-recipe `recipe.json` next to
-//     the recipe sources. Validated by recipe.schema.json. Recipes
-//     without a `recipe.json` default to language: "unknown" and empty
-//     tags; the gallery degrades to "show but unfilterable on language"
-//     for those. Retired the docs/site/_data/recipe-facets.json overlay
-//     (2026-05-18) so adding a recipe = creating its directory + the
-//     in-directory recipe.json, with no out-of-recipe edits required.
-//
-// Schema is locked at `index = "v1"` per ADR-0019 §4 and follows
-// ADR-0018's minor-revision policy: optional fields can be added without
-// bumping the literal; breaking changes require v2.
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
-// Per-recipe metadata file name. Canonical schema:
-// docs/site/public/spec/recipe.schema.json.
 const RECIPE_META_FILE = 'recipe.json';
 
-// Owner and repository name. Resolved from CI-provided env vars when
-// the script runs in GitHub Actions (so a fork's deploy bundles its
-// own URLs); falls back to the upstream values for local dev.
 const OWNER = process.env.GITHUB_REPOSITORY_OWNER ?? 'aletheia-works';
 const REPO_NAME = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vivarium';
 
@@ -57,12 +15,6 @@ const REPO_BASE = `https://github.com/${OWNER}/${REPO_NAME}`;
 
 type Layer = 1 | 2 | 3;
 
-// Per-recipe round-trip state. Canonical schema:
-// docs/site/public/spec/roundtrip.schema.json. Surfaced here as
-// `recipe.roundtrip` when the recipe directory carries a
-// `roundtrip.json` (opt-in; recipes without one keep the field absent).
-// ADR-0018 minor-revision policy: this is an additive optional field
-// inside the same `index = "v1"` envelope, no version bump.
 interface RoundtripState {
   schema_version: 1;
   slug: string;
@@ -193,26 +145,10 @@ async function listRecipeSlugs(layerDir: string): Promise<string[]> {
   return slugs.sort();
 }
 
-// Slugs whose first dash-segment is not the upstream project name. The
-// heuristic in parseSlug() works for "<project>-<digits>" and most
-// "<project>-<rest>" slugs, but a handful of recipe directory names diverge
-// (e.g. layer 3 "lost-update" reproduces a pthread data race, not a
-// "lost" project). These overrides bridge to the day Phase 6 stream S.1
-// adds explicit per-recipe frontmatter and the heuristic retires.
 const PROJECT_OVERRIDES: Record<string, string> = {
   'lost-update': 'pthread',
 };
 
-// Parse a recipe directory slug into the routing triple consumed by the
-// catalogue and URL builder.
-//
-// `project` and `issue` are the v1 schema fields; `issuePath` is the
-// second URL segment under `/repro/<project>/<issue_path>/`. For numeric
-// upstream issues `issuePath` is the stringified issue number; for
-// descriptive slugs (no trailing digits) it is the slug suffix after the
-// project prefix; for PROJECT_OVERRIDES entries (where the disk slug does
-// not start with the project name) the whole disk slug becomes the
-// issue_path under the overridden project.
 function parseSlug(slug: string): {
   project: string;
   issue: number;
@@ -240,15 +176,6 @@ function parseSlug(slug: string): {
   };
 }
 
-// Opt-in round-trip state loader. ENOENT is the common case (recipes
-// without a roundtrip.json keep the catalogue field absent); any other
-// failure logs a warning and skips the merge rather than failing the
-// generator — recipes.json must stay generatable from any half-populated
-// tree. Mechanical checks below are the minimal set needed to keep the
-// public catalogue from carrying obviously malformed state; the
-// canonical full-schema validation lives in roundtrip.schema.json and
-// is enforced by the verify_and_report_fix MCP tool / Phase 3
-// validators that consume the file.
 async function loadRoundtripState(
   recipeDir: string,
   expectedSlug: string,
@@ -321,14 +248,6 @@ async function readTitle(
   }
 }
 
-// Per-recipe metadata loader. ENOENT is treated as "this recipe has no
-// recipe.json yet" — the entry is built with the degraded
-// language: "unknown" / empty tags fallback rather than failing the
-// generator. Other read failures (parse error, schema_version mismatch)
-// log a warning and likewise fall back, so recipes.json stays
-// generatable from any half-populated tree. Full schema validation
-// lives in recipe.schema.json and is enforced separately by the
-// ajv-cli step in CI (see test-docs.yml).
 async function loadRecipeMeta(
   recipeDir: string,
 ): Promise<RecipeMeta | undefined> {
@@ -436,14 +355,6 @@ async function buildEntry(
   if (meta?.severity) entry.severity = meta.severity;
   if (meta?.expected_verdict) entry.expected_verdict = meta.expected_verdict;
   if (meta?.expected_runtime) entry.expected_runtime = meta.expected_runtime;
-  // `page_url_ja` is emitted only when the recipe actually ships a
-  // translation. Its presence is the machine-readable signal that a
-  // Japanese page exists — a consumer that derived the URL by inserting
-  // `/ja/` would hand an agent a 404 for every untranslated recipe.
-  //
-  // The gate is the tracked `i18n.ja.json`, not the generated
-  // `index.ja.html`: this script runs before `repro:i18n`, so the
-  // generated page does not exist yet at this point.
   if (existsSync(join(recipeDir, 'i18n.ja.json'))) {
     entry.page_url_ja = `${PAGES_BASE}/ja/repro/${project}/${issuePath}/`;
   }

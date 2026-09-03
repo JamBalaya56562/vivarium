@@ -1,67 +1,16 @@
 name: Test docs (unit + build + E2E)
 
-# Single workflow covering every PR-time and post-merge check the
-# rspress docs site needs. Three lanes:
-#
-#   1. Unit lane — `bun test scripts/__tests__` validates pure functions
-#      that the dev middleware uses (resolveReproFile etc.). No browser
-#      needed; runs in seconds.
-#
-#   2. Build verification — handled implicitly by the E2E lane below:
-#      Playwright's `webServer.command` is `bun run build && bun x
-#      rspress preview …`, so a broken docs build fails the E2E lane
-#      before any test runs. A dedicated build-only workflow used to
-#      live in `test-docs-build.yml` but was redundant with this and
-#      has been removed.
-#
-#   3. E2E lane — Playwright runs against `bunx rspress preview`,
-#      asserting that every tracked page (EN + JA, 68 total) renders
-#      with a non-empty <h1>, the rspress nav, and the footer; that the
-#      EN ↔ JA file tree is symmetric and the locale switcher round-
-#      trips; and that recipe pages reach their documented verdict
-#      while exposing the loading-UX surface (vh-progress, vh-output
-#      reveal) that previously regressed silently. The lane fans out
-#      via a browser-engine matrix (Chromium / Firefox / WebKit) so
-#      the three engines run in parallel runners — wall-clock time
-#      stays at ~ one-engine cost, and per-engine failures appear as
-#      separate red checks for fast triage.
-#
-# Why this workflow exists: the rspress docs site has no other
-# PR-time test gate today. Past PRs accidentally broke component
-# renders / nav / loading UX, and the regression only surfaced when
-# a maintainer browsed the deploy and noticed. This workflow turns
-# that class of breakage into a CI failure.
-#
-# Triggers:
-# - `pull_request` touching docs/ or this workflow — fast feedback.
-# - `push` to main on the same paths — catches anything that lands
-#   despite a green PR (rare, but the cost of finding out post-merge
-#   is much higher).
-# - `workflow_dispatch` — manual re-run from the Actions tab.
-#
-# Fork-PR safe: uses `pull_request` (NOT `pull_request_target`). No
-# secrets are needed; tests are read-only and produce no external
-# side effects.
-
 on:
   pull_request:
     branches: [main]
     paths:
       - 'docs/**'
-      # The repro-nav guard (docs/scripts/__tests__/reproChrome.test.ts)
-      # asserts src/layer1_wasm/_assets/chrome-data.js is regenerated and
-      # that chrome.js still consumes it. Without this path the guard
-      # would not run on the very edits it exists to catch.
       - 'src/layer1_wasm/_assets/**'
       - '.github/workflows/test-docs.yml'
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      # The repro-nav guard (docs/scripts/__tests__/reproChrome.test.ts)
-      # asserts src/layer1_wasm/_assets/chrome-data.js is regenerated and
-      # that chrome.js still consumes it. Without this path the guard
-      # would not run on the very edits it exists to catch.
       - 'src/layer1_wasm/_assets/**'
       - '.github/workflows/test-docs.yml'
   workflow_dispatch:
@@ -69,8 +18,6 @@ on:
 permissions:
   contents: read
 
-# Cancel in-flight runs when a PR receives a new commit; save Actions
-# minutes.
 concurrency:
   group: test-docs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -96,21 +43,6 @@ jobs:
           bun run test:unit
 
   e2e:
-    # Playwright matrix strategy — one runner per browser engine, run
-    # in parallel. Versus a single-runner serial sweep this keeps
-    # wall-clock time at ~ one-engine cost (still ~1 min) instead of
-    # ~3× the cost (~3 min), and makes per-engine failures visible as
-    # separate red checks rather than a single conflated one.
-    #
-    # `fail-fast: false` lets each browser run to completion even if a
-    # sibling fails — when WebKit catches a regression Chromium misses,
-    # the maintainer wants to see Firefox's verdict too rather than
-    # starting another round of fixes blind.
-    #
-    # Each runner installs **only its own browser** (not the full
-    # chromium+firefox+webkit triplet), trimming runner setup time by
-    # ~2/3. The per-engine `--with-deps` pulls the matching OS-level
-    # libraries that engine needs.
     name: E2E (${{ matrix.browser }})
     runs-on: ubuntu-latest
     strategy:
@@ -132,22 +64,6 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Cache Playwright system packages (${{ matrix.browser }})
-        # `--with-deps` costs two things: the browser off
-        # cdn.playwright.dev (~3 s, reliably) and 48.8 MB of Ubuntu
-        # packages off azure.archive.ubuntu.com. The second one is the
-        # problem — on 2026-09-02 the identical fetch ran at 24.8 MB/s
-        # (2 s) and, an hour later on the same workflow, at 37.7 kB/s
-        # (21 min 35 s). Nothing on our side causes that, and most of
-        # the 40 packages are codecs and CJK fonts a headless run never
-        # opens.
-        #
-        # Caching apt's archive directory turns the slow half into a
-        # cache restore. A miss costs exactly what today costs, so the
-        # worst case is unchanged.
-        #
-        # Key: the dependency set is a function of the Playwright
-        # release (bun.lock) and of the runner image that decides which
-        # libraries are already present (ImageOS).
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/vivarium-pw-apt
@@ -156,10 +72,6 @@ jobs:
       - name: Install Playwright browser (${{ matrix.browser }})
         run: |
           set -euo pipefail
-          # Redirect apt's archive cache into the restored directory, so
-          # the .debs `playwright install --with-deps` wants are already
-          # on disk. apt drops privileges to `_apt` while downloading,
-          # hence the permissive mode on the directory it reads.
           cache_dir="$HOME/.cache/vivarium-pw-apt"
           mkdir -p "$cache_dir/partial"
           chmod -R a+rwX "$cache_dir"
@@ -168,25 +80,17 @@ jobs:
 
           bunx playwright install --with-deps ${{ matrix.browser }}
 
-          # Hand the directory back to the runner user so the post-job
-          # cache save can read it, and drop apt's lock / partial state,
-          # which must not be restored into a later run.
           sudo chown -R "$(id -u):$(id -g)" "$cache_dir"
           rm -rf "$cache_dir/partial" "$cache_dir/lock"
           echo "Cached $(find "$cache_dir" -maxdepth 1 -name '*.deb' | wc -l) .deb(s)."
 
       - name: Run Playwright suite (${{ matrix.browser }})
-        # `--project=<name>` matches the project entry in
-        # docs/playwright.config.ts (one per engine), so this runner
-        # exercises only the engine matching its matrix slot.
         run: bun run test:e2e -- --project=${{ matrix.browser }}
 
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          # Per-engine report name avoids artefact-upload collisions
-          # when multiple matrix slots fail in the same run.
           name: playwright-report-${{ matrix.browser }}
           path: docs/playwright-report/
           retention-days: 7

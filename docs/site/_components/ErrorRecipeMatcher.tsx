@@ -28,9 +28,7 @@ const INDEX = recipesIndex as RecipesIndex;
 
 const MAX_INPUT_BYTES = 16 * 1024;
 
-// Keep scoring behavior in sync with packages/mcp-server/src/tools/match_error.ts.
 const STOPWORDS = new Set([
-  // English
   'the',
   'and',
   'for',
@@ -60,7 +58,6 @@ const STOPWORDS = new Set([
   'most',
   'recent',
   'call',
-  // Japanese
   'です',
   'ます',
   'した',
@@ -73,7 +70,6 @@ const STOPWORDS = new Set([
   '例外',
   '失敗',
   'スタック',
-  // German
   'der',
   'die',
   'das',
@@ -84,7 +80,6 @@ const STOPWORDS = new Set([
   'fehler',
   'ausnahme',
   'aufgetreten',
-  // Spanish
   'que',
   'por',
   'una',
@@ -94,14 +89,12 @@ const STOPWORDS = new Set([
   'con',
   'excepción',
   'fallo',
-  // French
   'pour',
   'avec',
   'sur',
   'dans',
   'erreur',
   'échec',
-  // Chinese (Simplified + Traditional)
   '错误',
   '异常',
   '失败',
@@ -110,7 +103,6 @@ const STOPWORDS = new Set([
   '異常',
   '失敗',
   '堆疊',
-  // Korean
   '오류',
   '예외',
   '실패',
@@ -179,13 +171,9 @@ function withinDistance1(a: string, b: string): boolean {
 }
 
 interface TokenSet {
-  /** Direct tokens after splitting + stopword filter + adjacent-pair join. */
   direct: ReadonlySet<string>;
-  /** Synonym-expanded tokens: catalogue-side variant → original input token. */
   synonyms: ReadonlyMap<string, string>;
-  /** Direct tokens of length ≥ FUZZY_MIN_LEN, eligible for fuzzy matching. */
   fuzzyCandidates: ReadonlyArray<string>;
-  /** Ordered display list (de-duplicated, no synonym/pair additions). */
   displayOrder: ReadonlyArray<string>;
 }
 
@@ -197,7 +185,6 @@ function tokenise(input: string): TokenSet {
   const lower = trimmed.toLowerCase();
   const raw = lower.split(/[^a-z0-9_]+/);
 
-  // Stage 1: filter raw tokens (length ≥ 3, not stopword, dedup).
   const ordered: string[] = [];
   const seenRaw = new Set<string>();
   for (const t of raw) {
@@ -208,15 +195,11 @@ function tokenise(input: string): TokenSet {
     ordered.push(t);
   }
 
-  // Stage 2: adjacent-pair expansion. Lets multi-word user input
-  // (e.g. "data type") match single-word catalogue terms (`dtype`)
-  // via the synonym table.
   const direct = new Set<string>(ordered);
   for (let i = 0; i < ordered.length - 1; i++) {
     direct.add(ordered[i]! + ordered[i + 1]!);
   }
 
-  // Stage 3: synonym expansion.
   const synonyms = new Map<string, string>();
   for (const t of direct) {
     const partners = SYNONYM_MAP.get(t);
@@ -227,7 +210,6 @@ function tokenise(input: string): TokenSet {
     }
   }
 
-  // Stage 4: fuzzy candidate set.
   const fuzzyCandidates: string[] = [];
   for (const t of direct) {
     if (t.length >= FUZZY_MIN_LEN) fuzzyCandidates.push(t);
@@ -392,7 +374,6 @@ function MatchCard({ lang, score }: { lang: Lang; score: Score }) {
   const r = score.recipe;
   const layerAccent =
     r.layer === 1 ? 'teal' : r.layer === 2 ? 'violet' : 'coral';
-  // Dedupe matched tokens for display while preserving first-seen order.
   const seen = new Set<string>();
   const displayTokens: MatchedToken[] = [];
   for (const m of score.matched) {
@@ -457,7 +438,6 @@ export function ErrorRecipeMatcher({ lang }: { lang: Lang }) {
   const s = STRINGS[lang];
   const [input, setInput] = useState('');
 
-  // No debounce: the catalogue is small and the matcher has no submit flow.
   const tokens = useMemo(() => tokenise(input), [input]);
 
   const ranked = useMemo<Score[]>(() => {

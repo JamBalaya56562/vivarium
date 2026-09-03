@@ -1,27 +1,3 @@
-// Vivarium Layer 1 reproduction — php/php-src#12167.
-//
-// `SimpleXMLElement::xpath('//processing-instruction()')` returns a
-// node, but casting that node to string yields an empty value instead
-// of the PI's content:
-//   $xml = '<?xml version="1.0"?><foo><bar><?stylesheet hello ?></bar></foo>';
-//   $sxe = simplexml_load_string($xml);
-//   $pi  = $sxe->xpath("//processing-instruction()")[0];
-//   (string) $pi;   // => ""    (BUG, expected "hello")
-// xpath finds the node — `count($pis) === 1` — so the issue is purely
-// in the SimpleXML string-cast path for processing-instruction nodes.
-//
-// Verdict semantics (per ADR-0008 / contract v1):
-//   - "reproduced" — the bug REPRODUCES (PI string cast is empty).
-//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
-//     or the runtime errored before producing a result).
-//
-// This recipe exercises R.2 Path A (Layer 1 source-substitution
-// branch-fix). After the baseline run captures the original verdict, we
-// opt into the shared Path A panel so visitors can paste an alternative
-// reproduction script and re-run it through the same php-wasm runtime.
-// The panel produces a Contract v1 verdict bundle the visitor drops on
-// /repro/compare for side-by-side review.
-
 import { enablePathA, type PathACapturedRun } from '../_shared/path_a.js';
 import { loadVivariumPhp, type PhpRunner } from '../_shared/php_loader.js';
 import { enableRunner } from '../_shared/runner.js';
@@ -63,10 +39,6 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -81,8 +53,6 @@ function evaluate(result: ReproOutput): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
-  // Bug reproduces iff xpath finds the PI node (count === 1) but
-  // string-casting it yields an empty string.
   const reproduced = result.xpath_count === 1 && result.pi_text_empty;
   if (reproduced) {
     return {
@@ -194,18 +164,12 @@ try {
   };
   setResult(envelope);
 
-  // Wire the editable script + Run button in the script column.
   enableRunner({
     slug: 'php-12167',
     baselineSource: REPRO_CODE,
     runFix: (source) => captureRun(php, source),
   });
 
-  // Reveal the Path A mount point before mounting so the panel transitions
-  // from hidden to populated atomically.
-  // Path A overlaps with the runner conceptually (both re-run a pasted
-  // script), but Path A also captures verdict.json bundles for
-  // /repro/compare and remains available for branch-fix verification.
   if (pathAMountEl) {
     pathAMountEl.removeAttribute('hidden');
     void enablePathA({

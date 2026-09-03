@@ -1,26 +1,4 @@
 #!/usr/bin/env bun
-//
-// Pre-build step for individual reproduction pages.
-//
-// Each reproduction under `src/layer1_wasm/<slug>/` ships a `repro.ts`
-// that imports the runtime loader and exports verdict-setting calls. The
-// browser HTML page references the compiled `./repro.js` — but `tsc`
-// compiles it next to the source (per src/layer1_wasm/tsconfig.json's
-// `outDir: "."`), and the .js outputs are gitignored.
-//
-// On a fresh checkout, those .js files don't exist yet, so the dev
-// server's repro middleware would serve a 404 for `repro.js` requests.
-// This script ensures the TypeScript is compiled before rspress dev
-// serves the pages.
-//
-// Wired into `bun run dev` via docs/package.json. If neither bun nor
-// the tsc binary is reachable, it exits 0 with a clear instruction so
-// `bun run dev` still proceeds — visual preview of the new design works
-// without compiled .js, only the in-page Pyodide runtime won't.
-//
-// Layer 2 (Docker) and Layer 3 (record-replay) reproduction pages don't
-// have this client-side TS build step — they're plain static HTML
-// documenting recipes that run via `docker run` outside the browser.
 
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, readdirSync } from 'node:fs';
@@ -38,12 +16,6 @@ if (!existsSync(LAYER1_DIR)) {
   process.exit(0);
 }
 
-/**
- * Try to invoke the currently-running bun (process.argv0) for `install`
- * + `build`. process.argv0 holds the absolute path to the binary that
- * launched this script, which works even when bun isn't on the shell
- * PATH (e.g. when rspress's dev launcher invokes us).
- */
 function tryBun(): boolean {
   const bunBin = process.argv0;
   if (!bunBin?.toLowerCase().includes('bun')) return false;
@@ -67,10 +39,6 @@ function tryBun(): boolean {
   return r.status === 0;
 }
 
-/**
- * Fallback: if bun isn't usable but `node_modules/.bin/tsc` already
- * exists from a prior install, run tsc directly.
- */
 function tryTsc(): boolean {
   const tscBin = join(NODE_MODULES, '.bin', IS_WIN ? 'tsc.cmd' : 'tsc');
   if (!existsSync(tscBin)) return false;
@@ -88,12 +56,6 @@ if (!(tryBun() || tryTsc())) {
   console.warn('  To enable Pyodide / Ruby.wasm runtime in repro pages, run:');
   console.warn('    cd src/layer1_wasm && bun install && bun run build');
 }
-
-// Optional: build Rust repros if cargo + wasm32-wasip1 are available.
-// The `repro.wasm` artefact ends up next to the recipe's index.html,
-// where the dev middleware serves it. Without this step, Rust repro
-// pages get a 404 for repro.wasm in dev (and a friendly error message
-// from the middleware rather than a broken WebAssembly.compile call).
 
 function findCargo(): string | null {
   const candidates = [
@@ -122,7 +84,6 @@ function tryRust(): void {
     return;
   }
 
-  // Find every Cargo.toml under src/layer1_wasm/.
   let crateDirs: string[] = [];
   try {
     crateDirs = readdirSync(LAYER1_DIR, { withFileTypes: true })
@@ -136,7 +97,6 @@ function tryRust(): void {
   }
   if (crateDirs.length === 0) return;
 
-  // Ensure wasm32-wasip1 target is installed (cheap if already).
   const rustup = cargo.replace(/cargo(\.exe)?$/, 'rustup$1');
   if (existsSync(rustup)) {
     console.log('[prebuild-repro] ensuring wasm32-wasip1 target...');
@@ -161,8 +121,6 @@ function tryRust(): void {
       );
       continue;
     }
-    // Copy the built wasm next to index.html (matches the deploy
-    // pipeline's `cp` in .github/workflows/deploy-docs.yml).
     const wasmFrom = join(
       dir,
       'target',

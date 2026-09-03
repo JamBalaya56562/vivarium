@@ -1,14 +1,3 @@
-// Smoke test for `_shared/verdict.ts`.
-//
-// Validates that the helpers wire up the contract-v1 surface:
-// - DOM `#verdict[data-verdict]`
-// - `globalThis.__VIVARIUM_VERDICT__`
-// - `globalThis.__VIVARIUM_RESULT__` envelope
-//
-// Pyodide is intentionally NOT loaded here — the goal is to verify the
-// helper plumbing in isolation. Reproduction-level smoke tests live in
-// each per-bug page.
-
 import {
   setResult,
   setVerdict,

@@ -1,15 +1,3 @@
-// Translation-coverage guard for the reproduction pages.
-//
-// `index.html` is the English source of truth; `i18n.ja.json` holds the
-// Japanese strings; `index.ja.html` is their generated splice. The
-// failure this suite exists to catch is the two tracked files drifting
-// apart — a `data-i18n` added to the HTML with no translation written,
-// or a translation left behind after its element was removed. Either one
-// would otherwise surface as English text on a Japanese page (or a
-// silently ignored key), which nobody notices.
-//
-// Runs via `bun test scripts/__tests__` (docs `test:unit`).
-
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -24,7 +12,6 @@ interface Recipe {
   translation: string;
 }
 
-/** Every directory that ships a reproduction page, template included. */
 function listRecipes(includeTemplate: boolean): Recipe[] {
   const out: Recipe[] = [];
   for (const layer of LAYERS) {
@@ -49,7 +36,6 @@ function listRecipes(includeTemplate: boolean): Recipe[] {
   return out;
 }
 
-/** Keys referenced by `data-i18n` / `data-i18n-attr` in the source HTML. */
 function htmlKeys(html: string): string[] {
   const keys: string[] = [];
   for (const m of html.matchAll(/\sdata-i18n="([^"]*)"/g)) {
@@ -99,8 +85,6 @@ describe('repro i18n — annotation and translation keys agree', () => {
       };
       expect(parsed.schema_version).toBe(1);
       expect(parsed.lang).toBe('ja');
-      // `_template` keeps the scaffolder placeholder; real recipes carry
-      // their directory name.
       const slug = path.basename(recipe.dir);
       expect(parsed.slug).toBe(slug === '_template' ? '{{SLUG}}' : slug);
     });
@@ -111,8 +95,6 @@ describe('repro i18n — annotation and translation keys agree', () => {
       };
       const title = parsed.strings?.['page.title'];
       if (title === undefined) return;
-      // Markup inside <title> is not parsed as markup — it renders
-      // literally in the browser tab.
       expect(title).not.toMatch(/<[a-zA-Z]/);
     });
   }
@@ -120,9 +102,6 @@ describe('repro i18n — annotation and translation keys agree', () => {
 
 describe('repro i18n — EN/JA coverage', () => {
   test('every reproduction page ships a translation', () => {
-    // ADR-0028's i18n Definition of Done: EN + JA in the same PR. This
-    // is the reproduction-page counterpart of the docs-tree symmetry
-    // assertion in docs/tests/i18n.spec.ts.
     const missing = RECIPES.filter((r) => !existsSync(r.translation)).map(
       (r) => r.label,
     );
@@ -130,8 +109,6 @@ describe('repro i18n — EN/JA coverage', () => {
   });
 
   test('the Layer 2 scaffolder template ships a translation', () => {
-    // A new recipe copied from the template must be bilingual from
-    // birth, otherwise the next recipe silently reintroduces the gap.
     const tpl = RECIPES.find((r) => r.label.endsWith('_template'));
     expect(tpl).toBeDefined();
     expect(existsSync(tpl?.translation ?? '')).toBe(true);

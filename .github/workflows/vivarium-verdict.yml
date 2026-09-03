@@ -1,45 +1,5 @@
 name: vivarium-verdict
 
-# Reusable workflow for capturing a Vivarium reproduction verdict.
-#
-# Any consumer repo can `uses:` this workflow to pull a published
-# `ghcr.io/aletheia-works/vivarium-<slug>` image, run it, capture
-# the verdict snapshot conforming to Vivarium Contract v1
-# (https://aletheia-works.github.io/vivarium/spec/contract-v1.html),
-# validate it against the published JSON Schema, assert the
-# captured verdict matches `expected_verdict`, and upload the
-# resulting `verdict.json` as a workflow artefact.
-#
-# Phase 5 sub-stream D per ADR-0013 (private memo). Tracking Issue:
-# https://github.com/aletheia-works/vivarium/issues/119.
-#
-# Caller example (consumer repo):
-#
-#   jobs:
-#     bash-issue:
-#       uses: aletheia-works/vivarium/.github/workflows/vivarium-verdict.yml@main
-#       with:
-#         slug: bash-local-shadows-exit
-#
-# Inputs:
-#   slug              (required) Vivarium recipe slug, e.g.
-#                     "bash-local-shadows-exit". Used to derive the
-#                     default image tag and to label artefacts and
-#                     log lines.
-#   image             (optional) Image override. Default empty,
-#                     resolved at runtime to
-#                     "ghcr.io/aletheia-works/vivarium-<slug>:latest".
-#   expected_verdict  (optional) "reproduced" or "unreproduced". Job fails if
-#                     the captured verdict does not match. Default
-#                     "reproduced" (i.e., the bug still reproduces).
-#   timeout_minutes   (optional) Job timeout in minutes. Default 5.
-#                     Most Layer 2 recipes complete in seconds; the
-#                     budget exists for image-pull + slow networks.
-#
-# This workflow has only `workflow_call` as a trigger. The thin
-# self-test caller at `vivarium-verdict-self-test.yml` exercises it
-# against one of Vivarium's own Layer 2 recipes.
-
 on:
   workflow_call:
     inputs:
@@ -75,9 +35,6 @@ jobs:
 
     steps:
       - name: Setup Bun (for ajv-cli)
-        # ajv-cli is installed via `bun add --global` so it lands
-        # on PATH for subsequent run: steps. Same pattern the
-        # repro-regression / deploy-docs workflows use.
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
@@ -86,10 +43,6 @@ jobs:
         run: bun add --global ajv-cli@5 ajv-formats
 
       - name: Fetch contract v1 verdict schema
-        # Pull the canonical schema from GitHub Pages rather than
-        # vendoring it. The schema is locked at v1 by ADR-0014
-        # (private memo); v2 will land at a new URL with its own
-        # ADR.
         run: |
           set -euo pipefail
           curl -sS --fail \
@@ -143,11 +96,6 @@ jobs:
         run: docker pull "$IMAGE"
 
       - name: Run reproduction and capture verdict
-        # Run the recipe, capture stdout / stderr / exit_code,
-        # build a Contract v1 verdict.json envelope. Verdict
-        # semantics follow Contract v1 Revision 3: exit_code 0 means
-        # the bug reproduces ("reproduced"); non-zero means the
-        # reproduction did not demonstrate the bug ("unreproduced").
         id: capture
         env:
           IMAGE: ${{ steps.resolve.outputs.image }}
@@ -166,10 +114,6 @@ jobs:
             verdict="unreproduced"
           fi
 
-          # `image_digest` is the registry RepoDigest if available;
-          # for locally-built images it falls back to the local
-          # image ID. Empty string is allowed by the schema if
-          # neither can be resolved.
           digest="$(docker image inspect \
             --format='{{if .RepoDigests}}{{index .RepoDigests 0}}{{else}}{{.Id}}{{end}}' \
             "$IMAGE" 2>/dev/null || echo "")"
@@ -201,11 +145,6 @@ jobs:
           echo "Captured verdict: $verdict (exit ${exit_code})"
 
       - name: Validate verdict against contract v1 schema
-        # Single-source clause 4 of the contract v1 conformance
-        # check. A schema mismatch indicates either (a) the schema
-        # has evolved past v1 (unlikely, v1 is locked by ADR-0014)
-        # or (b) this workflow's envelope build drifted from the
-        # spec (a bug here, not in the recipe).
         run: |
           ajv validate \
             --spec=draft2020 \
@@ -227,10 +166,6 @@ jobs:
           echo "Vivarium verdict for ${SLUG}: ${CAPTURED} (matches expected)."
 
       - name: Upload verdict.json artefact
-        # Always upload (even on failure) so a consumer's CI badge
-        # / debug flow can fetch the artefact even after a
-        # mismatch. 30-day retention matches GitHub's default for
-        # public repos.
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

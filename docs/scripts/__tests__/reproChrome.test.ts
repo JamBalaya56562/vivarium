@@ -1,37 +1,6 @@
-// Unit tests for the reproduction-page nav generator in
-// `docs/scripts/generate-repro-chrome.ts`.
-//
-// Three distinct failures are guarded here.
-//
-// 1. Dead nav links. The reproduction pages' header used to carry a
-//    hardcoded copy of the docs nav, and it drifted: `Vision` ->
-//    /vivarium/vision and `AI workflow` -> /vivarium/ai-workflow both
-//    shipped to production pointing at pages that do not exist, while
-//    Overview and Guide were missing entirely. rspress's
-//    `markdown.link.checkDeadLinks` only inspects links written inside
-//    markdown, so nav entries had no coverage at all.
-//
-// 2. Stale generated output. `src/layer1_wasm/_assets/chrome-data.js` is
-//    generated but tracked (see the generator's header for why). Tracking
-//    it means someone can edit `_nav.json` and commit without
-//    regenerating. Re-deriving the file here and asserting byte-equality
-//    turns that into a test failure with the exact command to fix it.
-//
-// 3. A locale switcher that goes to the wrong place. The switcher's
-//    href was `${SITE_BASE}ja/` no matter which recipe the visitor was
-//    on, so pressing it landed them on the docs top page instead of the
-//    Japanese rendering of the page they were reading. The original
-//    assertions checked the anchor's `hreflang` / `rel` attributes and
-//    passed the whole time — the destination had no coverage at all.
-//
-// Runs via `bun test scripts/__tests__` (docs `test:unit`).
-
 import { describe, expect, test } from 'bun:test';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-// The browser module under test. Plain JS with no DOM access at module
-// scope, which is exactly why it lives next to chrome.js rather than
-// inside it.
 import { localeCounterpartPath } from '../../../src/layer1_wasm/_assets/locale.js';
 import { buildNavByLocale, renderChromeData } from '../generate-repro-chrome';
 import { FAVICONS, FOOTER_MESSAGE_HTML, GITHUB_REPO_URL } from '../site-chrome';
@@ -59,10 +28,6 @@ function readNavJson(lang: 'en' | 'ja'): NavEntry[] {
 }
 
 describe('repro nav — every link resolves to a real page', () => {
-  // `buildNavByLocale` calls process.exit(1) on a dead link, which would
-  // abort the whole test run rather than fail one case. So resolve
-  // independently here, using the same rules, and assert the list of
-  // unresolvable entries is empty — that reports *which* link is dead.
   function resolves(lang: 'en' | 'ja', link: string): boolean {
     const localeRoot = path.join(SITE_ROOT, lang);
     const rel = link.replace(/^\//, '');
@@ -125,11 +90,6 @@ describe('repro nav — generated module matches the source', () => {
 });
 
 describe('site chrome — repro pages and rspress agree', () => {
-  // The footer line, the favicon set and the GitHub URL are rendered
-  // twice: once by rspress (themeConfig / head[]) and once by chrome.js
-  // on reproduction pages. Both now read docs/scripts/site-chrome.ts.
-  // These cases assert the config really consumes it, so a future edit
-  // that re-inlines a literal into rspress.config.ts is caught.
   test('rspress config renders the shared footer message', async () => {
     const config = (await import('../../rspress.config')).default;
     expect(config.themeConfig?.footer?.message).toBe(FOOTER_MESSAGE_HTML);
@@ -173,25 +133,16 @@ describe('repro nav — chrome.js consumes the generated module', () => {
   test('chrome.js imports NAV_ITEMS rather than hardcoding it', () => {
     const src = readFileSync(CHROME_JS, 'utf-8');
     expect(src).toContain("from './chrome-data.js'");
-    // The literal array that drifted must not come back.
     expect(src).not.toMatch(/const NAV_ITEMS\s*=\s*\[/);
   });
 
   test('chrome.js renders a locale switcher with rspress’s attributes', () => {
-    // `docs/tests/i18n.spec.ts` locates the docs-side switcher via
-    // `a[hreflang="ja"]`; the repro chrome must expose the same contract
-    // so one selector covers both surfaces.
     const src = readFileSync(CHROME_JS, 'utf-8');
     expect(src).toContain('hreflang=');
     expect(src).toContain('rel="alternate"');
   });
 
   test('chrome.js derives the switcher target rather than hardcoding it', () => {
-    // The regression this file now guards: the switcher's href was
-    // `${SITE_BASE}ja/` regardless of which recipe you were on, so
-    // pressing it took the visitor to the docs top page. The attribute
-    // assertions above passed throughout — only the destination was
-    // wrong — so the destination gets its own coverage below.
     const src = readFileSync(CHROME_JS, 'utf-8');
     expect(src).toContain("from './locale.js'");
     expect(src).toContain('localeCounterpartPath(location.pathname');
@@ -232,18 +183,13 @@ describe('repro nav — locale switcher points at the same recipe', () => {
   });
 
   for (const [label, pathname] of [
-    // `_shared/_test/` loads the same chrome but ships no translation.
     ['shared smoke page', '/vivarium/repro/numpy/_shared/_test/'],
     ['flat shared scaffolding', '/vivarium/repro/_shared/_test/'],
-    // rspress renders these and brings its own switcher.
     ['project landing', '/vivarium/repro/pandas/'],
     ['gallery', '/vivarium/repro/'],
     ['site root', '/vivarium/'],
     ['JA site root', '/vivarium/ja/'],
-    // The Layer 1 / Layer 2 Playwright servers serve recipes at the
-    // filesystem root, outside SITE_BASE entirely.
     ['layer static server', '/pandas-56679/'],
-    // Assets under a recipe are not pages.
     ['recipe asset', '/vivarium/repro/numpy/28287/wheels/manifest.json'],
   ] as const) {
     test(`${label} has no counterpart`, () => {
@@ -252,10 +198,6 @@ describe('repro nav — locale switcher points at the same recipe', () => {
   }
 
   test('every published recipe URL pair agrees with the derivation', () => {
-    // The contract case: recipes.json is what the docs gallery, the MCP
-    // server and external consumers navigate by. Deriving one side from
-    // the other here means a new recipe is covered the moment it lands,
-    // without anyone remembering to extend this file.
     interface Entry {
       slug: string;
       page_url: string;

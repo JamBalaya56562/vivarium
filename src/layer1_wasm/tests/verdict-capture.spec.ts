@@ -1,24 +1,3 @@
-// Verdict-capture spec for Phase 3 of the round-trip automation:
-// runs one Layer 1 recipe in the existing Playwright harness, waits
-// for the in-page contract-v1 verdict, and writes a JSON snapshot to
-// the path in `VERDICT_CAPTURE_OUTPUT` so the MCP server's
-// `run_layer1_verdict` helper can read it back. Driven by `--grep
-// "verdict-capture: <slug>"` so the helper can target a single recipe.
-//
-// Optional env vars:
-//   PLAYWRIGHT_FIX_URL       — appended as ?fix_url=<value> on the
-//                              recipe URL so the recipe page substitutes
-//                              the candidate fix before producing a
-//                              verdict (Path A semantics).
-//   VERDICT_CAPTURE_OUTPUT   — absolute path where the captured verdict
-//                              is written as JSON. If unset, the spec
-//                              just asserts the verdict reached one of
-//                              the contract-v1 values without writing.
-//
-// Recipe list is sourced from docs/site/public/api/recipes.json so a
-// new Layer 1 recipe automatically gets a verdict-capture case once
-// `mise run recipes:index` is run.
-
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -56,9 +35,6 @@ function isExpectedRuntimeName(value: unknown): value is ExpectedRuntimeName {
 }
 
 function loadLayer1Recipes(): Layer1Recipe[] {
-  // Resolved from the spec file's own location so the suite stays
-  // robust against being invoked from a non-default working directory.
-  // See the matching comment in `repro.spec.ts:loadRecipeEntries`.
   const indexPath = resolve(
     import.meta.dirname,
     "../../..",

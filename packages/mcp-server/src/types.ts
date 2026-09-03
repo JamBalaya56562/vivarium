@@ -1,11 +1,3 @@
-// Surface-only type façade for the recipes index (v1), the
-// Layer 2/3 verdict snapshot (Contract v1), and the per-recipe
-// round-trip state (schema_version 1). Canonical JSON Schemas
-// live at:
-//   https://aletheia-works.github.io/vivarium/api/recipes.schema.json
-//   https://aletheia-works.github.io/vivarium/spec/verdict.schema.json
-//   https://aletheia-works.github.io/vivarium/spec/roundtrip.schema.json
-
 export type Layer = 1 | 2 | 3;
 
 export interface RecipeEntry {
@@ -15,22 +7,13 @@ export interface RecipeEntry {
   issue: number;
   title: string;
   page_url: string;
-  // Japanese rendering of the same page (Recipes index v1, 2026-09-02
-  // revision). Present only when the recipe ships a translation, so its
-  // absence means there is no Japanese page — never derive it from
-  // `page_url` by inserting `/ja/`, that 404s for untranslated recipes.
   page_url_ja?: string;
   verdict_url?: string;
   source_url: string;
-  // Facet overlay (optional so older bundled snapshots without the
-  // overlay merge keep deserialising).
   language?: string;
   symptom?: string;
   severity?: string;
   tags?: string[];
-  // Round-trip state (optional, opt-in per recipe). Sourced from
-  // src/layer*/<slug>/roundtrip.json by generate-recipes-index.ts.
-  // Older bundled snapshots without this field stay readable.
   roundtrip?: RoundtripState;
 }
 
@@ -50,14 +33,8 @@ export interface VerdictSnapshot {
   image_digest: string;
   captured_at: string;
   stdout: string;
-  // Source-side name kept here; the in-page contract surface renames
-  // it to `evidence.stderr` at the lift boundary.
   stderr_tail: string;
 }
-
-// Per-recipe round-trip state (schema_version 1). Canonical schema:
-// docs/site/public/spec/roundtrip.schema.json. SSOT for the
-// upstream → reproduction → fix → verification → PR loop.
 
 export type RoundtripStatus =
   | 'draft'
@@ -98,12 +75,6 @@ export interface RoundtripState {
   notes?: string[];
 }
 
-// Next-action keys consumed by the round-trip skill's state machine.
-// Computed by `verify_and_report_fix` from the current RoundtripState
-// so the skill (and any future MCP client) can decide the next call
-// without re-implementing the state transitions. `manual_intervention`
-// is the terminal action for `status: blocked` — callers must surface
-// the roundtrip.json#/notes reason and pause automation.
 export type RoundtripNextAction =
   | 'verify_unfixed'
   | 'verify_fixed'

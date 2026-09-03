@@ -1,23 +1,6 @@
 name: Terraform Plan
 
-# Thin caller for the org-wide reusable workflow at
-# aletheia-works/.github/.github/workflows/terraform-plan.yml. All the
-# plan logic — setup-opentofu, state artifact download, fmt/validate/plan,
-# PR-comment posting — lives there and is shared with the `.github` repo's
-# own OpenTofu module.
-#
-# State, concurrency, and secrets are still evaluated in this repo's
-# context, so there is no interference between vivarium's state and the
-# org's state.
-
 on:
-  # `pull_request_target` so fork PRs see plan output too. GitHub Actions
-  # strips secrets and downgrades GITHUB_TOKEN to read-only on
-  # `pull_request` from a fork, which made tofu plan never run on PRs
-  # opened via `sl pr submit` (which always pushes through a personal
-  # fork). The reusable workflow checks out the PR's head SHA explicitly
-  # so the diff under review is what gets planned. See the security note
-  # in the reusable workflow's checkout step.
   pull_request_target:
     paths:
       - 'infra/github/**'
@@ -26,14 +9,11 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  # Required by the reusable workflow to download the state artifact.
   actions: read
 
 jobs:
   plan:
     if: github.repository_owner == 'aletheia-works'
-    # Pinned by commit SHA (org enforces sha_pinning_required). Update
-    # this ref when the reusable workflow meaningfully changes.
     uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
     with:
       working_directory: infra/github

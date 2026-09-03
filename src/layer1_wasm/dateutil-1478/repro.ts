@@ -1,34 +1,3 @@
-// Vivarium Layer 1 reproduction — dateutil/dateutil#1478.
-//
-// `dateutil.parser.parse` inverts the sign of a numeric UTC offset
-// whenever the offset is preceded by the literal `UTC` prefix:
-//
-//   parse('2026-03-11 14:32:45 UTC-4').isoformat()
-//     -> '2026-03-11T14:32:45+04:00'   (expected: -04:00)
-//   parse('2026-03-11 14:32:45 UTC+4').isoformat()
-//     -> '2026-03-11T14:32:45-04:00'   (expected: +04:00)
-//
-// Bare ISO 8601 forms (`+04:00` / `-04:00` without the `UTC`
-// prefix) parse correctly, so the inversion is isolated to the
-// `UTC` + signed-offset code path. python-dateutil is not in
-// Pyodide's bundled package set; the page installs the pinned
-// version via micropip.
-//
-// Verdict semantics (per ADR-0008 / contract v1) — applied to each
-// variant card individually; the top-level `#verdict` pill mirrors
-// the **baseline** variant so the existing Contract v1 single-verdict
-// surface (`__VIVARIUM_VERDICT__`, `data-verdict`) keeps its prior
-// meaning and downstream consumers do not need to branch.
-//   - "reproduced"   — every UTC±N case lands on the negated offset
-//                      (signed inversion present).
-//   - "unreproduced" — at least one UTC±N case parsed with the
-//                      correct sign (likely fixed upstream), or the
-//                      runtime errored before producing a result.
-//
-// The fix-candidate this page renders side-by-side is a pure-Python
-// wheel under `./wheels/` built from the fork+branch
-// `JamBalaya56562/dateutil@fix-1478-utc-gmt-offset-sign`.
-
 import {
   fetchWheelManifest,
   reinstallPyodidePackage,
@@ -115,10 +84,6 @@ if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
-/** Write into the fix pane and stamp the machine-readable state the
- *  Playwright suite asserts on. The attribute is locale-independent,
- *  unlike the copy, and "pending" left standing means the page rendered
- *  the pane and then never drove it. */
 function setFixPane(
   text: string,
   status: 'pending' | 'ok' | 'error',
@@ -206,7 +171,6 @@ try {
   });
   const runtime = pyodide as PyodideRuntime;
 
-  // Baseline variant: PyPI python-dateutil==2.9.0.post0.
   setVerdict('pending', `Installing ${BASELINE_SPEC} from PyPI…`);
   await reinstallDateutil(runtime, BASELINE_SPEC);
 
@@ -219,13 +183,6 @@ try {
   }
   outputBaselineEl.textContent = baselineCapture.stdout;
 
-  // Build the Contract v1 envelope as a closure that reflects whatever
-  // variant data is currently captured. Called once after baseline (so
-  // `__VIVARIUM_RESULT__` is populated by the time the top-level
-  // `#verdict` pill flips to "reproduced" — Playwright reads the
-  // envelope at that moment and would otherwise see `undefined`), and
-  // again after the fix-candidate run completes so the envelope picks
-  // up the second variant.
   const buildEnvelope = (): VivariumResultV1 | null => {
     if (!baselineParsed || !baselineCapture) return null;
     const finishedAt = new Date();
@@ -283,21 +240,15 @@ try {
     };
   };
 
-  // Publish the baseline-only envelope BEFORE flipping the verdict
-  // pill — Playwright's regression suite reads `__VIVARIUM_RESULT__`
-  // the moment `data-verdict` leaves `pending`.
   const initialEnvelope = buildEnvelope();
   if (initialEnvelope) setResult(initialEnvelope);
 
-  // Top-level verdict pill mirrors baseline — preserves the
-  // single-verdict Contract v1 surface for downstream consumers.
   setVerdict(baselineCapture.verdict, baselineCapture.message);
 
   metaEl.textContent =
     `Baseline python-dateutil ${baselineParsed?.dateutil_version ?? '?'} on Python ` +
     `${baselineParsed?.python_version ?? '?'} via Pyodide v${version}.`;
 
-  // Fix-candidate variant: committed wheel.
   setFixPane('Fetching wheel manifest…', 'pending');
   const manifestResult = await fetchWheelManifest();
 
@@ -330,13 +281,6 @@ try {
     setFixPane(manifestResult.reason, 'error');
   }
 
-  // Restore baseline python-dateutil so the visitor-facing runner
-  // (Edit + Run) operates against the buggy build — the runner's
-  // documented mental model is "test your script change against the
-  // same broken interpreter the recipe loaded". Without this,
-  // runner.runFix would execute against the fix-candidate dateutil,
-  // which is semantically surprising for visitors paste-editing the
-  // script.
   try {
     await reinstallDateutil(runtime, BASELINE_SPEC);
   } catch {
@@ -345,14 +289,6 @@ try {
     );
   }
 
-  // ---- Contract v1 envelope (final) ---------------------------------
-  // Re-publish the envelope now that the fix-candidate variant has
-  // also captured (or definitively failed). `result` keeps the
-  // historical baseline-only fields (`cases`, `inverted_count`,
-  // `reproduced`) so consumers reading
-  // `__VIVARIUM_RESULT__.result.reproduced` continue to work, and the
-  // additive `baseline` / `fix_candidate` sub-objects describe each
-  // variant separately. Additive change — no `contract` version bump.
   const finalEnvelope = buildEnvelope();
   if (finalEnvelope) setResult(finalEnvelope);
 

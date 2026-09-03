@@ -1,119 +1,45 @@
-# Repository-scoped configuration for the vivarium repository.
-#
-# All repo-scoped resources live here: the repo itself, vulnerability
-# alerts, GitHub Pages, branch protection, labels, and milestones.
-# Consolidated into a single file because the total surface fits
-# comfortably in one place — splitting by resource type costs more in
-# navigation than it saves in focus. variables.tf, providers.tf, and
-# versions.tf stay separate per the OpenTofu convention.
-
-
-# ─── Repository ──────────────────────────────────────────────────────
-#
-# Import (one-time, manual) before the first apply if the repo
-# pre-existed this module:
-#   tofu import github_repository.this <repository-name>
-#
-# For a brand-new repository, `tofu apply` creates it.
-
 resource "github_repository" "this" {
   name        = var.repository_name
   description = var.repository_description
   visibility  = var.repository_visibility
   topics      = var.repository_topics
 
-  # About-section homepage URL — mirrors the GitHub UI checkbox
-  # "Use your GitHub Pages website".
-  #
-  # Constructed from var.github_owner + var.repository_name rather than
-  # `github_repository_pages.this.html_url` because the latter creates a
-  # dependency cycle (github_repository_pages.this depends on
-  # github_repository.this.name). The default Pages URL format is
-  # https://{owner}.github.io/{repo}/, identical to what html_url would
-  # return; if a custom domain is later configured on Pages, update this
-  # line at the same time.
   homepage_url = "https://${var.github_owner}.github.io/${var.repository_name}/"
 
-  # Feature toggles
   has_issues      = true
   has_discussions = true
   has_projects    = true
   has_wiki        = false
 
-  # Merge strategy — squash only, to keep history clean.
   allow_merge_commit     = false
   allow_squash_merge     = true
   allow_rebase_merge     = false
   allow_auto_merge       = true
   delete_branch_on_merge = true
 
-  # Security
-  # Vulnerability alerts are managed by the dedicated
-  # `github_repository_vulnerability_alerts` resource below (provider ≥ v6.12.0).
   web_commit_signoff_required = true
 
-  # Initial branch:
-  # For imported repositories, leave auto-init off and match the existing branch.
-  # For new repositories, uncomment below to have OpenTofu create main with a license and .gitignore template.
-  # auto_init          = true
-  # license_template   = "apache-2.0"
-  # gitignore_template = "Python"
-
-  # Prevent accidental archival.
   archived = false
 
   lifecycle {
-    # Guard against accidental deletion.
     prevent_destroy = true
-    # Pages is now managed by the dedicated `github_repository_pages`
-    # resource below. The nested `pages` block on this resource is
-    # deprecated upstream and will be removed in a future provider
-    # version. Ignore drift on the nested attribute so the dedicated
-    # resource is the sole owner.
-    ignore_changes = [pages]
+    ignore_changes  = [pages]
   }
 }
-
-
-# ─── Vulnerability alerts ────────────────────────────────────────────
-#
-# Now managed via a dedicated resource (provider v6.12.0+). The old
-# `github_repository.vulnerability_alerts` attribute has been removed;
-# see Issue #2.
 
 resource "github_repository_vulnerability_alerts" "this" {
   repository = github_repository.this.name
 }
-
-
-# ─── GitHub Pages ────────────────────────────────────────────────────
-#
-# Actions workflow source. Site is published at
-# https://aletheia-works.github.io/vivarium/.
-#
-# Migrated from the deprecated nested `github_repository.pages` block.
-# The accompanying `import` block below adopts the live Pages config on
-# the first apply so the resource is not re-created (which would fail
-# because Pages is already enabled on the repository).
 
 resource "github_repository_pages" "this" {
   repository = github_repository.this.name
   build_type = "workflow"
 }
 
-
-# ─── Branch protection ───────────────────────────────────────────────
-#
-# Phase 1 baseline: enforce review, signed commits, and a stable required
-# CI check. Solo development continues, so admin bypass is left enabled
-# (`enforce_admins = false`) so the maintainer can still self-merge —
-# every other rule applies to non-admin contributors as designed.
-
 resource "github_branch_protection" "main" {
   repository_id = github_repository.this.node_id
   pattern       = "main"
 
-  # Pull request review requirements.
   required_pull_request_reviews {
     required_approving_review_count = 1
     dismiss_stale_reviews           = true
@@ -121,10 +47,6 @@ resource "github_branch_protection" "main" {
     require_last_push_approval      = false
   }
 
-  # Required CI checks.
-  # `check / Commitlint` is the caller-job → reusable-job composition that
-  # fires on every pull_request via .github/workflows/commitlint.yml. Add
-  # more contexts here as additional always-on workflows come online.
   required_status_checks {
     strict = true
     contexts = [
@@ -132,45 +54,20 @@ resource "github_branch_protection" "main" {
     ]
   }
 
-  # Whether admins are bound by the same rules. Kept off so the sole
-  # maintainer can self-merge while solo; flip to true once a second
-  # reviewer is available.
   enforce_admins = false
 
-  # Keep history linear.
   required_linear_history = true
 
-  # Phase 1: history rewrites are no longer needed; force-pushes are
-  # disallowed across all repos.
   allows_force_pushes = false
   allows_deletions    = false
 
-  # Block merging while review conversations remain unresolved.
   require_conversation_resolution = true
 
-  # Require signed commits (GPG/SSH commit signatures) for every commit
-  # merged into the default branch.
   require_signed_commits = true
 }
 
-
-# ─── Labels ──────────────────────────────────────────────────────────
-#
-# The label taxonomy has four axes:
-#   1. type: *     — kind of change (bug, feature, docs, ...)
-#   2. scope: *    — area of impact (WASM layer, Docker layer, ...)
-#   3. priority: * — priority level
-#   4. status: *   — current status
-#
-# Label names use a "prefix: value" convention (note the space after the
-# colon) to read naturally in GitHub's UI and to match the project's
-# conventional-commit prefixes.
-#
-# Colors follow a Material Design-inspired palette for visual consistency.
-
 locals {
   labels = {
-    # ─── Type ────────────────────────────────────
     "type: bug" = {
       color       = "d73a4a"
       description = "Something isn't working"
@@ -196,7 +93,6 @@ locals {
       description = "Maintenance tasks"
     }
 
-    # ─── Scope ───────────────────────────────────
     "scope: wasm" = {
       color       = "6f42c1"
       description = "WASM execution layer"
@@ -234,7 +130,6 @@ locals {
       description = "User experience"
     }
 
-    # ─── Priority ────────────────────────────────
     "priority: p0" = {
       color       = "b60205"
       description = "Critical - must fix immediately"
@@ -252,7 +147,6 @@ locals {
       description = "Low - nice to have"
     }
 
-    # ─── Status ──────────────────────────────────
     "status: triage" = {
       color       = "e99695"
       description = "Needs initial triage"
@@ -274,7 +168,6 @@ locals {
       description = "Auto-filed when Terraform Apply fails on main; auto-closed on recovery"
     }
 
-    # ─── AI-related ──────────────────────────────
     "ai: approved" = {
       color       = "0969da"
       description = "Repository owner has authorised AI agents to process this PR"
@@ -292,7 +185,6 @@ locals {
       description = "AI output verified by human"
     }
 
-    # ─── Community ───────────────────────────────
     "good-first-issue" = {
       color       = "7057ff"
       description = "Good for newcomers"
@@ -316,29 +208,6 @@ resource "github_issue_label" "labels" {
   color       = each.value.color
   description = each.value.description
 }
-
-
-# ─── Milestones ──────────────────────────────────────────────────────
-#
-# Phase boundaries for the lifelong roadmap.
-#
-# GitHub Projects v2 has no provider resource as of
-# integrations/terraform-provider-github v6.11.x (tracking issue #2916),
-# so the Project board itself is click-ops. Milestones, however, are a
-# stable first-class resource and belong in IaC: they are the phase
-# boundaries that humans commit to, and CI / labels / ADRs reference
-# them mechanically.
-#
-# `due_date` is deliberately omitted by default. Phase durations in the
-# lifelong roadmap are directional (months → years) rather than
-# commitments. Set a concrete date by adding `due_date = "YYYY-MM-DD"`
-# under the relevant entry once a phase either acquires a hard target
-# or has actually closed — for closed phases, `due_date` doubles as the
-# closing marker, paired with `state = "closed"`.
-#
-# Milestone titles double as the canonical phase label surfaced on
-# Issues and PRs; keep them human-readable and prefixed with the phase
-# number so the GitHub UI sorts them in order.
 
 locals {
   milestones = {
@@ -390,9 +259,6 @@ locals {
 }
 
 resource "github_repository_milestone" "phases" {
-  # Phase milestones are upstream-only context. Forks running this
-  # configuration on their own copy of the repository skip them by
-  # default; the upstream tfvars sets `create_phase_milestones = true`.
   for_each = var.create_phase_milestones ? local.milestones : {}
 
   owner       = var.github_owner

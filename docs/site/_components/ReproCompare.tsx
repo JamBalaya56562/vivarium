@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import validateVerdictRaw from '../_generated/validators/verdict-validator.mjs';
 import './repro-compare.css';
 
-// Verdict files are parsed, validated, and rendered entirely client-side.
-
 type VerdictLiteral = 'reproduced' | 'unreproduced';
 
 export interface VerdictV1 {
@@ -42,9 +40,6 @@ interface AjvValidateFn {
 const validateVerdictAjv = validateVerdictRaw as unknown as AjvValidateFn;
 
 function ajvErrorToValidationError(err: AjvErrorObject): ValidationError {
-  // For `required` errors, ajv reports the parent's instancePath and
-  // the missing key in `params.missingProperty` — surface the missing
-  // path explicitly so the UI's "at /field" hint is precise.
   if (
     err.keyword === 'required' &&
     typeof err.params.missingProperty === 'string'
@@ -470,10 +465,6 @@ export function VerdictCompareLayout({
   );
 }
 
-// Resolves the deployed Pages base for the *current* host (so fork
-// deploys at <user>.github.io/<repo>/ work without rebuild). Looks up
-// the URL path up to the `/repro` segment from window.location and
-// reuses the same origin. Falls back to upstream during SSR / pre-hydrate.
 function resolvePagesBase(): string {
   if (typeof window === 'undefined') {
     return 'https://aletheia-works.github.io/vivarium/repro';
@@ -492,15 +483,12 @@ async function readZipEntries(file: File): Promise<{
   original: VerdictV1 | null;
   rawErrors: ValidationError[];
 }> {
-  // Lazy-load JSZip — only paid for when the user actually drops a zip.
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(file);
   let branch: VerdictV1 | null = null;
   let original: VerdictV1 | null = null;
   const rawErrors: ValidationError[] = [];
 
-  // Workflow artefacts can either contain the files at root or under
-  // `verdict-bundle/`; accept both.
   for (const name of Object.keys(zip.files)) {
     const entry = zip.files[name];
     if (entry.dir) continue;
@@ -659,18 +647,15 @@ export function ReproCompareApp({ lang }: ReproCompareProps) {
         setBusy(false);
       });
     } else if (urlSlug) {
-      // Auto-fetch deployed snapshot when slug is given without an explicit URL.
       const deployedUrl = `${PAGES_BASE}/${urlSlug}/verdict.json`;
       setBusy(true);
       fetchVerdictFromUrl(deployedUrl).then((r) => {
         if (r.ok) {
           setOriginal(r.data);
         }
-        // 404 on deployed snapshot is silent — just leave original null.
         setBusy(false);
       });
     }
-    // s only used for messages above; deps frozen at mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.fetchFailed]);
 

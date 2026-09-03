@@ -1,17 +1,3 @@
-// Vivarium reproduction page chrome — nav, footer, theme toggle, progress
-// bar UI, and service-worker registration. Imported as a side-effect from
-// `_shared/loader.ts` (Layer 1) and `_layer2-shared/layer2.js` (Layer 2),
-// so every reproduction page picks it up automatically.
-//
-// Plain JS (no TypeScript build) so Layer 2 — which has no tsc step —
-// can also import it without a compile dance.
-
-// Nav data generated from docs/site/{en,ja}/_nav.json by
-// docs/scripts/generate-repro-chrome.ts, so the reproduction-page header
-// cannot drift from the docs nav. A static import rather than a runtime
-// fetch: chrome.js paints the header before anything else, and this
-// module is resolved by the same graph that already loads chrome.js, so
-// it adds no round-trip.
 import {
   FAVICONS,
   FOOTER_MESSAGE_HTML,
@@ -21,17 +7,8 @@ import {
 } from './chrome-data.js';
 import { localeCounterpartPath } from './locale.js';
 
-// ── Favicon injection ───────────────────────────────────────────────────
-// The same icons rspress puts in `head[]`, both sourced from
-// docs/scripts/site-chrome.ts. Repro pages don't go through rspress, so
-// we attach them here once per page load. The hrefs are absolute
-// (SITE_BASE-prefixed) because repro URLs nest two levels deep
-// (/vivarium/repro/<project>/<issue>/), so absolute paths sidestep
-// brittle relative-path arithmetic.
 (function injectFavicons() {
   for (const spec of FAVICONS) {
-    // Skip if an equivalent link already exists (e.g. a future template
-    // adds a static <link> for the same rel+sizes pair).
     if (document.head.querySelector(`link[rel="${spec.rel}"][sizes="${spec.sizes}"]`)) continue;
     const link = document.createElement('link');
     for (const [k, v] of Object.entries(spec)) link.setAttribute(k, v);
@@ -40,8 +17,6 @@ import { localeCounterpartPath } from './locale.js';
 })();
 
 const THEME_KEY = 'rspress-theme-appearance';
-
-// ── Theme helpers ────────────────────────────────────────────────────────
 
 function getStoredTheme() {
   try {
@@ -68,12 +43,9 @@ function setStoredTheme(value) {
   applyTheme(value);
 }
 
-// Sync across tabs: docs site flips theme → repro tab follows.
 window.addEventListener('storage', (e) => {
   if (e.key === THEME_KEY) applyTheme();
 });
-
-// ── Inline SVG icons ────────────────────────────────────────────────────
 
 const sun =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
@@ -82,13 +54,8 @@ const moon =
 const github =
   '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12.02c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.55 0-.27-.01-.99-.02-1.94-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.27-5.24-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18.91-.25 1.89-.38 2.86-.38.97 0 1.95.13 2.86.38 2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.36.78 1.06.78 2.14 0 1.55-.01 2.79-.01 3.17 0 .31.21.67.79.55 4.57-1.53 7.86-5.84 7.86-10.93C23.5 5.65 18.35.5 12 .5z"/></svg>';
 
-// Locale of the page being decorated. Reproduction pages are English
-// today; the JA tree sets `<html lang="ja">` and picks the JA nav table
-// through the same switch.
 const LANG = document.documentElement.lang === 'ja' ? 'ja' : 'en';
 
-// Chrome copy. Plain JS (no build step), so the table is inline rather
-// than importing _shared/i18n.ts — Layer 2 loads this file directly.
 const CHROME_STRINGS = {
   en: {
     brandAria: 'Vivarium home',
@@ -116,15 +83,9 @@ const CHROME_STRINGS = {
 
 const T = CHROME_STRINGS[LANG];
 
-// ── Inject nav, progress bar, footer ───────────────────────────────────
-
 function injectChrome() {
   applyTheme();
 
-  // Top nav — mirrors rspress's `<header class="rp-nav">` layout: brand
-  // on the left, nav links + GitHub icon + theme toggle on the right.
-  // Same content as the docs site so visitors can hop between any
-  // reproduction page and the rest of the site without going back.
   const nav = document.createElement('header');
   nav.className = 'vh-topnav';
 
@@ -132,16 +93,6 @@ function injectChrome() {
     (it) => `<a class="vh-topnav__link" href="${it.link}">${it.text}</a>`,
   ).join('');
 
-  // Locale switcher. rspress renders its own via `useLangsMenu()`, which
-  // is why it is NOT an entry in `_nav.json` and must not be faked into
-  // NAV_ITEMS. Shaped to match rspress's markup contract
-  // (`hreflang` / `lang` / `rel="alternate"`) — the same attributes
-  // `docs/tests/i18n.spec.ts` locates the docs-side switcher by.
-  // Point at the SAME recipe in the other locale, not at the site root —
-  // the latter is what shipped first and it dropped visitors on the docs
-  // top page. `null` means this page has no counterpart (the
-  // `_shared/_test/` smoke page, or a recipe served outside SITE_BASE by
-  // the per-layer Playwright servers); those keep the site-root link.
   const counterpart = localeCounterpartPath(location.pathname, SITE_BASE);
   const langHref =
     counterpart ?? (LANG === 'ja' ? `${SITE_BASE}` : `${SITE_BASE}ja/`);
@@ -163,23 +114,12 @@ function injectChrome() {
   `;
   document.body.insertBefore(nav, document.body.firstChild);
 
-  // Progress bar slot — placed inside the Output section, in front of the
-  // `<pre id="output">`. While loading, the pre is hidden and the
-  // progress occupies its visual space; when the run finishes, the
-  // progress fades and the pre becomes visible. Both elements stay in
-  // the DOM throughout, so removing the progress at the end doesn't
-  // cause a layout shift (the section's min-height is set via CSS to
-  // accommodate either element comfortably).
   const outputEl = document.querySelector('#output');
   if (outputEl?.parentElement) {
     const outputCol = outputEl.parentElement;
     outputCol.classList.add('vh-output-section');
     outputEl.classList.add('vh-output');
 
-    // Wrap the output column's <h2> in a `.vh-runner__head` row so its
-    // height matches the script column's head row (which carries Edit /
-    // Run / Reset). Without this wrap the output column's content area
-    // is taller than the script column's by the action-row height.
     const colH2 = outputCol.querySelector(':scope > h2');
     if (colH2 && colH2.parentElement === outputCol) {
       const head = document.createElement('div');
@@ -200,11 +140,6 @@ function injectChrome() {
     outputEl.parentElement.insertBefore(progress, outputEl);
   }
 
-  // Footer — the same line rspress renders via
-  // `themeConfig.footer.message`, both from docs/scripts/site-chrome.ts:
-  // a centred single line of light copy, no big wordmark / link grid.
-  // `target`/`rel` are added here because a reproduction page is a leaf
-  // the visitor is actively running something on and shouldn't lose.
   const footer = document.createElement('footer');
   footer.className = 'vh-footer';
   footer.innerHTML = `
@@ -214,7 +149,6 @@ function injectChrome() {
   `;
   document.body.appendChild(footer);
 
-  // Theme toggle behaviour
   const toggleBtn = nav.querySelector('.vh-topnav__theme');
   function refreshIcon() {
     const dark = document.documentElement.classList.contains('dark');
@@ -230,8 +164,6 @@ function injectChrome() {
   }
 }
 
-// ── Progress bar driver ─────────────────────────────────────────────────
-
 function setProgress(pct, label, bytes) {
   const fill = document.querySelector('.vh-progress__fill');
   const lab = document.querySelector('.vh-progress__label');
@@ -245,9 +177,6 @@ function hideProgress() {
   const el = document.querySelector('.vh-progress');
   const out = document.querySelector('.vh-output');
   if (el) {
-    // Trigger the cross-fade: progress fades out, output fades in. They
-    // share the same grid cell (see .vh-output-section in style.css), so
-    // no layout shift when the progress unmounts.
     el.classList.add('is-done');
     out?.classList.add('is-revealed');
     setTimeout(() => el.remove(), 600);
@@ -264,38 +193,16 @@ document.addEventListener('vh-progress', (e) => {
   setProgress(d.pct ?? 0, d.label ?? '', d.bytes ?? '');
 });
 
-// ── Service worker registration (Pyodide cache for repeat visits) ──────
-
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol === 'file:') return;
 
-  // Path is relative to /repro/<project>/<issue_path>/. The SW lives at
-  // /vivarium/repro/<project>/_assets/sw.js (per-project copy under each
-  // layer's _assets/ tree). Scope is the whole /repro/ tree so any reproduction
-  // page benefits from the cached Pyodide; this requires the
-  // `Service-Worker-Allowed` header which the rspress dev middleware
-  // sets for any file ending in `sw.js`, regardless of SW location.
   navigator.serviceWorker
     .register('../_assets/sw.js', { scope: '/vivarium/repro/' })
     .catch((err) => {
       console.warn('[vivarium] service worker registration failed:', err);
     });
 }
-
-// Description drawer shared by recipe pages.
-//
-// Recipe pages opt in by inlining:
-//   1. A `<template id="bug-context">` whose content is the drawer body
-//      (the description prose + any "Reported on" / metadata blocks).
-//   2. A `<button data-vh-action="open-drawer">` somewhere in the page
-//      (typically in the header action row) that triggers the drawer.
-//
-// We construct the drawer + click-wash at body level once, then wire
-// every matching button to toggle it. Closing on:
-//   - X button click
-//   - wash click
-//   - Escape key
 
 const drawerCloseSvg =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
@@ -326,7 +233,6 @@ function injectDescriptionDrawer() {
   close.innerHTML = drawerCloseSvg;
   drawer.appendChild(close);
 
-  // Clone the template content into the drawer.
   drawer.appendChild(tpl.content.cloneNode(true));
 
   document.body.appendChild(wash);
@@ -341,7 +247,6 @@ function injectDescriptionDrawer() {
     drawer.setAttribute('aria-hidden', 'false');
     document.body.classList.add('vh-drawer-open');
     for (const t of triggers) t.setAttribute('aria-expanded', 'true');
-    // Focus the close button so keyboard users can dismiss with Enter.
     setTimeout(() => close.focus(), 50);
   }
 
@@ -375,8 +280,6 @@ function injectDescriptionDrawer() {
     }
   });
 }
-
-// ── Bootstrap ───────────────────────────────────────────────────────────
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {

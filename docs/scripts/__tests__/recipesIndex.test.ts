@@ -1,15 +1,3 @@
-// Schema conformance for the published recipes index.
-//
-// `docs/site/public/api/recipes.json` is a public API (Recipes index v1)
-// and `recipes.schema.json` is its published contract, but until now
-// nothing validated one against the other — not this suite, not
-// deploy-docs.yml, not repro-regression.yml. `recipeEntry` is
-// `additionalProperties: false`, so the very first thing an added field
-// does if the schema is not updated alongside it is put every consumer's
-// validation into a failing state, silently, from the moment it deploys.
-//
-// Runs via `bun test scripts/__tests__` (docs `test:unit`).
-
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -40,8 +28,6 @@ describe('recipes.json conforms to recipes.schema.json', () => {
   });
 
   test('page_url_ja is present exactly for recipes shipping i18n.ja.json', () => {
-    // The field is the signal "a Japanese page exists", so it must track
-    // the tracked translation source rather than being derivable.
     const data = readJson('recipes.json') as {
       recipes: { slug: string; layer: number; page_url_ja?: string }[];
     };

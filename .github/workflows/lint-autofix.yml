@@ -1,55 +1,8 @@
 name: Polyglot lint autofix
 
-# Runs the polyglot formatter / linter toolchain — Biome (JS/TS/CSS/
-# JSON in docs/), Mago for PHP, Ruff for Python, Tombi for TOML,
-# rumdl for Markdown, cargo fmt for Rust — in autofix mode and
-# uploads the resulting diff as an artifact. The companion
-# `lint-autofix-apply.yml` picks that artifact up and pushes the fixes
-# back to the PR branch, so contributors don't have to fix formatting
-# / lint by hand.
-#
-# WHY THE SPLIT (the "untrusted build, trusted apply" pattern)
-#
-# This workflow used to run on `pull_request_target` with the
-# TF_TOKEN_GITHUB PAT so that fork PRs got autofix too. That stopped
-# working when actions/checkout v6.1.0 (backport of the v7 breaking
-# change, GitHub changelog "Safer pull_request_target defaults for
-# GitHub Actions checkout") began refusing fork-PR checkouts from
-# `pull_request_target`.
-#
-# Simply re-enabling it with `allow-unsafe-pr-checkout: true` would
-# not be safe here: `mise run lint:all:fix` executes task definitions
-# read from the PR's own `mise.toml` (which this workflow's paths
-# filter deliberately watches), so a malicious fork PR could redefine
-# the task and exfiltrate the PAT. That is exactly the "pwn request"
-# shape the new default protects against.
-#
-# So the work is split by trust level:
-#
-#   1. THIS workflow — `pull_request`, so a fork PR run gets NO
-#      secrets and a read-only GITHUB_TOKEN. It checks out the PR
-#      head and runs the (arbitrary, PR-controlled) lint tooling.
-#      Nothing here is worth stealing; the only output is a patch
-#      file uploaded as an artifact.
-#   2. `lint-autofix-apply.yml` — `workflow_run`, so it runs from the
-#      default branch with the PAT. It executes NOTHING from the PR:
-#      it only `git apply`s the patch and pushes. See that file for
-#      the full trust argument.
-#
-# Note that `pull_request` alone cannot do the push: GitHub strips
-# secrets and downgrades GITHUB_TOKEN to read-only for fork PRs, and
-# the branch lives on the contributor's fork anyway (every PR here
-# arrives via `sl pr submit` from a personal fork).
-#
-# Tooling: like `test-lint-check.yml`, this is the documented
-# exception to AGENTS.md §4.9's "CI does not use mise" rule. A single
-# `jdx/mise-action` allowlist entry replaces 5 per-tool action
-# registrations.
-
 on:
   pull_request:
     paths:
-      # Biome (docs/) — JS/TS/CSS/JSON
       - 'docs/**/*.ts'
       - 'docs/**/*.tsx'
       - 'docs/**/*.js'
@@ -60,17 +13,14 @@ on:
       - 'docs/biome.json'
       - 'docs/package.json'
       - 'docs/bun.lock'
-      # Per-language sources for Mago / Ruff / cargo
       - 'src/layer1_wasm/**/*.php'
       - 'src/layer1_wasm/**/*.py'
       - 'src/layer1_wasm/**/*.rs'
       - 'src/layer1_wasm/**/Cargo.toml'
       - 'src/layer1_wasm/**/Cargo.lock'
       - 'docs/scripts/**/*.py'
-      # Catch-alls for Tombi / rumdl
       - '**/*.toml'
       - '**/*.md'
-      # Tooling configs
       - 'mago.toml'
       - 'ruff.toml'
       - 'tombi.toml'
@@ -79,8 +29,6 @@ on:
       - '.github/workflows/lint-autofix.yml'
       - '.github/workflows/lint-autofix-apply.yml'
 
-# Read-only: this job produces a patch, it never pushes. The apply
-# half holds the write credential.
 permissions:
   contents: read
 
@@ -94,19 +42,12 @@ jobs:
     if: github.repository_owner == 'aletheia-works'
     runs-on: ubuntu-latest
     steps:
-      # The PR head commit, not the merge commit: the patch has to
-      # apply cleanly on top of the branch the apply half pushes to.
-      # `persist-credentials: false` because nothing here talks back
-      # to GitHub over git.
       - name: Checkout PR head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      # Install every lint tool + the Rust toolchain in one step via
-      # mise. See test-lint-check.yml for the AGENTS.md §4.9
-      # exception rationale.
       - name: Setup mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
@@ -114,34 +55,14 @@ jobs:
           cache: true
           experimental: true
 
-      # `cargo fmt` needs the rustfmt component and `cargo clippy`
-      # needs the wasm32-wasip1 target — both declared in mise.toml
-      # but not preserved by `jdx/mise-action`'s cache (it caches
-      # `~/.local/share/mise/installs`, not `~/.rustup`). See
-      # test-lint-check.yml for the full rationale; the same guard
-      # applies here so cache-hit autofix runs do not silently skip
-      # the cargo fmt / clippy steps.
       - name: Ensure Rust components and target (mise post-install)
         run: |
           rustup component add rustfmt clippy
           rustup target add wasm32-wasip1
 
-      # `mise run lint:all:fix` chains the autofix variant of every
-      # tool (mago format, mago lint --fix --unsafe, ruff format,
-      # ruff check --fix, tombi format, rumdl fmt, cargo fmt). Each
-      # step writes in place. Genuine remaining diagnostics stay as
-      # diagnostics — those will fail test-lint-check.yml and need
-      # human attention. We deliberately tolerate non-zero exit
-      # because some tools exit non-zero when residual issues remain
-      # after autofix.
       - name: Run polyglot lint autofix
         run: mise run lint:all:fix || true
 
-      # Always emit the artifact, even when the patch is empty: the
-      # apply half is triggered by this run finishing, so a missing
-      # artifact would turn "nothing to fix" into a download failure.
-      # `--binary` keeps the patch appliable if a tool ever rewrites a
-      # non-UTF-8 file.
       - name: Capture autofix patch
         run: |
           set -euo pipefail

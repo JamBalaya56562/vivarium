@@ -8,13 +8,6 @@ import {
 } from './scripts/site-chrome';
 import { NAV_OVERRIDES_CSS, SITE_BASE, SITE_ROOT } from './scripts/site-paths';
 
-// Vivarium docs site configuration.
-//
-// The site is deployed to a non-root GitHub Pages path
-// (https://aletheia-works.github.io/vivarium/), so `base` must match the
-// repo name with leading and trailing slashes. If the repo is ever renamed
-// or moved to a custom domain, update `base` accordingly.
-
 export default defineConfig({
   root: SITE_ROOT,
   base: SITE_BASE,
@@ -37,19 +30,8 @@ export default defineConfig({
     },
   ],
   route: {
-    // rspress 2.0.21 added a first-visit locale redirect that defaults
-    // to `auto`: a browser whose `navigator.language` differs from the
-    // page's locale is bounced to the matching locale once, keyed on
-    // `localStorage['rspress-visited']`. `auto` hijacks explicit links
-    // — a JA page shared with an EN reader lands them on the EN page —
-    // so the redirect is narrowed to one direction: only a visitor on
-    // the default-locale (EN) path gets moved to their own locale.
-    // `/ja/` URLs are always served as asked.
     localeRedirect: 'only-default-lang',
   },
-  // Lower the breakpoint at which the nav's GitHub icon + theme toggle
-  // collapse into the hamburger menu, so the docs nav matches the
-  // reproduction-page nav (which keeps both icons inline at all widths).
   globalStyles: NAV_OVERRIDES_CSS,
   markdown: {
     link: {
@@ -57,10 +39,7 @@ export default defineConfig({
     },
   },
   head: [
-    // Favicons come from scripts/site-chrome.ts so the reproduction
-    // pages' chrome.js, which injects the same icons, cannot drift.
     ...FAVICONS.map((attrs) => ['link', attrs] as [string, typeof attrs]),
-    // The font links stay inline: reproduction pages don't use them.
     [
       'link',
       {
@@ -130,18 +109,6 @@ export default defineConfig({
     ],
   },
 
-  // Dev-only middleware that intercepts
-  // `/vivarium/repro/<project>/<issue_path>/...` URLs and serves the
-  // corresponding file from `src/layer{1,2,3}_*/<recipe>/` BEFORE
-  // rspress's SPA history fallback claims the URL.
-  //
-  // Production deploy doesn't need this — the GH Actions build copies
-  // these directories into doc_build/repro/ as plain static assets, so
-  // the deployed Pages server resolves them naturally.
-  //
-  // The `prebuild-repro` package script compiles `repro.ts` → `repro.js`
-  // before this middleware starts serving, so the in-page Pyodide /
-  // Ruby.wasm / php-wasm runtime can actually execute.
   builderConfig: {
     server: {
       setup({ server }) {

@@ -164,9 +164,6 @@ export function ProjectPage({
   }
 
   const displayName = meta?.display_name ?? project;
-  // Locale-specific prose, falling back to English rather than to blank:
-  // a project added before its translation still reads on the JA page.
-  // `display_name`, `homepage` and `github` are locale-invariant.
   const tagline =
     lang === 'ja' ? (meta?.tagline_ja ?? meta?.tagline) : meta?.tagline;
   const description =

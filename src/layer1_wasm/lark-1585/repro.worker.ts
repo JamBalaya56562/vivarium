@@ -1,33 +1,3 @@
-// Web Worker for lark-1585. Runs Pyodide + lark in a separate
-// thread so the main page can `worker.terminate()` if the parse hangs
-// (the bug being reproduced is an infinite loop in lark's LALR
-// back-end, which would otherwise freeze the tab).
-//
-// Protocol (all messages are JSON):
-//   worker → main:
-//     { type: 'progress', stage: string }
-//     { type: 'ready', pyodide_version, lark_version, python_version, variant }
-//     { type: 'result', data: ReproOutput, variant }
-//     { type: 'error', message: string, variant? }
-//   main → worker:
-//     { type: 'go', source: string }
-//
-// The worker loads Pyodide and installs lark up-front, then waits
-// for a `go` message before invoking the grammar. The main thread
-// races the `result` message against a wall-clock timeout — if the
-// timeout fires first, the worker is terminated and the verdict is
-// "reproduced".
-//
-// The lark install spec is read from the worker URL's query string
-// (`?spec=...&variant=...`) so the main thread can spawn one worker
-// per variant: baseline (`lark==1.3.1`) and fix-candidate (the wheel
-// built from `fix-candidate.json` and dropped under `./wheels/`).
-
-// The project tsconfig pulls in `lib: DOM`, so we cannot `declare const
-// self: DedicatedWorkerGlobalScope` here — that would collide with the
-// DOM lib's `self: Window`. Cast at point of use instead: both `Window`
-// and `DedicatedWorkerGlobalScope` expose `postMessage` /
-// `addEventListener`, so the runtime call shape is the same.
 const workerScope = self as unknown as {
   postMessage: (msg: unknown) => void;
   addEventListener: (
@@ -40,9 +10,6 @@ const workerScope = self as unknown as {
 const PYODIDE_VERSION = '0.29.3';
 const DEFAULT_LARK_SPEC = 'lark==1.3.1';
 
-// Read per-variant configuration from the worker URL's query string.
-// `new URL(self.location.href)` works in DedicatedWorkerGlobalScope
-// even though TypeScript's DOM lib types it as `Window`-shaped.
 const workerUrl = new URL(workerScope.location.href);
 const VARIANT = workerUrl.searchParams.get('variant') ?? 'baseline';
 const LARK_SPEC = workerUrl.searchParams.get('spec') ?? DEFAULT_LARK_SPEC;
@@ -67,10 +34,6 @@ interface PyodideRuntime {
   runPython(code: string): unknown;
 }
 
-// The actual reproduction source is shipped from the main thread
-// via the `go` message — that keeps a single canonical declaration
-// of REPRO_CODE in repro.ts where the highlight-repros build step
-// can extract it for the recipe page.
 const HARNESS_PROLOGUE = `
 import json
 import sys

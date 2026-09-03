@@ -1,6 +1,3 @@
-/* Vivarium footer — always-dark visual anchor at the bottom of the home
-   page, irrespective of the surrounding light/dark theme. */
-
 .v-footer {
   width: 100%;
   background: #0a0e0d;

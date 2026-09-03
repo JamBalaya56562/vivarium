@@ -1,33 +1,5 @@
 name: deploy-docs
 
-# Builds the rspress docs site and deploys to GitHub Pages, alongside
-# browser-native reproduction pages.
-#
-# Prerequisites (one-time setup):
-# - Repo Settings → Pages → Source: "GitHub Actions".
-#
-# Tooling: multi-tool job (bun + rust) — uses the official
-# `jdx/mise-action` directly so CI reads the same `mise.toml` as local
-# development. Single-tool workflows (publish-mcp, branch-fix-verdict)
-# use `oven-sh/setup-bun` directly instead.
-#
-# Layout:
-# - `docs/` holds the rspress site (config, lockfile, markdown content).
-# - `docs/site/` is the rspress `root` and contains the markdown.
-# - The build artefact is written to `docs/doc_build/`.
-# - `src/layer1_wasm/<slug>/` directories are static Pyodide / WASM
-#   reproductions. Sources are TypeScript; `tsc` emits side-by-side
-#   `.js` files which are then copied verbatim into
-#   `docs/doc_build/repro/<project>/<issue_path>/`. The `.js` outputs
-#   are gitignored — the deploy step rebuilds them from the `.ts`
-#   sources via `src/layer1_wasm/package.json`'s `build` script. The
-#   per-recipe `<project>/<issue_path>` URL path is read from each
-#   entry's `page_url` in `docs/site/public/api/recipes.json` so the bundling
-#   step shares the canonical mapping with the rest of the catalogue.
-# - Underscore-prefixed subdirectories (e.g. `src/layer1_wasm/_shared/`)
-#   hold scaffolding shared across reproductions. They are bundled under
-#   each `repro/<project>/` directory so recipes can reference shared
-#   modules via `../_shared/…`.
 on:
   push:
     branches: [main]
@@ -43,26 +15,14 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  # Required to push images to ghcr.io/aletheia-works/* using the
-  # default `GITHUB_TOKEN`. Layer 2 reproductions only.
   packages: write
 
-# Serialise deploys to Pages — never cancel an in-flight deploy; queue.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
   build:
-    # Runs unconditionally on the upstream `aletheia-works/vivarium` repo.
-    # Forks skip the build by default (the push trigger fires in every
-    # fork with Actions enabled, but most forks do not want Pages to
-    # deploy from this workflow). A fork user who DOES want their own
-    # `<owner>.github.io/<repo>/` site can opt in by setting a single
-    # repository variable: Settings → Secrets and variables → Actions
-    # → Variables → New repository variable, name `VIVARIUM_FORK_DEPLOY`,
-    # value `true`. Layer 2 image build/push remains gated below to
-    # `aletheia-works` only — fork deploys ship Layer 1 only.
     if: github.repository_owner == 'aletheia-works' || vars.VIVARIUM_FORK_DEPLOY == 'true'
     runs-on: ubuntu-latest
     defaults:
@@ -74,15 +34,6 @@ jobs:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
       - name: Setup mise (bun, uv, jq)
-        # Installs the tools needed before the first `mise run` (bun,
-        # uv, jq). Anything else a task needs auto-installs on first
-        # `mise run` from mise.toml, which stays the single place a
-        # toolchain version is written down. `uv` and
-        # `jq` are needed by `repro:build:wheels`
-        # (`scripts/build-layer1-wheels.sh`), which `repro:build` now
-        # depends on per ADR-0040: wheels are built fresh from each
-        # `src/layer1_wasm/<slug>/wheels/source.json` rather than
-        # vendored.
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
@@ -94,81 +45,33 @@ jobs:
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Install ajv-cli for verdict schema validation
-        # Validates each Layer 2 verdict.json against
-        # `docs/site/public/spec/verdict.schema.json` (contract v1) right
-        # after CI writes it, before the bundling step copies the
-        # directory into the Pages artefact. Catches any malformed
-        # snapshot at deploy time rather than letting it ship.
-        #
-        # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
-        # ajv-cli + ajv-formats co-resolve without depending on bun's
-        # global bin being on PATH (`oven-sh/setup-bun` adds it,
-        # mise-installed bun does not), and without leaking ajv into
-        # any tracked package.json.
         run: |
           BUN="$(mise which bun)"
           cd "$RUNNER_TEMP"
           "$BUN" init -y >/dev/null
           "$BUN" add ajv-cli@5 ajv-formats
-          # Both forms — `$AJV_BIN` for explicit yaml callers, and the
-          # bin dir on `$GITHUB_PATH` so shell scripts (e.g.
-          # `scripts/capture_layer2_verdict.sh`) can call `ajv` directly
-          # without knowing about this install location.
           echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Build docs (mise run docs:build)
-        # Same command a contributor runs locally — wraps
-        # `bun install --frozen-lockfile` + `bun run build` for the
-        # rspress site under docs/. See [tasks."docs:build"] in
-        # mise.toml.
         working-directory: ${{ github.workspace }}
         run: mise run docs:build
 
       - name: Build Layer 1 reproductions (mise run repro:build)
-        # Wraps `bun install --frozen-lockfile`, `bun run build`
-        # (TypeScript -> .js next to each repro), and `cargo build`
-        # for every `src/layer1_wasm/*/Cargo.toml` (with
-        # `rustup target add wasm32-wasip1` ensured). See
-        # [tasks."repro:build"] in mise.toml.
         working-directory: ${{ github.workspace }}
         run: mise run repro:build
 
       - name: Regenerate Japanese reproduction pages (mise run repro:i18n)
-        # Splices each recipe's index.html with its i18n.ja.json into a
-        # gitignored index.ja.html. Must run AFTER repro:build, because
-        # that step's `highlight-repros.ts` inlines the Shiki-highlighted
-        # source into index.html and the JA page carries it through
-        # verbatim; and BEFORE the bundling steps below, which copy the
-        # generated file into the Pages artefact. Recipes without a
-        # translation are skipped, not failed.
         working-directory: ${{ github.workspace }}
         run: mise run repro:i18n
 
       - name: Drop Rust build artefacts before bundling
-        # `target/` is hundreds of MB and would bloat the Pages
-        # artefact. The mise task copies the .wasm files into place; the
-        # build cache itself is not needed once the artefacts are in
-        # the recipe directory.
-        #
-        # `find`, not a one-level glob: a recipe can hold more than one
-        # crate (regex-779 pairs its baseline with `fix/`), and a nested
-        # `target/` the glob missed would be copied straight into the
-        # Pages artefact by the bundling step below.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           find src/layer1_wasm -type d -name target -prune -exec rm -rf {} +
 
       - name: Log in to GHCR (for Layer 2 image push)
-        # Skipped silently if no Layer 2 reproductions exist. Uses the
-        # default `GITHUB_TOKEN`; the workflow's `packages: write`
-        # permission lets us push to `ghcr.io/aletheia-works/*` without
-        # a separately-rotated PAT.
-        #
-        # Fork users (running with VIVARIUM_FORK_DEPLOY=true) skip this
-        # step — fork deploys ship Layer 1 only because the GITHUB_TOKEN
-        # has no GHCR push scope into `ghcr.io/aletheia-works/*`.
         if: github.repository_owner == 'aletheia-works'
         working-directory: ${{ github.workspace }}
         run: |
@@ -183,18 +86,6 @@ jobs:
             -u "${{ github.actor }}" --password-stdin
 
       - name: Build, push, and snapshot Layer 2 Docker reproductions
-        # Per-page convention (see src/layer2_docker/README.md and
-        # ADR-0010): each `src/layer2_docker/<slug>/` ships a
-        # `Dockerfile` whose default CMD is `repro.sh`. We build the
-        # image, push two tags to GHCR (`:latest` and `:<git-sha>`),
-        # run the container to capture the verdict, and write
-        # `<slug>/verdict.json` so the bundling step picks it up
-        # alongside the rest of the directory.
-        #
-        # Skipped silently if no Layer 2 reproductions exist.
-        #
-        # Fork users (running with VIVARIUM_FORK_DEPLOY=true) skip this
-        # step — Layer 2 deploy stays upstream-only.
         if: github.repository_owner == 'aletheia-works'
         working-directory: ${{ github.workspace }}
         env:
@@ -205,9 +96,6 @@ jobs:
           for dockerfile in src/layer2_docker/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
-            # Skip underscore-prefixed sentinels (e.g. `_template/`,
-            # `_layer2-shared/`) — same convention the recipes-index
-            # walker follows in docs/scripts/generate-recipes-index.ts.
             case "$slug" in _*) continue ;; esac
             tag_latest="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:latest"
             tag_sha="ghcr.io/${IMAGE_OWNER}/vivarium-${slug}:${GITHUB_SHA}"
@@ -219,7 +107,6 @@ jobs:
             docker push "$tag_latest"
             docker push "$tag_sha"
 
-            # Capture the verdict by running the freshly-built image.
             stdout_file="$(mktemp)"
             stderr_file="$(mktemp)"
             set +e
@@ -236,9 +123,6 @@ jobs:
             captured_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             image_digest="$(docker inspect --format='{{index .RepoDigests 0}}' "$tag_sha" 2>/dev/null || echo '')"
 
-            # Compose verdict.json. `jq -Rs .` JSON-quotes raw text;
-            # we trim stderr to the last 4 KiB so a runaway log
-            # doesn't bloat the Pages artefact.
             jq -n \
               --arg verdict "$verdict" \
               --arg image_tag "$tag_sha" \
@@ -258,9 +142,6 @@ jobs:
                 stderr_tail: $stderr_tail
               }' >"${slug_dir}/verdict.json"
 
-            # Validate the freshly-written verdict.json against the
-            # contract v1 schema before the bundling step picks it up.
-            # Single-sourced with repro-regression.yml.
             "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
@@ -272,25 +153,6 @@ jobs:
           done
 
       - name: Bundle Layer 1 reproductions alongside docs
-        # Each immediate subdirectory of `src/layer1_wasm/` is published at
-        # `<pages-base>/repro/<project>/<issue_path>/`. The
-        # `<project>/<issue_path>` URL path is looked up from the matching
-        # entry in `docs/site/public/api/recipes.json` (regenerated by
-        # `docs/scripts/generate-recipes-index.ts` during the docs:build
-        # step above) so the bundling layout stays in lockstep with the
-        # catalogue index. README files and other tracked source live next
-        # to the reproduction for review; they get copied too, which is
-        # fine — the pages are static.
-        #
-        # Two flavours of subdirectory:
-        # 1. Reproduction pages — must contain `index.html`. Skipped if not.
-        # 2. Underscore-prefixed scaffolding (`_shared/`, `_assets/`) —
-        #    duplicated under each `<project>/` so recipes can keep their
-        #    `../_shared/…` references intact under the new
-        #    `<project>/<issue_path>/` URL shape (one directory level
-        #    above the recipe). The cost is a few KB × N projects of
-        #    duplication; the win is leaving every recipe's source
-        #    untouched.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -301,13 +163,7 @@ jobs:
             exit 0
           fi
           mkdir -p "$dest"
-          # Derived from the runtime context so fork deploys
-          # (VIVARIUM_FORK_DEPLOY=true) bundle correctly under the
-          # fork's own `<owner>.github.io/<repo>/repro/` URL.
           pages_prefix="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY##*/}/repro/"
-          # Stage shared scaffolding (`_shared/`, `_assets/`, ...) under
-          # each Layer 1 project's directory so recipes' `../_shared/...`
-          # refs resolve to `/repro/<project>/_shared/...`.
           layer1_projects="$(jq -r '.recipes[] | select(.layer == 1) | .project' \
             docs/site/public/api/recipes.json | sort -u)"
           for project in $layer1_projects; do
@@ -319,7 +175,6 @@ jobs:
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done
           done
-          # Bundle each individual recipe.
           for recipe in src/layer1_wasm/*/; do
             slug="$(basename "$recipe")"
             case "$slug" in
@@ -342,16 +197,7 @@ jobs:
             rel="${rel%/}"
             echo "Bundling reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
-            # `cp -R "$recipe/."` copies the recipe directory's CONTENTS
-            # (not the directory itself), so the recipe lands at $rel/
-            # rather than $rel/$slug/.
             cp -R "${recipe}." "$dest/$rel/"
-            # Japanese rendering, when the recipe ships a translation.
-            # ONE file: the generated page carries `<base href>` pointing
-            # at the English directory, so every asset it references —
-            # including runtime fetch() calls, which resolve against
-            # document.baseURI — comes out of the tree above. No
-            # `_shared/`, `_assets/`, wheels or wasm are duplicated here.
             if [ -f "${recipe}index.ja.html" ]; then
               echo "Bundling JA reproduction: ${slug} → ${ja_dest}/${rel}/"
               mkdir -p "$ja_dest/$rel"
@@ -362,19 +208,6 @@ jobs:
           ls -la "$dest" || true
 
       - name: Bundle Layer 2 reproductions alongside docs
-        # Layer 2 catalogue convention (per ADR-0010 / private memo):
-        # each `src/layer2_docker/<slug>/` ships a `Dockerfile`,
-        # `repro.sh`, `README.md`, and a CI-generated `verdict.json`.
-        # Visitors don't run anything in-page; they consume the
-        # Dockerfile + the verdict snapshot. Bundle the raw directory
-        # under `<pages-base>/repro/<project>/<issue_path>/`, with the
-        # URL path looked up from `docs/site/public/api/recipes.json` so the
-        # mapping stays in lockstep with the catalogue. Underscore-
-        # prefixed scaffolding (e.g. `_layer2-shared/`) is duplicated
-        # under each Layer 2 project for the same `../_shared/...` →
-        # `<project>/_shared/...` reason as Layer 1.
-        #
-        # Skipped silently when there are no Layer 2 reproductions.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -386,11 +219,7 @@ jobs:
           fi
           shopt -s nullglob
           mkdir -p "$dest"
-          # Derived from the runtime context so fork deploys
-          # (VIVARIUM_FORK_DEPLOY=true) bundle correctly under the
-          # fork's own `<owner>.github.io/<repo>/repro/` URL.
           pages_prefix="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY##*/}/repro/"
-          # Stage shared scaffolding under each Layer 2 project.
           layer2_projects="$(jq -r '.recipes[] | select(.layer == 2) | .project' \
             docs/site/public/api/recipes.json | sort -u)"
           for project in $layer2_projects; do
@@ -398,41 +227,19 @@ jobs:
             for shared in src/layer2_docker/_*/; do
               [ -d "$shared" ] || continue
               shared_name="$(basename "$shared")"
-              # `_template/` is the scaffolder seed (used by
-              # `mise run recipes:new`), not a shared runtime module.
-              # `_assets/` and `_shared/` under src/layer2_docker/ are
-              # gitignored mirrors of the Layer 1 originals, written by
-              # src/layer1_wasm/scripts/sync-layer2-assets.ts purely so
-              # the Layer 2 Playwright server can serve them. Skip them
-              # here and stage the canonical Layer 1 copies below, so a
-              # `workflow_dispatch` run from a dirty tree can never let a
-              # local mirror shadow the source of truth.
               case "$shared_name" in _template|_assets|_shared) continue ;; esac
               echo "Staging Layer 2 shared module: ${shared_name} → ${dest}/${project}/${shared_name}"
               cp -R "${shared%/}" "$dest/$project/$shared_name"
             done
-            # Layer 2 pages reference `../_shared/style.css` for the
-            # shared chrome (header, code blocks, verdict pill). The
-            # styles physically live under src/layer1_wasm/_shared/ and
-            # are reused by Layer 2 — copy them into each Layer 2
-            # project so the relative path resolves under
-            # `<dest>/<project>/_shared/style.css` after deploy.
             if [ -d "src/layer1_wasm/_shared" ]; then
               echo "Staging Layer 1 _shared/ for Layer 2 project: ${dest}/${project}/_shared"
               cp -R "src/layer1_wasm/_shared" "$dest/$project/_shared"
             fi
-            # Same for `../_assets/chrome.js` (nav, footer, theme toggle,
-            # progress bar) and `sw.js`. Layer 2 no longer tracks its own
-            # copy — the tracked original is under src/layer1_wasm/ — so
-            # this copy is what makes the deployed Layer 2 pages render
-            # their chrome at all. Without it every Layer 2 page 404s on
-            # `<project>/_assets/chrome.js` and the module graph dies.
             if [ -d "src/layer1_wasm/_assets" ]; then
               echo "Staging Layer 1 _assets/ for Layer 2 project: ${dest}/${project}/_assets"
               cp -R "src/layer1_wasm/_assets" "$dest/$project/_assets"
             fi
           done
-          # Bundle each individual Layer 2 recipe.
           for entry in src/layer2_docker/*/; do
             slug="$(basename "$entry")"
             case "$slug" in
@@ -456,7 +263,6 @@ jobs:
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
             cp -R "${entry}." "$dest/$rel/"
-            # See the Layer 1 step for why this is a single file.
             if [ -f "${entry}index.ja.html" ]; then
               echo "Bundling JA reproduction: ${slug} → ${ja_dest}/${rel}/"
               mkdir -p "$ja_dest/$rel"

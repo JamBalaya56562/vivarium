@@ -337,6 +337,12 @@ This applies to every file the repository builds from — TypeScript,
 Python, Rust, shell, workflow YAML, OpenTofu, TOML configs, CSS, and
 recipe HTML. Markdown and MDX are prose and are out of scope.
 
+So are the reproduction scripts a recipe publishes — `repro.py` /
+`repro.sh` / `repro.rs`, the Layer 3 record/replay pair, and the
+`src/external_examples/` manifests. The recipe page renders them for
+visitors, so their comments are page copy explaining the bug rather
+than notes about the implementation.
+
 ## 5. Three-layer architecture (reference)
 
 Product-level technology choices are framed by these three layers. Do not

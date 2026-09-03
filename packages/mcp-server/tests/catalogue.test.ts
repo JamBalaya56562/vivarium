@@ -1,10 +1,3 @@
-// Catalogue fetcher tests. Uses Bun's built-in test runner with
-// `bun:test` globals and a stubbed global fetch — no network access
-// in CI.
-//
-// Coverage focus: TTL behaviour, network-failure fallback to bundled
-// snapshot, malformed-response rejection.
-
 import { afterEach, beforeEach, describe, it } from 'bun:test';
 import { strict as assert } from 'node:assert';
 
@@ -95,7 +88,6 @@ describe('catalogue', () => {
         ),
     );
     const idx = await getCatalogue();
-    // Wrong literal → fall through to bundled.
     assert.equal(idx.index, getBundledIndex().index);
   });
 

@@ -8,18 +8,6 @@ tombi = "latest"
 rumdl = "latest"
 jq = "latest"
 rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
-# Per-language interpreters (Python, Ruby, PHP) are intentionally
-# NOT pinned at this top level. Each task / command declares the version
-# it needs next to where it is invoked, so different recipes can use
-# different versions without churning this file:
-#   - Python: `mise exec uv -- uv run --python 3.13 …`
-#     (UV is a superset tool — version manager + pip + venv + scripts —
-#     so it owns Python on its own; mise just installs UV.)
-#   - Ruby / conda:php: per-task `tools = { ruby = "3.3.3" }` etc., or
-#     ad-hoc `mise exec ruby@3.3.3 -- ruby …`. mise auto-downloads the
-#     requested version on first call, the same way UV does for Python.
-# PHP keeps the `conda:` backend prefix because vfox (mise's default PHP
-# backend) has download issues that surfaced during Phase 2.
 
 [settings]
 experimental = true
@@ -47,21 +35,6 @@ dir = "infra/github"
 
 [hooks]
 enter = ["mise upgrade -q", "mise deps -q"]
-
-# ─────────────────────────────────────────────────────────────────────────
-# Tasks — reproducing locally what CI does, and what humans need to ship.
-# Run `mise tasks` to list, `mise run <name>` to invoke.
-# Namespaces:
-#   docs:*      — rspress documentation site
-#   repro:*     — Layer 1 (WASM) reproduction sources & verification
-#   docker:*    — Layer 2 (Docker) reproduction images
-#   recipes:*   — recipes catalogue index regeneration
-#   mcp:*       — MCP server package (packages/mcp-server)
-#   infra:*     — OpenTofu (infra/github)
-#   ci:*        — local-equivalent of the GitHub Actions workflows
-# ─────────────────────────────────────────────────────────────────────────
-
-# ── Docs site (rspress) ──────────────────────────────────────────────────
 
 [tasks."docs:install"]
 description = "Install docs site dependencies"
@@ -108,8 +81,6 @@ depends = ["docs:install"]
 dir = "docs"
 run = "bun x --bun biome check --write --unsafe ."
 
-# ── Layer 1 — WASM reproduction sources ──────────────────────────────────
-
 [tasks."repro:install"]
 description = "Install Layer 1 (WASM) sources dependencies"
 dir = "src/layer1_wasm"
@@ -132,15 +103,8 @@ description = "Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
 shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
 run = '''
 set -euo pipefail
-# `find`, not a glob: a recipe may hold more than one crate. regex-779
-# pairs its baseline crate with `fix/`, a second crate compiled from the
-# same source against a fixed dependency version, and a one-level glob
-# would silently skip it — leaving the page fetching a wasm artefact
-# that was never rebuilt.
 find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   crate_dir=$(dirname "$cargo_toml")
-  # A nested crate publishes into the recipe directory above it, next to
-  # index.html, because that is where the page fetches from.
   if [ -f "${crate_dir}/index.html" ]; then
     recipe_dir="$crate_dir"
   else
@@ -148,8 +112,6 @@ find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | wh
   fi
   echo "==> cargo build $crate_dir"
   cargo build --release --target wasm32-wasip1 --manifest-path "$cargo_toml"
-  # Copy every bin rather than a hard-coded repro.wasm — the crate's
-  # `[[bin]] name` decides the artefact name (repro / repro-fix).
   for wasm in "${crate_dir}"/target/wasm32-wasip1/release/*.wasm; do
     cp "$wasm" "${recipe_dir}/$(basename "$wasm")"
   done
@@ -179,8 +141,6 @@ run = '''
 bunx playwright install --with-deps chromium
 bun run test
 '''
-
-# ── Native re-verification (run repros against host interpreters) ───────
 
 [tasks."repro:native:python"]
 description = "Run every src/layer1_wasm/*/repro.py against host Python (auto-discovered; PEP 723 inline metadata pins each script's deps)"
@@ -217,8 +177,6 @@ run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
 description = "Run all repros against host interpreters/compilers"
 depends = ["repro:native:python", "repro:native:ruby", "repro:native:php", "repro:native:rust"]
 
-# ── Layer 2 — Docker reproduction images ─────────────────────────────────
-
 [tasks."docker:build"]
 description = "Build all Layer 2 Docker reproduction images locally"
 shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
@@ -252,10 +210,6 @@ shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
 run = '''
 set -euo pipefail
 shopt -s nullglob
-# verdict.json is gitignored under src/layer2_docker/**/verdict.json,
-# so this writes purely local files — running this task does not
-# add anything to the index. CI is the canonical producer; this is
-# a developer convenience for `localhost:3000` rendering parity.
 for dockerfile in src/layer2_docker/*/Dockerfile; do
   slug_dir=$(dirname "$dockerfile")
   slug=$(basename "$slug_dir")
@@ -266,22 +220,6 @@ for dockerfile in src/layer2_docker/*/Dockerfile; do
 done
 echo "Done. Refresh http://localhost:3000/vivarium/repro/<project>/<issue_path>/ to see captured verdicts."
 '''
-
-# ── Branch-fix publish (Path B, PAT-push) ────────────────────────────────
-#
-# Some Layer 2 recipes wrap an upstream project whose build is too heavy
-# for free-tier GitHub Actions runners (Node.js, Chromium, etc.) — the
-# contributor builds the branch-fix image locally and pushes to their
-# own ghcr.io namespace before triggering branch-fix-verdict.yml.
-#
-# These tasks read a PAT from a per-user file (default
-# `${XDG_CONFIG_HOME:-~/.config}/vivarium/ghcr-pat`, mode 0600) and feed
-# it to `docker login --password-stdin`, then `docker logout` after the
-# push so the credential is never persisted in the docker config. The
-# `gh` CLI auth state is never touched — branch-fix push uses a
-# write:packages-scoped classic PAT, distinct from the all-purpose
-# `gh` token. (ghcr.io does not currently support fine-grained PATs
-# for container-registry auth, so a classic PAT is the only option.)
 
 [tasks."ghcr:login"]
 description = "Log in to ghcr.io using a write:packages-scoped PAT file (does not touch gh CLI auth state)"
@@ -363,13 +301,9 @@ echo "  gh run list --repo aletheia-works/vivarium --workflow=branch-fix-verdict
 echo "  gh run watch --repo aletheia-works/vivarium <run-id>"
 '''
 
-# ── Recipes catalogue index ──────────────────────────────────────────────
-
 [tasks."recipes:index"]
 description = "Regenerate docs public API + site-only generated data from src/layer*/"
 dir = "docs"
-# `generate-project-pages` and `generate-site-stats` read recipes.json,
-# so they must run *after* generate-index.
 run = "bun run generate"
 
 [tasks."recipes:new"]
@@ -414,9 +348,6 @@ fi
 
 echo "==> [1/6] ensure docs/ deps installed (ajv-cli ships there as devDep)"
 (cd docs && bun install --frozen-lockfile)
-# capture_layer2_verdict.sh uses `${AJV_BIN:-ajv}`; point it at
-# docs/node_modules/.bin/ajv.exe (the devDep we just installed) so
-# we do not need a bun-global ajv on PATH.
 export AJV_BIN="$(cd docs/node_modules/.bin && pwd)/ajv.exe"
 
 echo "==> [2/6] docker build ${slug}"
@@ -444,8 +375,6 @@ echo "  verdict: ${verdict}"
 echo "  exit_code: ${exit_code}"
 '''
 
-# ── MCP server (packages/mcp-server) ─────────────────────────────────────
-
 [tasks."mcp:install"]
 description = "Install vivarium-mcp dependencies"
 dir = "packages/mcp-server"
@@ -462,8 +391,6 @@ description = "Test the MCP server package"
 depends = ["mcp:install"]
 dir = "packages/mcp-server"
 run = "bun run test"
-
-# ── Infra (OpenTofu) ─────────────────────────────────────────────────────
 
 [tasks."infra:init"]
 description = "Initialise OpenTofu working directory for infra/github"
@@ -487,8 +414,6 @@ depends = ["infra:init"]
 dir = "infra/github"
 run = "tofu apply"
 
-# ── Local CI equivalents (what GitHub Actions runs) ──────────────────────
-
 [tasks."ci:docs"]
 description = "Local docs build sanity (mirrors the build step inside test-docs.yml's E2E lane)"
 dir = "docs"
@@ -505,12 +430,6 @@ run = '''
 set -euo pipefail
 bun install --frozen-lockfile
 bun run typecheck
-# `bun run build` is TypeScript only (validator + highlight + tsc). CI
-# runs `mise run repro:build`, which also compiles the Rust crates and
-# builds the fix-candidate wheels — so calling the bun script alone let
-# regex-779's Playwright case fetch a `repro.wasm` this task never
-# rebuilt, and reported green on a stale artefact. Mirror
-# repro-regression.yml instead.
 mise run repro:build
 bun x playwright install --with-deps chromium
 bun run test
@@ -551,8 +470,6 @@ run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
 description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e + commitlint)"
 depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e", "ci:commitlint"]
 
-# ── Polyglot Rust-based formatters and linters ───────────────────────────
-
 [tasks."php:check"]
 description = "Mago — PHP format check + lint (read-only)"
 run = "mago format --check && mago lint"
@@ -590,8 +507,6 @@ description = "cargo fmt --check + cargo clippy --deny warnings on Layer 1 Rust 
 shell = "bash -c"
 run = '''
 set -euo pipefail
-# `find`, not a glob — see the note in repro:build:rust; a nested
-# fix-candidate crate must be linted too, not silently skipped.
 find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   echo "==> cargo fmt --check + clippy $cargo_toml"
   cargo fmt --manifest-path "$cargo_toml" --check
@@ -604,8 +519,6 @@ description = "cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
 shell = "bash -c"
 run = '''
 set -euo pipefail
-# `--allow-no-vcs` is needed because Sapling (.sl/) isn't recognised by
-# cargo as a VCS — cargo fix would otherwise refuse to write changes.
 find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   echo "==> cargo fmt + clippy --fix $cargo_toml"
   cargo fmt --manifest-path "$cargo_toml"

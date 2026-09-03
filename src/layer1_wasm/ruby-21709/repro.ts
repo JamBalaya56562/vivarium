@@ -1,19 +1,3 @@
-// Vivarium Layer 1 reproduction — ruby/ruby#21709.
-//
-// Regexp interpolation rejects mixed encodings while String
-// interpolation silently upgrades to UTF-8:
-//   prefix = '\p{In_Arabic}'
-//   suffix = '\p{In_Arabic}'.encode('US-ASCII')
-//   /#{prefix}#{suffix}/  # => RegexpError ("encoding mismatch")
-//   "#{prefix}#{suffix}"  # => "\p{In_Arabic}\p{In_Arabic}"
-// The two interpolation forms should agree on how to combine
-// fragments of different encodings — they don't.
-//
-// Verdict semantics (per ADR-0008 / contract v1):
-//   - "reproduced" — the bug REPRODUCES (Regexp raises, String succeeds).
-//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
-//     or the runtime errored before producing a result).
-
 import type { PathACapturedRun } from '../_shared/path_a.js';
 import { loadVivariumRuby } from '../_shared/ruby_loader.js';
 import { enableRunner } from '../_shared/runner.js';
@@ -77,10 +61,6 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -198,7 +178,6 @@ try {
   };
   setResult(envelope);
 
-  // Wire the editable script + Run button.
   enableRunner({
     slug: 'ruby-21709',
     baselineSource: REPRO_CODE,

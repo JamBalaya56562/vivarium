@@ -1,17 +1,3 @@
-// Upstream issue search helper. Wraps `gh search issues`. Strict mode
-// applies two filters: GitHub's standard `-linked:pr` qualifier (drops
-// issues that already have a related PR — these are usually already
-// being worked on upstream), and an optional caller-supplied
-// `exclude_repos` list (drops matches from repositories the caller
-// wants to skip). Permissive mode applies neither and surfaces
-// everything for manual triage.
-//
-// Vivarium ships no built-in exclusion list and no built-in activity
-// thresholds. Whether a repository is worth searching, what the
-// activity bar is, what counts as a "good" candidate — all of that is
-// up to the caller. This tool is a thin convenience over `gh`, not a
-// curated policy engine.
-
 import { spawnSync } from 'node:child_process';
 
 export interface SearchUpstreamIssuesArgs {
@@ -34,10 +20,6 @@ export interface SearchMatch {
   posted_at: string;
   labels: string[];
   state: string;
-  // strict mode: always false (guaranteed by `-linked:pr` query qualifier).
-  // permissive mode: omitted (computing this per issue would require an
-  // extra `gh issue view --json linkedPullRequests` round-trip per match;
-  // callers that need it should issue that query themselves).
   has_pr?: boolean;
 }
 
@@ -60,8 +42,6 @@ export type SearchUpstreamIssuesResult =
   | SearchUpstreamIssuesOk
   | SearchUpstreamIssuesError;
 
-// Mirror of DEFAULT_REPO in prepare_new_recipe.ts — keep in sync. Lifted
-// to module scope so both tools resolve project → repo identically.
 const DEFAULT_REPO: Record<string, string> = {
   node: 'nodejs/node',
   cpython: 'python/cpython',
@@ -78,9 +58,6 @@ function defaultRepoFor(project: string): string {
   return DEFAULT_REPO[project] ?? `${project}/${project}`;
 }
 
-// Injectable for unit tests. Returns { status, stdout, stderr } so the
-// real impl and any stub agree on the contract — we never expose the
-// raw spawn result.
 export interface GhRunResult {
   status: number | null;
   stdout: string;
@@ -144,8 +121,6 @@ export async function searchUpstreamIssues(
   const policy = args.selection_policy ?? 'strict';
   const excludeRepos = normalizeExclusions(args.exclude_repos);
 
-  // Whole-repo short-circuit: strict policy + the search repo itself
-  // appears in exclude_repos → return empty without paying for gh.
   if (policy === 'strict' && excludeRepos.includes(repo)) {
     return {
       ok: true,
@@ -182,10 +157,6 @@ export async function searchUpstreamIssues(
       if (label.trim()) ghArgs.push('--label', label.trim());
     }
   }
-  // `--` separator so leading-dash qualifiers like `-linked:pr` are
-  // parsed by gh as the search query, not as flags. Without this,
-  // strict mode with no caller-supplied query fails immediately with
-  // `unknown shorthand flag: 'l' in -linked:pr`.
   if (queryString) ghArgs.push('--', queryString);
 
   let result: GhRunResult;

@@ -1,30 +1,9 @@
 name: Test polyglot lint
 
-# Runs the polyglot formatter / linter toolchain — Biome (JS/TS/CSS/
-# JSON in docs/), Mago for PHP, Ruff for Python, Tombi for TOML,
-# rumdl for Markdown, cargo fmt + clippy for Rust — over the project
-# on every PR that touches the relevant surfaces. The check is strict
-# — any unformatted file or remaining lint diagnostic fails the PR.
-#
-# Companion workflow: `lint-autofix.yml` heals what is mechanically
-# fixable by committing back to the PR branch.
-#
-# Local equivalent: `mise run ci:lint`. Authors can apply safe
-# auto-fixes with `mise run lint:all:fix` before re-pushing.
-#
-# Tooling: this workflow IS the documented exception to AGENTS.md
-# §4.10's "CI does not use mise" rule. Justification: 5 lint tools
-# from 5 different upstreams would otherwise need 5 third-party
-# GitHub Actions, each requiring an org-allowlist registration. A
-# single `jdx/mise-action` entry installs all of them from
-# `mise.toml`. Tool versions stay auditable because `mise.toml` is
-# in the repo and pins exact versions.
-
 on:
   pull_request:
     branches: [main]
     paths:
-      # Biome (docs/) — JS/TS/CSS/JSON
       - 'docs/**/*.ts'
       - 'docs/**/*.tsx'
       - 'docs/**/*.js'
@@ -35,17 +14,14 @@ on:
       - 'docs/biome.json'
       - 'docs/package.json'
       - 'docs/bun.lock'
-      # Per-language sources for Mago / Ruff / cargo
       - 'src/layer1_wasm/**/*.php'
       - 'src/layer1_wasm/**/*.py'
       - 'src/layer1_wasm/**/*.rs'
       - 'src/layer1_wasm/**/Cargo.toml'
       - 'src/layer1_wasm/**/Cargo.lock'
       - 'docs/scripts/**/*.py'
-      # Catch-alls for Tombi / rumdl
       - '**/*.toml'
       - '**/*.md'
-      # Tooling configs
       - 'mago.toml'
       - 'ruff.toml'
       - 'tombi.toml'
@@ -67,10 +43,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Single-step install of every lint tool plus the Rust toolchain
-      # via mise. `mise install` reads `mise.toml`, materialises every
-      # entry, and adds them to PATH. Versions in mise.toml are the
-      # source of truth; a tool bump = one mise.toml edit.
       - name: Setup mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
@@ -78,26 +50,10 @@ jobs:
           cache: true
           experimental: true
 
-      # `jdx/mise-action`'s cache only persists
-      # `~/.local/share/mise/installs`, not `~/.rustup`. On a cache
-      # miss, mise install runs `rustup component add` / `rustup
-      # target add` per the mise.toml directives and they land in
-      # `~/.rustup`. On a cache hit, mise install is a no-op (the
-      # rust symlink is already present), so the components AND
-      # the wasm target are absent — `cargo fmt` fails with
-      # `'cargo-fmt' is not installed for the toolchain`, and
-      # `cargo clippy --target wasm32-wasip1` fails with
-      # `can't find crate for 'core' — the wasm32-wasip1 target may
-      # not be installed`. Re-add both explicitly so cache-hit and
-      # cache-miss runs converge. `RUSTUP_TOOLCHAIN` is already
-      # exported by the mise setup step.
       - name: Ensure Rust components and target (mise post-install)
         run: |
           rustup component add rustfmt clippy
           rustup target add wasm32-wasip1
 
-      # `mise run ci:lint` chains php:check, python:check, toml:check,
-      # markdown:check, rust:check (cargo fmt --check + clippy -D
-      # warnings). Any failure is reported as a CI error.
       - name: Run polyglot lint
         run: mise run ci:lint

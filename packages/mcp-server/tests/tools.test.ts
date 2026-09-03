@@ -1,6 +1,3 @@
-// Tool-level smoke tests. Stub fetch with a fixture catalogue and
-// exercise list_recipes / get_recipe / lookup_verdict's branching.
-
 import { afterEach, beforeEach, describe, it } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { writeFileSync } from 'node:fs';
@@ -294,8 +291,6 @@ describe('match_error', () => {
   });
 
   it('does not fuzzy-match short tokens (length < 6)', async () => {
-    // 'dtype' is 5 chars, below FUZZY_MIN_LEN. A typo "dtyp" must NOT
-    // accidentally match — would be too noisy.
     const r = await matchError({ text: 'pandas dtyp error' });
     if ('ok' in r && r.ok && r.matches.length > 0) {
       const dtypeFuzzy = r.matches[0]!.matched.find(
@@ -306,14 +301,11 @@ describe('match_error', () => {
   });
 
   it('drops German stopwords ("der", "fehler") so they cannot match accidentally', async () => {
-    // "fehler" is added to the German stopword set; it must not appear
-    // as a query token even though it would otherwise pass length / regex.
     const r = await matchError({
       text: 'der fehler ist ein dtype mismatch',
     });
     assert.equal('ok' in r && r.ok, true);
     if ('ok' in r && r.ok) {
-      // Should still match pandas via the surviving tokens.
       assert.equal(r.matches[0]!.recipe.slug, 'pandas-56679');
       assert.ok(
         r.matches[0]!.matched.every((m) => m.token !== 'fehler'),
@@ -329,7 +321,6 @@ describe('match_error', () => {
         (m) => m.token === 'dtype' && m.source === 'symptom',
       );
       assert.ok(exactSymptom);
-      // Direct exact hit — `via` and `input` must be absent.
       assert.equal(exactSymptom!.via, undefined);
       assert.equal(exactSymptom!.input, undefined);
     }
@@ -402,7 +393,6 @@ describe('verify_branch_fix', () => {
       const u = new URL(r.compare_url);
       const fix = u.searchParams.get('fix');
       assert.ok(fix, 'fix param should be present');
-      // Decode and check.
       const padded = fix!.replace(/-/g, '+').replace(/_/g, '/');
       const padLen = (4 - (padded.length % 4)) % 4;
       const b64 = padded + '='.repeat(padLen);
@@ -523,8 +513,6 @@ describe('computeNextAction (state machine)', () => {
   });
 
   it('returns manual_intervention when status=blocked, even if verdicts look verified', () => {
-    // status: blocked is a tombstone — automation must stop until a
-    // human resolves it, regardless of how progressed other fields look.
     assert.equal(
       computeNextAction({
         status: 'blocked',
@@ -712,9 +700,6 @@ describe('verify_and_report_fix', () => {
       assert.equal(r.next_action, 'open_fork_pr');
       const ghCmd = r.commands.find((c) => c.startsWith('gh pr create'));
       assert.ok(ghCmd, 'open_fork_pr commands should contain a gh pr create line');
-      // The PR's base repo MUST be the upstream owner/repo derived from
-      // upstream_issue, not the contributor's fork. --head still points
-      // at the fork's branch.
       assert.match(ghCmd!, /--repo pandas-dev\/pandas/);
       assert.match(ghCmd!, /--head JamBalaya56562:fix-issue-56679/);
       assert.ok(
@@ -825,8 +810,6 @@ describe('verify_and_report_fix auto-execute (Phase 3)', () => {
       assert.equal(r.executed?.ok, true);
       assert.equal(r.executed?.source, 'layer1-headless');
       assert.equal(r.verdicts.unfixed?.verdict, 'reproduced');
-      // After capturing unfixed=reproduced, the next action becomes
-      // verify_fixed (the state machine advanced one step).
       assert.equal(r.next_action, 'verify_fixed');
     }
   });
@@ -870,10 +853,6 @@ describe('verify_and_report_fix auto-execute (Phase 3)', () => {
   });
 
   it('Layer 3 + verify_fixed → executed.ok=false (workflow does not yet support Layer 3)', async () => {
-    // lost-update is Layer 3. Force the state machine to verify_fixed
-    // by supplying an unfixed=reproduced verdict, then check the
-    // executor rejects with an informative error rather than dispatching
-    // a workflow that would fail inside branch-fix-verdict.yml.
     let ghCalled = false;
     _setLayer23GhRunnerForTesting(() => {
       ghCalled = true;
@@ -939,9 +918,6 @@ describe('verify_and_report_fix auto-execute (Phase 3)', () => {
   });
 
   it('open_*_pr / complete / manual_intervention next actions skip execution', async () => {
-    // status=blocked → manual_intervention. auto_execute=true should
-    // NOT trigger any spawn/gh call because those actions are not
-    // executable verify steps.
     let spawnCalled = false;
     _setSpawnRunnerForTesting(() => {
       spawnCalled = true;
@@ -1115,7 +1091,6 @@ describe('run_layer23_verdict', () => {
 
   it('mode=fixed → dispatches workflow, polls, downloads artefact', async () => {
     _setSleeperForTesting(async () => {
-      /* skip waits */
     });
 
     let viewCount = 0;
@@ -1133,9 +1108,6 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 9999,
               status: 'queued',
-              // Resolved at mock-call time so the post-dispatch cutoff
-              // (Date.now() - 5s clock-drift buffer) always sits *before*
-              // this timestamp regardless of when the test suite runs.
               createdAt: new Date().toISOString(),
             },
           ]),
@@ -1144,7 +1116,6 @@ describe('run_layer23_verdict', () => {
       }
       if (cmd === 'run' && sub === 'view') {
         viewCount++;
-        // First poll: still running. Second poll: completed.
         if (viewCount === 1) {
           return {
             status: 0,
@@ -1210,13 +1181,8 @@ describe('run_layer23_verdict', () => {
 
   it('mode=fixed → picks the post-dispatch run when older runs precede it', async () => {
     _setSleeperForTesting(async () => {
-      /* skip waits */
     });
 
-    // gh run list returns 3 runs: two created before dispatch (stale)
-    // and one created after. The implementation must filter by
-    // createdAt and pick the post-dispatch one — NOT the most recent
-    // overall (which would be `runs[0]`, an older queued run).
     _setLayer23GhRunnerForTesting((args) => {
       const cmd = args[0];
       const sub = args[1];
@@ -1279,15 +1245,12 @@ describe('run_layer23_verdict', () => {
     });
     assert.equal(r.ok, true);
     if (r.ok) {
-      // 3333 is the only post-dispatch run; the older 1111 / 2222
-      // must be ignored even though they appear first in the list.
       assert.equal(r.workflow_run_id, 3333);
     }
   });
 
   it('mode=fixed → ok:false when every returned run pre-dates the dispatch', async () => {
     _setSleeperForTesting(async () => {
-      /* skip waits */
     });
 
     _setLayer23GhRunnerForTesting((args) => {
@@ -1298,7 +1261,6 @@ describe('run_layer23_verdict', () => {
       }
       if (cmd === 'run' && sub === 'list') {
         const now = Date.now();
-        // All runs are well before the dispatch + 5s buffer cutoff.
         return {
           status: 0,
           stdout: JSON.stringify([
@@ -1335,7 +1297,6 @@ describe('run_layer23_verdict', () => {
 
   it('mode=fixed → reports workflow timeout when polling deadline elapses', async () => {
     _setSleeperForTesting(async () => {
-      /* skip waits */
     });
 
     _setLayer23GhRunnerForTesting((args) => {
@@ -1351,8 +1312,6 @@ describe('run_layer23_verdict', () => {
             {
               databaseId: 7777,
               status: 'queued',
-              // Resolved at mock-call time — see the parallel happy-path
-              // test above for the rationale.
               createdAt: new Date().toISOString(),
             },
           ]),
@@ -1360,7 +1319,6 @@ describe('run_layer23_verdict', () => {
         };
       }
       if (cmd === 'run' && sub === 'view') {
-        // Always still running — drives the loop to timeout.
         return {
           status: 0,
           stdout: JSON.stringify({
@@ -1425,7 +1383,6 @@ describe('prepare_new_recipe', () => {
         'feat(layer2): node-63041 reproduction (...)',
       );
       assert.ok(r.next_steps.length > 0);
-      // roundtrip_init for the scaffold-recipe-from-issue skill to write.
       assert.equal(r.roundtrip_init.schema_version, 1);
       assert.equal(r.roundtrip_init.slug, 'node-63041');
       assert.equal(
@@ -1483,8 +1440,6 @@ describe('prepare_new_recipe', () => {
   });
 
   it('rejects slugs that the recipes-index parser would not resolve', async () => {
-    // Underscore is not in [a-z0-9-]+ for the slug parser; "my_proj"
-    // produces an unparseable slug.
     const r = await prepareNewRecipe({
       project: 'my_proj',
       issue: 63041,
@@ -1606,7 +1561,6 @@ describe('prepare_fix_candidate', () => {
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.fix_candidate_json.upstream_pr, undefined);
-      // PR body should not have an "Upstream PR:" line either.
       assert.equal(r.pr_body.includes('Upstream PR:'), false);
     }
   });
@@ -1704,8 +1658,6 @@ describe('prepare_fix_candidate', () => {
 });
 
 describe('search_upstream_issues', () => {
-  // Build a gh-runner stub returning a fixture issue list. Returns the
-  // last captured argv so tests can assert how gh was invoked.
   function stubGh(
     issues: unknown[],
     overrides: Partial<GhRunResult> = {},
@@ -1741,7 +1693,6 @@ describe('search_upstream_issues', () => {
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.repo, 'nodejs/node');
-      // gh was called with --repo nodejs/node
       const repoIdx = capturedArgs[0]!.indexOf('--repo');
       assert.ok(repoIdx >= 0);
       assert.equal(capturedArgs[0]![repoIdx + 1], 'nodejs/node');
@@ -1772,9 +1723,6 @@ describe('search_upstream_issues', () => {
   });
 
   it('strict policy appends `-linked:pr` after a `--` separator', async () => {
-    // Without `--`, gh parses `-linked:pr` as a flag and fails with
-    // `unknown shorthand flag: 'l' in -linked:pr`. The separator
-    // forces the rest of argv to be treated as the search query.
     const { capturedArgs } = stubGh([]);
     await searchUpstreamIssues({ repo: 'nodejs/node' });
     const argv = capturedArgs[0]!;
@@ -1805,8 +1753,6 @@ describe('search_upstream_issues', () => {
     if (r.ok) {
       assert.equal(r.selection_policy, 'permissive');
       assert.equal(r.matches[0]!.has_pr, undefined);
-      // No `-linked:pr` qualifier anywhere in argv; the `--` separator
-      // also has nothing to guard, so it should be absent too.
       const argv = capturedArgs[0]!;
       assert.ok(
         !argv.some((a) => /-linked:pr/.test(a)),
@@ -1842,15 +1788,11 @@ describe('search_upstream_issues', () => {
       assert.equal(m.posted_at, '2026-05-12T03:00:00Z');
       assert.deepEqual(m.labels, ['bug', 'i18n']);
       assert.equal(m.has_pr, false);
-      // body should be truncated to <= 500 chars
       assert.ok(m.body_snippet.length <= 500);
     }
   });
 
   it('strict policy drops cross-repo matches whose repository is in exclude_repos', async () => {
-    // Search runs against `example-org/main-repo` but a result is from
-    // `example-org/skip-me` (e.g. the user passed an `org:` query
-    // qualifier). Caller-supplied exclude_repos must drop it.
     stubGh([
       {
         number: 1,
@@ -1891,13 +1833,10 @@ describe('search_upstream_issues', () => {
     ]);
     const r = await searchUpstreamIssues({
       repo: 'example-org/main-repo',
-      // exclude_repos omitted — Vivarium ships no defaults
     });
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.count, 1);
-      // The exclude_repos note must NOT appear when no exclusions
-      // were supplied — Vivarium has no built-in list to mention.
       assert.ok(
         !r.notes.some((n) => /exclude_repos/.test(n)),
         'no exclude_repos note when none supplied',
@@ -1941,9 +1880,6 @@ describe('search_upstream_issues', () => {
 });
 
 describe('create_fork_pr', () => {
-  // A round-trip state that satisfies computeNextAction === 'open_fork_pr':
-  // verdicts are captured with the right polarity, the Vivarium-side PR is
-  // already open, no upstream PR yet, status is not blocked / merged.
   const verifiedState = {
     upstream_issue: 'https://github.com/pandas-dev/pandas/issues/56679',
     vivarium_pr: 'https://github.com/aletheia-works/vivarium/pull/200',
@@ -2128,7 +2064,6 @@ describe('create_fork_pr', () => {
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.match(r.body, /Vivarium round-trip automation/);
-      // No leading blank line when the caller body is empty.
       assert.ok(!r.body.startsWith('\n'));
     }
   });
@@ -2240,8 +2175,6 @@ describe('create_fork_pr', () => {
       assert.match(r.body, /Vivarium round-trip automation/);
     }
 
-    // gh pr create call must include --draft, must NOT include --label,
-    // and must target the upstream repo with fork head.
     const createCall = calls.find((a) => a[0] === 'pr' && a[1] === 'create');
     assert.ok(createCall, 'expected a gh pr create call');
     assert.ok(createCall!.includes('--draft'));
@@ -2253,7 +2186,6 @@ describe('create_fork_pr', () => {
     assert.equal(createCall![repoIdx + 1], 'pandas-dev/pandas');
     const headIdx = createCall!.indexOf('--head');
     assert.equal(createCall![headIdx + 1], 'JamBalaya56562:fix-issue-56679');
-    // Body sent to gh must already include the authorship footer.
     const bodyIdx = createCall!.indexOf('--body');
     assert.match(createCall![bodyIdx + 1]!, /Vivarium round-trip automation/);
   });

@@ -1,26 +1,3 @@
-// Vivarium Layer 1 reproduction — python/cpython#137205.
-//
-// `PRAGMA foreign_keys = ON` is silently a no-op when issued on a
-// `sqlite3.Connection` opened with `autocommit=False`:
-//   off = sqlite3.connect(":memory:", autocommit=False)
-//   off.execute("PRAGMA foreign_keys = ON")  # <-- silently dropped
-//   on  = sqlite3.connect(":memory:", autocommit=True)
-//   on.execute("PRAGMA foreign_keys = ON")   # <-- takes effect
-//   off.execute("PRAGMA foreign_keys").fetchone()[0]  # => 0
-//   on.execute("PRAGMA foreign_keys").fetchone()[0]   # => 1
-// The two connections should agree on whether FK enforcement is on.
-//
-// Verdict semantics (per ADR-0008 / contract v1):
-//   - "reproduced" — the bug REPRODUCES (the two connections disagree).
-//   - "unreproduced" — the bug does NOT reproduce (the runtime ships a fix,
-//     or the runtime errored before producing a result).
-//
-// After the baseline run, the recipe enables `enableRunner({...})` so
-// visitors can edit the script and re-run via the Run button. The
-// captured-run shape uses the same
-// `PathACapturedRun` interface Path A uses, so a single `captureRun`
-// adapter feeds both the runner and (when applicable) the Path A panel.
-
 import { loadVivariumPyodide } from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
 import { enableRunner } from '../_shared/runner.js';
@@ -78,10 +55,6 @@ if (!outputEl || !metaEl || !reproCodeEl) {
   );
 }
 
-// Build-time inlining (`scripts/highlight-repros.ts`) populates this
-// element in `index.html` with the syntax-highlighted source spans,
-// so the page paints the code at HTML-parse time. The runtime
-// fallback below kicks in only when the placeholder is still empty.
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -139,9 +112,6 @@ async function captureRun(
 const startedAt = new Date();
 
 try {
-  // sqlite3 is unvendored from the Python stdlib in the Pyodide
-  // distribution and ships as a separately-loadable package; preload
-  // it alongside the runtime bootstrap.
   const { pyodide, version } = await loadVivariumPyodide({
     packages: ['sqlite3'],
     pendingText: 'Loading Pyodide runtime and sqlite3…',
@@ -155,9 +125,6 @@ try {
   try {
     baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
   } catch {
-    // baseline failed before producing parseable JSON — surface the raw
-    // message in the output panel and stop short of trying to populate
-    // the meta line / verdict envelope.
     outputEl.textContent = baseline.stdout;
     setVerdict(baseline.verdict, baseline.message);
     throw new Error(baseline.message);
@@ -198,8 +165,6 @@ try {
   };
   setResult(envelope);
 
-  // The runner mounts itself around the existing #repro-code <pre>, so no
-  // additional mount point is required in the recipe HTML.
   enableRunner({
     slug: 'cpython-137205',
     baselineSource: REPRO_CODE,

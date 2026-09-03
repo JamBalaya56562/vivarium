@@ -1,24 +1,4 @@
 #!/usr/bin/env bun
-//
-// Aggregates a small set of "headline numbers" the docs site references
-// (currently: total recipes, distinct execution layers, MCP tool count)
-// into docs/site/_generated/site-stats.json. Run after
-// generate-recipes-index.ts so the recipe figure stays in lock-step with
-// docs/site/public/api/recipes.json.
-//
-// Why this exists: the roadmap page used to hard-code these counts, so
-// every recipe or MCP tool added required a parallel doc edit and was
-// silently easy to forget. The JSON written here is imported by the
-// roadmap MDX pages (EN / JA) and any future page that needs the same
-// figures.
-//
-// Sources of truth:
-//   - recipes / layers : docs/site/public/api/recipes.json (generated upstream)
-//   - mcpTools         : packages/mcp-server/src/tools/*.ts file count
-//   - locales          : docs/site/<locale>/ directory count
-//
-// The output is gitignored and regenerated before dev/build so recipe PRs do
-// not need to carry derivative stats churn.
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

@@ -8,11 +8,6 @@ const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer2_docker'),
   path.join(REPO_ROOT, 'src', 'layer3_thirdway'),
 ];
-// Matches both locales: `/vivarium/repro/<sub>` and
-// `/vivarium/ja/repro/<sub>`. The optional `ja` group is captured so the
-// handler knows which page variant to serve; everything after `/repro/`
-// resolves identically in both, because the JA page is a sibling file
-// (`index.ja.html`) in the same recipe directory, not a second tree.
 const REPRO_URL_RE = new RegExp(
   `^${escapeRegExp(SITE_BASE.replace(/\/$/, ''))}(?:/(ja))?/repro/([^?#]*)(?:[?#].*)?$`,
 );
@@ -41,20 +36,12 @@ interface MiddlewareHost {
   };
 }
 
-// Resolve a /repro/<sub> URL path to an absolute file under one of
-// src/layer{1,2,3}_*. Canonical recipe URLs use
-// /repro/<project>/<issue_path>/..., while underscore-prefixed shared
-// scaffolding remains flat under /repro/_*/...
-//
-// Exported so docs/scripts/__tests__/resolveReproFile.test.ts can verify
-// each branch without spinning up the dev middleware.
 export function resolveReproFile(
   rawSubpath: string,
   lang: 'en' | 'ja' = 'en',
 ): string | null {
   const subpath = rawSubpath || '';
 
-  // Trailing-slash directory URL -> index.html lookup.
   let trailingFile = '';
   let lookupPath = subpath;
   if (lookupPath === '' || lookupPath.endsWith('/')) {
@@ -64,18 +51,12 @@ export function resolveReproFile(
 
   const segments = lookupPath === '' ? [] : lookupPath.split('/');
 
-  // Build the list of candidate disk-relative paths to try, in order.
   const candidates: string[] = [];
   if (segments.length === 0) {
-    // Bare `/repro/` -> fall through (no candidate).
   } else if (segments[0]?.startsWith('_')) {
-    // Shared scaffolding -> keep flat lookup.
     candidates.push(joinDisk(segments, trailingFile));
   } else if (segments.length === 1) {
-    // Project landing (`/repro/<project>/`) -> fall through to rspress.
   } else {
-    // Multi-segment -> try the prefix-style slug first, then the
-    // override-style slug.
     const project = segments[0]!;
     const issuePath = segments[1]!;
     const rest = segments.slice(2);
@@ -101,16 +82,6 @@ export function resolveReproFile(
   return null;
 }
 
-/**
- * Swap a resolved `index.html` for its generated `index.ja.html` sibling
- * when the request came in under `/ja/`.
- *
- * An untranslated recipe falls back to the English page rather than
- * 404-ing: in dev that keeps a half-finished translation pass usable,
- * and the strict EN/JA coverage check lives in the unit suite where it
- * names the missing file. Deploy never reaches this path — it only
- * copies `index.ja.html` files that exist.
- */
 function localise(filePath: string, lang: 'en' | 'ja'): string {
   if (lang !== 'ja' || !filePath.endsWith('index.html')) return filePath;
   const ja = filePath.replace(/index\.html$/, 'index.ja.html');
@@ -131,8 +102,6 @@ function joinDisk(segments: string[], trailingFile: string): string {
 export function setupReproDevMiddleware(
   server: MiddlewareHost | null | undefined,
 ): void {
-  // Dev-only: preview/build do not need this path. Production deploy copies
-  // reproduction assets into doc_build/repro/ as plain static files.
   if (server == null) return;
   server.middlewares.use((req, res, next) => {
     const url = req.url ?? '';
@@ -142,8 +111,6 @@ export function setupReproDevMiddleware(
     const subpath = match[2] ?? '';
     const filePath = resolveReproFile(subpath, lang);
     if (!filePath) {
-      // Directory-shaped or extensionless URLs are rspress routes. Asset
-      // URLs must 404 here so the SPA shell is not served as wasm/JSON/JS.
       if (subpath === '' || subpath.endsWith('/')) {
         return next();
       }
@@ -166,7 +133,6 @@ export function setupReproDevMiddleware(
       REPRO_MIME[ext] ?? 'application/octet-stream',
     );
     res.setHeader('Cache-Control', 'no-store');
-    // `_shared/sw.js` needs to control the whole `/vivarium/repro/` tree.
     if (filePath.endsWith('sw.js')) {
       res.setHeader('Service-Worker-Allowed', `${REPRO_BASE_PATH}/`);
     }

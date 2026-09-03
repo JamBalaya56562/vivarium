@@ -1,18 +1,3 @@
-# Vivarium Layer 1 fix-candidate crate — rust-lang/regex#779.
-#
-# Same reproduction source as the baseline crate one directory up
-# (`../src/repro.rs`, included via `#[path]`), compiled against a
-# `regex` release that carries the fix. Builds to
-# `target/wasm32-wasip1/release/repro-fix.wasm`; `mise run
-# repro:build:rust` copies it next to the recipe's `index.html`, where
-# the page fetches it for the "Fix-candidate output" pane.
-#
-# Why a second crate rather than a feature flag: Cargo resolves one
-# version per semver-compatible class, so `=1.8.4` and `=1.13.1` cannot
-# coexist in a single dependency graph. `--manifest-path` also insists
-# the file be named `Cargo.toml`, ruling out a sibling manifest inside
-# the baseline crate.
-
 [package]
 name = "regex-779-fix-candidate"
 version = "0.0.0"
@@ -24,16 +9,9 @@ name = "repro-fix"
 path = "src/main.rs"
 
 [dependencies]
-# The fix for upstream #779 landed with the new NFA compiler in regex
-# 1.9 (June 2023); 1.13.1 is the current release. Pinned exactly rather
-# than as a caret range: `Cargo.lock` is gitignored, so a range would
-# let CI resolve a different patch release than the version string
-# `src/main.rs` reports, and the page would name a build it did not run.
 regex = "=1.13.1"
 serde_json = "1.0.117"
 
-# Match the baseline crate's size tuning — this artefact ships over the
-# network on every page load, same as `repro.wasm`.
 [profile.release]
 opt-level = "z"
 strip = true

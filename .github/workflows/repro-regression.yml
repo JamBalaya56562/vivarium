@@ -1,56 +1,5 @@
 name: repro-regression
 
-# Regression test for the Layer 1 reproduction gallery.
-#
-# Runs the Playwright suite under `src/layer1_wasm/tests/` against a
-# locally-served copy of the gallery, asserting that each reproduction
-# page reaches its documented verdict and exposes the vivarium contract
-# v1 surface (DOM `#verdict[data-verdict]`, `__VIVARIUM_VERDICT__`,
-# `__VIVARIUM_RESULT__`, `<meta name="vivarium-contract">`).
-#
-# A `reproduced` verdict means the upstream bug still reproduces on
-# the bundled Pyodide build; an `unreproduced` verdict means either
-# the upstream project shipped a fix that Pyodide picked up, or the
-# runtime regressed. Either case is signal — the workflow turns it
-# into a loud red CI failure so a human can decide what to do
-# (retire the page, file an upstream-fix-detection Issue, etc.).
-#
-# Triggers:
-# - `push` to `main` touching Layer 1 sources / this workflow / the
-#   deploy workflow — fast feedback when contributors break things.
-# - `pull_request` touching the same paths — reviewers see the result
-#   on the PR.
-# - Weekly schedule — catches Pyodide-bundle drift even when the repo
-#   itself is quiet, so an upstream fix that lands a month after our
-#   last commit still surfaces within ~7 days.
-# - `workflow_dispatch` — manual trigger from the Actions tab.
-#
-# External manifest validation (every trigger):
-#
-# `src/external_examples/*/.vivarium/manifest.toml` are validated
-# against `docs/site/public/spec/manifest.schema.json` (Vivarium Manifest
-# v1; locked by ADR-0015). The workflow converts each TOML manifest
-# to JSON via Python's stdlib `tomllib` and runs ajv against the
-# JSON Schema. Phase 5 sub-stream C deliverable.
-#
-# Layer 2 verdict drift (schedule + workflow_dispatch only):
-#
-# A separate step at the end of the Layer 2 lane contrasts the
-# freshly-captured `verdict.json` against the verdict.json currently
-# published on GitHub Pages (i.e., the last green main deploy). A
-# divergence means the recipe's environment changed without the repo
-# changing — usually an upstream package or base-image refresh — and
-# the workflow fails red so GitHub's native workflow-failure email
-# alerts the maintainer.
-#
-# The step is gated to `schedule` and `workflow_dispatch` because
-# `push` and `pull_request` are expected-drift triggers (the recipe
-# change is the point); the existing Playwright assertions cover
-# regression for those triggers. Layer 1 drift is covered by
-# Playwright as well. Layer 3 cannot capture in CI per ADR-0011, so
-# no drift step exists there — the committed snapshot is the source
-# of truth and is already shape-checked.
-
 on:
   push:
     branches: [main]
@@ -74,7 +23,6 @@ on:
       - '.github/workflows/deploy-docs.yml'
       - 'mise.toml'
   schedule:
-    # Mondays at 00:00 UTC.
     - cron: '0 0 * * 1'
   workflow_dispatch:
 
@@ -87,11 +35,6 @@ concurrency:
 
 jobs:
   regression:
-    # One runner per browser engine so each Playwright project gets
-    # its own Pyodide memory budget (~1 GB resident with the heavier
-    # recipes); a single runner exercising all three serially would
-    # OOM. `fail-fast: false` lets each browser run to completion
-    # even if a sibling fails — flaky engines stay isolated.
     name: regression (${{ matrix.browser }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -106,10 +49,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup mise (bun)
-        # Installs bun through mise. The Rust toolchain that
-        # `repro:build:rust` needs auto-installs on first `mise run`
-        # from mise.toml, which stays the single place a toolchain
-        # version is written down.
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
@@ -118,47 +57,15 @@ jobs:
           install_args: bun
 
       - name: Install ajv-cli for verdict schema validation
-        # Single-source clause 4 of the contract v1 conformance check
-        # (`docs/site/public/spec/verdict.schema.json`) by validating every
-        # generated / tracked `verdict.json` with ajv-cli below, instead
-        # of the historical `jq -e` predicate. Both Layer 2 (CI-built,
-        # CI-snapshot) and Layer 3 (maintainer-tracked) verdict files
-        # share the same schema.
-        #
-        # Installed into a workflow-local `$RUNNER_TEMP` node_modules so
-        # the CLI's `-c ajv-formats` plugin loader resolves both as
-        # siblings under the same tree — without depending on bun's
-        # global bin being on PATH (`oven-sh/setup-bun` adds it,
-        # mise-installed bun does not), and without leaking ajv into
-        # the repo's tracked package.jsons.
-        #
-        # The same ajv install is also reused below for the Phase 5
-        # sub-stream C manifest schema validation (manifest.schema.json
-        # against `src/external_examples/*/.vivarium/manifest.toml` after
-        # a TOML→JSON conversion via Python's stdlib `tomllib`).
         run: |
           BUN="$(mise which bun)"
           cd "$RUNNER_TEMP"
           "$BUN" init -y >/dev/null
           "$BUN" add ajv-cli@5 ajv-formats
-          # Both forms — `$AJV_BIN` for explicit yaml callers, and the
-          # bin dir on `$GITHUB_PATH` so shell scripts (e.g.
-          # `scripts/capture_layer2_verdict.sh`) can call `ajv` directly
-          # without knowing about this install location.
           echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Validate external manifest examples (manifest v1)
-        # Phase 5 sub-stream C (ADR-0015, private memo). Each
-        # `src/external_examples/*/.vivarium/manifest.toml` is converted
-        # to JSON via Python stdlib `tomllib` (Python 3.11+; preinstalled
-        # on `ubuntu-latest`) and validated against
-        # `docs/site/public/spec/manifest.schema.json`. Schema mismatch fails
-        # the workflow loudly so the spec page and the reference
-        # examples stay in lockstep.
-        #
-        # Skipped silently when the directory is absent (early-bootstrap
-        # state) or empty.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -196,34 +103,12 @@ jobs:
           echo "All ${#manifests[@]} external manifest example(s) validated against manifest v1 schema."
 
       - name: Type-check + build Layer 1 (TS + Rust wasm)
-        # Single mise call wraps:
-        #   - `bun install --frozen-lockfile` in src/layer1_wasm
-        #   - `bun run typecheck`
-        #   - `bun run build` (TypeScript -> .js next to each repro)
-        #   - `rustup target add wasm32-wasip1` + `cargo build` for
-        #     every Cargo.toml found, copying repro.wasm into place.
-        # See [tasks."repro:typecheck"], [tasks."repro:build"] in
-        # mise.toml — the same commands a contributor runs locally.
         working-directory: ${{ github.workspace }}
         run: |
           mise run repro:typecheck
           mise run repro:build
 
       - name: Build, run, and snapshot Layer 2 Docker reproductions (no push)
-        # Mirrors the deploy-docs Layer 2 build/run/verdict step but
-        # skips GHCR login + image push (those are deploy-time
-        # concerns). The `verdict.json` snapshot is written so the
-        # Playwright suite below — which loads each Layer 2 page from
-        # the auto-started Layer 2 webServer — can read CI's actual
-        # capture rather than fall through to "verdict snapshot
-        # unavailable: HTTP 404" and report `unreproduced`.
-        #
-        # The capture itself is delegated to
-        # `scripts/capture_layer2_verdict.sh`, which is also the
-        # single source for the Phase 6 R.2 branch-fix verdict
-        # workflow at `.github/workflows/branch-fix-verdict.yml`.
-        #
-        # Skipped silently when there are no Layer 2 reproductions.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -231,10 +116,6 @@ jobs:
           for dockerfile in src/layer2_docker/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
-            # Skip underscore-prefixed sentinels (e.g. `_template/`,
-            # `_layer2-shared/`). They are not real recipes — same
-            # convention the recipes-index walker follows in
-            # docs/scripts/generate-recipes-index.ts.
             case "$slug" in _*) continue ;; esac
             tag="vivarium-${slug}:test"
             echo "Building Layer 2 image for regression: ${slug}"
@@ -247,11 +128,6 @@ jobs:
             verdict=$(jq -r '.verdict' "${slug_dir}/verdict.json")
             exit_code=$(jq -r '.exit_code' "${slug_dir}/verdict.json")
 
-            # `reproduced`-expected for now. A future
-            # `unreproduced`-expected sentinel page would need the
-            # Playwright spec to flag it, which we check there, not
-            # here — the regression-suite step just records the
-            # verdict honestly.
             if [ "$exit_code" -ne 0 ]; then
               echo "::warning::Layer 2 reproduction ${slug} exited ${exit_code}; downstream Playwright step will assert verdict expectations"
             fi
@@ -259,28 +135,6 @@ jobs:
           done
 
       - name: Detect Layer 2 verdict drift vs deployed Pages snapshot
-        # Phase 5 sub-stream A' (ADR-0013, private memo). Compares the
-        # `verdict.json` we just captured against the one currently
-        # published on GitHub Pages. A divergence on the weekly cron
-        # (or a manual `workflow_dispatch`) means the recipe is
-        # behaving differently than it did at last green-main deploy
-        # while no commit landed in between — i.e., upstream/runtime
-        # drift the maintainer needs to look at.
-        #
-        # `push` / `pull_request` are intentionally not covered: those
-        # are expected-drift triggers (a PR's whole point may be to
-        # change the verdict), and the Playwright step further down
-        # already turns recipe regression into a red CI failure for
-        # those triggers via the per-page expected verdict.
-        #
-        # Failure modes:
-        # - HTTP 200 + verdict differs       → `::error::` + fail.
-        # - HTTP 404 (recipe not yet on
-        #   Pages, e.g. just-added recipe)   → info, skip.
-        # - HTTP 5xx / DNS / timeout         → `::warning::`, skip
-        #                                      (transient CDN flake
-        #                                      should not raise a
-        #                                      false drift alarm).
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ github.workspace }}
         run: |
@@ -292,12 +146,6 @@ jobs:
           tmp_deployed="$(mktemp)"
           trap 'rm -f "$tmp_deployed"' EXIT
 
-          # The deployed verdict URL is read from each recipe's
-          # `verdict_url` field in the committed `recipes.json`
-          # (regenerated by `mise run recipes:index` whenever the
-          # catalogue changes). Reading the URL from the index keeps
-          # the regression check in lockstep with whatever URL shape
-          # the catalogue currently publishes.
           for vf in src/layer2_docker/*/verdict.json; do
             slug="$(basename "$(dirname "$vf")")"
             case "$slug" in _*) continue ;; esac
@@ -352,18 +200,6 @@ jobs:
           fi
 
       - name: Build Layer 3 rr-replay reproductions (no run, no push)
-        # Layer 3 cannot run replay in CI — Azure Hyper-V exposes
-        # neither the PMU (record) nor CPUID faulting (cross-CPU
-        # replay) to GHA hosted runners; see
-        # `src/layer3_thirdway/README.md` and ADR-0011. CI's job is
-        # reduced to verifying the Dockerfile still builds (catches
-        # base-image / package / `ADD <trace.url>` drift) and that
-        # the committed `verdict.json` snapshot conforms to the
-        # contract. The verdict snapshot itself is generated locally
-        # by the maintainer at recording time and is the source of
-        # truth.
-        #
-        # Skipped silently when there are no Layer 3 reproductions.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
@@ -371,10 +207,6 @@ jobs:
           for dockerfile in src/layer3_thirdway/*/Dockerfile; do
             slug_dir="$(dirname "$dockerfile")"
             slug="$(basename "$slug_dir")"
-            # Symmetric with the Layer 2 loop above: skip underscore-
-            # prefixed sentinels (e.g. a future `_template/` or
-            # `_layer3-shared/`). No Layer 3 sentinel exists today,
-            # but the convention is enforced for forward safety.
             case "$slug" in _*) continue ;; esac
             tag="vivarium-${slug}:test"
 
@@ -383,9 +215,6 @@ jobs:
               echo "::error::Layer 3 recipe ${slug} is missing tracked verdict.json"
               exit 1
             fi
-            # Schema-validate the tracked verdict.json against the
-            # contract v1 schema. Replaces the historical `jq -e`
-            # predicate; ajv reports the offending field on failure.
             "$AJV_BIN" validate \
               --spec=draft2020 \
               -c ajv-formats \
@@ -404,15 +233,9 @@ jobs:
           done
 
       - name: Install Playwright browser (${{ matrix.browser }})
-        # `--with-deps` brings in the system libraries the engine
-        # needs. Each matrix slot installs only its own browser.
         run: bunx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run Playwright regression suite (${{ matrix.browser }})
-        # `playwright.config.ts` auto-starts `python -m http.server`
-        # on the layer1 root, so the test cases can hit
-        # `/_shared/_test/`, `/pandas-56679/`, `/numpy-28287/`.
-        # `--project=<name>` selects the matrix slot's browser.
         run: bun run test -- --project=${{ matrix.browser }}
         env:
           CI: 'true'
@@ -421,8 +244,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          # Browser name in the artefact prevents one matrix slot from
-          # clobbering another's report when multiple slots fail.
           name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
           path: src/layer1_wasm/playwright-report/
           retention-days: 14

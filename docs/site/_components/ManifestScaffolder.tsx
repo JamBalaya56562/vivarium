@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import validateManifestRaw from '../_generated/validators/manifest-validator.mjs';
 import './manifest-scaffolder.css';
 
-// Validation uses the generated AJV validator from docs/site/public/spec/manifest.schema.json.
-
 type Lang = 'en' | 'ja';
 type LayerLiteral = 1 | 2 | 3;
 type ExpectedVerdict = '' | 'reproduced' | 'unreproduced';
@@ -66,7 +64,6 @@ function buildCandidate(state: FormState): Record<string, unknown> {
   } else if (/^\d+$/.test(state.bug.issue)) {
     bug.issue = Number(state.bug.issue);
   } else {
-    // Non-numeric input — leave as-is so ajv can report a type error.
     bug.issue = state.bug.issue;
   }
   if (state.bug.upstream_url) bug.upstream_url = state.bug.upstream_url;
@@ -97,9 +94,6 @@ function buildCandidate(state: FormState): Record<string, unknown> {
   return candidate;
 }
 
-// Translate ajv `instancePath` (e.g. "/bug/upstream_url") + the optional
-// `params.missingProperty` for `required` errors into the dotted field
-// keys the UI map uses (e.g. "bug.upstream_url").
 function ajvErrorToFieldKey(err: AjvErrorObject): string {
   const base = err.instancePath.replace(/^\//, '').replaceAll('/', '.');
   if (
@@ -113,8 +107,6 @@ function ajvErrorToFieldKey(err: AjvErrorObject): string {
   return base;
 }
 
-// Map ajv keywords to short UI-friendly messages. Falls back to ajv's
-// default `message` when the keyword is not specifically handled.
 function humanizeAjvError(err: AjvErrorObject): string {
   switch (err.keyword) {
     case 'required':
@@ -140,9 +132,6 @@ function humanizeAjvError(err: AjvErrorObject): string {
   }
 }
 
-// Errors emitted only because the schema's per-layer `oneOf` branch
-// rejected a non-active layer. Hide these from the UI — the active
-// layer's own required/pattern errors are still surfaced.
 function isOneOfBranchNoise(err: AjvErrorObject): boolean {
   if (err.keyword === 'oneOf') return true;
   if (err.keyword === 'not') return true;
@@ -151,16 +140,9 @@ function isOneOfBranchNoise(err: AjvErrorObject): boolean {
 }
 
 function validate(state: FormState): FieldErrors {
-  // Pre-ajv guard: layer is the only field whose absence cannot be
-  // signalled via "candidate.layer omitted" (ajv would just say the
-  // root needs `layer`, with an empty instancePath). Surfacing it as a
-  // field error here keeps the UI consistent with the previous
-  // behaviour.
   if (state.layer == null) {
     const candidateNoLayer = buildCandidate(state);
     const errors: FieldErrors = { layer: 'required' };
-    // Run ajv anyway so the user sees other field errors at the same
-    // time, but skip the root-level required error for `layer`.
     if (!validateManifest(candidateNoLayer)) {
       for (const err of validateManifest.errors ?? []) {
         if (isOneOfBranchNoise(err)) continue;
@@ -197,7 +179,6 @@ function escapeTomlBasic(value: string): string {
 
 function emitTomlString(value: string): string {
   if (value.includes('\n')) {
-    // Multi-line basic string: backslash and triple-quote still need escaping.
     const escaped = value.replace(/\\/g, '\\\\').replace(/"""/g, '\\"\\"\\"');
     return `"""\n${escaped}\n"""`;
   }
@@ -493,9 +474,7 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
       await navigator.clipboard.writeText(output);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked — user can select-and-copy from the <pre>. */
-    }
+    } catch {}
   };
 
   const download = () => {

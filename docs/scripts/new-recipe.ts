@@ -1,29 +1,5 @@
 #!/usr/bin/env bun
 
-//
-// Scaffold a new Layer 2 recipe directory from the template at
-// `src/layer2_docker/_template/`. Substitutes Mustache-style
-// placeholders (`{{SLUG}}`, `{{PROJECT}}`, `{{ISSUE}}`, `{{TITLE}}`,
-// `{{ISSUE_URL}}`, `{{BASE_IMAGE}}`) and prints next-steps.
-//
-// Usage (via mise — preferred):
-//   mise run recipes-new -- <project> <issue> [<title>] [--base <image>] [--repo <owner/repo>]
-//
-// Usage (direct):
-//   cd docs && bun run scripts/new-recipe.ts -- <project> <issue> [<title>]
-//
-// Examples:
-//   mise run recipes-new -- node 63041 "Intl.DateTimeFormat drops month with calendar:'iso8601'"
-//   mise run recipes-new -- python 149578 "tarfile fails on empty PAX TAR" --base python:3.15-rc-slim
-//   mise run recipes-new -- typescript 61717 "tsc --build --watch produces stray .js" \
-//                          --repo microsoft/TypeScript --base node:24-slim
-//
-// The script copies a placeholder `recipe.json` (with TODO-fill-in
-// fields) from the template, and intentionally does NOT touch
-// docs/site/_data/projects.json — both require human metadata judgement
-// (severity, symptom, tags, project tagline, homepage). The next-steps
-// banner reminds you to fill those values manually before committing.
-
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -52,8 +28,6 @@ function usage(msg?: string): never {
   process.exit(1);
 }
 
-// Pull `--flag value` pairs out of argv; return the remaining
-// positional arguments and the flag map.
 function parseFlags(
   argv: string[],
   flags: ReadonlySet<string>,
@@ -95,10 +69,6 @@ if (!Number.isFinite(issue) || issue <= 0)
 const title = titleParts.join(' ').trim() || `${project} #${issue}`;
 
 const slug = `${project}-${issue}`;
-// Guard against project names that the slug parser in
-// docs/scripts/generate-recipes-index.ts (parseSlug) would not
-// resolve cleanly. The regex below is the strict subset that
-// parses unambiguously to project + issue.
 if (!/^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*-\d+$/.test(slug)) {
   usage(
     `generated slug "${slug}" is not parseable. <project> must be ` +
@@ -107,9 +77,6 @@ if (!/^[a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*-\d+$/.test(slug)) {
   );
 }
 
-// Default upstream issue URL — typical convention is `<project>/<project>`
-// (e.g. nodejs/node, python/cpython is overridden, etc.). Override with
-// `--repo` when the canonical name differs.
 function defaultRepoFor(p: string): string {
   switch (p) {
     case 'node':

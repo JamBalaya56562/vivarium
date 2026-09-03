@@ -75,21 +75,7 @@
           - "src/layer2_docker/**"
           - "src/layer3_thirdway/**"
 
-# `type: *` labels are primarily set from the PR title's Conventional
-# Commits prefix by the inline title-parsing step in
-# .github/workflows/labeler.yml — `commitlint.yml` enforces that
-# prefix at PR open time, so the title is reliable.
-#
-# `type: docs` keeps a path-based fallback below: when every changed
-# file is markdown / docs, the path rule applies the label. The
-# title step still wins on conflicts (it removes any other `type: *`
-# before applying its own), so this is a fallback for the rare PR
-# that uses a non-`docs:` Conventional Commits type for a doc-only
-# change.
-
 "type: docs":
-  # `any-glob-to-all-files` (not `-any-file`): apply only when every
-  # changed file matches one of these doc patterns.
   - changed-files:
       - any-glob-to-all-files:
           - "**/*.md"

@@ -1,23 +1,8 @@
-// Path A regression suite for the php-12167 recipe:
-//  - Mounts after the baseline run completes.
-//  - Accepts a userland fix via the textarea + Run button and re-runs
-//    the substituted source through the same php-wasm runtime.
-//  - Captures a Contract v1 verdict bundle reflecting the substituted
-//    source's outcome.
-//  - Auto-triggers from `?fix=` (base64url) URL params.
-//
-// The Path A bundle is what /repro/compare consumes; this suite locks
-// the wire shape without depending on the docs site being up.
-
 import { expect, test, type Page } from "@playwright/test";
 
 const LAYER1 = "http://localhost:8767";
 const PHP_RECIPE = `${LAYER1}/php-12167/`;
 
-// A userland fix that sidesteps the SimpleXML PI string-cast bug by
-// parsing the PI content out of asXML() instead of casting the node
-// to string. With this fix, `pi_text` becomes "hello" and the recipe
-// page evaluates the run as `unreproduced`.
 const SIDESTEP_FIX = `<?php
 $xml = '<?xml version="1.0"?><foo><bar><?stylesheet hello ?></bar></foo>';
 $sxe = simplexml_load_string($xml);
@@ -39,10 +24,6 @@ echo json_encode([
 ]);
 `;
 
-// A "broken fix" — looks like a fix but still reproduces the bug. The
-// userland workaround tries to cast through a no-op intermediate, but
-// the bug is in (string) coercion of the PI node itself, so casting
-// twice reproduces the same emptiness.
 const BROKEN_FIX = `<?php
 $xml = '<?xml version="1.0"?><foo><bar><?stylesheet hello ?></bar></foo>';
 $sxe = simplexml_load_string($xml);
@@ -72,12 +53,9 @@ async function waitForBaselineVerdict(page: Page): Promise<void> {
 }
 
 async function runPathA(page: Page, source: string): Promise<void> {
-  // Wait for the panel to render — enablePathA awaits sha256Hex before
-  // mounting.
   await page.waitForSelector(".vh-path-a__heading", { timeout: 15_000 });
   await page.fill(".vh-path-a__textarea", source);
   await page.click(".vh-path-a__btn--primary");
-  // Wait for the second download row (branch) to appear.
   await page.waitForFunction(
     () =>
       document.querySelectorAll(".vh-path-a__download-row").length >= 2,
@@ -90,16 +68,12 @@ test("php-12167 Path A panel mounts after baseline run", async ({ page }) => {
   await page.goto(PHP_RECIPE);
   await waitForBaselineVerdict(page);
 
-  // Mount-point becomes visible (panel removes `hidden`) and the panel
-  // heading renders.
   const heading = page.locator(".vh-path-a__heading");
   await expect(heading).toBeVisible({ timeout: 15_000 });
 
-  // Original-side download row is present from the start.
   const rows = page.locator(".vh-path-a__download-row");
   await expect(rows).toHaveCount(1);
 
-  // Original verdict is `reproduced` (the bug fires by default).
   const originalVerdict = page.locator(
     ".vh-path-a__download-row .vh-path-a__verdict",
   );
@@ -113,7 +87,6 @@ test("php-12167 Path A — sidestep fix flips verdict to unreproduced", async ({
   await waitForBaselineVerdict(page);
   await runPathA(page, SIDESTEP_FIX);
 
-  // Two rows: original + branch. Original = reproduced, branch = unreproduced.
   const verdicts = page.locator(
     ".vh-path-a__download-row .vh-path-a__verdict",
   );
@@ -144,7 +117,6 @@ test("php-12167 Path A — captured branch-fix verdict matches Contract v1 shape
   await waitForBaselineVerdict(page);
   await runPathA(page, SIDESTEP_FIX);
 
-  // Read the branch-fix verdict from the download link's blob URL.
   const branchHref = await page
     .locator(".vh-path-a__download-link")
     .nth(1)
@@ -171,7 +143,6 @@ test("php-12167 Path A — captured branch-fix verdict matches Contract v1 shape
 });
 
 test("php-12167 Path A — ?fix=<base64url> auto-triggers", async ({ page }) => {
-  // base64url-encode the sidestep fix.
   const encoded = await page.evaluate((source: string) => {
     const bytes = new TextEncoder().encode(source);
     let bin = "";
@@ -185,7 +156,6 @@ test("php-12167 Path A — ?fix=<base64url> auto-triggers", async ({ page }) => 
   await page.goto(`${PHP_RECIPE}?fix=${encoded}`);
   await waitForBaselineVerdict(page);
 
-  // Wait for the branch row to populate via the URL-param auto-trigger.
   await page.waitForFunction(
     () =>
       document.querySelectorAll(".vh-path-a__download-row").length >= 2,

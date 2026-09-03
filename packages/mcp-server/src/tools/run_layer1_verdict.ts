@@ -1,13 +1,3 @@
-// Internal helper for `verify_and_report_fix` on Layer 1 recipes.
-// Drives the existing Playwright harness via a targeted `--grep
-// "verdict-capture: <slug>"` invocation, reads back the verdict JSON
-// the spec writes to `VERDICT_CAPTURE_OUTPUT`. Not exposed as an MCP
-// tool: callers go through `verify_and_report_fix` for the layer-
-// abstracted entrypoint.
-//
-// Phase 3 of the round-trip automation plan. Replaces the Phase 1
-// "return commands as strings" Layer 1 path with real execution.
-
 import { spawnSync } from 'node:child_process';
 import { readFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -18,10 +8,6 @@ import type { Verdict } from '../types.js';
 export interface RunLayer1VerdictArgs {
   slug: string;
   fix_url?: string;
-  // Path to the Layer 1 workspace (the directory containing
-  // `playwright.config.ts`). Defaults to the relative path the
-  // monorepo uses today; pass an absolute path when the MCP server
-  // is launched from a different working directory.
   workspace_path?: string;
 }
 
@@ -45,8 +31,6 @@ export type RunLayer1VerdictResult =
   | RunLayer1VerdictOk
   | RunLayer1VerdictError;
 
-// Injectable for unit tests. Returns { status, stdout, stderr } so the
-// real impl and any stub agree on the contract.
 export interface SpawnRunResult {
   status: number | null;
   stdout: string;
@@ -65,9 +49,6 @@ const defaultSpawnRunner: SpawnRunner = ({ cwd, command, args, env }) => {
     cwd,
     env,
     encoding: 'utf-8',
-    // Playwright + Pyodide cold-start can sit in the 60-90 second range
-    // per case; the spec's own timeout is 75s. Hard-cap the spawn at
-    // 5 minutes so a hung Playwright child cannot wedge the MCP server.
     timeout: 5 * 60 * 1000,
   });
   return {
@@ -83,8 +64,6 @@ export function _setSpawnRunnerForTesting(runner: SpawnRunner | null): void {
   spawnRunner = runner ?? defaultSpawnRunner;
 }
 
-// Injectable for unit tests; the real impl reads the file the
-// Playwright spec wrote at `VERDICT_CAPTURE_OUTPUT`.
 export type VerdictReader = (outputPath: string) => string;
 
 const defaultVerdictReader: VerdictReader = (p) => readFileSync(p, 'utf-8');
@@ -140,11 +119,9 @@ export async function runLayer1Verdict(
   const durationMs = Date.now() - startedAt;
 
   if (spawn.status !== 0) {
-    // Best-effort cleanup of the tmp output if it exists.
     try {
       unlinkSync(outputPath);
     } catch {
-      /* ignore */
     }
     return {
       ok: false,
@@ -192,12 +169,10 @@ export async function runLayer1Verdict(
     };
   }
 
-  // Real impl cleans up the tmp file; injected reader (tests) skip.
   if (verdictReader === defaultVerdictReader) {
     try {
       unlinkSync(outputPath);
     } catch {
-      /* ignore */
     }
   }
 

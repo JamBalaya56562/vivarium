@@ -1,39 +1,5 @@
 name: publish-mcp
 
-# Dual-publishes packages/mcp-server/ to JSR (canonical) and npm
-# (fallback) on `mcp-server-v*.*.*` tag push, with build provenance
-# via OIDC trusted publishing on both registries. See ADR-0019 §2 / §5
-# (private memo) for the design rationale.
-#
-# Tag convention: `mcp-server-v0.1.0` — `<package-name>-v<semver>`,
-# matching semantic-release-monorepo's default for monorepo single-
-# package tags. Future packages in this repo (e.g. a CLI) get their
-# own prefixed tags. The version literal published comes from
-# packages/mcp-server/{package.json,jsr.json} — both must be bumped
-# together; the tag is for triggering, not authority.
-#
-# Manual trigger is supported for re-publishing a specific version
-# after fixing CI plumbing (does not change the version literal).
-#
-# Toolchain: Bun end-to-end. Install / build / test all run on Bun;
-# the npm-side publish goes through `bunx npm@latest publish
-# --provenance` because Bun does not yet support npm OIDC trusted
-# publishing directly (oven-sh/bun#15601, OPEN as of 2026-04).
-# `bunx npm@latest` fetches and runs the npm CLI through Bun without
-# needing a separate Node install — the workflow does not call
-# `actions/setup-node`. The `@latest` tag is load-bearing: bare
-# `bunx npm` resolves a cached older minor (observed 11.13.0) whose
-# trusted-publishing path masks real failures as ENEEDAUTH
-# (npm/cli#9088); pinning to the latest npm avoids that footgun.
-# JSR publish runs through `bunx jsr publish`, which uses OIDC
-# automatically when `id-token: write` is granted.
-#
-# Idempotency: both publish steps are guarded by registry-presence
-# checks against package.json / jsr.json's version literal, so a
-# `workflow_dispatch` re-run after a partial failure (e.g. npm
-# succeeded but JSR was blocked) safely skips the half that is
-# already on its registry.
-
 on:
   push:
     tags:
@@ -61,35 +27,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Bun
-        # Single-tool job (bun only) — uses `oven-sh/setup-bun` directly
-        # rather than the multi-tool mise setup.
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
 
       - name: Install + build + test
-        # Same commands a contributor runs locally via the mcp:* tasks
-        # in mise.toml. The publish steps below stay inline because they
-        # call `bunx npm publish --provenance` and `bunx jsr publish`
-        # against OIDC, which is a CI-only concern.
-        #
-        # `bun run build` and `bun run test` both chain `bun run
-        # sync:bundled` first, which copies the canonical
-        # docs/site/public/api/recipes.json into src/bundled/recipes.json
-        # (gitignored) so the offline fallback shipped in the tarball
-        # is always the latest snapshot, with no tracked-snapshot
-        # drift to manage.
         run: |
           bun install
           bun run build
           bun run test
 
       - name: Read package version
-        # Version literal is single-sourced from package.json; the
-        # downstream registry-presence checks reuse it so the workflow
-        # is idempotent across reruns (re-dispatch after a partial
-        # failure must not double-publish the half that already
-        # succeeded).
         id: pkg
         run: |
           version=$(jq -r .version package.json)
@@ -112,12 +60,10 @@ jobs:
 
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
         if: steps.npm-check.outputs.skip == 'false'
+        # Bun cannot publish over OIDC (oven-sh/bun#15601), and older npm
+        # minors mask trusted-publishing failures as ENEEDAUTH (npm/cli#9088).
         run: bunx npm@latest publish --provenance --access public
         env:
-          # Tells the npm CLI which registry to authenticate against; in
-          # combination with `id-token: write` permissions and
-          # `publishConfig.access: public` in package.json, this is what
-          # OIDC trusted publishing requires on the consuming side.
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
 
       - name: Check if JSR version is already published
@@ -132,11 +78,6 @@ jobs:
           fi
 
       - name: Publish to JSR (provenance via OIDC)
-        # No `--allow-dirty` needed: src/bundled/recipes.json is
-        # gitignored, so although `bun install / build / test` above
-        # regenerates it, the working tree from `git status`'s
-        # perspective stays clean. JSR's tarball still ships the file
-        # because it is on the `publish.include` list in jsr.json.
         if: steps.jsr-check.outputs.skip == 'false'
         run: bunx jsr publish
 

@@ -82,9 +82,3 @@ updates:
       layer1-deps:
         patterns:
           - "*"
-
-  # Future ecosystems to enable in Phase 1+:
-  #
-  # - package-ecosystem: "pip"      # Python deps (Layer 1 Pyodide-side, etc.)
-  # - package-ecosystem: "cargo"    # Rust deps (Layer 1 wasm32-wasi)
-  # - package-ecosystem: "docker"   # Dockerfile base images (Layer 2)
