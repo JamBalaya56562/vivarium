@@ -33,6 +33,6 @@
     "node-html-parser": "^9.0.2"
   },
   "dependencies": {
-    "lucide-react": "^1.37.0"
+    "lucide-react": "^1.38.0"
   }
 }
