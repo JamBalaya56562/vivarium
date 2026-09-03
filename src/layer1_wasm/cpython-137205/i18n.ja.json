@@ -21,6 +21,9 @@
     "verdict.pending": "Pyodide runtime を読み込み中…",
     "drawer.body.p1": "Python の {0} は、{2} で開いた接続では {1} を黙って捨てる。{3} で開いた別の接続では同じ PRAGMA が効くため、本来同じ FK 強制になるはずの 2 つの接続が食い違う。",
     "drawer.body.p2": "このページのスクリプトは両方の接続を開き、それぞれに同じ PRAGMA を発行して、結果の {0} を読み戻す。2 つの値が食い違えば、いま開いているタブの runtime で bug が再現している。",
-    "drawer.body.p3": "議論の全体（動機、再現のバリエーション、パッチの進捗など）は下の GitHub issue リンクを辿る。そのスレッドがこの bug の正典。"
+    "drawer.body.p3": "議論の全体（動機、再現のバリエーション、パッチの進捗など）は下の GitHub issue リンクを辿る。そのスレッドがこの bug の正典。",
+    "runner.edit": "編集",
+    "runner.run": "実行",
+    "runner.reset": "リセット"
   }
 }

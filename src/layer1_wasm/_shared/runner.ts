@@ -140,49 +140,61 @@ export function enableRunner(opts: RunnerOptions): void {
   preParent.insertBefore(placeholder, preEl);
   viewport.append(preEl, textarea);
 
-  const editBtn = el(
-    'button',
-    {
-      type: 'button',
-      class: 'vh-runner__btn vh-runner__btn--ghost',
-      'aria-label': S.editAria,
-    },
-    el('span', { 'aria-hidden': 'true' }),
+  function button(
+    key: 'edit' | 'run' | 'reset',
+    variant: string,
+    label: string,
+    ariaLabel: string,
+    svg: string,
+  ): HTMLButtonElement {
+    const existing = colEl?.querySelector<HTMLButtonElement>(
+      `.vh-runner__btn[data-vh-runner="${key}"]`,
+    );
+    if (existing) {
+      existing.setAttribute('aria-label', ariaLabel);
+      return existing;
+    }
+    const made = el(
+      'button',
+      {
+        type: 'button',
+        class: `vh-runner__btn ${variant}`,
+        'data-vh-runner': key,
+        'aria-label': ariaLabel,
+      },
+      el('span', { 'aria-hidden': 'true' }),
+      el('span', {}, label),
+    ) as HTMLButtonElement;
+    made.firstElementChild!.innerHTML = svg;
+    return made;
+  }
+
+  const editBtn = button(
+    'edit',
+    'vh-runner__btn--ghost',
     S.edit,
-  ) as HTMLButtonElement;
-  editBtn.firstElementChild!.innerHTML = SVG_PENCIL;
-
-  const runBtn = el(
-    'button',
-    {
-      type: 'button',
-      class: 'vh-runner__btn vh-runner__btn--primary',
-      'aria-label': S.runAria,
-    },
-    el('span', { 'aria-hidden': 'true' }),
-    S.run,
-  ) as HTMLButtonElement;
-  runBtn.firstElementChild!.innerHTML = SVG_PLAY;
-
-  const resetBtn = el(
-    'button',
-    {
-      type: 'button',
-      class: 'vh-runner__btn vh-runner__btn--ghost',
-      'aria-label': S.resetAria,
-    },
-    el('span', { 'aria-hidden': 'true' }),
-    S.reset,
-  ) as HTMLButtonElement;
-  resetBtn.firstElementChild!.innerHTML = SVG_RESET;
-
-  const actions = el(
-    'div',
-    { class: 'vh-runner__actions' },
-    editBtn,
-    runBtn,
-    resetBtn,
+    S.editAria,
+    SVG_PENCIL,
   );
+  const runBtn = button(
+    'run',
+    'vh-runner__btn--primary',
+    S.run,
+    S.runAria,
+    SVG_PLAY,
+  );
+  const resetBtn = button(
+    'reset',
+    'vh-runner__btn--ghost',
+    S.reset,
+    S.resetAria,
+    SVG_RESET,
+  );
+
+  const staticActions = colEl?.querySelector<HTMLElement>('.vh-runner__actions');
+  const actions =
+    staticActions ??
+    el('div', { class: 'vh-runner__actions' }, editBtn, runBtn, resetBtn);
 
   const statusEl = el('p', {
     class: 'vh-runner__status',
@@ -190,13 +202,16 @@ export function enableRunner(opts: RunnerOptions): void {
     'aria-live': 'polite',
   });
 
-  if (h2El?.parentElement) {
-    const headRow = el('div', { class: 'vh-runner__head' });
-    h2El.parentElement.insertBefore(headRow, h2El);
-    headRow.append(h2El, actions);
-  } else {
-    viewport.parentElement?.insertBefore(actions, viewport);
+  if (!actions.isConnected) {
+    if (h2El?.parentElement) {
+      const headRow = el('div', { class: 'vh-runner__head' });
+      h2El.parentElement.insertBefore(headRow, h2El);
+      headRow.append(h2El, actions);
+    } else {
+      viewport.parentElement?.insertBefore(actions, viewport);
+    }
   }
+  for (const btn of [editBtn, runBtn, resetBtn]) btn.disabled = false;
 
   const shell = el(
     'div',

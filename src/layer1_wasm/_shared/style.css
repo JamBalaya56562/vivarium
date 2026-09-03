@@ -949,6 +949,18 @@ main > footer code {
   box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.12);
 }
 
+.vh-runner__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 2rem;
+}
+
+.vh-runner__head h2 {
+  margin: 0;
+}
+
 .vh-runner__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1334,8 +1346,15 @@ body.vh-drawer-open:has(#path-a-mount) {
     flex-direction: column;
   }
 
-  .vh-main__col--script > h2 {
+  .vh-main__col--script > h2,
+  .vh-main__col--script > .vh-runner__head {
     flex-shrink: 0;
+  }
+
+  .vh-main__col--script > pre {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
   }
 
   .vh-runner {

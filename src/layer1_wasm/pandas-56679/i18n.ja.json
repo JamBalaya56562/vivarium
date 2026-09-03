@@ -21,6 +21,9 @@
     "verdict.pending": "Pyodide runtime を読み込み中…",
     "drawer.body.p1": "{0} は dtype {1} を返すのに、{2} は dtype {3} を返す。この 2 つのコンストラクタは、空の入力に対して一貫した dtype を返すべき。",
     "drawer.body.p2": "このページのスクリプトは両方の形を構築して dtype を比較する。dtype が食い違えば、Pyodide が現在同梱する pandas ビルドで bug が再現している。",
-    "drawer.body.p3": "議論の全体（動機、経緯、fix の進捗）は下の GitHub issue スレッドにある。"
+    "drawer.body.p3": "議論の全体（動機、経緯、fix の進捗）は下の GitHub issue スレッドにある。",
+    "runner.edit": "編集",
+    "runner.run": "実行",
+    "runner.reset": "リセット"
   }
 }

@@ -138,6 +138,7 @@ function fill(template: string, values: Record<string, string>): string {
   for (const [key, value] of Object.entries(values)) {
     out = out.replaceAll(`{{${key}}}`, value);
   }
+  out = out.replace(/\n[ \t]*\n(\s*<\/div>)/g, '\n$1');
   const leftover = out.match(/\{\{[A-Z_]+\}\}/);
   if (leftover && !Object.values(values).some((v) => v.includes(leftover[0]))) {
     throw new Error(`unfilled placeholder ${leftover[0]}`);
@@ -169,6 +170,40 @@ function reproCode(recipeDir: string, slug: string): string {
   if (!source) return '';
   unhighlighted.push(slug);
   return escapeHtml(source);
+}
+
+const RUNNER_BUTTONS: ReadonlyArray<readonly [string, string, string, string]> =
+  [
+    [
+      'edit',
+      'vh-runner__btn--ghost',
+      'Edit',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>',
+    ],
+    [
+      'run',
+      'vh-runner__btn--primary',
+      'Run',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+    ],
+    [
+      'reset',
+      'vh-runner__btn--ghost',
+      'Reset',
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+    ],
+  ];
+
+function runnerActions(recipeDir: string): string {
+  const reproTs = join(recipeDir, 'repro.ts');
+  if (!existsSync(reproTs)) return '';
+  if (!readFileSync(reproTs, 'utf-8').includes('enableRunner(')) return '';
+  const buttons = RUNNER_BUTTONS.map(
+    ([key, variant, label, svg]) =>
+      `              <button type="button" class="vh-runner__btn ${variant}" data-vh-runner="${key}" disabled>` +
+      `<span aria-hidden="true">${svg}</span><span data-i18n="runner.${key}">${label}</span></button>`,
+  ).join('\n');
+  return `            <div class="vh-runner__actions">\n${buttons}\n            </div>`;
 }
 
 function fixChip(recipeDir: string): string {
@@ -255,6 +290,7 @@ function renderLayer1(): void {
       VERDICT_PENDING: shell.verdictPending,
       DRAWER_BODY: indent(slots['drawer-body'] ?? '', 8),
       FIX_CHIP: fixChip(dir),
+      RUNNER_ACTIONS: runnerActions(dir),
       REPRO_CODE: reproCode(dir, slug),
       FIX_PANE: indent(slots['fix-pane'] ?? '', 10),
       EXTRA_SECTIONS: slots.sections ? `\n${indent(slots.sections, 6)}\n` : '',

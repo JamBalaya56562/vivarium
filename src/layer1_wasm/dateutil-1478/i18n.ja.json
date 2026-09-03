@@ -24,6 +24,9 @@
     "section.baseline.h2": "baseline の出力",
     "output.pending": "(待機中)",
     "section.fix.h2": "fix 候補の出力",
-    "output.waitingBaseline": "(baseline を待機中)"
+    "output.waitingBaseline": "(baseline を待機中)",
+    "runner.edit": "編集",
+    "runner.run": "実行",
+    "runner.reset": "リセット"
   }
 }
