@@ -6,15 +6,28 @@
 // (and in RE2, Go's regexp). PCRE2 gets it right, so this is an
 // algebraic regex-engine bug, not a regex-language ambiguity.
 //
-// The actual reproduction logic lives in `src/main.rs` and ships as
-// `repro.wasm` (built by deploy-docs CI from `Cargo.toml`). This
-// TypeScript file only loads the artefact through the WASI shim,
-// captures stdout, parses the JSON envelope, and reports the verdict.
+// The reproduction logic lives in `src/repro.rs` and is compiled twice
+// from that one source, differing only in the `regex` version each
+// crate pins:
 //
-// Verdict semantics (per ADR-0008 / contract v1):
+//   Cargo.toml      regex =1.8.4    -> repro.wasm      (baseline)
+//   fix/Cargo.toml  regex =1.13.1   -> repro-fix.wasm  (fix candidate)
+//
+// This TypeScript file loads both artefacts through the WASI shim and
+// writes each one's JSON into its own pane, so a visitor sees the wrong
+// answer and the right one side by side.
+//
+// Verdict semantics (per ADR-0008 / contract v1) describe the BASELINE
+// only:
 //   - "reproduced" — the bug REPRODUCES (the two patterns disagree).
 //   - "unreproduced" — the bug does NOT reproduce (regex now agrees, the
 //     wasm artefact errored, or the WASI shim could not load).
+//
+// The fix-candidate build is expected to disagree with the baseline —
+// that is the point — so it never touches the verdict pill. Its load
+// passes `announceVerdict: false`, and a failure to fetch or run it
+// leaves the baseline verdict standing and reports the error in the
+// fix pane.
 
 import { loadVivariumRust } from "../_shared/rust_loader.js";
 import {
@@ -34,7 +47,7 @@ interface ReproOutput {
 }
 
 const REPRO_SOURCE_HINT = `
-// src/main.rs (excerpt — see this directory for the full crate)
+// src/repro.rs (excerpt — compiled by both crates in this directory)
 let haystack = "a\\naaa\\n";
 let re_plus     = Regex::new("(?m)(^|a)+").unwrap();
 let re_expanded = Regex::new("(?m)(^|a)(^|a)*").unwrap();
@@ -48,13 +61,31 @@ let reproduced = matches_plus != matches_expanded;
 `.trim();
 
 const outputEl = document.getElementById("output");
+const outputFixEl = document.getElementById("output-fix");
 const metaEl = document.getElementById("meta");
 const reproCodeEl = document.getElementById("repro-code");
 
-if (!outputEl || !metaEl || !reproCodeEl) {
+if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
   throw new Error(
-    "regex-779: missing required DOM elements (#output, #meta, #repro-code).",
+    "regex-779: missing required DOM elements (#output, #output-fix, #meta, #repro-code).",
   );
+}
+
+/** The `regex` releases the two crates pin. Keep in sync with
+ *  `Cargo.toml` and `fix/Cargo.toml` — the pages report these strings,
+ *  and the wasm builds report their own, so a drift is visible rather
+ *  than silent. */
+const BASELINE_REGEX_VERSION = "1.8.4";
+const FIX_REGEX_VERSION = "1.13.1";
+
+/** Write into the fix pane and stamp the machine-readable state the
+ *  Playwright suite asserts on (locale-independent, unlike the text). */
+function setFixPane(
+  text: string,
+  status: "pending" | "ok" | "error",
+): void {
+  outputFixEl!.textContent = text;
+  outputFixEl!.dataset["fixStatus"] = status;
 }
 
 // Build-time inlining (`scripts/highlight-repros.ts`) populates this
@@ -90,9 +121,6 @@ try {
   }
   const result = JSON.parse(stdout) as ReproOutput;
 
-  metaEl.textContent =
-    `regex crate ${result.regex_crate_version} on wasm32-wasip1 ` +
-    `via @bjorn3/browser_wasi_shim v${wasiShimVersion}.`;
   outputEl.textContent = JSON.stringify(result, null, 2);
 
   if (result.reproduced && exitCode === 0) {
@@ -112,8 +140,15 @@ try {
     );
   }
 
-  const finishedAt = new Date();
-  const envelope: VivariumResultV1 = {
+  // Publish a baseline-only envelope BEFORE the fix-candidate run.
+  // The Playwright suite reads `__VIVARIUM_RESULT__` the moment
+  // `data-verdict` leaves "pending", so the envelope has to be there
+  // already; the fix-candidate fields are added in a second publish.
+  const buildEnvelope = (
+    finishedAt: Date,
+    fix: ReproOutput | null,
+    fixExitCode: number | null,
+  ): VivariumResultV1 => ({
     contract: "v1",
     bug: {
       project: "regex",
@@ -125,29 +160,94 @@ try {
       version: wasiShimVersion,
       extras: {
         regex_crate: result.regex_crate_version,
+        // Omitted rather than nulled when the fix build did not run —
+        // `extras` is `Record<string, string>`, and an absent key reads
+        // the same way to a consumer feature-detecting the field.
+        ...(fix ? { regex_crate_fix_candidate: fix.regex_crate_version } : {}),
         wasi_target: "wasm32-wasip1",
       },
     },
     result: {
+      // Flat fields describe the baseline, unchanged for existing
+      // consumers. `baseline` / `fix_candidate` are additive — Contract
+      // v1 revision, no version bump (AGENTS.md 4.10).
       pattern_plus: result.pattern_plus,
       pattern_expanded: result.pattern_expanded,
       matches_plus: result.matches_plus,
       matches_expanded: result.matches_expanded,
       reproduced: result.reproduced,
       exit_code: exitCode,
+      baseline: {
+        spec: `regex =${BASELINE_REGEX_VERSION}`,
+        matches_plus: result.matches_plus,
+        matches_expanded: result.matches_expanded,
+        reproduced: result.reproduced,
+        exit_code: exitCode,
+      },
+      fix_candidate: fix
+        ? {
+            spec: `regex =${FIX_REGEX_VERSION}`,
+            matches_plus: fix.matches_plus,
+            matches_expanded: fix.matches_expanded,
+            reproduced: fix.reproduced,
+            exit_code: fixExitCode,
+          }
+        : null,
     },
     timing: {
       started_at: startedAt.toISOString(),
       finished_at: finishedAt.toISOString(),
       duration_ms: finishedAt.getTime() - startedAt.getTime(),
     },
-  };
-  setResult(envelope);
+  });
+
+  setResult(buildEnvelope(new Date(), null, null));
+
+  // ── Fix-candidate build ────────────────────────────────────────────
+  // Never allowed to move the verdict pill: `announceVerdict: false`
+  // keeps a 404 on repro-fix.wasm from flipping a correct "reproduced"
+  // into a fix that was never observed.
+  setFixPane(`Loading regex ${FIX_REGEX_VERSION} build…`, "pending");
+  let fixResult: ReproOutput | null = null;
+  let fixExitCode: number | null = null;
+  try {
+    const { rust: rustFix } = await loadVivariumRust({
+      wasmUrl: "./repro-fix.wasm",
+      announceVerdict: false,
+    });
+    const fixRun = await rustFix.run();
+    if (fixRun.stdout.trim().length === 0) {
+      throw new Error(
+        `fix-candidate wasm produced no stdout (exitCode=${fixRun.exitCode}, stderr=${fixRun.stderr})`,
+      );
+    }
+    fixResult = JSON.parse(fixRun.stdout) as ReproOutput;
+    fixExitCode = fixRun.exitCode;
+    setFixPane(JSON.stringify(fixResult, null, 2), "ok");
+  } catch (fixErr: unknown) {
+    const fixErrAny = fixErr as { message?: string } | null;
+    console.error(fixErr);
+    setFixPane(
+      `Fix-candidate build unavailable: ${fixErrAny?.message ?? String(fixErr)}`,
+      "error",
+    );
+  }
+
+  metaEl.textContent =
+    `regex crate ${result.regex_crate_version} (baseline)` +
+    (fixResult ? ` vs ${fixResult.regex_crate_version} (fix candidate)` : "") +
+    ` on wasm32-wasip1 via @bjorn3/browser_wasi_shim v${wasiShimVersion}.`;
+
+  setResult(buildEnvelope(new Date(), fixResult, fixExitCode));
 } catch (err: unknown) {
   console.error(err);
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
+  setFixPane(
+    "Not run — the baseline build failed, so there is nothing to compare against.",
+    "error",
+  );
   if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
       "unreproduced",

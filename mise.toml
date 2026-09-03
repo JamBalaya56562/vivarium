@@ -132,12 +132,27 @@ description = "Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
 shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
 run = '''
 set -euo pipefail
-shopt -s nullglob
-for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
-  slug_dir=$(dirname "$cargo_toml")
-  echo "==> cargo build $slug_dir"
+# `find`, not a glob: a recipe may hold more than one crate. regex-779
+# pairs its baseline crate with `fix/`, a second crate compiled from the
+# same source against a fixed dependency version, and a one-level glob
+# would silently skip it — leaving the page fetching a wasm artefact
+# that was never rebuilt.
+find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
+  crate_dir=$(dirname "$cargo_toml")
+  # A nested crate publishes into the recipe directory above it, next to
+  # index.html, because that is where the page fetches from.
+  if [ -f "${crate_dir}/index.html" ]; then
+    recipe_dir="$crate_dir"
+  else
+    recipe_dir=$(dirname "$crate_dir")
+  fi
+  echo "==> cargo build $crate_dir"
   cargo build --release --target wasm32-wasip1 --manifest-path "$cargo_toml"
-  cp "${slug_dir}/target/wasm32-wasip1/release/repro.wasm" "${slug_dir}/repro.wasm"
+  # Copy every bin rather than a hard-coded repro.wasm — the crate's
+  # `[[bin]] name` decides the artefact name (repro / repro-fix).
+  for wasm in "${crate_dir}"/target/wasm32-wasip1/release/*.wasm; do
+    cp "$wasm" "${recipe_dir}/$(basename "$wasm")"
+  done
 done
 '''
 
@@ -490,8 +505,14 @@ run = '''
 set -euo pipefail
 bun install --frozen-lockfile
 bun run typecheck
-bun run build
-bunx playwright install --with-deps chromium
+# `bun run build` is TypeScript only (validator + highlight + tsc). CI
+# runs `mise run repro:build`, which also compiles the Rust crates and
+# builds the fix-candidate wheels — so calling the bun script alone let
+# regex-779's Playwright case fetch a `repro.wasm` this task never
+# rebuilt, and reported green on a stale artefact. Mirror
+# repro-regression.yml instead.
+mise run repro:build
+bun x playwright install --with-deps chromium
 bun run test
 '''
 
@@ -569,8 +590,9 @@ description = "cargo fmt --check + cargo clippy --deny warnings on Layer 1 Rust 
 shell = "bash -c"
 run = '''
 set -euo pipefail
-shopt -s nullglob
-for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+# `find`, not a glob — see the note in repro:build:rust; a nested
+# fix-candidate crate must be linted too, not silently skipped.
+find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   echo "==> cargo fmt --check + clippy $cargo_toml"
   cargo fmt --manifest-path "$cargo_toml" --check
   cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release -- -D warnings
@@ -582,10 +604,9 @@ description = "cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
 shell = "bash -c"
 run = '''
 set -euo pipefail
-shopt -s nullglob
 # `--allow-no-vcs` is needed because Sapling (.sl/) isn't recognised by
 # cargo as a VCS — cargo fix would otherwise refuse to write changes.
-for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
+find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   echo "==> cargo fmt + clippy --fix $cargo_toml"
   cargo fmt --manifest-path "$cargo_toml"
   cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release --fix --allow-no-vcs --allow-dirty --allow-staged

@@ -37,6 +37,15 @@ export interface LoadOptions {
   wasiShimVersion?: string;
   /** Verdict message shown while loading (default "Loading Rust wasm via WASI shim…"). */
   pendingText?: string;
+  /** Whether this load owns the page verdict. Default `true`.
+   *
+   *  Set `false` for a secondary variant — a fix-candidate artefact
+   *  loaded after the baseline verdict has already settled. Without it
+   *  the second load knocks `#verdict` back to `pending` on entry, and
+   *  a 404 on the second artefact flips a correct `reproduced` to
+   *  `unreproduced`, reporting a fix that was never observed. Failures
+   *  still throw either way; the caller decides what the fix pane says. */
+  announceVerdict?: boolean;
 }
 
 export interface RunResult {
@@ -92,17 +101,20 @@ export async function loadVivariumRust(
 ): Promise<LoadResult> {
   const wasiShimVersion = options.wasiShimVersion ?? DEFAULT_WASI_SHIM_VERSION;
   const pendingText = options.pendingText ?? S.pending;
+  const announceVerdict = options.announceVerdict ?? true;
 
-  setVerdict("pending", pendingText, "loading");
-  emitProgress(5, "Initialising…", "");
+  if (announceVerdict) {
+    setVerdict("pending", pendingText, "loading");
+    emitProgress(5, "Initialising…", "");
+  }
 
   const shimUrl = `https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@${wasiShimVersion}/dist/index.js`;
 
   try {
-    emitProgress(20, "Fetching WASI shim…", "");
+    if (announceVerdict) emitProgress(20, "Fetching WASI shim…", "");
     const shim = (await import(/* @vite-ignore */ shimUrl)) as WasiShimModule;
 
-    emitProgress(45, "Downloading repro.wasm…", "");
+    if (announceVerdict) emitProgress(45, "Downloading repro.wasm…", "");
     const wasmResponse = await fetch(options.wasmUrl);
     if (!wasmResponse.ok) {
       throw new Error(
@@ -112,10 +124,10 @@ export async function loadVivariumRust(
     const wasmBytes = await wasmResponse.arrayBuffer();
     const sizeMB = (wasmBytes.byteLength / 1_000_000).toFixed(2);
 
-    emitProgress(78, "Compiling WebAssembly…", `${sizeMB} MB`);
+    if (announceVerdict) emitProgress(78, "Compiling WebAssembly…", `${sizeMB} MB`);
     const wasmModule = await WebAssembly.compile(wasmBytes);
 
-    emitProgress(94, "Runtime ready.", `${sizeMB} MB`);
+    if (announceVerdict) emitProgress(94, "Runtime ready.", `${sizeMB} MB`);
 
     const rust: RustRunner = {
       async run(): Promise<RunResult> {
@@ -163,10 +175,12 @@ export async function loadVivariumRust(
     const errAny = err as { stack?: string; message?: string } | null;
     const message =
       (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-    setVerdict(
-      "unreproduced",
-      `bug not reproduced — runtime error during Rust wasm load: ${message}`,
-    );
+    if (announceVerdict) {
+      setVerdict(
+        "unreproduced",
+        `bug not reproduced — runtime error during Rust wasm load: ${message}`,
+      );
+    }
     throw err;
   }
 }

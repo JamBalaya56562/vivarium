@@ -68,16 +68,17 @@ upstream status. It never shows a hand-written "expected" output:
 Vivarium reproduces, it does not assert.
 
 The markup is shared — copy it from
-[`dateutil-1478/`](./dateutil-1478/), the reference implementation.
+[`dateutil-1478/`](./dateutil-1478/), the reference implementation — and
+[`scripts/validate-output-panes.ts`](./scripts/validate-output-panes.ts)
+requires it on every recipe at build time.
 
-Build-time enforcement is currently **partial**:
-[`scripts/validate-fix-candidates.ts`](./scripts/validate-fix-candidates.ts)
-checks the two-pane markup only on recipes that ship a
-`fix-candidate.json`, so a recipe using the no-candidate variant can
-still ship a malformed or missing pane. Widening that check to every
-recipe waits on `regex-779`, the last page still on the single-pane
-markup — a validator that requires the block before every recipe has
-it would fail the build on `main`.
+How the pane gets filled is not prescribed. Three shapes exist today:
+
+| Shape | Mechanism | Recipes |
+| ----- | --------- | ------- |
+| Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel and the page installs it | `dateutil-1478`, `lark-1585` |
+| Second artefact | a sibling crate compiled from the same source against a fixed dependency version | `regex-779` |
+| No runnable fix | a static note naming the upstream status | the rest |
 
 ## Verdict surface
 

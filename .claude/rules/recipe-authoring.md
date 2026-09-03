@@ -234,12 +234,18 @@ one. Copy the block from
 - The top-level `#verdict` pill mirrors the **baseline only**. A red
   pill driven by the fix pane would flag its desired `unreproduced`
   as a failure.
-- `scripts/validate-fix-candidates.ts` checks this markup at build
-  time, but **only on recipes that ship a `fix-candidate.json`** — the
-  no-candidate variant is not yet covered, so review the block by eye
-  until `regex-779` converts and the check widens to every recipe. If
-  you adopt a new variant mechanism, extend that script in the same PR
-  rather than carving the recipe out.
+- `scripts/validate-output-panes.ts` requires this markup on **every**
+  recipe at build time, and rejects the retired single-pane keys
+  (`section.output.h2`, `output.placeholder`) — those slip past
+  `reproI18n.test.ts`, which only checks that the two key sets agree
+  with each other. If you adopt a new variant mechanism, extend that
+  script in the same PR rather than carving the recipe out.
+- A **secondary** runtime load — a fix-candidate artefact fetched after
+  the baseline verdict has settled — must pass `announceVerdict: false`
+  to the `_shared/*_loader.ts` helper. Otherwise it knocks `#verdict`
+  back to `pending` on entry, and a 404 on the second artefact flips a
+  correct `reproduced` to `unreproduced`, reporting a fix nobody
+  observed. See `regex-779/repro.ts`.
 
 **Local validation**:
 

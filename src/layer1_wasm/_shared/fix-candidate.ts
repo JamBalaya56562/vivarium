@@ -25,7 +25,7 @@
 // need the uninstall/reinstall dance, so the worker pattern lives in
 // the recipe itself rather than here.
 //
-// The validator under `scripts/validate-fix-candidates.ts` enforces
+// The validator under `scripts/validate-output-panes.ts` enforces
 // that any recipe with `fix-candidate.json` also ships the matching
 // HTML + JS wiring (vh-output-multi pane, `#output-fix` element,
 // `./wheels/manifest.json` reference). That guard is independent of

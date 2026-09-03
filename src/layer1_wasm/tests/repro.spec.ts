@@ -59,6 +59,14 @@ interface ReproCase {
    * rendering a CI-captured verdict.
    */
   expectedRuntimeName: ExpectedRuntimeName;
+  /**
+   * Whether the page must render a settled fix-candidate pane. True for
+   * every Layer 1 recipe: the two-pane output is the Layer 1 contract
+   * (`scripts/validate-output-panes.ts` enforces the markup statically;
+   * this asserts the page actually drives it). False for the smoke test
+   * and for Layer 2, which render a CI-captured verdict instead.
+   */
+  expectsFixPane: boolean;
 }
 
 interface RecipeEntry {
@@ -127,6 +135,7 @@ function caseFromRecipe(recipe: RecipeEntry): ReproCase {
     expectedBugProject: recipe.project,
     expectedBugIssue: recipe.issue,
     expectedRuntimeName: recipe.expected_runtime,
+    expectsFixPane: recipe.layer === 1,
   };
 }
 
@@ -138,6 +147,7 @@ function loadRegressionCases(): ReproCase[] {
     expectedBugProject: "vivarium",
     expectedBugIssue: 0,
     expectedRuntimeName: "browser",
+    expectsFixPane: false,
   };
   const recipes = loadRecipeEntries()
     .filter((recipe) => recipe.layer === 1 || recipe.layer === 2)
@@ -240,5 +250,33 @@ for (const c of cases) {
     expect
       .soft(state.runtimeName, "envelope runtime.name")
       .toBe(c.expectedRuntimeName);
+
+    if (c.expectsFixPane) {
+      const fixPane = page.locator("#output-fix");
+      await expect.soft(fixPane, "#output-fix exists").toHaveCount(1);
+
+      // The pane settles asynchronously and AFTER the top-level verdict
+      // flips — dateutil / lark install a wheel, regex-779 loads a
+      // second wasm module — so this has to be a web-first, retrying
+      // assertion rather than a one-shot read.
+      //
+      // Assert on `data-fix-status`, not on the text: the attribute is
+      // identical on the EN and JA pages, whereas the copy is not. Any
+      // settled value is acceptable — "none" is correct for a recipe
+      // with no runnable fix, and "error" is how a CDN flake on the fix
+      // build should surface without failing the baseline regression.
+      // Only "pending" is a bug: it means the page rendered the markup
+      // and then never drove it.
+      await expect
+        .soft(fixPane, "#output-fix settled (not left pending)")
+        .not.toHaveAttribute("data-fix-status", "pending", {
+          timeout: 60_000,
+        });
+
+      const fixText = ((await fixPane.textContent()) ?? "").trim();
+      expect
+        .soft(fixText.length, "#output-fix is non-empty")
+        .toBeGreaterThan(0);
+    }
   });
 }

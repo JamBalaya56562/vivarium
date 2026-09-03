@@ -147,16 +147,18 @@ jobs:
 
       - name: Drop Rust build artefacts before bundling
         # `target/` is hundreds of MB and would bloat the Pages
-        # artefact. The mise task copies repro.wasm into place; the
-        # build cache itself is not needed once the artefact is in
+        # artefact. The mise task copies the .wasm files into place; the
+        # build cache itself is not needed once the artefacts are in
         # the recipe directory.
+        #
+        # `find`, not a one-level glob: a recipe can hold more than one
+        # crate (regex-779 pairs its baseline with `fix/`), and a nested
+        # `target/` the glob missed would be copied straight into the
+        # Pages artefact by the bundling step below.
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          shopt -s nullglob
-          for target in src/layer1_wasm/*/target; do
-            rm -rf "$target"
-          done
+          find src/layer1_wasm -type d -name target -prune -exec rm -rf {} +
 
       - name: Log in to GHCR (for Layer 2 image push)
         # Skipped silently if no Layer 2 reproductions exist. Uses the

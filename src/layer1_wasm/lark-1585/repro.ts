@@ -125,6 +125,18 @@ if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
+/** Write into the fix pane and stamp the machine-readable state the
+ *  Playwright suite asserts on. The attribute is locale-independent,
+ *  unlike the copy, and "pending" left standing means the page rendered
+ *  the pane and then never drove it. */
+function setFixPane(
+  text: string,
+  status: 'pending' | 'ok' | 'error',
+): void {
+  outputFixEl!.textContent = text;
+  outputFixEl!.dataset['fixStatus'] = status;
+}
+
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -141,8 +153,20 @@ let baseline: VariantOutcome | null = null;
 let fixCandidate: VariantOutcome | null = null;
 let manifest: WheelManifest | null = null;
 
-function variantPaneEl(variant: Variant): HTMLElement {
-  return variant === 'baseline' ? outputBaselineEl! : outputFixEl!;
+/** Write into whichever pane the variant owns. Routing through
+ *  `setFixPane` for the fix-candidate keeps `data-fix-status` in step
+ *  with the copy: a bare `textContent =` on the fix pane would leave
+ *  the attribute at "pending" even after the variant had settled. */
+function writePane(
+  variant: Variant,
+  text: string,
+  status: 'pending' | 'ok' | 'error',
+): void {
+  if (variant === 'baseline') {
+    outputBaselineEl!.textContent = text;
+    return;
+  }
+  setFixPane(text, status);
 }
 
 async function runVariant(
@@ -150,7 +174,6 @@ async function runVariant(
   spec: string,
   pendingLabel: string,
 ): Promise<VariantOutcome> {
-  const paneEl = variantPaneEl(variant);
   if (variant === 'baseline') {
     setVerdict('pending', pendingLabel);
   }
@@ -166,7 +189,7 @@ async function runVariant(
       const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
         const msg = ev.data;
         if (msg.type === 'progress') {
-          paneEl.textContent = `(worker: ${msg.stage}…)`;
+          writePane(variant, `(worker: ${msg.stage}…)`, 'pending');
           if (variant === 'baseline') {
             setVerdict('pending', `Worker: ${msg.stage}…`);
           }
@@ -184,7 +207,7 @@ async function runVariant(
   } catch (err) {
     worker.terminate();
     const message = err instanceof Error ? err.message : String(err);
-    paneEl.textContent = `worker bootstrap failed: ${message}`;
+    writePane(variant, `worker bootstrap failed: ${message}`, 'error');
     return {
       verdict: 'unreproduced',
       outcome: 'raised',
@@ -204,7 +227,11 @@ async function runVariant(
       `Running Lark(...).parse('aa') with a ${TIMEOUT_MS / 1000}s budget…`,
     );
   }
-  paneEl.textContent = `(running with a ${TIMEOUT_MS / 1000}s budget…)`;
+  writePane(
+    variant,
+    `(running with a ${TIMEOUT_MS / 1000}s budget…)`,
+    'pending',
+  );
 
   const resultPromise = new Promise<WorkerResult | WorkerError>(
     (resolve, reject) => {
@@ -242,7 +269,7 @@ async function runVariant(
       null,
       2,
     );
-    paneEl.textContent = stdout;
+    writePane(variant, stdout, 'ok');
     return {
       verdict: 'reproduced',
       outcome: 'timeout',
@@ -262,7 +289,7 @@ async function runVariant(
   worker.terminate();
 
   if (outcome.type === 'error') {
-    paneEl.textContent = outcome.message;
+    writePane(variant, outcome.message, 'error');
     return {
       verdict: 'unreproduced',
       outcome: 'raised',
@@ -278,7 +305,7 @@ async function runVariant(
 
   const data = outcome.data;
   const stdout = JSON.stringify(data, null, 2);
-  paneEl.textContent = stdout;
+  writePane(variant, stdout, 'ok');
   const message =
     data.outcome === 'returned'
       ? `bug not reproduced — parse returned in ${data.elapsed_ms.toFixed(0)} ms (likely fixed upstream).`
@@ -381,13 +408,13 @@ try {
   setVerdict(baseline.verdict, baseline.message);
 
   // ---- Fix-candidate variant ----------------------------------------
-  outputFixEl.textContent = 'Fetching wheel manifest…';
+  setFixPane('Fetching wheel manifest…', 'pending');
   let manifestRes: Response | null = null;
   try {
     manifestRes = await fetch('./wheels/manifest.json', { cache: 'no-store' });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    outputFixEl.textContent = `Could not fetch wheel manifest: ${message}`;
+    setFixPane(`Could not fetch wheel manifest: ${message}`, 'error');
   }
 
   if (manifestRes && manifestRes.ok) {
@@ -396,12 +423,14 @@ try {
       `./wheels/${manifest.filename}`,
       window.location.href,
     ).toString();
-    outputFixEl.textContent =
+    setFixPane(
       `Installing ${manifest.filename} (${manifest.version})…\n` +
-      `from ${manifest.source.url}@${manifest.source.ref}` +
-      (manifest.source.subdirectory
-        ? ` (subdir: ${manifest.source.subdirectory})`
-        : '');
+        `from ${manifest.source.url}@${manifest.source.ref}` +
+        (manifest.source.subdirectory
+          ? ` (subdir: ${manifest.source.subdirectory})`
+          : ''),
+      'pending',
+    );
     try {
       fixCandidate = await runVariant(
         'fix-candidate',
@@ -412,10 +441,10 @@ try {
       const errAny = err as { stack?: string; message?: string } | null;
       const message =
         (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-      outputFixEl.textContent = `Fix-candidate run failed: ${message}`;
+      setFixPane(`Fix-candidate run failed: ${message}`, 'error');
     }
   } else if (manifestRes && !manifestRes.ok) {
-    outputFixEl.textContent = `Wheel manifest unavailable (HTTP ${manifestRes.status}).`;
+    setFixPane(`Wheel manifest unavailable (HTTP ${manifestRes.status}).`, 'error');
   }
 
   // Re-publish the envelope now that the fix-candidate variant

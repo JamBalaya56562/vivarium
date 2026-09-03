@@ -115,6 +115,18 @@ if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
+/** Write into the fix pane and stamp the machine-readable state the
+ *  Playwright suite asserts on. The attribute is locale-independent,
+ *  unlike the copy, and "pending" left standing means the page rendered
+ *  the pane and then never drove it. */
+function setFixPane(
+  text: string,
+  status: 'pending' | 'ok' | 'error',
+): void {
+  outputFixEl!.textContent = text;
+  outputFixEl!.dataset['fixStatus'] = status;
+}
+
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -286,17 +298,19 @@ try {
     `${baselineParsed?.python_version ?? '?'} via Pyodide v${version}.`;
 
   // Fix-candidate variant: committed wheel.
-  outputFixEl.textContent = 'Fetching wheel manifest…';
+  setFixPane('Fetching wheel manifest…', 'pending');
   const manifestResult = await fetchWheelManifest();
 
   if (manifestResult.ok) {
     manifest = manifestResult.manifest;
-    outputFixEl.textContent =
+    setFixPane(
       `Installing ${manifest.filename} (${manifest.version})…\n` +
-      `from ${manifest.source.url}@${manifest.source.ref}` +
-      (manifest.source.subdirectory
-        ? ` (subdir: ${manifest.source.subdirectory})`
-        : '');
+        `from ${manifest.source.url}@${manifest.source.ref}` +
+        (manifest.source.subdirectory
+          ? ` (subdir: ${manifest.source.subdirectory})`
+          : ''),
+      'pending',
+    );
     try {
       await reinstallDateutil(runtime, manifestResult.wheelUrl);
       fixCapture = await captureRun(runtime, REPRO_CODE);
@@ -305,15 +319,15 @@ try {
       } catch {
         fixParsed = null;
       }
-      outputFixEl.textContent = fixCapture.stdout;
+      setFixPane(fixCapture.stdout, 'ok');
     } catch (err) {
       const errAny = err as { stack?: string; message?: string } | null;
       const message =
         (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-      outputFixEl.textContent = `Fix-candidate install/run failed: ${message}`;
+      setFixPane(`Fix-candidate install/run failed: ${message}`, 'error');
     }
   } else {
-    outputFixEl.textContent = manifestResult.reason;
+    setFixPane(manifestResult.reason, 'error');
   }
 
   // Restore baseline python-dateutil so the visitor-facing runner

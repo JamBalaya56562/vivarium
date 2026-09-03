@@ -106,10 +106,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup mise (bun)
-        # Installs bun through mise. Layer 1 Rust crates compiled to
-        # wasm32-wasip1 are handled by the `repro:build:rust` task's
-        # `use = [...]` — mise auto-installs the pinned rust toolchain
-        # on first run so each recipe can choose its own version.
+        # Installs bun through mise. The Rust toolchain that
+        # `repro:build:rust` needs auto-installs on first `mise run`
+        # from mise.toml, which stays the single place a toolchain
+        # version is written down.
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
