@@ -178,8 +178,7 @@ and public machine-readable assets stay under `docs/site/`.
 
 Every PR opened or substantively edited by an AI agent **must** carry
 the `ai: generated` label by the time it leaves draft. The agent
-self-applies it; CI auto-applies on `/claude`-triggered PRs but
-Sapling-direct / web-UI PRs need an explicit:
+self-applies it:
 
 ```bash
 gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"

@@ -1,0 +1,67 @@
+name: Claude Review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: >-
+      github.repository_owner == 'aletheia-works' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login == 'JamBalaya56562'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-head
+
+      - uses: anthropics/claude-code-action@833fb0f8c9f6686b33d963a8bae0a94f4936ab2a # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          claude_args: "--add-dir pr-head"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Review this pull request. The PR's files are checked out under
+            `pr-head/`; the base branch is at the workspace root.
+
+            Read AGENTS.md and .claude/rules/ first, and hold the diff to
+            what they require. This repository's own rules are the part a
+            generic reviewer misses, in particular:
+
+            - §4.13 comments: default is no comment. Flag narrative
+              comments, file-header tours, and pointers to other files.
+            - §4.8 SHA-pinned actions with a trailing version comment.
+            - §4.4 Conventional Commits, subject starting lowercase.
+            - §4.10 spec changes: an optional field is a same-page
+              revision with a dated revision-history line; anything else
+              is vN+1.
+            - §4.12 the `mise run ci:*` task matching each workflow the
+              diff triggers should have been run.
+            - Recipe pages are rendered from
+              src/layer1_wasm/_shared/page.template.html plus each
+              recipe's page.en.html; index.html is generated and
+              gitignored.
+
+            Then review for correctness: bugs the tests would not catch,
+            broken assumptions, and changes that contradict the commit
+            message. Say when something is fine — do not invent findings.
+
+            Report each finding as an inline review comment on the line it
+            concerns, with a one-line summary and the concrete failure it
+            causes. Skip style nits the linters already enforce.
