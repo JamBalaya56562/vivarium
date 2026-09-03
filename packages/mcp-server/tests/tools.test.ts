@@ -53,6 +53,17 @@ const FIXTURE_INDEX = {
       symptom: 'dtype-mismatch',
       severity: 'regression',
       tags: ['empty-series', 'empty-dataframe', 'type-inference'],
+      path_a: true,
+    },
+    {
+      slug: 'numpy-28287',
+      layer: 1,
+      project: 'numpy',
+      issue: 28287,
+      title: 'numpy/numpy#28287',
+      page_url: 'https://example.invalid/repro/numpy/28287/',
+      source_url: 'https://example.invalid/src/numpy-28287',
+      language: 'python',
     },
     {
       slug: 'bash-local-shadows-exit',
@@ -127,12 +138,12 @@ afterEach(() => {
 describe('list_recipes', () => {
   it('returns all when no filters', async () => {
     const r = await listRecipes({});
-    assert.equal(r.count, 3);
+    assert.equal(r.count, 4);
   });
 
   it('filters by layer', async () => {
     const r = await listRecipes({ layer: 1 });
-    assert.equal(r.count, 1);
+    assert.equal(r.count, 2);
     assert.equal(r.recipes[0]!.slug, 'pandas-56679');
   });
 
@@ -354,6 +365,15 @@ describe('verify_branch_fix', () => {
     const r = await verifyBranchFix({ slug: 'pandas-56679', fix_source: big });
     assert.equal(r.ok, false);
     if (!r.ok) assert.match(r.error, /4096-byte inline limit/);
+  });
+
+  it('Layer 1 without the Try a fix panel → refuses instead of deep-linking', async () => {
+    const r = await verifyBranchFix({
+      slug: 'numpy-28287',
+      fix_url: 'https://example.invalid/fix.py',
+    });
+    assert.equal(r.ok, false);
+    assert.match(String(r.error), /Try a fix/);
   });
 
   it('Layer 1 → path A, no fix supplied → notes the manual paste flow', async () => {

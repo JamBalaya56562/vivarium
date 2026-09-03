@@ -65,6 +65,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `tags` | array of strings | ⏳ | Optional. Free-form tag list scored by the matcher (e.g. `["sqlite3", "pragma", "foreign-keys"]`). Sourced from `recipe.json`. Added 2026-05-03. |
 | `expected_verdict` | string (enum) | ⏳ | Optional. Verdict the regression suite expects the recipe page to produce — `"reproduced"` or `"unreproduced"`. Sourced from `recipe.json`. Added in the 2026-05-18 revision. |
 | `expected_runtime` | string | ⏳ | Optional. Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name` (e.g. `"pyodide"`, `"docker-snapshot"`, `"rr-replay"`). Sourced from `recipe.json`. Added 2026-05-18. |
+| `path_a` | boolean | ⏳ | Optional. Present and `true` when the recipe page mounts the Path A "Try a fix" panel, so a consumer can hand a candidate fix to the page. Absent means it does not. Sourced from `recipe.json`. Added 2026-09-03. |
 
 ## Versioning
 
@@ -84,6 +85,7 @@ There is no current v2.
 | 2026-05-03 | Added optional `language`, `symptom`, `severity`, `tags` fields to recipe entries. Sourced from a centralised facet overlay (`docs/site/_data/recipe-facets.json`), not per-recipe frontmatter. Backwards-compatible — v1 consumers ignore. |
 | 2026-05-18 | Added optional `expected_verdict` / `expected_runtime` fields, and moved the source of the existing `language` / `symptom` / `severity` / `tags` fields from the retired `docs/site/_data/recipe-facets.json` overlay to per-recipe `src/layer*_*/<slug>/recipe.json` files (schema: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)). Backwards-compatible — v1 consumers ignore the new fields and read the existing ones unchanged. |
 | 2026-09-02 | Added optional `page_url_ja`, the Japanese rendering of a recipe's reproduction page. Emitted only for recipes that ship a translation, so its presence is the signal that a Japanese page exists. Backwards-compatible — v1 consumers ignore it. |
+| 2026-09-03 | Added optional `path_a`. Layer alone no longer implies a page can run a supplied fix: Layer 1 recipes opt into the panel one at a time, and consumers that used to dispatch on `layer === 1` should read this field instead. Backwards-compatible — v1 consumers ignore it. |
 
 ## Generation
 

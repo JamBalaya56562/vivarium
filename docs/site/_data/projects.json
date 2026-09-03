@@ -37,15 +37,6 @@
       "homepage": "https://www.ruby-lang.org/",
       "github": "https://github.com/ruby/ruby"
     },
-    "php": {
-      "display_name": "PHP",
-      "tagline": "PHP runtime and standard extensions.",
-      "tagline_ja": "PHP の runtime と標準拡張。",
-      "description": "Reproductions execute under php-wasm; host parity via mise-pinned php running the same repro.php.",
-      "description_ja": "再現は php-wasm 上で実行される。host 側の等価性は mise で版を固定した php が同じ repro.php を実行することで担保する。",
-      "homepage": "https://www.php.net/",
-      "github": "https://github.com/php/php-src"
-    },
     "regex": {
       "display_name": "rust-lang/regex",
       "tagline": "Rust's standard regex crate.",

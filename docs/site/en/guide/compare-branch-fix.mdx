@@ -58,7 +58,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
       items={[
         {
           lead: 'I know the recipe.',
-          body: <>Browse <a href="/vivarium/repro/">the gallery</a> and click through to the recipe page. Note the slug (e.g. <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" /></code>).</>,
+          body: <>Browse <a href="/vivarium/repro/">the gallery</a> and click through to the recipe page. Note the slug (e.g. <code><ExampleSlug layer={1} fallback="<recipe-slug>" /></code>).</>,
         },
         {
           lead: 'I have an error message — find the recipe for me.',
@@ -72,7 +72,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     eyebrow="// 2 · PATH A — LAYER 1"
     heading="Paste a fix on the recipe page; capture the verdict."
   >
-    <p>Layer 1 recipes that opt into Path A render a <strong>"Try a fix"</strong> panel underneath the baseline output. Today this is shipped on the PHP exemplar (<code><ExampleSlug layer={1} language="php" linked fallback="<php-slug>" /></code>); others follow as the shape proves out.</p>
+    <p>Layer 1 recipes that opt into Path A render a <strong>"Try a fix"</strong> panel underneath the baseline output. No recipe ships the panel today — the runtime hook and the guide below stay in place for the next recipe that opts in.</p>
     <NumberedList
       items={[
         {

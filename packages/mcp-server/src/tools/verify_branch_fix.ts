@@ -153,6 +153,12 @@ export async function verifyBranchFix(
   const notes: string[] = [];
 
   if (recipe.layer === 1) {
+    if (!recipe.path_a) {
+      return {
+        ok: false,
+        error: `${recipe.slug} does not mount the Path A "Try a fix" panel, so a fix cannot be run on its page. Fork the recipe and run it locally, or pick a Layer 2/3 recipe for the Path B workflow.`,
+      };
+    }
     if (args.fix_url || args.fix_source) {
     } else {
       notes.push(
@@ -224,7 +230,7 @@ export const VERIFY_BRANCH_FIX_TOOL = {
         type: 'string' as const,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$',
         description:
-          "Kebab-case recipe slug (e.g. 'php-12167', 'bash-local-shadows-exit'). Same convention as Manifest v1's `slug`.",
+          "Kebab-case recipe slug (e.g. 'lark-1585', 'bash-local-shadows-exit'). Same convention as Manifest v1's `slug`.",
       },
       fix_url: {
         type: 'string' as const,

@@ -7,7 +7,7 @@ const S = pick(
 );
 
 // 0.1.0 drops SimpleXML from the default build and reshapes the PhpWeb
-// constructor, so php-12167 cannot run on it.
+// constructor; a php recipe needing either has to stay on 0.0.8.
 export const DEFAULT_PHP_WASM_VERSION = "0.0.8";
 
 export interface LoadOptions {

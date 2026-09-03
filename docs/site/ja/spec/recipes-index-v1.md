@@ -63,6 +63,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `tags` | 文字列の配列 | ⏳ | オプション。マッチャーがスコア計算に使う自由形式タグリスト（例: `["sqlite3", "pragma", "foreign-keys"]`）。`recipe.json` から供給。2026-05-03 追加。 |
 | `expected_verdict` | 文字列（enum） | ⏳ | オプション。リグレッションスイートが期待する verdict — `"reproduced"` または `"unreproduced"`。`recipe.json` から供給。2026-05-18 リビジョンで追加。 |
 | `expected_runtime` | 文字列 | ⏳ | オプション。レシピの verdict envelope が `__VIVARIUM_RESULT__.runtime.name` に報告するランタイム識別子（例: `"pyodide"`、`"docker-snapshot"`、`"rr-replay"`）。`recipe.json` から供給。2026-05-18 追加。 |
+| `path_a` | 真偽値 | ⏳ | オプション。レシピページが Path A の「Try a fix」パネルを持つ場合にのみ `true` が出力される。コンシューマーはこれを見て、候補 fix をページに渡せるかを判断する。無い場合は持たない。`recipe.json` から供給。2026-09-03 追加。 |
 
 ## バージョニング
 
@@ -82,6 +83,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 2026-05-03 | レシピエントリにオプションの `language` / `symptom` / `severity` / `tags` フィールドを追加。レシピごとのフロントマタではなく、集中型ファセットオーバーレイ（`docs/site/_data/recipe-facets.json`）から供給される。後方互換 — v1 コンシューマーは無視できる。 |
 | 2026-05-18 | オプションの `expected_verdict` / `expected_runtime` フィールドを追加。同時に既存の `language` / `symptom` / `severity` / `tags` の供給元を、廃止された `docs/site/_data/recipe-facets.json` オーバーレイから、レシピごとの `src/layer*_*/<slug>/recipe.json`（スキーマ: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)）へ移行。後方互換 — v1 コンシューマーは新フィールドを無視し、既存フィールドは変更なく読み続けられる。 |
 | 2026-09-02 | オプションの `page_url_ja`（レシピ再現ページの日本語版）を追加。翻訳を持つレシピにのみ出力されるため、その存在自体が日本語ページの有無を示すシグナルになる。後方互換 — v1 コンシューマーは無視できる。 |
+| 2026-09-03 | オプションの `path_a` を追加。layer だけでは「そのページが渡された fix を実行できるか」を判断できなくなった——Layer 1 レシピはパネルに個別に opt-in する。`layer === 1` で分岐していたコンシューマーはこのフィールドを読むこと。後方互換 — v1 コンシューマーは無視できる。 |
 
 ## 生成方法
 

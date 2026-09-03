@@ -202,10 +202,22 @@ async function executeLayer1(
   slug: string,
   action: 'verify_unfixed' | 'verify_fixed',
   args: VerifyAndReportFixArgs,
+  pathA = false,
 ): Promise<{
   verdictEntry?: RoundtripVerdict;
   executed: ExecutedInfo;
 }> {
+  if (action === 'verify_fixed' && !pathA) {
+    return {
+      executed: {
+        action,
+        source: 'layer1-headless',
+        ok: false,
+        duration_ms: 0,
+        error: `${slug} does not mount the Path A "Try a fix" panel, so a fix cannot be run against its page`,
+      },
+    };
+  }
   if (action === 'verify_fixed' && !args.fix_url) {
     return {
       executed: {
@@ -368,7 +380,7 @@ export async function verifyAndReportFix(
     const executable = initialNext as 'verify_unfixed' | 'verify_fixed';
     const captured =
       recipe.layer === 1
-        ? await executeLayer1(slug, executable, args)
+        ? await executeLayer1(slug, executable, args, recipe.path_a === true)
         : await executeLayer23(slug, recipe.layer as 2 | 3, executable, args);
 
     executed = captured.executed;
@@ -434,7 +446,7 @@ export const VERIFY_AND_REPORT_FIX_TOOL = {
         type: 'string' as const,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$',
         description:
-          "Kebab-case recipe slug (e.g. 'php-12167', 'bash-local-shadows-exit').",
+          "Kebab-case recipe slug (e.g. 'lark-1585', 'bash-local-shadows-exit').",
       },
       fix_url: {
         type: 'string' as const,

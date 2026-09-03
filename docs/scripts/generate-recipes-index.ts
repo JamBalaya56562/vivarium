@@ -52,6 +52,7 @@ interface RecipeEntry {
   tags: string[];
   expected_verdict?: string;
   expected_runtime?: string;
+  path_a?: boolean;
   roundtrip?: RoundtripState;
 }
 
@@ -69,6 +70,7 @@ interface RecipeMeta {
   tags?: string[];
   expected_verdict?: string;
   expected_runtime?: string;
+  path_a?: boolean;
 }
 
 interface ProjectMetaEntry {
@@ -355,6 +357,7 @@ async function buildEntry(
   if (meta?.severity) entry.severity = meta.severity;
   if (meta?.expected_verdict) entry.expected_verdict = meta.expected_verdict;
   if (meta?.expected_runtime) entry.expected_runtime = meta.expected_runtime;
+  if (meta?.path_a) entry.path_a = true;
   if (existsSync(join(recipeDir, 'i18n.ja.json'))) {
     entry.page_url_ja = `${PAGES_BASE}/ja/repro/${project}/${issuePath}/`;
   }

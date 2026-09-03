@@ -3,7 +3,7 @@ version = "1"
 php-version = "8.2"
 
 [source]
-paths = ["src/layer1_wasm/php-12167"]
+paths = ["src/layer1_wasm"]
 
 [formatter]
 print-width = 100

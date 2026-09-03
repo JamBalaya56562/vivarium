@@ -1,9 +1,9 @@
 # Reproduction — rust-lang/regex#779
 
-> Phase 2 reproduction page — third non-Pyodide entry in Vivarium's
-> gallery (after [`ruby-21709/`](../ruby-21709/) and
-> [`php-12167/`](../php-12167/)) and the first to ship a **compiled**
-> Rust artefact rather than a CDN-hosted single-runtime bundle.
+> Phase 2 reproduction page — non-Pyodide entry in Vivarium's gallery
+> (alongside [`ruby-21709/`](../ruby-21709/)) and the first to ship a
+> **compiled** Rust artefact rather than a CDN-hosted single-runtime
+> bundle.
 > Conforms to `vivarium-contract: v1`.
 
 ## The bug

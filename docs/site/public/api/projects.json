@@ -26,8 +26,8 @@
       "page_url": "https://aletheia-works.github.io/vivarium/repro/cpython/",
       "tagline": "The reference Python interpreter.",
       "tagline_ja": "リファレンス実装の Python インタプリタ。",
-      "description": "Reproductions hit Python 3.13 / sqlite3 in the same Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
-      "description_ja": "ブラウザで動くのと同じ Pyodide ビルドの Python 3.13 / sqlite3 を突く再現。各ページは mise で版を固定した host CPython でも走る CLI 版 repro.py も公開する。",
+      "description": "Reproductions hit Python 3.14 / sqlite3 in the same Pyodide build that ships in the browser; pages also publish a CLI repro.py that runs against a host CPython pinned via mise.",
+      "description_ja": "ブラウザで動くのと同じ Pyodide ビルドの Python 3.14 / sqlite3 を突く再現。各ページは mise で版を固定した host CPython でも走る CLI 版 repro.py も公開する。",
       "homepage": "https://www.python.org/",
       "github": "https://github.com/python/cpython"
     },
@@ -120,21 +120,6 @@
       "description_ja": "Pyodide に同梱される pandas wheel で再現する、空データや dtype の境界での regression。同じスクリプトは uv 経由で host の pandas でも走る。",
       "homepage": "https://pandas.pydata.org/",
       "github": "https://github.com/pandas-dev/pandas"
-    },
-    {
-      "project": "php",
-      "display_name": "PHP",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/php/",
-      "tagline": "PHP runtime and standard extensions.",
-      "tagline_ja": "PHP の runtime と標準拡張。",
-      "description": "Reproductions execute under php-wasm; host parity via mise-pinned php running the same repro.php.",
-      "description_ja": "再現は php-wasm 上で実行される。host 側の等価性は mise で版を固定した php が同じ repro.php を実行することで担保する。",
-      "homepage": "https://www.php.net/",
-      "github": "https://github.com/php/php-src"
     },
     {
       "project": "postgres",

@@ -145,25 +145,6 @@
       "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/pandas/56679/"
     },
     {
-      "slug": "php-12167",
-      "layer": 1,
-      "project": "php",
-      "issue": 12167,
-      "title": "php/php-src#12167",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/php/12167/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/php-12167",
-      "language": "php",
-      "tags": [
-        "json_encode",
-        "recursion-depth"
-      ],
-      "symptom": "json-encode-recursion",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "php-wasm",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/php/12167/"
-    },
-    {
       "slug": "regex-779",
       "layer": 1,
       "project": "regex",

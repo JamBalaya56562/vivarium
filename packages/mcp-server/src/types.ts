@@ -14,6 +14,7 @@ export interface RecipeEntry {
   symptom?: string;
   severity?: string;
   tags?: string[];
+  path_a?: boolean;
   roundtrip?: RoundtripState;
 }
 

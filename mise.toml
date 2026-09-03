@@ -170,18 +170,13 @@ description = "Run Ruby repros against host Ruby (3.3.x pin)"
 tools = { ruby = "3.3.3" }
 run = "ruby src/layer1_wasm/ruby-21709/repro.rb"
 
-[tasks."repro:native:php"]
-description = "Run PHP repros against host PHP (php-wasm-equivalent build)"
-tools = { "conda:php" = "latest" }
-run = "php src/layer1_wasm/php-12167/repro.php"
-
 [tasks."repro:native:rust"]
 description = "Run Rust repros against host Rust toolchain"
 run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
 
 [tasks."repro:native"]
 description = "Run all repros against host interpreters/compilers"
-depends = ["repro:native:python", "repro:native:ruby", "repro:native:php", "repro:native:rust"]
+depends = ["repro:native:python", "repro:native:ruby", "repro:native:rust"]
 
 [tasks."docker:build"]
 description = "Build all Layer 2 Docker reproduction images locally"

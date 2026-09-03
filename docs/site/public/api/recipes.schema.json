@@ -4,7 +4,11 @@
   "title": "Vivarium recipes index (v1)",
   "description": "Machine-generated index of every reproduction this repository hosts. Built at docs build time by docs/scripts/generate-recipes-index.ts and deployed to https://aletheia-works.github.io/vivarium/api/recipes.json. Consumed by the Vivarium MCP server (ADR-0019, private memo) and any other programmatic tool that wants to list, filter, or look up reproductions. The `index` literal carries the format version; minor additive revisions follow ADR-0018's two-tier policy.",
   "type": "object",
-  "required": ["index", "contract", "recipes"],
+  "required": [
+    "index",
+    "contract",
+    "recipes"
+  ],
   "additionalProperties": false,
   "properties": {
     "index": {
@@ -18,7 +22,9 @@
     "recipes": {
       "type": "array",
       "description": "All reproductions hosted in this repository, sorted by layer then by slug.",
-      "items": { "$ref": "#/$defs/recipeEntry" }
+      "items": {
+        "$ref": "#/$defs/recipeEntry"
+      }
     }
   },
   "$defs": {
@@ -42,7 +48,11 @@
         },
         "layer": {
           "type": "integer",
-          "enum": [1, 2, 3],
+          "enum": [
+            1,
+            2,
+            3
+          ],
           "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = record-replay (image ships with recorded `rr` trace baked in)."
         },
         "project": {
@@ -104,7 +114,10 @@
           "description": "Optional. Free-form tag list scored by the matcher (e.g. ['sqlite3', 'pragma', 'foreign-keys']). Sourced from src/layer*_*/<slug>/recipe.json. Added 2026-05-03; backwards-compatible."
         },
         "expected_verdict": {
-          "enum": ["reproduced", "unreproduced"],
+          "enum": [
+            "reproduced",
+            "unreproduced"
+          ],
           "description": "Optional. Verdict the regression suite expects the recipe page to produce. Sourced from src/layer*_*/<slug>/recipe.json. Added in the 2026-05-18 v1 revision; backwards-compatible, v1 consumers ignore."
         },
         "expected_runtime": {
@@ -115,6 +128,10 @@
         "roundtrip": {
           "type": "object",
           "description": "Optional. Per-recipe round-trip workflow state, sourced from src/layer*/<slug>/roundtrip.json. Canonical inner shape is documented in https://aletheia-works.github.io/vivarium/spec/roundtrip.schema.json (schema_version 1); this catalogue schema intentionally leaves the inner shape unconstrained so the round-trip schema can evolve (verdicts, status enum, fork shape) without forcing a recipes-index revision in lockstep. Added in the 2026-05-17 v1 revision; backwards-compatible, v1 consumers ignore."
+        },
+        "path_a": {
+          "type": "boolean",
+          "description": "Present and true when the recipe page mounts the Path A \"Try a fix\" panel. Sourced from recipe.json."
         }
       }
     }
