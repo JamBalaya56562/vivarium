@@ -123,6 +123,20 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
+          recipes_index=docs/site/public/api/recipes.json
+          built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          recipe_field() {
+            value="$(jq -r --arg s "$1" \
+              ".recipes[] | select(.slug == \$s) | .$2" \
+              "$recipes_index")"
+            if [ -z "$value" ] || [ "$value" = 'null' ]; then
+              echo "::error::${1} has no ${2} in ${recipes_index}" >&2
+              return 1
+            fi
+            printf '%s' "$value"
+          }
+
           recipe_changed() {
             case "$CHANGED_SLUGS" in
               '*') return 0 ;;
@@ -170,8 +184,22 @@ jobs:
               continue
             fi
 
+            description="$(recipe_field "$slug" title)"
+            page_url="$(recipe_field "$slug" page_url)"
+            labels=(
+              --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"
+              --label "org.opencontainers.image.revision=${GITHUB_SHA}"
+              --label "org.opencontainers.image.version=${GITHUB_SHA}"
+              --label "org.opencontainers.image.created=${built_at}"
+              --label "org.opencontainers.image.title=vivarium-${slug}"
+              --label "org.opencontainers.image.description=${description}"
+              --label "org.opencontainers.image.url=${page_url}"
+              --label "org.opencontainers.image.documentation=${page_url}"
+              --label "org.opencontainers.image.licenses=Apache-2.0"
+            )
+
             echo "Building Layer 2 image: ${slug}"
-            docker build --tag "$tag_latest" --tag "$tag_sha" "$slug_dir"
+            docker build "${labels[@]}" --tag "$tag_latest" --tag "$tag_sha" "$slug_dir"
 
             echo "Pushing ${tag_latest} and ${tag_sha} to GHCR"
             docker push "$tag_latest"

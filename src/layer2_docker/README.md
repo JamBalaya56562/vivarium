@@ -67,6 +67,17 @@ that, so the snapshot describes the exact image a visitor receives.
 The weekly `repro-regression` run is the lane that rebuilds from
 source and reports drift between the two.
 
+Published images carry OCI metadata, so `docker inspect` on a pulled
+image says which bug it reproduces and where the page for it lives:
+`title`, `description`, `url`, `documentation`, `source`, `revision`,
+`version`, `created` and `licenses` under `org.opencontainers.image.*`.
+`description` and the two page links are read from
+`docs/site/public/api/recipes.json`, so they cannot drift from the
+gallery. The rest are the build's own facts — repository, commit,
+timestamp, recipe slug — or a constant. `image.source` is what links
+the GHCR package to this repository — that governs access inheritance and
+the repository listing, **not** whether the package is public.
+
 GHCR public images are free + unlimited (storage and bandwidth) at
 the time of writing; GitHub Actions on a public repo are free +
 unlimited (build minutes). Vivarium pays nothing recurring for
