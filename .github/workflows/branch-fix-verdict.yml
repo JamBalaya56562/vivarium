@@ -75,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p verdict-bundle
-          bash scripts/capture_layer2_verdict.sh \
+          bash scripts/capture-layer2-verdict.sh \
             "${{ inputs.branch_image }}" \
             "verdict-bundle/branch-fix-verdict.json" \
             --image-tag "${{ inputs.branch_image }}"
@@ -90,7 +90,7 @@ jobs:
           if [ -n "$original_image" ]; then
             echo "Re-capturing original verdict from supplied image: ${original_image}"
             docker pull "$original_image"
-            bash scripts/capture_layer2_verdict.sh \
+            bash scripts/capture-layer2-verdict.sh \
               "$original_image" \
               "$out" \
               --image-tag "$original_image"

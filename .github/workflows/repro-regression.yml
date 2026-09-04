@@ -123,7 +123,7 @@ jobs:
             echo "Building Layer 2 image for regression: ${slug}"
             docker build --tag "$tag" "$slug_dir"
 
-            bash scripts/capture_layer2_verdict.sh \
+            bash scripts/capture-layer2-verdict.sh \
               "$tag" \
               "${slug_dir}/verdict.json"
 

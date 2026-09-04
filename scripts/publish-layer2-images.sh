@@ -81,7 +81,7 @@ for dockerfile in src/layer2_docker/*/Dockerfile; do
           echo "::error::${tag_latest} is published but could not be pulled. Refusing to rebuild an unchanged recipe: that would move :latest and force every visitor to re-pull."
           exit 1
         fi
-        bash scripts/capture_layer2_verdict.sh \
+        bash scripts/capture-layer2-verdict.sh \
           "$tag_latest" "${slug_dir}/verdict.json" \
           --image-tag "$tag_latest" \
           --image-digest "$(repo_digest "$tag_latest")"
@@ -125,7 +125,7 @@ for dockerfile in src/layer2_docker/*/Dockerfile; do
     verdict_tag="$tag_sha"
   fi
 
-  bash scripts/capture_layer2_verdict.sh \
+  bash scripts/capture-layer2-verdict.sh \
     "$tag_latest" "${slug_dir}/verdict.json" \
     --image-tag "$verdict_tag" \
     --image-digest "$(repo_digest "$verdict_tag")"

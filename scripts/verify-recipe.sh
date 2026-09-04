@@ -29,7 +29,7 @@ tag="vivarium-${slug}:dev"
 docker build -t "${tag}" "${recipe_dir}"
 
 echo "==> [3/6] docker run + capture verdict + schema-validate"
-bash scripts/capture_layer2_verdict.sh "${tag}" "${recipe_dir}/verdict.json"
+bash scripts/capture-layer2-verdict.sh "${tag}" "${recipe_dir}/verdict.json"
 
 echo "==> [4/6] regenerate recipes / projects indices + site stats + biome check"
 (cd docs && bun run generate)
