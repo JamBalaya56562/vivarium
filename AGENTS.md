@@ -235,11 +235,21 @@ Rust); each workflow step spells out the setup action directly so
 the runtime is auditable from the workflow YAML alone. Versions in
 `mise.toml` and CI workflows can drift; bumps land in separate PRs.
 
-The lint workflows (`test-lint-check.yml`, `lint-autofix.yml`) are
-the documented exception: they install the polyglot Rust-based
-lint toolchain (Mago / Ruff / Tombi / rumdl + cargo fmt + clippy)
+Two sets of workflows are documented exceptions.
+
+`test-lint-check.yml` and `lint-autofix.yml` install the polyglot
+Rust-based lint toolchain (Mago / Ruff / Tombi / rumdl + cargo fmt + clippy)
 via `jdx/mise-action` to avoid five separate org-level third-party
 action allowlist registrations.
+
+`deploy-docs.yml` and `repro-regression.yml` use `jdx/mise-action`
+because they invoke `mise run` tasks (`docs:build`, `repro:build`,
+`repro:typecheck`, `repro:i18n`) rather than calling a runtime
+directly. There mise is the build entry point, not a way of
+installing a runtime, so the rule above does not reach it. A
+workflow that only needs a runtime uses that runtime's setup
+action — `layer3-build.yml` needs bun solely to install `ajv-cli`
+and so uses `oven-sh/setup-bun`.
 
 When adding a new tool, pin it in `mise.toml` first.
 

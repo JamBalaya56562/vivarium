@@ -6,7 +6,6 @@ on:
     paths:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
-      - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
       - 'docs/site/public/spec/**.schema.json'
       - 'docs/scripts/**'
@@ -17,7 +16,6 @@ on:
     paths:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
-      - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
       - 'docs/site/public/spec/**.schema.json'
       - 'docs/scripts/**'
@@ -216,59 +214,3 @@ jobs:
           name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
           path: src/layer1_wasm/playwright-report/
           retention-days: 14
-
-  layer3-build:
-    name: layer3 build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup mise (bun)
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          install: true
-          cache: true
-          experimental: true
-          install_args: bun
-
-      - name: Install ajv-cli for verdict schema validation
-        run: |
-          BUN="$(mise which bun)"
-          cd "$RUNNER_TEMP"
-          "$BUN" init -y >/dev/null
-          "$BUN" add ajv-cli@5 ajv-formats
-          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
-
-      - name: Build Layer 3 rr-replay reproductions (no run, no push)
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          for dockerfile in src/layer3_thirdway/*/Dockerfile; do
-            slug_dir="$(dirname "$dockerfile")"
-            slug="$(basename "$slug_dir")"
-            case "$slug" in _*) continue ;; esac
-            tag="vivarium-${slug}:test"
-
-            verdict_file="${slug_dir}/verdict.json"
-            if [ ! -f "$verdict_file" ]; then
-              echo "::error::Layer 3 recipe ${slug} is missing tracked verdict.json"
-              exit 1
-            fi
-            "$AJV_BIN" validate \
-              --spec=draft2020 \
-              -c ajv-formats \
-              -s "${GITHUB_WORKSPACE}/docs/site/public/spec/verdict.schema.json" \
-              -d "$verdict_file" || {
-                echo "::error::Layer 3 recipe ${slug} has malformed verdict.json (failed schema validation)"
-                cat "$verdict_file"
-                exit 1
-              }
-            verdict=$(jq -r '.verdict' "$verdict_file")
-
-            echo "Building Layer 3 image for regression: ${slug}"
-            docker build --tag "$tag" "$slug_dir"
-
-            echo "Layer 3 reproduction ${slug}: build OK; tracked verdict=${verdict}"
-          done
