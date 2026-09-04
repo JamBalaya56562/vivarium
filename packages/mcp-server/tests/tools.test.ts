@@ -618,7 +618,7 @@ describe('verify_and_report_fix', () => {
         'src/layer1_wasm/pandas-56679/roundtrip.json',
       );
       assert.ok(
-        r.commands.some((c) => c.includes('bun x playwright test')),
+        r.commands.some((c) => c.includes('bunx playwright test')),
         'layer 1 verify_unfixed commands should include playwright invocation',
       );
     }

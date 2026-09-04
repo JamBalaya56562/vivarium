@@ -26,7 +26,7 @@ export default defineConfig({
   },
 
   webServer: {
-    command: `bun run build && bun x rspress preview --port ${DOCS_PORT}`,
+    command: `bun run build && bunx rspress preview --port ${DOCS_PORT}`,
     url: `${DOCS_BASE}/vivarium/`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

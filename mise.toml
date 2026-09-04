@@ -63,25 +63,25 @@ run = "bun run preview"
 description = "Format docs/ JS/TS/CSS/JSON with Biome (in-place)"
 depends = ["docs:install"]
 dir = "docs"
-run = "bun x --bun biome format --write ."
+run = "bunx --bun biome format --write ."
 
 [tasks."docs:lint"]
 description = "Lint docs/ with Biome (read-only, exits non-zero on errors)"
 depends = ["docs:install"]
 dir = "docs"
-run = "bun x --bun biome lint ."
+run = "bunx --bun biome lint ."
 
 [tasks."docs:check"]
 description = "Biome check (format + lint + import-organize, read-only)"
 depends = ["docs:install"]
 dir = "docs"
-run = "bun x --bun biome check ."
+run = "bunx --bun biome check ."
 
 [tasks."docs:check:fix"]
 description = "Biome check + apply safe + unsafe auto-fixes"
 depends = ["docs:install"]
 dir = "docs"
-run = "bun x --bun biome check --write --unsafe ."
+run = "bunx --bun biome check --write --unsafe ."
 
 [tasks."repro:install"]
 description = "Install Layer 1 (WASM) sources dependencies"
@@ -296,7 +296,7 @@ set -euo pipefail
 bun install --frozen-lockfile
 bun run typecheck
 mise run repro:build
-bun x playwright install --with-deps chromium
+bunx playwright install --with-deps chromium
 bun run test
 '''
 

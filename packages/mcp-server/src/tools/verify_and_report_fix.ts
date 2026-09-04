@@ -138,7 +138,7 @@ function buildCommands(args: BuildCommandsArgs): string[] {
       if (pathAB === 'A') {
         return [
           `# Capture the unfixed verdict against the upstream-as-shipped runtime.`,
-          `bun x playwright test --grep ${slug}`,
+          `bunx playwright test --grep ${slug}`,
           `# Or inspect the verdict visually at ${compareUrl}.`,
         ];
       }
@@ -150,7 +150,7 @@ function buildCommands(args: BuildCommandsArgs): string[] {
       if (pathAB === 'A') {
         return [
           `# Capture the fixed verdict against the candidate fix source.`,
-          `PLAYWRIGHT_FIX_URL='<fix-url>' bun x playwright test --grep ${slug}`,
+          `PLAYWRIGHT_FIX_URL='<fix-url>' bunx playwright test --grep ${slug}`,
           `# Or open ${compareUrl} in a browser; the fix is pre-loaded via ?fix_url= / ?fix=<base64>.`,
         ];
       }

@@ -442,9 +442,6 @@ Layer 2. CI does not regenerate it.
 
 ## Cross-cutting pitfalls (all layers)
 
-- **`bunx` vs `bun x`.** Never write `bunx <pkg>` in scripts;
-  Windows local has no `bunx.cmd`. Always `bun x <pkg>`
-  (subcommand form).
 - **Auto-generated files.** `docs/site/public/api/recipes.json` and
   `docs/site/public/api/projects.json` are tracked but generated.
   Always run the generators before committing; never hand-edit.
