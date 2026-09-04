@@ -87,6 +87,9 @@ jobs:
               ;;
           esac
 
+          # shellcheck disable=SC2016  # $owner / $number are GraphQL
+          # variables resolved by the server from the -f/-F flags above;
+          # letting the shell expand them would send an empty query.
           project_data=$(gh api graphql \
             -f owner="$PROJECT_OWNER" \
             -F number="$PROJECT_NUMBER" \
@@ -122,6 +125,7 @@ jobs:
             exit 1
           fi
 
+          # shellcheck disable=SC2016  # GraphQL variables, not shell ones.
           add_result=$(gh api graphql \
             -f projectId="$PROJECT_ID" \
             -f contentId="$CONTENT_ID" \
@@ -133,6 +137,7 @@ jobs:
               }')
           ITEM_ID=$(echo "$add_result" | jq -r '.data.addProjectV2ItemById.item.id')
 
+          # shellcheck disable=SC2016  # GraphQL variables, not shell ones.
           gh api graphql \
             -f projectId="$PROJECT_ID" \
             -f itemId="$ITEM_ID" \

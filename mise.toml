@@ -368,12 +368,10 @@ description = "ShellCheck — scripts/ (read-only)"
 # Only scripts/. A recipe's repro.sh reproduces a shell footgun, so it
 # trips the check that detects that footgun — SC2155 and SC2038 are the
 # bugs two Layer 2 recipes exist to demonstrate.
-env = { SHELLCHECK_OPTS = "-S warning" }
 run = "shellcheck scripts/*.sh"
 
 [tasks."actions:check"]
 description = "actionlint — workflow syntax + ShellCheck over every run: block (read-only)"
-env = { SHELLCHECK_OPTS = "-S warning" }
 # Paths are explicit because actionlint finds workflows via `.git`,
 # which this repository does not have.
 run = "actionlint .github/workflows/*.yml"

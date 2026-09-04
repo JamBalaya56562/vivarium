@@ -43,9 +43,11 @@ jobs:
           version=$(jq -r .version package.json)
           name=$(jq -r .name package.json)
           jsr_name=$(jq -r .name jsr.json)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "npm_name=$name" >> "$GITHUB_OUTPUT"
-          echo "jsr_name=$jsr_name" >> "$GITHUB_OUTPUT"
+          {
+            echo "version=$version"
+            echo "npm_name=$name"
+            echo "jsr_name=$jsr_name"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check if npm version is already published
         id: npm-check

@@ -66,8 +66,10 @@ jobs:
 
       - name: Summary
         run: |
-          echo "### Seed complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Artifact: \`terraform-state\` (uploaded from run \`${{ github.run_id }}\`)" >> $GITHUB_STEP_SUMMARY
-          echo "- \`LATEST_APPLY_RUN_ID\` set to \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Next Terraform Plan/Apply run will download this state." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Seed complete"
+            echo ""
+            echo "- Artifact: \`terraform-state\` (uploaded from run \`${{ github.run_id }}\`)"
+            echo "- \`LATEST_APPLY_RUN_ID\` set to \`${{ github.run_id }}\`"
+            echo "- Next Terraform Plan/Apply run will download this state."
+          } >> "$GITHUB_STEP_SUMMARY"
