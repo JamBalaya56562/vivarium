@@ -29,7 +29,7 @@ jobs:
           path: pr-head
           allow-unsafe-pr-checkout: true
 
-      - uses: anthropics/claude-code-action@833fb0f8c9f6686b33d963a8bae0a94f4936ab2a # v1
+      - uses: anthropics/claude-code-action@8251c103ac8c1d761882c86aba1412c7f583c844 # v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
