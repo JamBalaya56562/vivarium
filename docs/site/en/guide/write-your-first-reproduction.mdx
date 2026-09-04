@@ -135,7 +135,7 @@ python -m http.server -d src/layer1_wasm/<your-slug> 8765
   >
     <p>A reproduction observed via Pyodide / Ruby.wasm is more convincing when it also reproduces on a native CPython / MRI Ruby. For Python,{' '} <a href="https://docs.astral.sh/uv/">uv</a> + PEP 723 inline metadata gives you a single-file companion:</p>
     <pre><code>{`# /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.14"
 # dependencies = ["pandas==2.3.3"]
 # ///
 import pandas as pd

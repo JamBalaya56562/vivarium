@@ -1,8 +1,8 @@
-target-version = "py313"
+target-version = "py314"
 
 line-length = 100
 
-include = ["src/layer1_wasm/*/repro.py", "docs/scripts/**/*.py"]
+include = ["src/layer1_wasm/*/*.py", "docs/scripts/**/*.py"]
 extend-exclude = [
   "**/node_modules/**",
   "**/dist/**",

@@ -38,7 +38,7 @@ for src_json in "${sources[@]}"; do
 
   rm -f "$wheels_dir"/*.whl "$wheels_dir/manifest.json"
 
-  uv run --no-project --with pip --python 3.13 -- \
+  uv run --no-project --with pip --python 3.14 -- \
     python -m pip wheel --no-deps \
     --wheel-dir "$wheels_dir" \
     "$pip_spec"

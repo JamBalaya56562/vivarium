@@ -135,7 +135,7 @@ python -m http.server -d src/layer1_wasm/<あなたの slug> 8765
   >
     <p>Pyodide / Ruby.wasm 経由で観測できたバグが、本物の CPython / MRI Ruby でも同じく再現することを示すと、レシピの説得力が上がります。 Python なら <a href="https://docs.astral.sh/uv/">uv</a> +{' '} PEP 723 inline metadata で 1 ファイル完結に書けます:</p>
     <pre><code>{`# /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.14"
 # dependencies = ["pandas==2.3.3"]
 # ///
 import pandas as pd

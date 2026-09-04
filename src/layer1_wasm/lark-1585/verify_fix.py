@@ -53,7 +53,7 @@ import subprocess
 import sys
 import textwrap
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 TIMEOUT_S = 8.0
 
@@ -108,7 +108,7 @@ def run_variant(variant: dict[str, str]) -> dict[str, object]:
                 "run",
                 "--no-project",
                 "--python",
-                "3.13",
+                "3.14",
                 "--with",
                 variant["spec"],
                 "--",
@@ -169,9 +169,9 @@ def run_variant(variant: dict[str, str]) -> dict[str, object]:
 
 
 def main() -> int:
-    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    started_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     variants = [run_variant(v) for v in VARIANTS]
-    finished_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    finished_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     baseline = next(v for v in variants if v["name"] == "baseline")
     fix = next(v for v in variants if v["name"] == "fix-candidate")

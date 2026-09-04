@@ -27,7 +27,7 @@ export default defineConfig({
 
   webServer: [
     {
-      command: `uv run --no-project --python 3.13 python -m http.server ${LAYER1_PORT}`,
+      command: `uv run --no-project --python 3.14 python -m http.server ${LAYER1_PORT}`,
       url: `${LAYER1_BASE}/`,
       reuseExistingServer: !process.env["CI"],
       timeout: 30_000,
@@ -35,7 +35,7 @@ export default defineConfig({
       stderr: "pipe",
     },
     {
-      command: `uv run --no-project --python 3.13 python -m http.server ${LAYER2_PORT}`,
+      command: `uv run --no-project --python 3.14 python -m http.server ${LAYER2_PORT}`,
       cwd: "../layer2_docker",
       url: `${LAYER2_BASE}/`,
       reuseExistingServer: !process.env["CI"],
