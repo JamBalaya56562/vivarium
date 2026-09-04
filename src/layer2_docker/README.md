@@ -38,7 +38,7 @@ Each directory ships:
 
 | File | Role | Required? |
 | ---- | ---- | --------- |
-| `Dockerfile` | Pinned base image + dependency setup. **Pin everything**: base image by digest, package versions explicit. | ✅ |
+| `Dockerfile` | Base image + dependency setup. **Track the latest base image**: a recipe is a claim that the bug survives on current software, so the base moves forward and CI re-runs the reproduction against it. Use the newest release tag (`alpine:3.24`, `postgres:18-alpine`), never a floating `:latest`. Package versions stay explicit. | ✅ |
 | `repro.sh` | The reproduction script. Exits 0 on `reproduced` (bug reproduces) and 1 on `unreproduced` (bug does not reproduce, or runtime errored). Same verdict semantics as Layer 1's per-page `repro.<lang>`. | ✅ |
 | `README.md` | Bug description (with upstream issue link), the exact `docker run …` command, expected output, the CI-snapshot verdict, and any "why this bug" notes. | ✅ |
 | `.devcontainer/devcontainer.json` | *Optional.* References the GHCR image; sets `postStartCommand: ./repro.sh`. Adds the "Open in Codespaces" path; pages without one ship just the `docker run` path. | ⏳ |

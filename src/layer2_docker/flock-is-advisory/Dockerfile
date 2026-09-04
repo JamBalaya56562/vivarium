@@ -5,10 +5,9 @@
 # "protect" a file, then are surprised when `cat`, `grep`, `sed`,
 # or any other tool reads it freely while the lock is held.
 #
-# Pinned base: `alpine:3.19`. We add `util-linux` (which provides
-# the `flock(1)` CLI wrapper around `flock(2)`) and `bash` for
-# the wrapper script.
-FROM alpine:3.19
+# `util-linux` provides the `flock(1)` CLI wrapper around
+# `flock(2)`; `bash` is for the wrapper script.
+FROM alpine:3.24
 
 RUN apk add --no-cache util-linux bash
 

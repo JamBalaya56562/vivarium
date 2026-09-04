@@ -354,10 +354,20 @@ mise exec -- bun run test:unit
 
 **Pitfalls**:
 
-- **Pinning.** Pin the Docker base image to a major tag at minimum
-  (`node:26-slim`, not `node:latest`). The image digest is
-  captured in the CI-generated `verdict.json` for full
-  determinism.
+- **Base images track the latest release.** A Layer 2 recipe
+  claims a bug is reachable on current software, so the base moves
+  forward rather than staying where it was authored. Name a
+  concrete release tag (`node:26-slim`, `alpine:3.24`) and bump it
+  — never `:latest`, which would change the image with no commit
+  to point at and no verdict re-run. Dependabot's `docker`
+  ecosystem opens those bumps; the run that lands them is what
+  re-verifies the reproduction. The digest CI built from is
+  recorded in the generated `verdict.json`.
+- **A bump that flips the verdict is a result, not a breakage.**
+  The Playwright suite asserts `expected_verdict`, so a fixed
+  upstream shows up as a red check. Decide whether the recipe
+  moves to the last reproducing tag or the recipe is retired —
+  do not pin backwards to keep CI green without saying why.
 - **Verdict polarity.** Exit 0 means *the bug reproduces*
   (positive identification of the surprise). This is the Contract
   v1 convention — different from typical CI green/red framing.

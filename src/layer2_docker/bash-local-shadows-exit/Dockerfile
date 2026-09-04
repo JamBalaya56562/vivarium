@@ -3,14 +3,10 @@
 # defeats `set -e` and causes silent failures in production
 # scripts.
 #
-# Pinned base image: `bash:5.2` — the documented surprise
-# survives every modern bash major; we pin to one specific
-# release so the snapshot is stable. The bash maintainer
-# considers this expected behaviour (see the page README for
-# the standards trail), so the page is a "real-world surprise
-# you should know about" entry, not an "Open upstream issue"
-# entry.
-FROM bash:5.2
+# The bash maintainer considers this expected behaviour, so the
+# page is a "real-world surprise you should know about" entry
+# rather than an open upstream issue.
+FROM bash:5.3
 
 COPY repro.sh /repro.sh
 RUN chmod +x /repro.sh

@@ -17,6 +17,24 @@ updates:
           - "*"
     open-pull-requests-limit: 5
 
+  - package-ecosystem: "docker"
+    directories:
+      - "/src/layer2_docker/*"
+    schedule:
+      interval: "daily"
+    labels:
+      - "type: chore"
+      - "scope: docker"
+      - "ai: generated"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+    groups:
+      layer2-base-images:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+
   - package-ecosystem: "terraform"
     directory: "/infra/github"
     schedule:

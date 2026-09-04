@@ -9,11 +9,10 @@
 # `find … -print0 | xargs -0 …` — is well-known but easy to
 # forget and impossible for `set -e` to catch.
 #
-# Pinned base: `alpine:3.19`. We install GNU findutils for the
-# `-print0` flag (BusyBox `find` supports it on alpine 3.19+ as
-# well, but pinning the GNU version makes the verdict identical
-# across alpine and Debian-style distros).
-FROM alpine:3.19
+# GNU findutils is installed for `-print0`. BusyBox `find`
+# supports it too, but using the GNU one keeps the verdict
+# identical across alpine and Debian-style distros.
+FROM alpine:3.24
 
 RUN apk add --no-cache findutils bash grep
 

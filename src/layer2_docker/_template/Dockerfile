@@ -2,10 +2,9 @@
 #
 # Upstream issue: {{ISSUE_URL}}
 #
-# Pinned base: {{BASE_IMAGE}}. Pin a major tag (e.g. node:26-slim,
-# python:3.15-slim) so the image digest captured in the
-# CI-generated verdict.json is reproducible. See the recipe
-# README and src/layer2_docker/AGENTS.md for the full convention.
+# Name a concrete release tag for the base image, never
+# `:latest`, and bump it forward as new releases land — the
+# recipe claims the bug is reachable on current software.
 FROM {{BASE_IMAGE}}
 
 COPY repro.sh /repro.sh
