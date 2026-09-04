@@ -287,7 +287,7 @@ jobs:
               echo "ERROR: ${slug} not found in docs/site/public/api/recipes.json"
               exit 1
             fi
-            rel="${page_url#${pages_prefix}}"
+            rel="${page_url#"${pages_prefix}"}"
             rel="${rel%/}"
             echo "Bundling reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"
@@ -352,7 +352,7 @@ jobs:
               echo "ERROR: ${slug} not found in docs/site/public/api/recipes.json"
               exit 1
             fi
-            rel="${page_url#${pages_prefix}}"
+            rel="${page_url#"${pages_prefix}"}"
             rel="${rel%/}"
             echo "Bundling Layer 2 reproduction: ${slug} → ${dest}/${rel}/"
             mkdir -p "$dest/$rel"

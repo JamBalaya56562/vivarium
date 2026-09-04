@@ -237,10 +237,10 @@ the runtime is auditable from the workflow YAML alone. Versions in
 
 Two sets of workflows are documented exceptions.
 
-`test-lint-check.yml` and `lint-autofix.yml` install the polyglot
-Rust-based lint toolchain (Mago / Ruff / Tombi / rumdl + cargo fmt + clippy)
-via `jdx/mise-action` to avoid five separate org-level third-party
-action allowlist registrations.
+`test-lint-check.yml` and `lint-autofix.yml` install the polyglot lint
+toolchain (Mago / Ruff / Tombi / rumdl / ShellCheck / actionlint, plus
+cargo fmt and clippy) via `jdx/mise-action` to avoid a separate
+org-level third-party action allowlist registration for each one.
 
 `deploy-docs.yml` and `repro-regression.yml` use `jdx/mise-action`
 because they invoke `mise run` tasks (`docs:build`, `repro:build`,

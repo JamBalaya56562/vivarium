@@ -57,7 +57,11 @@ jobs:
           fi
           if [ ! -d "src/layer2_docker/${slug}" ]; then
             echo "::error::No recipe at src/layer2_docker/${slug}/. Layer 2 catalogue:"
-            ls -1 src/layer2_docker/ | grep -v '^_' || true
+            for d in src/layer2_docker/*/; do
+              name="$(basename "$d")"
+              case "$name" in _*) continue ;; esac
+              echo "$name"
+            done
             exit 1
           fi
           echo "Recipe directory confirmed: src/layer2_docker/${slug}/"

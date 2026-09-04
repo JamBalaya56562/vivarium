@@ -6,6 +6,8 @@ mago = "latest"
 ruff = "latest"
 tombi = "latest"
 rumdl = "latest"
+shellcheck = "latest"
+actionlint = "latest"
 jq = "latest"
 rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 
@@ -198,7 +200,12 @@ description = "Run a Layer 2 reproduction (set SLUG=<recipe>; e.g. SLUG=postgres
 run = '''
 if [ -z "${SLUG:-}" ]; then
   echo "usage: SLUG=<recipe> mise run docker:run"
-  echo "available:" && ls src/layer2_docker | grep -v "^_" | sed "s/^/  /"
+  echo "available:"
+  for d in src/layer2_docker/*/; do
+    name="$(basename "$d")"
+    case "$name" in _*) continue ;; esac
+    echo "  $name"
+  done
   exit 1
 fi
 docker run --rm "vivarium-${SLUG}:dev"
@@ -499,6 +506,21 @@ run = "tombi format"
 description = "rumdl — Markdown lint (read-only)"
 run = "rumdl check ."
 
+[tasks."shell:check"]
+description = "ShellCheck — scripts/ (read-only)"
+# Only scripts/. A recipe's repro.sh reproduces a shell footgun, so it
+# trips the check that detects that footgun — SC2155 and SC2038 are the
+# bugs two Layer 2 recipes exist to demonstrate.
+env = { SHELLCHECK_OPTS = "-S warning" }
+run = "shellcheck scripts/*.sh"
+
+[tasks."actions:check"]
+description = "actionlint — workflow syntax + ShellCheck over every run: block (read-only)"
+env = { SHELLCHECK_OPTS = "-S warning" }
+# Paths are explicit because actionlint finds workflows via `.git`,
+# which this repository does not have.
+run = "actionlint .github/workflows/*.yml"
+
 [tasks."markdown:check:fix"]
 description = "rumdl — apply Markdown autofix (in-place)"
 run = "rumdl fmt ."
@@ -528,8 +550,8 @@ done
 '''
 
 [tasks."lint:all"]
-description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust"
-depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check"]
+description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust + ShellCheck + actionlint"
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check"]
 
 [tasks."lint:all:fix"]
 description = "Apply all autofixes (in-place) across every language"
@@ -543,5 +565,5 @@ depends = [
 ]
 
 [tasks."ci:lint"]
-description = "Local equivalent of test-lint-check.yml (Biome + Mago + Ruff + Tombi + rumdl + Rust)"
-depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check"]
+description = "Local equivalent of test-lint-check.yml (Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint)"
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check"]

@@ -43,7 +43,12 @@ for src_json in "${sources[@]}"; do
     --wheel-dir "$wheels_dir" \
     "$pip_spec"
 
-  whl=$(ls "$wheels_dir"/*.whl | head -1)
+  whl=""
+  for candidate in "$wheels_dir"/*.whl; do
+    [ -e "$candidate" ] || continue
+    whl="$candidate"
+    break
+  done
   if [ -z "$whl" ]; then
     echo "[wheels:build] $slug: pip wheel produced no .whl file." >&2
     exit 1

@@ -27,7 +27,8 @@ on:
       - 'tombi.toml'
       - '.rumdl.toml'
       - 'mise.toml'
-      - '.github/workflows/test-lint-check.yml'
+      - '**/*.sh'
+      - '.github/workflows/**'
 
 permissions:
   contents: read
