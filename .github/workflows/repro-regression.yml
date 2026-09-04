@@ -9,8 +9,9 @@ on:
       - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
       - 'docs/site/public/spec/**.schema.json'
+      - 'docs/scripts/**'
+      - 'scripts/**'
       - '.github/workflows/repro-regression.yml'
-      - '.github/workflows/deploy-docs.yml'
       - 'mise.toml'
   pull_request:
     paths:
@@ -19,8 +20,9 @@ on:
       - 'src/layer3_thirdway/**'
       - 'src/external_examples/**'
       - 'docs/site/public/spec/**.schema.json'
+      - 'docs/scripts/**'
+      - 'scripts/**'
       - '.github/workflows/repro-regression.yml'
-      - '.github/workflows/deploy-docs.yml'
       - 'mise.toml'
   schedule:
     - cron: '0 0 * * 1'
@@ -199,8 +201,47 @@ jobs:
             exit 1
           fi
 
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: bunx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Playwright regression suite (${{ matrix.browser }})
+        run: bun run test -- --project=${{ matrix.browser }}
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
+          path: src/layer1_wasm/playwright-report/
+          retention-days: 14
+
+  layer3-build:
+    name: layer3 build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install ajv-cli for verdict schema validation
+        run: |
+          BUN="$(mise which bun)"
+          cd "$RUNNER_TEMP"
+          "$BUN" init -y >/dev/null
+          "$BUN" add ajv-cli@5 ajv-formats
+          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
+
       - name: Build Layer 3 rr-replay reproductions (no run, no push)
-        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -231,19 +272,3 @@ jobs:
 
             echo "Layer 3 reproduction ${slug}: build OK; tracked verdict=${verdict}"
           done
-
-      - name: Install Playwright browser (${{ matrix.browser }})
-        run: bunx playwright install --with-deps ${{ matrix.browser }}
-
-      - name: Run Playwright regression suite (${{ matrix.browser }})
-        run: bun run test -- --project=${{ matrix.browser }}
-        env:
-          CI: 'true'
-
-      - name: Upload Playwright report on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: playwright-report-${{ matrix.browser }}-${{ github.run_id }}
-          path: src/layer1_wasm/playwright-report/
-          retention-days: 14
