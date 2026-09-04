@@ -67,6 +67,15 @@ that, so the snapshot describes the exact image a visitor receives.
 The weekly `repro-regression` run is the lane that rebuilds from
 source and reports drift between the two.
 
+An untouched recipe with nothing published under `:latest` — a new
+package, or one somebody deleted — is built and pushed instead of
+failing the deploy. That path restores `:latest` alone and still
+mints no `:<git-sha>`, so the rule above holds without exception: a
+sha tag exists only for the recipes its commit changed. CI only takes
+the path when the registry positively reports the tag as absent; if
+it cannot tell, the deploy stops rather than risk moving a `:latest`
+that visitors already hold.
+
 Published images carry OCI metadata, so `docker inspect` on a pulled
 image says which bug it reproduces and where the page for it lives:
 `title`, `description`, `url`, `documentation`, `source`, `revision`,
