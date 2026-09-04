@@ -41,52 +41,50 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Review this pull request. The PR's files are checked out
-            under `pr-head/`; the repository as it stands on the base
-            branch is at the workspace root. Search the workspace root
-            whenever you need to find code the PR did *not* touch.
-
-            Do the job the author could not. They saw the files they
-            edited; you have the whole repository. Weight your effort
-            accordingly.
+            Review this pull request. The PR's files are under
+            `pr-head/`; the base branch is at the workspace root —
+            search there for code the PR did not touch. You have the
+            whole repository; the author only saw the files they
+            edited. Weight your effort accordingly.
 
             1. What else should have changed. For every symbol, file,
                path, glob, tag, env var, workflow step, task or config
                key the diff adds, removes, renames, moves or narrows,
                search the base tree for its other references and check
-               each one. A trigger that no longer matches its consumer,
+               each one: a trigger that no longer matches its consumer,
                a doc still describing the old behaviour, a caller left
                pointing at something that moved, a generated artefact
-               whose generator was not rerun. These are the findings
-               this review exists for.
+               whose generator was not rerun.
 
             2. Contradictions with what the repository already states.
                Hold the diff against AGENTS.md, .claude/rules/, the
                README.md nearest the changed code, and any spec page
                under docs/site/*/spec/. Read the rules; do not work
-               from a list of the ones somebody remembered. If the
-               change breaks a rule or an invariant one of them states
-               in words, quote the sentence. Either side may be the
-               thing that is wrong — say which you think it is.
+               from a list of the ones somebody remembered. Quote the
+               sentence the change breaks. Either side may be the
+               wrong one — say which.
 
             3. Whether the implementation is correct. Bugs the tests
                would not catch, edge cases, error paths, and changes
                that do not do what the commit message or the PR
-               description says. Check the description's factual
-               claims against the files instead of trusting them.
+               description says. Check the description's claims
+               against the files rather than trusting them.
 
-            Before reporting that something is unused, removable,
-            narrowable, or already covered elsewhere, enumerate its
-            consumers and name them in the finding. "Nothing else reads
-            this" is worth reporting only when you searched for readers
-            and can say what you searched. A confident finding built on
-            an unchecked assumption costs more than silence.
+            Verify before you assert, in both directions. Before
+            calling something unused, removable, narrowable or covered
+            elsewhere, enumerate its consumers and name them in the
+            finding. Before proposing a fix, confirm the key, flag or
+            API you reach for does what you think here — one defined
+            under a different parent, or that behaves differently in
+            this mode, is not the one you want; if you narrow
+            something, re-run the consumer search against the narrowed
+            version. When you cannot confirm a remedy, report the
+            finding without one and say what you could not check.
 
             Report each finding as an inline comment on the line it
-            concerns, with what breaks and the evidence you gathered.
-            Keep the summary comment for what has no single line — a
-            missing update in a file the diff never touched belongs
-            there, with the path. Skip nits the linters already
-            enforce. Saying you found nothing is a fine answer when the
-            searches above came back empty — but it should mean you ran
-            them, not that the diff read fine.
+            concerns, with what breaks and the evidence. Keep the
+            summary for what has no single line — a missing update in
+            a file the diff never touched belongs there, with the
+            path. Skip nits the linters enforce. "I found nothing" is
+            a fine answer when the searches came back empty, but it
+            should mean you ran them.
