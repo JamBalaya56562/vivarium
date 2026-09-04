@@ -102,23 +102,7 @@ run = "bun run build"
 
 [tasks."repro:build:rust"]
 description = "Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
-shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
-run = '''
-set -euo pipefail
-find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
-  crate_dir=$(dirname "$cargo_toml")
-  if [ -f "${crate_dir}/recipe.json" ]; then
-    recipe_dir="$crate_dir"
-  else
-    recipe_dir=$(dirname "$crate_dir")
-  fi
-  echo "==> cargo build $crate_dir"
-  cargo build --release --target wasm32-wasip1 --manifest-path "$cargo_toml"
-  for wasm in "${crate_dir}"/target/wasm32-wasip1/release/*.wasm; do
-    cp "$wasm" "${recipe_dir}/$(basename "$wasm")"
-  done
-done
-'''
+run = "bash scripts/build-layer1-rust.sh"
 
 [tasks."repro:build:wheels"]
 description = "Build Layer 1 fix-candidate wheels from each src/layer1_wasm/<slug>/wheels/source.json (gitignored output; ADR-0040)"
@@ -152,20 +136,7 @@ bun run test
 
 [tasks."repro:native:python"]
 description = "Run every src/layer1_wasm/*/repro.py against host Python (auto-discovered; PEP 723 inline metadata pins each script's deps)"
-shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
-run = '''
-set -euo pipefail
-shopt -s nullglob
-matched=0
-for f in src/layer1_wasm/*/repro.py; do
-  matched=1
-  echo "== $f =="
-  mise exec uv -- uv run "$f"
-done
-if [ "$matched" -eq 0 ]; then
-  echo "[repro:native:python] no src/layer1_wasm/*/repro.py found — nothing to run" >&2
-fi
-'''
+run = "bash scripts/run-layer1-python.sh"
 
 [tasks."repro:native:ruby"]
 description = "Run Ruby repros against host Ruby (3.3.x pin)"
@@ -182,52 +153,16 @@ depends = ["repro:native:python", "repro:native:ruby", "repro:native:rust"]
 
 [tasks."docker:build"]
 description = "Build all Layer 2 Docker reproduction images locally"
-shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
-run = '''
-set -euo pipefail
-shopt -s nullglob
-for dockerfile in src/layer2_docker/*/Dockerfile; do
-  slug_dir=$(dirname "$dockerfile")
-  slug=$(basename "$slug_dir")
-  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
-  echo "==> docker build vivarium-${slug}:dev"
-  docker build -t "vivarium-${slug}:dev" "$slug_dir"
-done
-'''
+run = "bash scripts/build-layer2-images.sh"
 
 [tasks."docker:run"]
 description = "Run a Layer 2 reproduction (set SLUG=<recipe>; e.g. SLUG=postgres-lost-update)"
-run = '''
-if [ -z "${SLUG:-}" ]; then
-  echo "usage: SLUG=<recipe> mise run docker:run"
-  echo "available:"
-  for d in src/layer2_docker/*/; do
-    name="$(basename "$d")"
-    case "$name" in _*) continue ;; esac
-    echo "  $name"
-  done
-  exit 1
-fi
-docker run --rm "vivarium-${SLUG}:dev"
-'''
+run = "bash scripts/run-layer2-image.sh"
 
 [tasks."docker:capture-verdicts"]
 description = "Build every Layer 2 image + capture verdict.json into the slug dir (local dev parity with the CI snapshot — lets `bun --cwd docs run dev` show real verdicts)"
 depends = ["docker:build"]
-shell = "bash -c"  # need `set -o pipefail` and `shopt`, neither in POSIX sh
-run = '''
-set -euo pipefail
-shopt -s nullglob
-for dockerfile in src/layer2_docker/*/Dockerfile; do
-  slug_dir=$(dirname "$dockerfile")
-  slug=$(basename "$slug_dir")
-  case "$slug" in _*) continue ;; esac  # skip _template/ etc.
-  tag="vivarium-${slug}:dev"
-  echo "==> capture verdict.json for ${slug}"
-  bash scripts/capture_layer2_verdict.sh "$tag" "${slug_dir}/verdict.json"
-done
-echo "Done. Refresh http://localhost:3000/vivarium/repro/<project>/<issue_path>/ to see captured verdicts."
-'''
+run = "bash scripts/capture-layer2-verdicts.sh"
 
 [tasks."ghcr:login"]
 description = "Log in to ghcr.io using a write:packages-scoped PAT file (does not touch gh CLI auth state)"
@@ -263,51 +198,22 @@ docker login ghcr.io -u "$user" --password-stdin < "$pat_file"
 [tasks."branch-fix:publish"]
 description = "Build a branch-fix image and push to ghcr.io/<user>/vivarium-<slug>-fix:<tag>; auto-logout after push"
 depends = ["ghcr:login"]
-shell = "bash -c"
 usage = '''
 arg "<slug>"       help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
 arg "<tag>"        help="image tag, typically the fix commit SHA (e.g. 04d86dab)"
 arg "<dockerfile>" help="path to the branch-fix Dockerfile"
 arg "<context>"    help="docker build context dir"
 '''
-run = '''
-set -euo pipefail
-slug="{{usage.slug}}"
-tag="{{usage.tag}}"
-dockerfile="{{usage.dockerfile}}"
-context="{{usage.context}}"
-user="${GHCR_USER:-$(gh api user --jq .login)}"
-img="ghcr.io/${user,,}/vivarium-${slug}-fix:${tag}"
-echo "==> docker build $img"
-docker build -t "$img" -f "$dockerfile" "$context"
-echo "==> docker push $img"
-docker push "$img"
-docker logout ghcr.io
-echo "$img"
-'''
+run = "bash scripts/publish-branch-fix.sh \"{{usage.slug}}\" \"{{usage.dockerfile}}\" \"{{usage.context}}\" \"{{usage.tag}}\""
 
 [tasks."branch-fix:verdict"]
 description = "Trigger aletheia-works/vivarium branch-fix-verdict.yml against a published image (thin wrapper over `gh workflow run`)"
-shell = "bash -c"
 usage = '''
 arg "<slug>"  help="recipe slug under src/layer2_docker/"
 arg "<image>" help="published image ref (e.g. ghcr.io/<user>/vivarium-<slug>-fix:<sha>)"
 flag "--expected <verdict>" help="expected branch-fix verdict (default: unreproduced)" default="unreproduced"
 '''
-run = '''
-set -euo pipefail
-slug="{{usage.slug}}"
-image="{{usage.image}}"
-expected="{{usage.expected}}"
-gh workflow run branch-fix-verdict.yml \
-  --repo aletheia-works/vivarium \
-  --field "slug=${slug}" \
-  --field "branch_image=${image}" \
-  --field "expected_verdict=${expected}"
-echo "Triggered. Tail with:"
-echo "  gh run list --repo aletheia-works/vivarium --workflow=branch-fix-verdict.yml --limit 1"
-echo "  gh run watch --repo aletheia-works/vivarium <run-id>"
-'''
+run = "bash scripts/capture-branch-fix-verdict.sh \"{{usage.slug}}\" \"{{usage.image}}\" \"{{usage.expected}}\""
 
 [tasks."recipes:index"]
 description = "Regenerate docs public API + site-only generated data from src/layer*/"
@@ -329,59 +235,10 @@ run = '''bun run scripts/new-recipe.ts "{{usage.project}}" "{{usage.issue}}" "{{
 
 [tasks."recipes:verify"]
 description = "Verify a single Layer 2 recipe end-to-end (build + run + verdict + schema + indices + lint + docs build)"
-shell = "bash -c"
 usage = '''
 arg "<slug>" help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
 '''
-run = '''
-set -euo pipefail
-
-slug="{{usage.slug}}"
-recipe_dir="src/layer2_docker/${slug}"
-
-if [ ! -d "${recipe_dir}" ]; then
-  echo "Error: ${recipe_dir} does not exist."
-  echo "Available Layer 2 recipes:"
-  for d in src/layer2_docker/*/; do
-    name=$(basename "$d")
-    case "$name" in _*) continue ;; esac
-    echo "  $name"
-  done
-  exit 1
-fi
-if [ ! -f "${recipe_dir}/Dockerfile" ]; then
-  echo "Error: ${recipe_dir}/Dockerfile is missing."
-  exit 1
-fi
-
-echo "==> [1/6] ensure docs/ deps installed (ajv-cli ships there as devDep)"
-(cd docs && bun install --frozen-lockfile)
-export AJV_BIN="$(cd docs/node_modules/.bin && pwd)/ajv.exe"
-
-echo "==> [2/6] docker build ${slug}"
-tag="vivarium-${slug}:dev"
-docker build -t "${tag}" "${recipe_dir}"
-
-echo "==> [3/6] docker run + capture verdict + schema-validate"
-bash scripts/capture_layer2_verdict.sh "${tag}" "${recipe_dir}/verdict.json"
-
-echo "==> [4/6] regenerate recipes / projects indices + site stats + biome check"
-(cd docs && bun run generate)
-mise run docs:check
-
-echo "==> [5/6] markdown lint"
-mise run markdown:check
-
-echo "==> [6/6] docs build (rspress)"
-(cd docs && bun run build)
-
-verdict=$(jq -r '.verdict' "${recipe_dir}/verdict.json")
-exit_code=$(jq -r '.exit_code' "${recipe_dir}/verdict.json")
-echo
-echo "✓ Recipe ${slug} verified end-to-end"
-echo "  verdict: ${verdict}"
-echo "  exit_code: ${exit_code}"
-'''
+run = "bash scripts/verify-recipe.sh \"{{usage.slug}}\""
 
 [tasks."mcp:install"]
 description = "Install vivarium-mcp dependencies"
@@ -527,27 +384,11 @@ run = "rumdl fmt ."
 
 [tasks."rust:check"]
 description = "cargo fmt --check + cargo clippy --deny warnings on Layer 1 Rust crates"
-shell = "bash -c"
-run = '''
-set -euo pipefail
-find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
-  echo "==> cargo fmt --check + clippy $cargo_toml"
-  cargo fmt --manifest-path "$cargo_toml" --check
-  cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release -- -D warnings
-done
-'''
+run = "bash scripts/check-layer1-rust.sh"
 
 [tasks."rust:check:fix"]
 description = "cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
-shell = "bash -c"
-run = '''
-set -euo pipefail
-find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
-  echo "==> cargo fmt + clippy --fix $cargo_toml"
-  cargo fmt --manifest-path "$cargo_toml"
-  cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release --fix --allow-no-vcs --allow-dirty --allow-staged
-done
-'''
+run = "bash scripts/format-layer1-rust.sh"
 
 [tasks."lint:all"]
 description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust + ShellCheck + actionlint"
