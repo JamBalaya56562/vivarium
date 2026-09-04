@@ -75,7 +75,7 @@ not substitutes.
 | File          | Role                                                         |
 | ------------- | ------------------------------------------------------------ |
 | `repro.c`     | The two-thread reproducer. Exit 0 if the race did not fire (counter == 2*N), exit 1 if it did. |
-| `Dockerfile`  | `ubuntu:24.04` + `rr` + `build-essential`. Pulls the trace from the pinned release URL via `ADD` at build time. |
+| `Dockerfile`  | `ubuntu:26.04` + `rr` + `build-essential`. Pulls the trace from the pinned release URL via `ADD` at build time. |
 | `replay.sh`   | The visitor-facing entrypoint. Runs `rr replay --autopilot`, parses the recorded stderr for the race marker, exits 0 on `reproduced` (race re-fires) / 1 on `unreproduced`. |
 | `record.sh`   | Maintainer-only. Records a fresh trace on a Linux/x86_64 host with PMU, retrying under `--chaos` until a failing run is captured. Not invoked by CI or visitors. |
 | `trace.url`   | Pinned URL of the trace artifact (a GitHub Release asset on `aletheia-works/vivarium`). |
@@ -131,7 +131,7 @@ The three flags exist because `rr replay`:
    seccomp profile blocks — needs `seccomp=unconfined` (or a
    custom profile that allows the syscall).
 
-First-pull cost: ~140 MB (ubuntu:24.04 + rr + a 1.3 MB trace).
+First-pull cost: ~140 MB (ubuntu:26.04 + rr + a 1.3 MB trace).
 Run takes ~1 second (the recorded program is short; chaos-mode
 context switches add a few hundred milliseconds at replay time).
 

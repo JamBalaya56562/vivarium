@@ -16,7 +16,7 @@
 #   gh release create lost-update-trace-v1 out/lost-update-trace.tar.zst \
 #     --repo aletheia-works/vivarium \
 #     --title 'lost-update recipe trace v1' \
-#     --notes 'Recorded with rr --chaos on ubuntu:24.04; for src/layer3_thirdway/lost-update/'
+#     --notes 'Recorded with rr --chaos on ubuntu:26.04; for src/layer3_thirdway/lost-update/'
 #
 # After the release exists, rebuild the image and run it once on
 # this host to regenerate verdict.json (see README.md).
@@ -35,7 +35,7 @@ OUT_DIR="${OUT_DIR:-$RECIPE_DIR/out}"
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 
-UBUNTU_TAG="${UBUNTU_TAG:-24.04}"
+UBUNTU_TAG="${UBUNTU_TAG:-26.04}"
 TARBALL_NAME="${TARBALL_NAME:-lost-update-trace.tar.zst}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-50}"
 
@@ -65,10 +65,6 @@ docker run --rm \
   bash -c '
     set -euo pipefail
 
-    apt-get update -qq
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-      software-properties-common >/dev/null
-    add-apt-repository -y universe >/dev/null
     apt-get update -qq
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
       build-essential rr zstd >/dev/null
