@@ -47,13 +47,25 @@ Each directory ships:
 
 ## Image distribution
 
-CI builds and pushes one image per page on every push that touches
-the directory:
+CI builds and pushes one image per page, and only for the pages a
+commit actually touched:
 
 ```text
 ghcr.io/aletheia-works/vivarium-<slug>:latest      # tracks main
 ghcr.io/aletheia-works/vivarium-<slug>:<git-sha>   # immutable per-commit
 ```
+
+A commit that leaves a recipe alone leaves that recipe's `:latest`
+where it is and mints no new `:<git-sha>`, so a commit's sha tag
+exists only for the recipes that commit changed. Visitors keep the
+image they already pulled — a docs-only change no longer invalidates
+every Layer 2 image in the catalogue.
+
+`verdict.json` is still refreshed for every recipe on every deploy.
+For an untouched recipe CI pulls the published `:latest` and runs
+that, so the snapshot describes the exact image a visitor receives.
+The weekly `repro-regression` run is the lane that rebuilds from
+source and reports drift between the two.
 
 GHCR public images are free + unlimited (storage and bandwidth) at
 the time of writing; GitHub Actions on a public repo are free +
