@@ -107,8 +107,6 @@ def run_variant(variant: dict[str, str]) -> dict[str, object]:
                 "uv",
                 "run",
                 "--no-project",
-                "--python",
-                "3.14",
                 "--with",
                 variant["spec"],
                 "--",
