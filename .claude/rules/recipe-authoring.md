@@ -293,6 +293,21 @@ PRs 180 / 189 / 192.
   `runner.ts` — all three reach `_assets/chrome.js`, which touches
   `document` at module-evaluation time — so it loads Pyodide itself and
   posts results back. See `dateutil-1478/repro.worker.ts`.
+- **One worker per page, not one per variant.** A second worker is a
+  second Pyodide — another download, another WASM compile, another
+  micropip. `dateutil-1478` shipped that for one release and the
+  fix-candidate pane took 45.5 s to appear; swapping the wheel inside
+  the one worker with `micropip.uninstall` + `install` (purging
+  `sys.modules` between, or the old module stays imported) brought it
+  to 2.8 s. Measure time-to-fix-pane, not just main-thread blocking —
+  the first version of that change measured only the latter and shipped
+  a regression.
+- **A worker cannot use the page's `rel="preload"`.** The preload cache
+  belongs to the document, so those tags download the runtime a second
+  time and Chrome warns that nothing used them.
+  `generate-repro-pages.ts` emits them only for recipes with no
+  `repro.worker.ts`; `preconnect` stays for everyone, since warming the
+  connection is per-origin.
 
 ---
 

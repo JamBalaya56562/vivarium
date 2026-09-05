@@ -97,6 +97,13 @@ interface WorkerRunResult {
   pythonVersion: string;
 }
 
+interface WorkerInstalled {
+  type: 'installed';
+  id: number;
+  dateutilVersion: string;
+  pythonVersion: string;
+}
+
 interface WorkerError {
   type: 'error';
   id?: number;
@@ -107,6 +114,7 @@ type WorkerMessage =
   | WorkerProgress
   | WorkerReady
   | WorkerRunResult
+  | WorkerInstalled
   | WorkerError;
 
 type ProgressStage =
@@ -115,8 +123,6 @@ type ProgressStage =
   | 'loading-runtime'
   | 'installing-package'
   | 'ready';
-
-type Variant = 'baseline' | 'fix-candidate';
 
 interface CaptureResult {
   run: PathACapturedRun;
@@ -219,16 +225,15 @@ function evaluate(result: ReproOutput | null): {
   };
 }
 
-function spawnWorker(variant: Variant, spec: string): Worker {
+function spawnWorker(spec: string): Worker {
   const workerUrl = new URL('./repro.worker.js', import.meta.url);
-  workerUrl.searchParams.set('variant', variant);
   workerUrl.searchParams.set('spec', spec);
   workerUrl.searchParams.set('pyodide', DEFAULT_PYODIDE_VERSION);
   workerUrl.searchParams.set('packages', WORKER_PACKAGES.join(','));
   return new Worker(workerUrl, { type: 'module' });
 }
 
-function awaitReady(worker: Worker, variant: Variant): Promise<WorkerReady> {
+function awaitReady(worker: Worker): Promise<WorkerReady> {
   return new Promise<WorkerReady>((resolve, reject) => {
     const cleanup = (): void => {
       worker.removeEventListener('message', onMessage);
@@ -241,10 +246,8 @@ function awaitReady(worker: Worker, variant: Variant): Promise<WorkerReady> {
     const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
       const msg = ev.data;
       if (msg.type === 'progress') {
-        if (variant === 'baseline') {
-          setVerdict('pending', S[msg.stage], 'loading');
-          emitProgress(msg.pct, msg.stage);
-        }
+        setVerdict('pending', S[msg.stage], 'loading');
+        emitProgress(msg.pct, msg.stage);
         return;
       }
       if (msg.type === 'ready') {
@@ -288,6 +291,34 @@ function runInWorker(worker: Worker, source: string): Promise<WorkerRunResult> {
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
     worker.postMessage({ type: 'run', id, source });
+  });
+}
+
+function installInWorker(
+  worker: Worker,
+  spec: string,
+): Promise<WorkerInstalled> {
+  const id = ++runId;
+  return new Promise<WorkerInstalled>((resolve, reject) => {
+    const cleanup = (): void => {
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
+    };
+    const onError = (ev: ErrorEvent): void => {
+      cleanup();
+      reject(new Error(ev.message));
+    };
+    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
+      const msg = ev.data;
+      if (msg.type !== 'installed' && msg.type !== 'error') return;
+      if (msg.id !== id) return;
+      cleanup();
+      if (msg.type === 'installed') resolve(msg);
+      else reject(new Error(msg.message));
+    };
+    worker.addEventListener('message', onMessage);
+    worker.addEventListener('error', onError);
+    worker.postMessage({ type: 'install', id, spec });
   });
 }
 
@@ -350,11 +381,11 @@ try {
   setVerdict('pending', S.init, 'loading');
   emitProgress(5, 'init');
 
-  const baselineWorker = spawnWorker('baseline', BASELINE_SPEC);
-  baselineReady = await awaitReady(baselineWorker, 'baseline');
+  const worker = spawnWorker(BASELINE_SPEC);
+  baselineReady = await awaitReady(worker);
 
   setVerdict('pending', 'Running reproduction script (baseline)…', 'running');
-  const baseline = await captureIn(baselineWorker, REPRO_CODE);
+  const baseline = await captureIn(worker, REPRO_CODE);
   baselineCapture = baseline.run;
   baselineParsed = baseline.parsed;
   outputBaselineEl.textContent = baselineCapture.stdout;
@@ -439,21 +470,26 @@ try {
           : ''),
       'pending',
     );
-    const fixWorker = spawnWorker('fix-candidate', manifestResult.wheelUrl);
     try {
-      const fixReady = await awaitReady(fixWorker, 'fix-candidate');
-      const fix = await captureIn(fixWorker, REPRO_CODE);
+      const installed = await installInWorker(worker, manifestResult.wheelUrl);
+      const fix = await captureIn(worker, REPRO_CODE);
       fixCapture = fix.run;
       fixParsed = fix.parsed;
-      fixDateutilVersion = fixReady.dateutilVersion;
+      fixDateutilVersion = installed.dateutilVersion;
       setFixPane(fixCapture.stdout, 'ok');
     } catch (err) {
       const errAny = err as { stack?: string; message?: string } | null;
       const message =
         (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
       setFixPane(`Fix-candidate install/run failed: ${message}`, 'error');
-    } finally {
-      fixWorker.terminate();
+    }
+
+    try {
+      await installInWorker(worker, BASELINE_SPEC);
+    } catch {
+      console.warn(
+        'dateutil-1478: failed to restore the baseline install; Run will exercise the fix candidate.',
+      );
     }
   } else {
     setFixPane(manifestResult.reason, 'error');
@@ -465,7 +501,7 @@ try {
   enableRunner({
     slug: 'dateutil-1478',
     baselineSource: REPRO_CODE,
-    runFix: async (source) => (await captureIn(baselineWorker, source)).run,
+    runFix: async (source) => (await captureIn(worker, source)).run,
   });
 } catch (err: unknown) {
   console.error(err);

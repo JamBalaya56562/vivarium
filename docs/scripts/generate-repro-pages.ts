@@ -18,7 +18,8 @@ interface RecipeIndexEntry {
 }
 
 interface RuntimeShell {
-  head: string;
+  preconnect: string;
+  preload: string;
   kicker: string;
   verdictPending: string;
 }
@@ -34,9 +35,11 @@ function loaderConstant(file: string, name: string): string {
   return match[1] as string;
 }
 
+const CDN_PRECONNECT =
+  '    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />';
+
 function modulePreload(href: string): string {
   return [
-    '    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />',
     '    <link',
     '      rel="modulepreload"',
     `      href="${href}"`,
@@ -66,7 +69,8 @@ function runtimeShells(): Record<string, RuntimeShell> {
   const pyodideBase = `https://cdn.jsdelivr.net/pyodide/v${pyodide}/full`;
   return {
     pyodide: {
-      head: [
+      preconnect: CDN_PRECONNECT,
+      preload: [
         `    <link rel="preload" href="${pyodideBase}/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />`,
         `    <link rel="preload" href="${pyodideBase}/python_stdlib.zip" as="fetch" crossorigin />`,
         `    <link rel="preload" href="${pyodideBase}/pyodide-lock.json" as="fetch" type="application/json" crossorigin />`,
@@ -76,21 +80,24 @@ function runtimeShells(): Record<string, RuntimeShell> {
       verdictPending: 'Loading Pyodide runtime…',
     },
     'php-wasm': {
-      head: modulePreload(
+      preconnect: CDN_PRECONNECT,
+      preload: modulePreload(
         `https://cdn.jsdelivr.net/npm/php-wasm@${php}/PhpWeb.mjs`,
       ),
       kicker: 'L1 · php-wasm',
       verdictPending: 'Loading php-wasm runtime…',
     },
     'ruby.wasm': {
-      head: modulePreload(
+      preconnect: CDN_PRECONNECT,
+      preload: modulePreload(
         `https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@${ruby}/dist/browser/+esm`,
       ),
       kicker: 'L1 · Ruby.wasm',
       verdictPending: 'Loading Ruby.wasm runtime…',
     },
     'rust-wasi': {
-      head: modulePreload(
+      preconnect: CDN_PRECONNECT,
+      preload: modulePreload(
         `https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@${wasi}/dist/index.js`,
       ),
       kicker: 'L1 · Rust wasm32-wasip1',
@@ -194,6 +201,11 @@ const RUNNER_BUTTONS: ReadonlyArray<readonly [string, string, string, string]> =
     ],
   ];
 
+function runtimeHead(recipeDir: string, shell: RuntimeShell): string {
+  if (existsSync(join(recipeDir, 'repro.worker.ts'))) return shell.preconnect;
+  return `${shell.preconnect}\n${shell.preload}`;
+}
+
 function runnerActions(recipeDir: string): string {
   const reproTs = join(recipeDir, 'repro.ts');
   if (!existsSync(reproTs)) return '';
@@ -279,7 +291,7 @@ function renderLayer1(): void {
       TITLE: entry.title,
       PROJECT: entry.title.split('#')[0] as string,
       ISSUE: String(entry.issue),
-      RUNTIME_HEAD: shell.head,
+      RUNTIME_HEAD: runtimeHead(dir, shell),
       RUNTIME_LABEL: expandVersions(
         slots['runtime-label'] ?? '',
         RUNTIME_VERSIONS,
