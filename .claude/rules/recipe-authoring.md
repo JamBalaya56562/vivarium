@@ -232,8 +232,9 @@ one. Copy the block from
 - Three ways to fill the fix pane, in order of preference:
   1. **Fork wheel** — `fix-candidate.json` + the helpers in
      [`_shared/fix-candidate.ts`](../../src/layer1_wasm/_shared/fix-candidate.ts).
-     Pure-Python packages only; see `dateutil-1478` (main-thread) and
-     `lark-1585` (one Web Worker per variant).
+     Pure-Python packages only. `dateutil-1478` uses those helpers;
+     `lark-1585` fetches and resolves its own manifest inline. Both
+     install the resolved wheel into a Pyodide Web Worker.
   2. **A second artefact built from a fixed dependency version** —
      e.g. a second `wasm32-wasip1` binary, or a different runtime build.
   3. **No candidate** — when no fixed build can be executed in the
@@ -283,6 +284,15 @@ PRs 180 / 189 / 192.
 - **System calls.** Pyodide ships an MEMFS-like virtual FS, not
   the real one. Anything depending on real filesystem semantics,
   fork/exec, sockets, or signals → Layer 2.
+- **Pyodide belongs in a Web Worker.** Booting it and resolving a
+  micropip install are pure CPU work; on the main thread they land as
+  one task tens of seconds long and Chrome offers to kill the tab.
+  `dateutil-1478` measured 19.9 s of main-thread blocking with a
+  15.0 s worst task before the runtime moved into a worker, and 353 ms
+  after. A worker cannot import `_shared/verdict.ts`, `loader.ts` or
+  `runner.ts` — all three reach `_assets/chrome.js`, which touches
+  `document` at module-evaluation time — so it loads Pyodide itself and
+  posts results back. See `dateutil-1478/repro.worker.ts`.
 
 ---
 

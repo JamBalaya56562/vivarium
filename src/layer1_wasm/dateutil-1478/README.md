@@ -39,11 +39,12 @@ signed-offset code path. Both the short (`-4`) and the long
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. Renders baseline + fix-candidate output panes side-by-side. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. Drives the two-variant run (baseline `micropip` install → fix-candidate wheel install via `./wheels/manifest.json` → baseline restore for `enableRunner`). |
-| `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
+| `repro.ts`   | **Main-thread driver.** Spawns one Pyodide Web Worker per variant, relays their progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and both output panes. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.worker.ts` | **Worker source.** Loads Pyodide and installs the spec passed on the worker URL's query string (`python-dateutil==2.9.0.post0` for baseline, the wheel URL for the fix candidate), then runs the reproduction script and reports its stdout and its `results` list back. |
+| `repro.js` / `repro.worker.js` | Generated; gitignored. Loaded by `index.html` at runtime. |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 | `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `scripts/build-layer1-wheels.sh`. |
-| `wheels/`    | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `python_dateutil-<version>-py2.py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in the same Pyodide tab. |
+| `wheels/`    | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `python_dateutil-<version>-py2.py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load, resolves the wheel URL, and hands it to a second worker. |
 | `roundtrip.json` | Tracked workflow state (round-trip schema_version 1). Updated as the recipe moves through verify → Vivarium PR → fork+fix → upstream PR. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css).
@@ -70,9 +71,9 @@ The page conforms to the contract canonicalised in
 
 The reproduction script is ordinary Python: it prints one row per
 input and leaves a `results` list behind. The output panes show that
-printed text verbatim — nothing on the page reformats it — and
-`repro.ts` reads `results` out of the Pyodide globals to build the
-envelope above.
+printed text verbatim — nothing on the page reformats it — and the
+worker reads `results` out of the Pyodide globals and hands it back so
+`repro.ts` can build the envelope above.
 
 A `reproduced` verdict means **every** `UTC±N` input landed on the
 negated offset — the sign-inversion bug is present end-to-end. An
@@ -95,6 +96,28 @@ python -m http.server -d dateutil-1478 8765
 
 Pyodide does **not** require COOP/COEP headers for this page (no
 `SharedArrayBuffer`, no threading), so a plain server is enough.
+
+## Why the runtime lives in a Web Worker
+
+Booting Pyodide and resolving a micropip install are pure CPU work. Run
+on the main thread they land as a single task tens of seconds long, and
+Chrome offers to kill the tab before it finishes — measured at 19.9 s of
+total main-thread blocking with a 15.0 s worst task on the deployed
+page. Moving both into a worker takes the same page to a few hundred
+milliseconds.
+
+There are two workers, and they differ in lifetime. The **baseline**
+worker is kept alive for the whole page, because `enableRunner`'s Run
+button re-runs the visitor's edited script inside it; it never has the
+fix-candidate wheel installed, so Run always exercises the buggy
+version. The **fix-candidate** worker is spawned after the baseline
+verdict settles and terminated as soon as its pane is filled.
+
+The worker imports nothing from `../_shared/`: `_shared/verdict.ts`
+pulls in `_assets/chrome.js`, which touches `document` at module
+evaluation time and would throw inside a worker. Everything DOM-bound —
+the verdict pill, the envelope, the panes, the progress bar, the i18n —
+stays in `repro.ts`.
 
 ## Native verification — same reproduction under a real CPython + dateutil
 
