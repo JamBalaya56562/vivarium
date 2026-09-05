@@ -306,6 +306,11 @@ PRs 180 / 189 / 192.
   `runner.ts` — all three reach `_assets/chrome.js`, which touches
   `document` at module-evaluation time — so it loads Pyodide itself and
   posts results back. See `dateutil-1478/repro.worker.ts`.
+  `cpython-137205` and `pandas-56679` followed: 18.3–20.1 s and 25.8 s
+  of blocking became 259 ms and none. The cost is the runtime, not the
+  packages — cpython loads none and still blocked for 18 s. Measure
+  before assuming a recipe is light: `numpy-28287` blocks 2.5 s and is
+  deliberately left on the main thread.
 - **One worker per page, not one per variant.** A second worker is a
   second Pyodide — another download, another WASM compile, another
   micropip. `dateutil-1478` shipped that for one release and the
