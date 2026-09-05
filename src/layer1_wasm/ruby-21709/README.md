@@ -88,16 +88,18 @@ mise install
 # Reproduces the bug; exits 0 on `reproduced`.
 mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
 
-# Expected output (Ruby 3.3.3):
-# {
-#   "ruby_version": "3.3.3",
-#   "regexp_built": false,
-#   "regexp_raised": "RegexpError",
-#   "string_built": true,
-#   "string_encoding": "UTF-8",
-#   "string_raised": null,
-#   "reproduced": true
-# }
+# Expected output:
+# Interpolating the same two fragments, one UTF-8 and one US-ASCII:
+#
+#   Regexp   /#{prefix}#{suffix}/    raised RegexpError   <-- rejected
+#   String   "#{prefix}#{suffix}"    built, encoding UTF-8
+#
+# The two forms disagree: Regexp interpolation rejects the mixed
+# encodings that String interpolation silently upgrades.
+# Ruby 4.0.6
+#
+# ...and on stderr:
+# verdict=reproduced — bug reproduces on this interpreter
 # verdict=reproduced — bug reproduces on this interpreter
 ```
 
