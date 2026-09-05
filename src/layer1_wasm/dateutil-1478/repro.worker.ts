@@ -7,11 +7,9 @@ const workerScope = self as unknown as {
   location: { href: string };
 };
 
-interface MainMessage {
-  type: 'run';
-  id: number;
-  source: string;
-}
+type MainMessage =
+  | { type: 'run'; id: number; source: string }
+  | { type: 'install'; id: number; spec: string };
 
 export interface CaseObservation {
   input: string;
@@ -41,6 +39,9 @@ interface PyodideModule {
     packages?: string[];
   }): Promise<PyodideRuntime>;
 }
+
+const PIP_PACKAGE = 'python-dateutil';
+const ROOT_MODULE = 'dateutil';
 
 const VERSION_QUERY =
   'import dateutil, sys; [dateutil.__version__, sys.version.split()[0]]';
@@ -91,6 +92,22 @@ async function readVersions(
   }
 }
 
+async function installSpec(
+  runtime: PyodideRuntime,
+  spec: string,
+): Promise<void> {
+  await runtime.runPythonAsync(`
+import micropip, sys
+try:
+    await micropip.uninstall(${JSON.stringify(PIP_PACKAGE)})
+except Exception:
+    pass
+for _name in [n for n in list(sys.modules) if n == ${JSON.stringify(ROOT_MODULE)} or n.startswith(${JSON.stringify(`${ROOT_MODULE}.`)})]:
+    del sys.modules[_name]
+await micropip.install(${JSON.stringify(spec)})
+`);
+}
+
 async function bootstrap(): Promise<PyodideRuntime> {
   progress(5, 'init');
   progress(18, 'fetching-module');
@@ -105,10 +122,7 @@ async function bootstrap(): Promise<PyodideRuntime> {
   });
 
   progress(70, 'installing-package');
-  await runtime.runPythonAsync(`
-import micropip
-await micropip.install(${JSON.stringify(INSTALL_SPEC)})
-`);
+  await installSpec(runtime, INSTALL_SPEC);
 
   progress(92, 'ready');
   return runtime;
@@ -154,14 +168,37 @@ async function runOnce(runtime: PyodideRuntime, id: number, source: string) {
   }
 }
 
+async function installOnce(
+  runtime: PyodideRuntime,
+  id: number,
+  spec: string,
+): Promise<void> {
+  try {
+    await installSpec(runtime, spec);
+    const versions = await readVersions(runtime);
+    workerScope.postMessage({
+      type: 'installed',
+      id,
+      dateutilVersion: versions?.dateutil ?? '',
+      pythonVersion: versions?.python ?? '',
+    });
+  } catch (err: unknown) {
+    fail(err instanceof Error ? err.message : String(err), id);
+  }
+}
+
 workerScope.addEventListener('message', (ev: MessageEvent<MainMessage>) => {
   const msg = ev.data;
-  if (msg?.type !== 'run') return;
+  if (msg?.type !== 'run' && msg?.type !== 'install') return;
   if (runtimeRef === null) {
-    fail('worker received a run request before the runtime was ready.', msg.id);
+    fail('worker received a request before the runtime was ready.', msg.id);
     return;
   }
-  void runOnce(runtimeRef, msg.id, msg.source);
+  if (msg.type === 'run') {
+    void runOnce(runtimeRef, msg.id, msg.source);
+  } else {
+    void installOnce(runtimeRef, msg.id, msg.spec);
+  }
 });
 
 if (!PYODIDE_VERSION || !INSTALL_SPEC) {
