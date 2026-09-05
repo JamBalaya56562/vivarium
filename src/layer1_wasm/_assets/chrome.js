@@ -203,17 +203,6 @@ document.addEventListener('vh-progress', (e) => {
   setProgress(d.pct ?? 0, d.label ?? '', d.bytes ?? '');
 });
 
-function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  if (location.protocol === 'file:') return;
-
-  navigator.serviceWorker
-    .register('../_assets/sw.js', { scope: '/vivarium/repro/' })
-    .catch((err) => {
-      console.warn('[vivarium] service worker registration failed:', err);
-    });
-}
-
 const drawerCloseSvg =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
@@ -295,10 +284,8 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     injectChrome();
     injectDescriptionDrawer();
-    registerServiceWorker();
   });
 } else {
   injectChrome();
   injectDescriptionDrawer();
-  registerServiceWorker();
 }

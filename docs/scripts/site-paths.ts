@@ -9,7 +9,6 @@ export const REPO_ROOT = path.resolve(DOCS_DIR, '..');
 
 export const SITE_ROOT = path.join(DOCS_DIR, 'site');
 export const SITE_BASE = '/vivarium/';
-export const REPRO_BASE_PATH = `${SITE_BASE.replace(/\/$/, '')}/repro`;
 
 export const SITE_PUBLIC_DIR = path.join(SITE_ROOT, 'public');
 export const SITE_API_DIR = path.join(SITE_PUBLIC_DIR, 'api');
