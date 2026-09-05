@@ -25,10 +25,13 @@
 //
 // Each build doubles as a native CLI variant
 // (`cargo run --release --manifest-path <that Cargo.toml>`).
-// Verdict semantics match the rest of the gallery (Contract v1
-// Revision 3 / ADR-0029):
-//   - exit 0 + JSON `"reproduced": true`  → page reports "reproduced"
-//   - exit 1 + JSON `"reproduced": false` → page reports "unreproduced"
+//
+// stdout is the table a reader sees on the page. stderr carries the
+// machine-readable line the page parses for its Contract v1 envelope,
+// followed by the verdict line. Verdict semantics match the rest of
+// the gallery (Contract v1 Revision 3 / ADR-0029):
+//   - exit 0 + `"reproduced": true`  → page reports "reproduced"
+//   - exit 1 + `"reproduced": false` → page reports "unreproduced"
 //
 // Only the baseline build drives the page verdict. The fix-candidate
 // build is expected to exit 1 — that is the desired outcome, not a
@@ -43,6 +46,14 @@ fn matches(re: &Regex, haystack: &str) -> Vec<(usize, usize)> {
         .collect()
 }
 
+fn format_spans(spans: &[(usize, usize)]) -> String {
+    spans
+        .iter()
+        .map(|(start, end)| format!("({start}, {end})"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 pub fn run(regex_crate_version: &str) -> ! {
     let haystack = "a\naaa\n";
     let pattern_plus = "(?m)(^|a)+";
@@ -55,6 +66,18 @@ pub fn run(regex_crate_version: &str) -> ! {
     let matches_expanded = matches(&re_expanded, haystack);
     let reproduced = matches_plus != matches_expanded;
 
+    println!("find_iter over haystack {haystack:?}");
+    println!();
+    println!("{pattern_plus:<20}{}", format_spans(&matches_plus));
+    println!("{pattern_expanded:<20}{}", format_spans(&matches_expanded));
+    println!();
+    if reproduced {
+        println!("The two forms disagree, yet `(re)+` and `(re)(re)*` are the same regex.");
+    } else {
+        println!("The two forms agree.");
+    }
+    println!("regex {regex_crate_version}");
+
     let result = json!({
         "regex_crate_version": regex_crate_version,
         "haystack": haystack,
@@ -65,7 +88,7 @@ pub fn run(regex_crate_version: &str) -> ! {
         "reproduced": reproduced,
     });
 
-    println!(
+    eprintln!(
         "{}",
         serde_json::to_string(&result).expect("serialise result")
     );
