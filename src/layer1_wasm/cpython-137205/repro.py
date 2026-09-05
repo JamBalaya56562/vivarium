@@ -20,14 +20,17 @@ same Python 3.13 binding through the `sqlite3` Pyodide package; this
 CLI exercises the same binding through whatever CPython 3.13 build
 mise installs.
 
-Prints `pass` if the bug REPRODUCES (the two connections disagree
-on PRAGMA foreign_keys), `fail` otherwise. Exit code: 0 on `pass`,
-1 on `fail`.
+Sets `PRAGMA foreign_keys = ON` on two connections that differ only
+in their `autocommit` setting, reads the pragma back on each, and
+prints the two answers side by side. Exits 0 on `reproduced` (the
+two connections disagree), 1 on `unreproduced` (they agree; likely
+fixed upstream).
 """
 
-import json
 import sqlite3
 import sys
+
+DROPPED = "   <-- setting dropped"
 
 off = sqlite3.connect(":memory:", autocommit=False)
 off.execute("PRAGMA foreign_keys = ON")
@@ -38,20 +41,32 @@ on.execute("PRAGMA foreign_keys = ON")
 
 off_value = int(off.execute("PRAGMA foreign_keys").fetchone()[0])
 on_value = int(on.execute("PRAGMA foreign_keys").fetchone()[0])
-fk_disagreement = off_value != on_value
+disagreement = off_value != on_value
 
 result = {
     "python_version": sys.version.split()[0],
     "sqlite_version": sqlite3.sqlite_version,
     "off_autocommit_fk": off_value,
     "on_autocommit_fk": on_value,
-    "fk_disagreement": fk_disagreement,
-    "reproduced": fk_disagreement,
+    "fk_disagreement": disagreement,
 }
 
-print(json.dumps(result, indent=2))
+off_note = DROPPED if off_value == 0 else ""
+on_note = DROPPED if on_value == 0 else ""
 
-if fk_disagreement:
+print("Set PRAGMA foreign_keys = ON on two connections, then read it back:")
+print()
+print("autocommit".ljust(14) + "foreign_keys".rjust(14))
+print("False".ljust(14) + str(off_value).rjust(14) + off_note)
+print("True".ljust(14) + str(on_value).rjust(14) + on_note)
+print()
+if disagreement:
+    print("The two connections disagree: autocommit=False dropped the PRAGMA.")
+else:
+    print("Both connections agree: the PRAGMA survived on both.")
+print("Python " + result["python_version"] + " / SQLite " + result["sqlite_version"])
+
+if disagreement:
     print(
         "verdict=reproduced — autocommit=False silently drops PRAGMA foreign_keys",
         file=sys.stderr,

@@ -12,8 +12,10 @@ import {
 } from '../_shared/verdict.js';
 
 const REPRO_CODE = `
-import sys
 import sqlite3
+import sys
+
+DROPPED = "   <-- setting dropped"
 
 off = sqlite3.connect(":memory:", autocommit=False)
 off.execute("PRAGMA foreign_keys = ON")
@@ -22,16 +24,32 @@ off.commit()
 on = sqlite3.connect(":memory:", autocommit=True)
 on.execute("PRAGMA foreign_keys = ON")
 
-off_value = off.execute("PRAGMA foreign_keys").fetchone()[0]
-on_value = on.execute("PRAGMA foreign_keys").fetchone()[0]
+off_value = int(off.execute("PRAGMA foreign_keys").fetchone()[0])
+on_value = int(on.execute("PRAGMA foreign_keys").fetchone()[0])
+disagreement = off_value != on_value
 
-{
+result = {
     "python_version": sys.version.split()[0],
     "sqlite_version": sqlite3.sqlite_version,
-    "off_autocommit_fk": int(off_value),
-    "on_autocommit_fk": int(on_value),
-    "fk_disagreement": off_value != on_value,
+    "off_autocommit_fk": off_value,
+    "on_autocommit_fk": on_value,
+    "fk_disagreement": disagreement,
 }
+
+off_note = DROPPED if off_value == 0 else ""
+on_note = DROPPED if on_value == 0 else ""
+
+print("Set PRAGMA foreign_keys = ON on two connections, then read it back:")
+print()
+print("autocommit".ljust(14) + "foreign_keys".rjust(14))
+print("False".ljust(14) + str(off_value).rjust(14) + off_note)
+print("True".ljust(14) + str(on_value).rjust(14) + on_note)
+print()
+if disagreement:
+    print("The two connections disagree: autocommit=False dropped the PRAGMA.")
+else:
+    print("Both connections agree: the PRAGMA survived on both.")
+print("Python " + result["python_version"] + " / SQLite " + result["sqlite_version"])
 `.trim();
 
 interface ReproOutput {
@@ -58,6 +76,7 @@ interface WorkerReady {
 interface WorkerRunResult {
   type: 'result';
   id: number;
+  stdout: string;
   result: ReproOutput | null;
   error: string | null;
 }
@@ -127,10 +146,16 @@ function emitProgress(pct: number, stage: ProgressStage): void {
   );
 }
 
-function evaluate(result: ReproOutput): {
+function evaluate(result: ReproOutput | null): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
+  if (!result) {
+    return {
+      verdict: 'unreproduced',
+      message: 'bug not reproduced — the script left no `result` mapping behind.',
+    };
+  }
   if (result.fk_disagreement) {
     return {
       verdict: 'reproduced',
@@ -214,38 +239,48 @@ interface CaptureResult {
   parsed: ReproOutput | null;
 }
 
+function toCapture(result: WorkerRunResult): CaptureResult {
+  if (result.error !== null) {
+    return {
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${result.error}`,
+        stdout: result.stdout,
+      },
+      parsed: null,
+    };
+  }
+  const ev = evaluate(result.result);
+  return {
+    run: {
+      exitCode: result.result ? 0 : 1,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: result.stdout,
+    },
+    parsed: result.result,
+  };
+}
+
 async function captureIn(
   worker: Worker,
   source: string,
 ): Promise<CaptureResult> {
-  let message: string;
   try {
-    const result = await runInWorker(worker, source);
-    if (result.error === null && result.result !== null) {
-      const ev = evaluate(result.result);
-      return {
-        run: {
-          exitCode: 0,
-          verdict: ev.verdict,
-          message: ev.message,
-          stdout: JSON.stringify(result.result, null, 2),
-        },
-        parsed: result.result,
-      };
-    }
-    message = result.error ?? 'the worker returned no result.';
+    return toCapture(await runInWorker(worker, source));
   } catch (err: unknown) {
-    message = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${message}`,
+        stdout: message,
+      },
+      parsed: null,
+    };
   }
-  return {
-    run: {
-      exitCode: 1,
-      verdict: 'unreproduced',
-      message: `runtime error: ${message}`,
-      stdout: message,
-    },
-    parsed: null,
-  };
 }
 
 const startedAt = new Date();

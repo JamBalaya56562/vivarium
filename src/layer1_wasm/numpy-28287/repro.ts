@@ -9,6 +9,7 @@ import {
 
 const REPRO_CODE = `
 import sys
+
 import numpy as np
 
 x = np.timedelta64(1, "ms")
@@ -18,15 +19,34 @@ z = np.timedelta64(5, "ns")
 x_lt_y = bool(x < y)
 y_lt_z = bool(y < z)
 x_lt_z = bool(x < z)
+transitivity_violated = x_lt_y and y_lt_z and not x_lt_z
 
-{
+result = {
     "numpy_version": np.__version__,
     "python_version": sys.version.split()[0],
     "x_lt_y": x_lt_y,
     "y_lt_z": y_lt_z,
     "x_lt_z": x_lt_z,
-    "transitivity_violated": x_lt_y and y_lt_z and not x_lt_z,
+    "transitivity_violated": transitivity_violated,
 }
+
+broken = "   <-- transitivity broken" if transitivity_violated else ""
+
+print("Three timedelta64 values, two of them carrying a unit:")
+print()
+print("x = 1 ms")
+print("y = 2 (generic unit)")
+print("z = 5 ns")
+print()
+print("x < y  -> " + str(x_lt_y))
+print("y < z  -> " + str(y_lt_z))
+print("x < z  -> " + str(x_lt_z) + broken)
+print()
+if transitivity_violated:
+    print("Ordering is not transitive: x < y and y < z, yet x >= z.")
+else:
+    print("Ordering is transitive on these three values.")
+print("numpy " + result["numpy_version"] + " / Python " + result["python_version"])
 `.trim();
 
 interface ReproOutput {
@@ -38,11 +58,19 @@ interface ReproOutput {
   transitivity_violated: boolean;
 }
 
+interface PyProxy {
+  toJs(opts: { dict_converter: typeof Object.fromEntries }): unknown;
+  destroy?(): void;
+}
+
 interface PyodideRuntime {
-  runPythonAsync(code: string): Promise<{
-    toJs(opts: { dict_converter: typeof Object.fromEntries }): ReproOutput;
-    destroy?(): void;
-  }>;
+  runPythonAsync(code: string): Promise<unknown>;
+  setStdout(options: { batched: (text: string) => void }): void;
+  globals: {
+    get(name: string): unknown;
+    has(name: string): boolean;
+    delete(name: string): void;
+  };
 }
 
 const outputEl = document.getElementById('output');
@@ -65,10 +93,16 @@ if (!reproCodeEl.firstChild) {
     .catch(() => {});
 }
 
-function evaluate(result: ReproOutput): {
+function evaluate(result: ReproOutput | null): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
+  if (!result) {
+    return {
+      verdict: 'unreproduced',
+      message: 'bug not reproduced — the script left no `result` mapping behind.',
+    };
+  }
   if (result.transitivity_violated) {
     return {
       verdict: 'reproduced',
@@ -83,28 +117,66 @@ function evaluate(result: ReproOutput): {
   };
 }
 
+function isPyProxy(value: unknown): value is PyProxy {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as PyProxy).toJs === 'function'
+  );
+}
+
+function readResult(runtime: PyodideRuntime): ReproOutput | null {
+  const handle = runtime.globals.get('result');
+  if (!isPyProxy(handle)) return null;
+  try {
+    return handle.toJs({ dict_converter: Object.fromEntries }) as ReproOutput;
+  } finally {
+    handle.destroy?.();
+  }
+}
+
+interface CaptureResult {
+  run: PathACapturedRun;
+  parsed: ReproOutput | null;
+}
+
 async function captureRun(
   runtime: PyodideRuntime,
   source: string,
-): Promise<PathACapturedRun> {
+): Promise<CaptureResult> {
+  const lines: string[] = [];
+  runtime.setStdout({
+    batched: (text) => {
+      lines.push(text);
+    },
+  });
+  // One Pyodide namespace spans every run: an edited script that never
+  // assigns `result` would otherwise be judged on the previous run's values.
+  if (runtime.globals.has('result')) runtime.globals.delete('result');
+
   try {
-    const proxy = await runtime.runPythonAsync(source);
-    const result = proxy.toJs({ dict_converter: Object.fromEntries });
-    proxy.destroy?.();
-    const ev = evaluate(result);
+    await runtime.runPythonAsync(source);
+    const parsed = readResult(runtime);
+    const ev = evaluate(parsed);
     return {
-      exitCode: 0,
-      verdict: ev.verdict,
-      message: ev.message,
-      stdout: JSON.stringify(result, null, 2),
+      run: {
+        exitCode: parsed ? 0 : 1,
+        verdict: ev.verdict,
+        message: ev.message,
+        stdout: lines.join('\n'),
+      },
+      parsed,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return {
-      exitCode: 1,
-      verdict: 'unreproduced',
-      message: `runtime error: ${message}`,
-      stdout: message,
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${message}`,
+        stdout: [...lines, message].join('\n'),
+      },
+      parsed: null,
     };
   }
 }
@@ -121,20 +193,17 @@ try {
   const runtime = pyodide as PyodideRuntime;
   const baseline = await captureRun(runtime, REPRO_CODE);
 
-  let baselineResult: ReproOutput | null = null;
-  try {
-    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
-  } catch {
-    outputEl.textContent = baseline.stdout;
-    setVerdict(baseline.verdict, baseline.message);
-    throw new Error(baseline.message);
+  outputEl.textContent = baseline.run.stdout;
+  setVerdict(baseline.run.verdict, baseline.run.message);
+
+  const baselineResult = baseline.parsed;
+  if (!baselineResult) {
+    throw new Error(baseline.run.message);
   }
 
   metaEl.textContent =
     `numpy ${baselineResult.numpy_version} on Python ${baselineResult.python_version} ` +
     `via Pyodide v${version}.`;
-  outputEl.textContent = baseline.stdout;
-  setVerdict(baseline.verdict, baseline.message);
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -169,7 +238,7 @@ try {
   enableRunner({
     slug: 'numpy-28287',
     baselineSource: REPRO_CODE,
-    runFix: (source) => captureRun(runtime, source),
+    runFix: async (source) => (await captureRun(runtime, source)).run,
   });
 } catch (err: unknown) {
   console.error(err);
