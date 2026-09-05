@@ -18,12 +18,12 @@ whether the bug survives there is what decides if it is still open.
 The page runs the numpy Pyodide bundles (2.4.6), where it also
 reproduces.
 
-Prints `pass` if the bug REPRODUCES (`timedelta64` ordering is
-non-transitive across the generic unit), `fail` otherwise. Exit
-code: 0 on `pass`, 1 on `fail`.
+Compares three `timedelta64` values — two carrying a unit, one on the
+generic unit — and prints each pairwise `<` answer. Exits 0 on
+`reproduced` (ordering is non-transitive across the generic unit),
+1 on `unreproduced` (ordering is transitive; likely fixed upstream).
 """
 
-import json
 import sys
 
 import numpy as np
@@ -44,10 +44,25 @@ result = {
     "y_lt_z": y_lt_z,
     "x_lt_z": x_lt_z,
     "transitivity_violated": transitivity_violated,
-    "reproduced": transitivity_violated,
 }
 
-print(json.dumps(result, indent=2))
+broken = "   <-- transitivity broken" if transitivity_violated else ""
+
+print("Three timedelta64 values, two of them carrying a unit:")
+print()
+print("x = 1 ms")
+print("y = 2 (generic unit)")
+print("z = 5 ns")
+print()
+print("x < y  -> " + str(x_lt_y))
+print("y < z  -> " + str(y_lt_z))
+print("x < z  -> " + str(x_lt_z) + broken)
+print()
+if transitivity_violated:
+    print("Ordering is not transitive: x < y and y < z, yet x >= z.")
+else:
+    print("Ordering is transitive on these three values.")
+print("numpy " + result["numpy_version"] + " / Python " + result["python_version"])
 
 if transitivity_violated:
     print(

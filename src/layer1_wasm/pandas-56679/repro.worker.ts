@@ -20,6 +20,12 @@ interface PyProxy {
 
 interface PyodideRuntime {
   runPythonAsync(code: string): Promise<unknown>;
+  setStdout(options: { batched: (text: string) => void }): void;
+  globals: {
+    get(name: string): unknown;
+    has(name: string): boolean;
+    delete(name: string): void;
+  };
 }
 
 interface PyodideModule {
@@ -49,6 +55,16 @@ function isPyProxy(value: unknown): value is PyProxy {
   );
 }
 
+function readResult(runtime: PyodideRuntime): unknown {
+  const handle = runtime.globals.get('result');
+  if (!isPyProxy(handle)) return null;
+  try {
+    return handle.toJs({ dict_converter: Object.fromEntries });
+  } finally {
+    handle.destroy?.();
+  }
+}
+
 async function bootstrap(): Promise<PyodideRuntime> {
   progress(5, 'init');
   progress(18, 'fetching-module');
@@ -73,41 +89,34 @@ async function runOnce(
   id: number,
   source: string,
 ): Promise<void> {
-  let handle: unknown;
-  try {
-    handle = await runtime.runPythonAsync(source);
-  } catch (err: unknown) {
-    workerScope.postMessage({
-      type: 'result',
-      id,
-      result: null,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return;
-  }
-
-  if (!isPyProxy(handle)) {
-    workerScope.postMessage({
-      type: 'result',
-      id,
-      result: null,
-      error: 'the script did not end in a mapping the page could read.',
-    });
-    return;
-  }
+  const lines: string[] = [];
+  runtime.setStdout({
+    batched: (text) => {
+      lines.push(text);
+    },
+  });
+  // One Pyodide namespace spans every run: an edited script that never
+  // assigns `result` would otherwise be judged on the previous run's values.
+  if (runtime.globals.has('result')) runtime.globals.delete('result');
 
   try {
-    const result = handle.toJs({ dict_converter: Object.fromEntries });
-    workerScope.postMessage({ type: 'result', id, result, error: null });
-  } catch (err: unknown) {
+    await runtime.runPythonAsync(source);
     workerScope.postMessage({
       type: 'result',
       id,
-      result: null,
-      error: err instanceof Error ? err.message : String(err),
+      stdout: lines.join('\n'),
+      result: readResult(runtime),
+      error: null,
     });
-  } finally {
-    handle.destroy?.();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    workerScope.postMessage({
+      type: 'result',
+      id,
+      stdout: [...lines, message].join('\n'),
+      result: null,
+      error: message,
+    });
   }
 }
 

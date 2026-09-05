@@ -273,6 +273,36 @@ one. Copy the block from
   correct `reproduced` to `unreproduced`, reporting a fix nobody
   observed. See `regex-779/repro.ts`.
 
+**Output shape — the script prints, the page shows what it printed**:
+
+The pane exists so a visitor can read what the script did. It shows the
+script's **real stdout**, never a JSON blob the driver assembled out of
+values it read back. Every Layer 1 recipe follows the same shape:
+
+- The script reads as ordinary code in its own language. It does not
+  end in a bare expression that exists only for the host to pick up —
+  that is what made the first generation of these pages unreadable: the
+  visitor could not see why running the script produced JSON.
+- It `print`s a short human-readable summary: the inputs, the answer
+  each one produced, and a marker on the ones that show the bug.
+- It leaves the machine-readable values in a named global — `result`
+  for a single mapping, `results` for a list of rows. The driver reads
+  that global for the verdict and the Contract v1 envelope, and puts
+  the captured stdout into `#output` unchanged.
+- Capture stdout with `setStdout({ batched })` under Pyodide, or
+  `ConsoleStdout.lineBuffered` under the WASI shim.
+- **Delete the global before every run.** One Pyodide namespace spans
+  every run, including the ones a visitor triggers from the Edit box.
+  Without `globals.delete`, a script that no longer assigns the global
+  is judged on the previous run's values.
+- Treat a missing global as `unreproduced` with a message that says so,
+  not as a crash. An edited script is the expected way to reach it.
+- The native variant (`repro.py` / `repro.rb`) keeps the **same body**
+  as the browser script, adding only its header, docstring, `verdict=`
+  line on stderr and exit code. Run the repo formatter over the native
+  file and mirror what it does back into the driver's string literal —
+  otherwise the next autofix pass silently drifts the two apart.
+
 **Local validation**:
 
 ```bash

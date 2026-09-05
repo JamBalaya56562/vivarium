@@ -13,18 +13,31 @@ import {
 
 const REPRO_CODE = `
 import sys
+
 import pandas as pd
 
 series_dtype = str(pd.Series([]).dtype)
-df_dtype = str(pd.DataFrame({'a': []})['a'].dtype)
+df_dtype = str(pd.DataFrame({"a": []})["a"].dtype)
+mismatch = series_dtype != df_dtype
 
-{
+result = {
     "pandas_version": pd.__version__,
     "python_version": sys.version.split()[0],
     "series_dtype": series_dtype,
     "df_dtype": df_dtype,
-    "mismatch": series_dtype != df_dtype,
+    "mismatch": mismatch,
 }
+
+print("Two empty containers built from the same empty input:")
+print()
+print("pd.Series([]).dtype".ljust(36) + "-> " + series_dtype)
+print('pd.DataFrame({"a": []})["a"].dtype'.ljust(36) + "-> " + df_dtype)
+print()
+if mismatch:
+    print("The two disagree: the same empty input yields different dtypes.")
+else:
+    print("The two agree: both empty containers report the same dtype.")
+print("pandas " + result["pandas_version"] + " / Python " + result["python_version"])
 `.trim();
 
 interface ReproOutput {
@@ -51,6 +64,7 @@ interface WorkerReady {
 interface WorkerRunResult {
   type: 'result';
   id: number;
+  stdout: string;
   result: ReproOutput | null;
   error: string | null;
 }
@@ -120,10 +134,16 @@ function emitProgress(pct: number, stage: ProgressStage): void {
   );
 }
 
-function evaluate(result: ReproOutput): {
+function evaluate(result: ReproOutput | null): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
+  if (!result) {
+    return {
+      verdict: 'unreproduced',
+      message: 'bug not reproduced — the script left no `result` mapping behind.',
+    };
+  }
   if (result.mismatch) {
     return {
       verdict: 'reproduced',
@@ -205,38 +225,48 @@ interface CaptureResult {
   parsed: ReproOutput | null;
 }
 
+function toCapture(result: WorkerRunResult): CaptureResult {
+  if (result.error !== null) {
+    return {
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${result.error}`,
+        stdout: result.stdout,
+      },
+      parsed: null,
+    };
+  }
+  const ev = evaluate(result.result);
+  return {
+    run: {
+      exitCode: result.result ? 0 : 1,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: result.stdout,
+    },
+    parsed: result.result,
+  };
+}
+
 async function captureIn(
   worker: Worker,
   source: string,
 ): Promise<CaptureResult> {
-  let message: string;
   try {
-    const result = await runInWorker(worker, source);
-    if (result.error === null && result.result !== null) {
-      const ev = evaluate(result.result);
-      return {
-        run: {
-          exitCode: 0,
-          verdict: ev.verdict,
-          message: ev.message,
-          stdout: JSON.stringify(result.result, null, 2),
-        },
-        parsed: result.result,
-      };
-    }
-    message = result.error ?? 'the worker returned no result.';
+    return toCapture(await runInWorker(worker, source));
   } catch (err: unknown) {
-    message = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${message}`,
+        stdout: message,
+      },
+      parsed: null,
+    };
   }
-  return {
-    run: {
-      exitCode: 1,
-      verdict: 'unreproduced',
-      message: `runtime error: ${message}`,
-      stdout: message,
-    },
-    parsed: null,
-  };
 }
 
 const startedAt = new Date();
