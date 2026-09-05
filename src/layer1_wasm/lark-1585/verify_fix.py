@@ -90,6 +90,13 @@ PROBE = textwrap.dedent(
 ).strip()
 
 
+def as_text(stream) -> str:
+    # TimeoutExpired.stderr is str on Windows and bytes on POSIX, even under text=True.
+    if isinstance(stream, (bytes, bytearray)):
+        return stream.decode(errors="replace")
+    return stream or ""
+
+
 def run_variant(variant: dict[str, str]) -> dict[str, object]:
     """Run the probe inside an ephemeral uv venv with *spec* installed."""
     print(f"\n--- {variant['name']} :: {variant['label']} ---", file=sys.stderr)
@@ -144,12 +151,12 @@ def run_variant(variant: dict[str, str]) -> dict[str, object]:
         return record
     except subprocess.TimeoutExpired as exc:
         elapsed_ms = (time.perf_counter() - started) * 1000
-        stderr_str = exc.stderr.decode(errors="replace") if exc.stderr else ""
+        stderr_str = as_text(exc.stderr)
         child_meta = stderr_str.strip().splitlines()[-1] if stderr_str.strip() else ""
         lark_version, _, python_version = child_meta.partition(" ")
         record.update(
             {
-                "lark_version": lark_version or "1.3.1",
+                "lark_version": lark_version or "unknown",
                 "python_version": python_version or sys.version.split()[0],
                 "outcome": "timeout",
                 "exit_code": None,
