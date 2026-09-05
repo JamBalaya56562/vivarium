@@ -98,6 +98,33 @@ function setFixPane(
   outputFixEl!.dataset['fixStatus'] = status;
 }
 
+const BUDGET_LABEL = `${(TIMEOUT_MS / 1000).toFixed(1)} s`;
+
+function formatElapsed(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(1)} s` : `${ms.toFixed(0)} ms`;
+}
+
+interface PaneReport {
+  headline: string;
+  elapsed: string;
+  note?: string;
+  explanation: string;
+  larkVersion: string;
+  pythonVersion: string;
+}
+
+function pane(r: PaneReport): string {
+  return [
+    r.headline,
+    '',
+    `  budget     ${BUDGET_LABEL}`,
+    `  elapsed    ${r.elapsed}${r.note ?? ''}`,
+    '',
+    r.explanation,
+    `lark ${r.larkVersion} / Python ${r.pythonVersion}`,
+  ].join('\n');
+}
+
 if (!reproCodeEl.firstChild) {
   reproCodeEl.textContent = REPRO_CODE;
   fetch('./repro.highlighted.html')
@@ -186,7 +213,7 @@ async function runVariant(
   }
   writePane(
     variant,
-    `(running with a ${TIMEOUT_MS / 1000}s budget…)`,
+    `(running with a ${BUDGET_LABEL} budget…)`,
     'pending',
   );
 
@@ -215,17 +242,14 @@ async function runVariant(
 
   if (outcome === 'timeout') {
     worker.terminate();
-    const stdout = JSON.stringify(
-      {
-        lark_version: ready.lark_version,
-        python_version: ready.python_version,
-        outcome: 'timeout',
-        timeout_ms: TIMEOUT_MS,
-        reproduced: true,
-      },
-      null,
-      2,
-    );
+    const stdout = pane({
+      headline: "parse('aa') did not return.",
+      elapsed: BUDGET_LABEL,
+      note: '   <-- terminated, still running',
+      explanation: 'The LALR back-end is in an infinite loop on this grammar.',
+      larkVersion: ready.lark_version,
+      pythonVersion: ready.python_version,
+    });
     writePane(variant, stdout, 'ok');
     return {
       verdict: 'reproduced',
@@ -261,12 +285,22 @@ async function runVariant(
   }
 
   const data = outcome.data;
-  const stdout = JSON.stringify(data, null, 2);
+  const returned = data.outcome === 'returned';
+  const stdout = pane({
+    headline: returned
+      ? "parse('aa') returned."
+      : `parse('aa') raised ${data.error ?? '<unknown>'}.`,
+    elapsed: formatElapsed(data.elapsed_ms),
+    explanation: returned
+      ? 'The parse completed, so the infinite loop did not trigger.'
+      : 'The parse ended early, so the infinite loop did not trigger.',
+    larkVersion: data.lark_version,
+    pythonVersion: data.python_version,
+  });
   writePane(variant, stdout, 'ok');
-  const message =
-    data.outcome === 'returned'
-      ? `bug not reproduced — parse returned in ${data.elapsed_ms.toFixed(0)} ms (likely fixed upstream).`
-      : `bug not reproduced — parse raised ${data.error ?? '<unknown>'} in ${data.elapsed_ms.toFixed(0)} ms; the specific infinite loop did not trigger.`;
+  const message = returned
+    ? `bug not reproduced — parse returned in ${data.elapsed_ms.toFixed(0)} ms (likely fixed upstream).`
+    : `bug not reproduced — parse raised ${data.error ?? '<unknown>'} in ${data.elapsed_ms.toFixed(0)} ms; the specific infinite loop did not trigger.`;
   return {
     verdict: 'unreproduced',
     outcome: data.outcome,

@@ -14,14 +14,22 @@ With the multiline pattern over a small haystack the equivalence
 breaks:
 
 ```rust
-let haystack = "a\naaa\n";
-let re_plus     = Regex::new("(?m)(^|a)+").unwrap();
-let re_expanded = Regex::new("(?m)(^|a)(^|a)*").unwrap();
+// src/repro.rs (excerpt)
+fn matches(re: &Regex, haystack: &str) -> Vec<(usize, usize)> {
+    re.find_iter(haystack)
+        .map(|m| (m.start(), m.end()))
+        .collect()
+}
 
-let matches_plus     = re_plus.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
-let matches_expanded = re_expanded.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
+let haystack = "a\naaa\n";
+let pattern_plus = "(?m)(^|a)+";
+let pattern_expanded = "(?m)(^|a)(^|a)*";
+
+let re_plus = Regex::new(pattern_plus).expect("compile (re)+ pattern");
+let re_expanded = Regex::new(pattern_expanded).expect("compile (re)(re)* pattern");
+
+let matches_plus = matches(&re_plus, haystack);
+let matches_expanded = matches(&re_expanded, haystack);
 
 // Reported (regex 1.8.4 — pinned in this repro's Cargo.toml):
 //   matches_plus     == [(0, 0), (2, 2), (3, 5), (6, 6)]
@@ -56,10 +64,10 @@ Open upstream at the time of writing.
 | File             | Role                                                              |
 | ---------------- | ----------------------------------------------------------------- |
 | `index.html`     | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`       | TypeScript — fetches `./repro.wasm`, runs it via the WASI shim, parses the JSON envelope, sets the verdict. Compiled to `repro.js` by `bun run build`. |
+| `repro.ts`       | TypeScript — fetches `./repro.wasm`, runs it via the WASI shim, shows its stdout in the output pane, and parses the machine-readable stderr line for the verdict and envelope. Compiled to `repro.js` by `bun run build`. |
 | `repro.js`       | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `Cargo.toml`     | Baseline crate. Pins `regex = "=1.8.4"` (last 1.x release before the new NFA compiler landed in 1.9 and fixed #779) and `serde_json = "1.0.117"`. Builds a `wasm32-wasip1` binary named `repro`. |
-| `src/repro.rs`   | The reproduction itself — runs both regex patterns, prints a JSON envelope to stdout, exits 0 on `reproduced` / 1 on `unreproduced`. Compiled by **both** crates; the `regex` version arrives as a parameter so neither build embeds the other's. |
+| `src/repro.rs`   | The reproduction itself — runs both regex patterns, prints the two match lists to stdout, emits a machine-readable JSON line plus the verdict on stderr, and exits 0 on `reproduced` / 1 on `unreproduced`. Compiled by **both** crates; the `regex` version arrives as a parameter so neither build embeds the other's. |
 | `src/main.rs`    | Baseline entry point. Three lines: pull in `repro` and call it with this crate's pinned version. |
 | `fix/Cargo.toml` | Fix-candidate crate. Same source, `regex = "=1.13.1"`. Builds a binary named `repro-fix`. |
 | `fix/src/main.rs`| Fix-candidate entry point; `#[path]`-includes `../../src/repro.rs` rather than copying it, so the two panes cannot drift apart. |
