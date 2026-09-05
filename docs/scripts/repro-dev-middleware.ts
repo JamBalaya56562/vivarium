@@ -1,7 +1,7 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
-import { REPO_ROOT, REPRO_BASE_PATH, SITE_BASE } from './site-paths';
+import { REPO_ROOT, SITE_BASE } from './site-paths';
 
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
@@ -133,9 +133,6 @@ export function setupReproDevMiddleware(
       REPRO_MIME[ext] ?? 'application/octet-stream',
     );
     res.setHeader('Cache-Control', 'no-store');
-    if (filePath.endsWith('sw.js')) {
-      res.setHeader('Service-Worker-Allowed', `${REPRO_BASE_PATH}/`);
-    }
     createReadStream(filePath).pipe(res);
   });
 }
