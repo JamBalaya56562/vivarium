@@ -296,6 +296,7 @@ set -euo pipefail
 bun install --frozen-lockfile
 bun run typecheck
 mise run repro:build
+mise run repro:i18n
 bunx playwright install --with-deps chromium
 bun run test
 '''
