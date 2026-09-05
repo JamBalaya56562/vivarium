@@ -68,6 +68,12 @@ The page conforms to the contract canonicalised in
 - Visible verdict text starts with `bug reproduced` or
   `bug not reproduced`.
 
+The reproduction script is ordinary Python: it prints one row per
+input and leaves a `results` list behind. The output panes show that
+printed text verbatim — nothing on the page reformats it — and
+`repro.ts` reads `results` out of the Pyodide globals to build the
+envelope above.
+
 A `reproduced` verdict means **every** `UTC±N` input landed on the
 negated offset — the sign-inversion bug is present end-to-end. An
 `unreproduced` verdict means at least one case parsed with the
@@ -108,19 +114,18 @@ mise install
 mise exec uv -- uv run src/layer1_wasm/dateutil-1478/repro.py
 
 # Expected output (python-dateutil 2.9.0.post0):
-# {
-#   "dateutil_version": "2.9.0.post0",
-#   "python_version": "3.14.x",
-#   "cases": [
-#     { "input": "UTC-4",     "expected_offset_seconds": -14400, "actual_offset_seconds":  14400, "inverted": true },
-#     { "input": "UTC+4",     "expected_offset_seconds":  14400, "actual_offset_seconds": -14400, "inverted": true },
-#     { "input": "UTC-04:00", "expected_offset_seconds": -14400, "actual_offset_seconds":  14400, "inverted": true },
-#     { "input": "UTC+04:00", "expected_offset_seconds":  14400, "actual_offset_seconds": -14400, "inverted": true }
-#   ],
-#   "inverted_count": 4,
-#   "case_count": 4,
-#   "reproduced": true
-# }
+# parse('2026-03-11 14:32:45 <input>').utcoffset()
+#
+# input         expected    actual
+# UTC-4           -04:00    +04:00   <-- sign flipped
+# UTC+4           +04:00    -04:00   <-- sign flipped
+# UTC-04:00       -04:00    +04:00   <-- sign flipped
+# UTC+04:00       +04:00    -04:00   <-- sign flipped
+#
+# 4 of 4 UTC-prefixed offsets came back negated.
+# python-dateutil 2.9.0.post0 / Python 3.14.x
+#
+# ...and on stderr:
 # verdict=reproduced — every UTC±N input parsed to its negated offset
 ```
 
