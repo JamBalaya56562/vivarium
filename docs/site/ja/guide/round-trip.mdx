@@ -97,7 +97,7 @@ import {
     heading="10 stage、verdict 経路は Layer 依存。"
   >
     <p>
-      Stage 0〜5 は Layer 非依存で共通、Stage 6 で Layer 1 (WASM in-browser) と Layer 2 (Docker) に分岐します。Layer 3 (record-replay) は現状 fixed-verdict 取得の対象外 — 詳細は下の cheat sheet を参照。
+      Stage 0〜5 は Layer 非依存で共通、Stage 6 で Layer 1 (WASM in-browser) と Layer 2 (Docker) に分岐します。Layer 3 はレシピを持たないため fixed-verdict 取得の対象外 — 詳細は下の cheat sheet を参照。
     </p>
     <pre>
       <code>{`Stage 0    Pre-flight (project 活動度、issue 存在、関連 PR なし)
@@ -198,12 +198,12 @@ Stage 9    最終 Vivarium 側 commit
       </tbody>
     </table>
     <p>
-      Layer 3 (record-replay) は{' '}
+      Layer 3 は{' '}
       <code>verify_and_report_fix</code> 側で{' '}
-      <code>verify_fixed</code> が明示的に拒否されます — 現状{' '}
+      <code>verify_fixed</code> が明示的に拒否されます — {' '}
       <code>branch-fix-verdict.yml</code> が{' '}
-      <code>src/layer2_docker/&lt;slug&gt;/</code> しか扱えないためです。{' '}
-      <code>src/layer3_thirdway/&lt;slug&gt;/</code> をサポートする workflow 拡張は別 issue で追跡しています。
+      <code>src/layer2_docker/&lt;slug&gt;/</code> しか扱えず、
+      対象となる Layer 3 レシピも存在しないためです。
     </p>
   </Section>
 

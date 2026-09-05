@@ -1,6 +1,6 @@
 ---
 name: scaffold-recipe-from-issue
-description: Scaffold a new Vivarium reproduction recipe from an upstream GitHub issue URL (or owner/repo + issue number). Use when the user provides an upstream issue and asks to "reproduce it in Vivarium", "make a Layer N recipe for", "scaffold a recipe for", or similar phrasing. The skill calls the search_upstream_issues MCP tool to confirm the issue is reachable and (by default) has no linked PR, calls prepare_new_recipe to get the slug and scaffold commands, runs `mise run recipes:new` for Layer 2 (or guides copy-from-existing for Layer 1/3), and writes the initial roundtrip.json (status=draft) per the round-trip schema. Does NOT implement the reproduction itself — that is the user's next step. Read-only against the upstream issue; never auto-commits.
+description: Scaffold a new Vivarium reproduction recipe from an upstream GitHub issue URL (or owner/repo + issue number). Use when the user provides an upstream issue and asks to "reproduce it in Vivarium", "make a Layer N recipe for", "scaffold a recipe for", or similar phrasing. The skill calls the search_upstream_issues MCP tool to confirm the issue is reachable and (by default) has no linked PR, calls prepare_new_recipe to get the slug and scaffold commands, runs `mise run recipes:new` for Layer 2 (or guides copy-from-existing for Layer 1), and writes the initial roundtrip.json (status=draft) per the round-trip schema. Does NOT implement the reproduction itself — that is the user's next step. Read-only against the upstream issue; never auto-commits.
 ---
 
 # scaffold-recipe-from-issue
@@ -33,9 +33,9 @@ Confirm these are known before starting; ask if missing:
 1. **Upstream issue identifier** — URL like
    `https://github.com/nodejs/node/issues/63041`, or `<owner>/<repo>` +
    issue number.
-2. **Target layer** — 1 (WASM in-browser), 2 (Docker), or 3 (record-
-   replay). Default 2 unless the bug is clearly browser-runnable
-   (Layer 1) or replay-required (Layer 3).
+2. **Target layer** — 1 (WASM in-browser) or 2 (Docker). Default 2
+   unless the bug is clearly browser-runnable (Layer 1). Layer 3 is a
+   declared catalogue with no recipes and no authoring convention.
 3. **One-line bug title** — used as the README H1 and the scaffold
    command argument.
 4. **Layer 2 only — Docker base image** — e.g. `node:26-slim`.
@@ -126,7 +126,7 @@ The tool returns:
 
 - `slug` — `<project>-<issue>` (validated against the slug regex).
 - `scaffold_command` — for Layer 2, the exact `mise run recipes:new`
-  invocation to run. For Layer 1/3, a comment directing copy-from-
+  invocation to run. For Layer 1, a comment directing copy-from-
   existing.
 - `verify_command` — the recipe verifier (Layer 2 only today).
 - `recipe_json` — `{ path, contents }`. Write `contents` (with the
@@ -149,10 +149,10 @@ The tool returns:
 mise run recipes:new -- <project> <issue> "<title>" --base <image>
 ```
 
-**Layer 1 / Layer 3:** copy from an existing recipe in the same layer
+**Layer 1:** copy from an existing recipe in the same layer
 (e.g. `src/layer1_wasm/pandas-56679/` for a Pyodide recipe). The
-scaffold command from `prepare_new_recipe` is a comment for these
-layers — there is no scaffolder yet.
+scaffold command from `prepare_new_recipe` is a comment for this
+layer — there is no scaffolder yet.
 
 ### 4. Write the initial roundtrip.json
 

@@ -137,21 +137,6 @@
       "github": "https://github.com/postgres/postgres"
     },
     {
-      "project": "pthread",
-      "display_name": "POSIX threads",
-      "recipe_count": 1,
-      "layers": [
-        3
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/pthread/",
-      "tagline": "Native pthread races, captured deterministically.",
-      "tagline_ja": "ネイティブな pthread の race を決定的に捕まえる。",
-      "description": "Layer 3 record-replay reproductions: a real pthreaded program is run under rr, the recorded trace ships in the image, and replay produces a bit-identical verdict every time.",
-      "description_ja": "Layer 3 の record-replay 再現。実際に pthread を使うプログラムを rr の下で走らせ、記録したトレースを配布する。",
-      "homepage": "https://man7.org/linux/man-pages/man7/pthreads.7.html",
-      "github": "https://github.com/rr-debugger/rr"
-    },
-    {
       "project": "regex",
       "display_name": "rust-lang/regex",
       "recipe_count": 1,

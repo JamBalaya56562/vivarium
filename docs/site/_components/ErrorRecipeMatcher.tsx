@@ -339,7 +339,7 @@ const STRINGS: Record<Lang, Strings> = {
         ? 'L1 · WASM'
         : layer === 2
           ? 'L2 · Docker'
-          : 'L3 · Record-replay',
+          : 'L3 · Third way',
   },
   ja: {
     eyebrow: '// マッチ · エラー → レシピ',
@@ -365,7 +365,7 @@ const STRINGS: Record<Lang, Strings> = {
     open: '開く ↗',
     galleryLink: './',
     layerName: (layer) =>
-      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 記録再生',
+      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 第三の道',
   },
 };
 

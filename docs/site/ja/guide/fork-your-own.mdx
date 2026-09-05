@@ -26,7 +26,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     heading="自分の <user>.github.io/vivarium/ に自分のバグ再現を並べる。"
   >
     <p>この使い方では、ユーザーは <code>aletheia-works/vivarium</code> をフォークし、 自分のフォークリポジトリの上で再現レシピを足したり編集したりして、 自分の GitHub Pages サイトとして公開します。アップストリームに contribute するのではなく、<strong>自分のフォーク自体が公開先</strong> になります。</p>
-    <p>Layer 1（ブラウザ内 WASM）は完全にあなたのフォーク側で完結します。 Layer 2 / 3（Docker・record-replay）はアップストリームの GHCR イメージと統合された配信が前提なので、フォークでは <strong>Layer 1 のみ</strong> が deploy されます。</p>
+    <p>Layer 1（ブラウザ内 WASM）は完全にあなたのフォーク側で完結します。 Layer 2（Docker）はアップストリームの GHCR イメージと統合された配信が前提なので、フォークでは <strong>Layer 1 のみ</strong> が deploy されます。</p>
     <Callout>
       アップストリームの再現一覧と並べる予定がない、自分専用の再現置き場として
       使う運用を想定しています。共有したいときは <code>https://&lt;あなた&gt;.github.io/vivarium/</code>

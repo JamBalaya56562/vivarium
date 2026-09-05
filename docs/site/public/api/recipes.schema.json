@@ -53,7 +53,7 @@
             2,
             3
           ],
-          "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = record-replay (image ships with recorded `rr` trace baked in)."
+          "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = third way, for reproductions Layers 1 and 2 cannot reach. No recipe uses it today."
         },
         "project": {
           "type": "string",
@@ -123,7 +123,7 @@
         "expected_runtime": {
           "type": "string",
           "minLength": 1,
-          "description": "Optional. Runtime identifier the recipe's verdict envelope reports in __VIVARIUM_RESULT__.runtime.name (e.g. 'pyodide', 'docker-snapshot', 'rr-replay'). Sourced from src/layer*_*/<slug>/recipe.json. Added in the 2026-05-18 v1 revision; backwards-compatible, v1 consumers ignore."
+          "description": "Optional. Runtime identifier the recipe's verdict envelope reports in __VIVARIUM_RESULT__.runtime.name (e.g. 'pyodide', 'docker-snapshot'). Sourced from src/layer*_*/<slug>/recipe.json. Added in the 2026-05-18 v1 revision; backwards-compatible, v1 consumers ignore."
         },
         "roundtrip": {
           "type": "object",

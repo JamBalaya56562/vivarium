@@ -24,7 +24,7 @@ How those are exposed depends on the layer:
 |---|---|---|
 | **Layer 1** (WASM) | DOM + JS globals, set by the page's reproduction code as it runs | n/a — verdict is live |
 | **Layer 2** (Docker) | DOM + JS globals, lifted from `verdict.json` at page load | `verdict.json` shipped alongside the recipe |
-| **Layer 3** (record-replay) | DOM + JS globals, lifted from `verdict.json` at page load | `verdict.json` committed by the maintainer |
+| **Layer 3** (third way) | DOM + JS globals, lifted from `verdict.json` at page load | `verdict.json` committed by the maintainer |
 
 The DOM/global surface is therefore the same across all three
 layers; the file snapshot only exists for Layer 2 and Layer 3.

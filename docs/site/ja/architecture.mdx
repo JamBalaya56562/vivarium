@@ -18,7 +18,7 @@ import { LiveExamples } from '../_components/LiveExamples';
   <PageHero
     eyebrow="// ARCHITECTURE"
     title="3 つの実行レイヤー、1 つのバグに 1 つだけ。"
-    sub="Layer 1 のブラウザ内 WebAssembly、Layer 2 のコンテナ、Layer 3 の record-replay。どのレイヤーで動くかはレシピが宣言します——あなたが選ぶ必要はありません。下表で 3 層を一望してから、深掘りに進めます。"
+    sub="Layer 1 のブラウザ内 WebAssembly、Layer 2 のコンテナ、そのどちらでも届かないもののための Layer 3。どのレイヤーで動くかはレシピが宣言します——あなたが選ぶ必要はありません。下表で 3 層を一望してから、深掘りに進めます。"
   />
 
   <LayerMatrix
@@ -63,21 +63,21 @@ import { LiveExamples } from '../_components/LiveExamples';
         ],
       },
       {
-        pill: 'L3 / RECORD-REPLAY',
+        pill: 'L3 / THIRD WAY',
         accent: 'coral',
-        title: 'トレース同梱で、どこでも再生。',
+        title: 'L1・L2 が届かないもののための枠。',
         cells: [
           <>
-            <strong>秒〜分（再生のみ）</strong>。録音は Vivarium 側でオフライン済み、訪問者は <code>rr replay</code> だけ。
+            <strong>未定</strong>。レシピがひとつも無いため、性格づけすべきランタイムが存在しない。
           </>,
           <>
             データレース、メモリ順序、長時間 replay、特定の interleave に依存する分散バグ。
           </>,
           <>
-            Linux/x86_64 が前提（ARM/Windows は Codespaces or WSL2）、トレース数十 MB〜数 GB。
+            読み手が普通のマシンで実行して確かめられないもの。この基準がこの層を空のままにしている。
           </>,
           <>
-            <code>rr</code> トレースを焼き込んだ自己完結 GHCR イメージ。
+            まだ無い。決定論的シミュレーション、microVM スナップショット、WASI Preview 3+ が候補。
           </>,
         ],
       },
@@ -168,18 +168,18 @@ import { LiveExamples } from '../_components/LiveExamples';
   />
 
   <LayerSection
-    pill="L3 / RECORD-REPLAY"
+    pill="L3 / THIRD WAY"
     accent="coral"
     eyebrow="// 03 · LAYER 3"
-    heading="トレースを同梱、どこでも再生。"
+    heading="L1・L2 が届かないもののための枠。"
     intro={
-      <p>数回再実行しても再現する保証がない<strong>ハイゼンバグ</strong>のための層です。Vivarium 側であらかじめ録音したトレースを GHCR イメージに焼き込み、訪問者は<strong>再生だけ</strong>すれば済むようにしています。</p>
+      <p>数回再実行しても再現する保証がない<strong>ハイゼンバグ</strong>のための層です。区分としては宣言されていますが、<strong>現在レシピはひとつもありません</strong>。</p>
     }
     cellLabels={{
       fits: '向くバグ',
-      startup: '使い方',
-      cantReach: '届かないこと',
-      runtimes: '実例',
+      startup: 'なぜ空なのか',
+      cantReach: '空である理由',
+      runtimes: '候補',
     }}
     fits={
       <ul>
@@ -190,19 +190,18 @@ import { LiveExamples } from '../_components/LiveExamples';
       </ul>
     }
     startup={
-      <p>各 Layer 3 レシピは、トレースを焼き込んだ自己完結 GHCR イメージとして配布されます。<code>rr replay</code> は PMU を必要としないため、訪問者と CI の再生はどちらも<strong>コモディティな Linux ホストで動作</strong>します。録音そのものは PMU を備えた Linux/x86_64 環境を要するため、レシピ追加時のオフライン作業として Vivarium 側で済ませてあります。</p>
+      <p>最初の試みは <code>rr</code> の record-replay でしたが、撤去しました。<code>rr</code> は Linux/x86_64 専用で、PMU の露出と CPUID faulting を要求します。Windows や macOS の読み手はレシピを検証すらできず、実行できる環境がここまで限られると、正しい再現と壊れた再現を安く見分ける手段もありません。</p>
     }
     cantReach={
       <ul>
-        <li><strong>環境制約。</strong> 訪問者のマシンは Linux/x86_64 が前提。ARM Mac や Windows の場合は Codespaces または WSL2 + Docker にフォールバック。</li>
-        <li><strong>カバレッジの形が違う。</strong> <code>rr</code> は単一プロセス Linux x86_64、分散シミュレーションツールは分散システムを対象。互いの領域はカバーしない。</li>
-        <li><strong>トレースが大きい。</strong> レシピあたり数十 MB から一桁 GB のオーダー。</li>
+        <li><strong>参入基準。</strong> レシピは読み手自身が再現できなければならない。誰も独立に確認できない verdict は証拠ではない。</li>
+        <li><strong>カーネル依存の技術。</strong> CRIU や Firecracker スナップショットも同じ Linux 依存を引き継ぐため、同じ基準を通す必要がある。</li>
       </ul>
     }
     runtimes={
       <ul>
-        <li><a href="/vivarium/repro/pthread/lost-update/">pthread lost-update</a> — 真のスレッド競合を <code>rr</code> で決定的に保存し、訪問者は <code>rr replay</code> で巻き戻すだけ。</li>
-        <li>新しい Layer 3 レシピは PMU 録音のオフラインフットワークを要するため、追加ペースは L1/L2 より緩やか。</li>
+        <li>決定論的シミュレーション（Antithesis 系）と WASI Preview 3+ が有望。ホストのカーネル機能に依存しないため。</li>
+        <li>どれかが着地するまで、ギャラリーに L3 のエントリは出ません。</li>
       </ul>
     }
   />

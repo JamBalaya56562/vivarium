@@ -153,7 +153,7 @@ export async function prepareNewRecipe(
       case 2:
         return 'docker-snapshot';
       case 3:
-        return 'rr-replay';
+        return 'TODO-set-runtime';
     }
   };
 
@@ -280,7 +280,7 @@ export const PREPARE_NEW_RECIPE_TOOL = {
         enum: [1, 2, 3],
         default: 2,
         description:
-          'Vivarium layer: 1=WASM (in-browser), 2=Docker (default), 3=record-replay (rr). The commit scope, scaffold command, and next-steps tailor to the layer.',
+          'Vivarium layer: 1=WASM (in-browser), 2=Docker (default), 3=third way (no recipes yet). The commit scope, scaffold command, and next-steps tailor to the layer.',
       },
     },
     required: ['project', 'issue', 'title'],

@@ -14,8 +14,8 @@
 [`aletheia-works`](https://github.com/aletheia-works) organisation.
 
 - **Problem-centred, not technology-centred.** The goal is "reproduce any bug,
-  in any language, any environment, at any scale." WASM, Docker, microVM, and
-  record-replay are *candidate means*, never the product.
+  in any language, any environment, at any scale." WASM, Docker, and microVM
+  are *candidate means*, never the product.
 - **Lifelong project.** Phases are measured in years, not sprints. Prefer
   durable decisions over quick wins.
 - **AI-delegated development.** Humans set direction and merge; AI agents
@@ -111,8 +111,8 @@ vivarium/
 ├── src/
 │   ├── layer1_wasm/       # Layer 1 reproductions (Pyodide, Ruby.wasm, php-wasm, Rust wasm32-wasip1)
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
-│   ├── layer3_thirdway/   # Layer 3 reproductions (record-replay, etc.)
-│   └── external_examples/ # reference Manifest v1 fixtures, one per layer
+│   ├── layer3_thirdway/   # Layer 3 catalogue — declared, no recipes yet
+│   └── external_examples/ # reference Manifest v1 fixtures, one per shipping layer
 ```
 
 `src/` is reserved for reproduction recipes; runtime artefacts the
@@ -143,8 +143,8 @@ and public machine-readable assets stay under `docs/site/`.
 - **Subject must start with a lowercase letter** — most common AI
   trip-wire (`subject-case` rejects sentence-case, start-case,
   pascal-case, upper-case):
-  - ❌ `feat(ci): Phase 4 Stage A — rr replay PoC scaffold`
-  - ✅ `feat(ci): phase 4 Stage A — rr replay PoC scaffold`
+  - ❌ `feat(ci): Phase 4 Stage A — verdict capture scaffold`
+  - ✅ `feat(ci): phase 4 Stage A — verdict capture scaffold`
     (lowercase first char only; mixed case later is fine for proper
     nouns and acronyms)
 - Other rules: subject ≤100 chars, no trailing `.`, lowercase
@@ -248,8 +248,8 @@ because they invoke `mise run` tasks (`docs:build`, `repro:build`,
 directly. There mise is the build entry point, not a way of
 installing a runtime, so the rule above does not reach it. A
 workflow that only needs a runtime uses that runtime's setup
-action — `layer3-build.yml` needs bun solely to install `ajv-cli`
-and so uses `oven-sh/setup-bun`.
+action — `test-mcp.yml` needs bun solely to run the package's own
+tests and so uses `oven-sh/setup-bun`.
 
 When adding a new tool, pin it in `mise.toml` first.
 
@@ -347,8 +347,7 @@ Python, Rust, shell, workflow YAML, OpenTofu, TOML configs, CSS, and
 recipe HTML. Markdown and MDX are prose and are out of scope.
 
 So are the reproduction scripts a recipe publishes — `repro.py` /
-`repro.sh` / `repro.rs`, the Layer 3 record/replay pair, and the
-`src/external_examples/` manifests. The recipe page renders them for
+`repro.sh` / `repro.rs`, and the `src/external_examples/` manifests. The recipe page renders them for
 visitors, so their comments are page copy explaining the bug rather
 than notes about the implementation.
 
@@ -363,12 +362,14 @@ conflate "which layer does this problem fit" with "which library do we use."
 - **Layer 2 — Docker (full fidelity).** Devcontainer images, Firecracker
   exploration. Target: arbitrary projects, complex dependencies, network
   behaviour. Startup: s–min.
-- **Layer 3 — Third way.** microVM (Firecracker, Kata), record-replay (rr,
-  Pernosco-style), deterministic simulation (Antithesis-style), WASI Preview
-  3+, snapshot-based (CRIU). Target: problems Layers 1 and 2 cannot reach.
+- **Layer 3 — Third way.** microVM (Firecracker, Kata), deterministic
+  simulation (Antithesis-style), WASI Preview 3+, snapshot-based (CRIU).
+  Target: problems Layers 1 and 2 cannot reach.
 
-All three layers ship recipes today. See `src/layer{1,2,3}_*/README.md`
-for the per-layer catalogue model.
+Layers 1 and 2 ship recipes today; Layer 3 is declared but empty. A
+runtime earns a place there only if a reader on an ordinary machine can
+reproduce and check the result — the bar `rr` failed. See
+`src/layer{1,2,3}_*/README.md` for the per-layer catalogue model.
 
 ## 6. When in doubt
 

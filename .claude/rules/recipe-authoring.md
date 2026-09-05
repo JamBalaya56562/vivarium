@@ -375,68 +375,21 @@ mise exec -- bun run test:unit
 
 ---
 
-## Layer 3 (rr / record-replay) specifics
+## Layer 3 (third way) specifics
 
-**Hard preconditions** — Layer 3 recipe authoring requires a
-maintainer host with:
+**No recipes ship here today, and there is no authoring convention
+yet.** The previous one was built around `rr` record-replay and was
+removed with it: `rr` is Linux/x86_64 only, needs an exposed PMU and
+CPUID faulting, and so could not be verified by a contributor on
+Windows or macOS — which breaks Vivarium's requirement that a reader
+can reproduce and check a recipe themselves.
 
-- Linux/x86_64 (rr does not support arm64, Windows, or macOS).
-- A CPU with an exposed PMU (Intel/AMD bare metal, or VMs that
-  pass through performance counters — Hyper-V / WSL2 / GHA hosted
-  Ubuntu **do not** qualify).
-- CPUID faulting enabled in the kernel (Intel Ivy Bridge+ or
-  modern AMD with stock recent Linux meets this).
-
-CI cannot record OR replay (both capabilities are missing on GHA's
-Hyper-V runners — confirmed empirically Phase 4 Stage A,
-2026-04-27). The maintainer records locally, ships the trace as a
-GitHub Release asset, and commits a tracked `verdict.json`. **If
-your environment does not meet these preconditions, stop and hand
-the recipe back to a maintainer.**
-
-**Required files**:
-
-```text
-src/layer3_thirdway/<slug>/
-├── Dockerfile        ← installs rr, builds reproducer, ADD trace.url
-├── record.sh         ← documents how the trace was captured (not run by CI)
-├── replay.sh         ← visitor-facing rr replay; verdict semantics
-├── trace.url         ← pinned URL of the GitHub Release asset
-├── README.md         ← upstream issue + docker run + verdict contract
-├── verdict.json      ← TRACKED here (unique to Layer 3) — captured locally
-└── out/              ← gitignored scratch for record.sh's local outputs
-```
-
-`verdict.json` being **tracked** is the key Layer 3 deviation from
-Layer 2. CI does not regenerate it.
-
-**Authoring workflow** (maintainer host):
-
-1. Write the reproducer + `record.sh` + `replay.sh`.
-2. Run `record.sh` locally → produces `out/<name>.tar.zst`.
-3. Upload the trace as a Release asset under
-   `aletheia-works/vivarium`, tag-pinned (`trace-<slug>-v1`). Pin
-   the URL in `trace.url`.
-4. Build the image locally (the Dockerfile pulls the trace via
-   `ADD`).
-5. Replay locally to capture stdout, hand-craft `verdict.json`
-   per Contract v1, validate it against
-   `docs/site/public/spec/verdict.schema.json` with `ajv-cli`.
-
-**Commit scope**: `feat(layer3)` — established by PR 106.
-
-**Pitfalls**:
-
-- **rr capability gaps on CI.** Do not try to "make CI replay
-  work". It will not. The maintainer-captured `verdict.json` is
-  the verdict CI surfaces.
-- **Container caps.** Visitor-facing `docker run` needs
-  `--cap-add=SYS_PTRACE --cap-add=PERFMON --security-opt
-  seccomp=unconfined`. Document this in the recipe README.
-- **Trace asset versioning.** Re-recording requires bumping the
-  Release asset tag (`trace-<slug>-v2` etc.) and updating
-  `trace.url`. Mutating an existing tagged asset breaks
-  reproducibility for visitors who already pulled the image.
+Whoever authors the first recipe here defines the shape and updates
+both this section and
+[`src/layer3_thirdway/README.md`](../../src/layer3_thirdway/README.md)
+in the same PR. Apply the same admission test first: if the runtime
+cannot be exercised on a reviewer's own machine, it does not belong in
+the catalogue.
 
 ---
 
@@ -454,7 +407,7 @@ Layer 2. CI does not regenerate it.
 ## When this checklist is wrong
 
 If you discover the checklist diverges from current behaviour
-(e.g. a generator name changed, a Pyodide version bumped,
-ADR-0011's reasoning becomes invalid), update this rule file in
+(e.g. a generator name changed, a Pyodide version bumped, a layer
+gains or loses a recipe), update this rule file in
 the same PR rather than working around it. The checklist is
 load-bearing for the next agent.

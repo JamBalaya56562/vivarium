@@ -51,9 +51,9 @@ const STRINGS = {
         {
           pill: 'L3',
           accent: 'coral' as const,
-          title: 'Record-replay & deterministic.',
-          body: 'Heisenbugs only. Vivarium pre-records the trace; the visitor replays. Burned-in GHCR images run on commodity Linux hosts — no PMU required.',
-          runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
+          title: 'Whatever L1 and L2 cannot reach.',
+          body: 'Heisenbugs, races, time-travel debugging. No recipes ship here yet — a runtime earns a place only once a reader on an ordinary machine can reproduce and check the result.',
+          runtimes: 'Antithesis · CRIU · WASI Preview 3+',
         },
       ],
     },
@@ -92,7 +92,7 @@ const STRINGS = {
     cta: {
       eyebrow: '// SEE IT RUN',
       heading: `${siteStats.recipes} real upstream bugs, routed through the right layer.`,
-      sub: 'Layer 1 covers browser-native WASM recipes; Layer 2 ships Docker reproductions; Layer 3 carries record-replay snapshots.',
+      sub: 'Layer 1 covers browser-native WASM recipes; Layer 2 ships Docker reproductions; Layer 3 is reserved for what neither can reach.',
       primary: { label: 'Browse the gallery →', href: '/repro/' },
       ghost: { label: 'Read the spec', href: '/spec/' },
     },
@@ -131,9 +131,9 @@ const STRINGS = {
         {
           pill: 'L3',
           accent: 'coral' as const,
-          title: 'Record-replay と決定論的シミュレーション。',
-          body: 'ハイゼンバグ専用。Vivarium が事前にトレースを録音し、訪問者は再生だけ。GHCR イメージに焼き込み、コモディティ Linux で動作——PMU 不要。',
-          runtimes: 'rr · Antithesis · CRIU · WASI Preview 3+',
+          title: 'L1 と L2 が届かないもの。',
+          body: 'ハイゼンバグ、race、タイムトラベルデバッグ。まだレシピは無い——普通のマシンの読み手が自分で再現して確かめられる runtime だけがここに入れる。',
+          runtimes: 'Antithesis · CRIU · WASI Preview 3+',
         },
       ],
     },
@@ -172,7 +172,7 @@ const STRINGS = {
     cta: {
       eyebrow: '// 実物を見る',
       heading: `${siteStats.recipes} 個の本物のアップストリームバグを、適したレイヤーで再現する。`,
-      sub: 'Layer 1 はブラウザ内 WASM、Layer 2 は Docker 再現、Layer 3 は record-replay スナップショットを扱う。',
+      sub: 'Layer 1 はブラウザ内 WASM、Layer 2 は Docker 再現、Layer 3 はそのどちらでも届かないもののための枠。',
       primary: { label: '再現一覧へ →', href: '/repro/' },
       ghost: { label: '仕様を読む', href: '/spec/' },
     },

@@ -37,7 +37,7 @@ export async function listRecipes(
 export const LIST_RECIPES_TOOL = {
   name: 'list_recipes',
   description:
-    'List Vivarium reproduction recipes — pages or container images that demonstrate a specific upstream bug. Returns metadata only; live verdicts come from `lookup_verdict`. Filter by `layer` (1=WASM in browser, 2=Docker, 3=record-replay), `project` (upstream project name like "pandas" or "bash"), or `q` (substring search across slug, project, and title).',
+    'List Vivarium reproduction recipes — pages or container images that demonstrate a specific upstream bug. Returns metadata only; live verdicts come from `lookup_verdict`. Filter by `layer` (1=WASM in browser, 2=Docker, 3=third way), `project` (upstream project name like "pandas" or "bash"), or `q` (substring search across slug, project, and title).',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -45,7 +45,7 @@ export const LIST_RECIPES_TOOL = {
         type: 'integer' as const,
         enum: [1, 2, 3],
         description:
-          'Optional layer filter. 1 = WASM in browser, 2 = Docker, 3 = record-replay.',
+          'Optional layer filter. 1 = WASM in browser, 2 = Docker, 3 = third way.',
       },
       project: {
         type: 'string' as const,

@@ -109,7 +109,7 @@
         },
         "source": {
           "enum": ["layer1-headless", "layer2-ghcr", "layer3-trace"],
-          "description": "How the verdict was captured. `layer1-headless` = Playwright-driven WASM run targeted by --grep <slug>. `layer2-ghcr` = branch-fix-verdict.yml workflow run consuming a GHCR-pushed image. `layer3-trace` = maintainer-side rr replay against the trace asset pinned in trace.url."
+          "description": "How the verdict was captured. `layer1-headless` = Playwright-driven WASM run targeted by --grep <slug>. `layer2-ghcr` = branch-fix-verdict.yml workflow run consuming a GHCR-pushed image. `layer3-trace` = maintainer-side capture for a Layer 3 recipe. Retained for compatibility; Vivarium ships no Layer 3 recipe today."
         }
       }
     }

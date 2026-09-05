@@ -26,7 +26,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     heading="Your bugs at <user>.github.io/vivarium/."
   >
     <p>In this flow you fork <code>aletheia-works/vivarium</code>, add and edit reproduction recipes on your own copy, and publish your fork as your own GitHub Pages site. You're not contributing upstream —{' '} <strong>your fork itself is the destination</strong>.</p>
-    <p>Layer 1 (in-browser WASM) works end-to-end on your fork. Layer 2 / 3 (Docker, record-replay) ride on upstream's GHCR images and stay upstream-only; on a fork, <strong>only Layer 1 is deployed</strong>.</p>
+    <p>Layer 1 (in-browser WASM) works end-to-end on your fork. Layer 2 (Docker) rides on upstream's GHCR images and stay upstream-only; on a fork, <strong>only Layer 1 is deployed</strong>.</p>
     <Callout>
       The intended use case is a personal collection of reproductions, not
       a mirror of upstream. To share, hand out{' '}

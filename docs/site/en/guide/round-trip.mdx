@@ -114,9 +114,8 @@ import {
     <p>
       Stages 0 – 5 are layer-independent; the path branches at Stage 6
       depending on whether the recipe is Layer 1 (WASM in-browser) or
-      Layer 2 (Docker). Layer 3 (record-replay) is currently out of
-      scope for the fixed-verdict capture — see the cheat sheet
-      below.
+      Layer 2 (Docker). Layer 3 ships no recipes, so it is out of scope
+      for the fixed-verdict capture — see the cheat sheet below.
     </p>
     <pre>
       <code>{`Stage 0    Pre-flight (project activity, issue exists, no linked PR)
@@ -226,12 +225,11 @@ Stage 9    Final Vivarium-side commit
       </tbody>
     </table>
     <p>
-      Layer 3 (record-replay): <code>verify_and_report_fix</code>{' '}
-      rejects Layer 3 <code>verify_fixed</code> with an informative
-      error — <code>branch-fix-verdict.yml</code> only handles{' '}
-      <code>src/layer2_docker/&lt;slug&gt;/</code>. Workflow extension
-      to handle <code>src/layer3_thirdway/&lt;slug&gt;/</code> is
-      tracked separately.
+      Layer 3: <code>verify_and_report_fix</code> rejects Layer 3{' '}
+      <code>verify_fixed</code> with an informative error —{' '}
+      <code>branch-fix-verdict.yml</code> only handles{' '}
+      <code>src/layer2_docker/&lt;slug&gt;/</code>, and no Layer 3
+      recipe exists to target.
     </p>
   </Section>
 

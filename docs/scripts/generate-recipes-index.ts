@@ -147,18 +147,11 @@ async function listRecipeSlugs(layerDir: string): Promise<string[]> {
   return slugs.sort();
 }
 
-const PROJECT_OVERRIDES: Record<string, string> = {
-  'lost-update': 'pthread',
-};
-
 function parseSlug(slug: string): {
   project: string;
   issue: number;
   issuePath: string;
 } {
-  if (PROJECT_OVERRIDES[slug]) {
-    return { project: PROJECT_OVERRIDES[slug]!, issue: 0, issuePath: slug };
-  }
   const match = slug.match(/^([a-z][a-z0-9]*(?:-[a-z][a-z0-9]*)*?)-(\d+)$/);
   if (match) {
     return {

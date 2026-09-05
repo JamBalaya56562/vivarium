@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aletheia-works.github.io/vivarium/spec/verdict.schema.json",
   "title": "Vivarium verdict snapshot (contract v1)",
-  "description": "Verdict snapshot file shipped alongside Layer 2 (Docker catalogue) and Layer 3 (record-replay catalogue) reproduction pages in the Vivarium gallery. Layer 1 (WASM in-page) reproductions do not ship this file — their verdict is published live in the page DOM and JS globals. As of Contract v1 Revision 3 (ADR-0029) the verdict enum values are 'reproduced' / 'unreproduced'; older snapshots that still carry 'pass' / 'fail' are no longer accepted by this schema. See https://aletheia-works.github.io/vivarium/spec/contract-v1 for the full contract.",
+  "description": "Verdict snapshot file shipped alongside Layer 2 (Docker catalogue) reproduction pages in the Vivarium gallery, and by any Layer 3 recipe that ships one — Vivarium has none today. Layer 1 (WASM in-page) reproductions do not ship this file — their verdict is published live in the page DOM and JS globals. As of Contract v1 Revision 3 (ADR-0029) the verdict enum values are 'reproduced' / 'unreproduced'; older snapshots that still carry 'pass' / 'fail' are no longer accepted by this schema. See https://aletheia-works.github.io/vivarium/spec/contract-v1 for the full contract.",
   "type": "object",
   "required": [
     "contract",

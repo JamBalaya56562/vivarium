@@ -115,29 +115,29 @@ expected_verdict = "reproduced"
 | `dockerfile` | ⏳ | Repo-relative path to the source Dockerfile. Informational — Vivarium does not build from it. |
 | `expected_verdict` | ⏳ | Default `"reproduced"`. |
 
-### `[layer3]` — Record-replay catalogue
+### `[layer3]` — Third-way catalogue
 
 ```toml
 layer = 3
 
 [layer3]
-image = "ghcr.io/example-org/example-recipe-with-trace:latest"
+image = "ghcr.io/example-org/example-recipe:latest"
 dockerfile = "./Dockerfile"
 expected_verdict = "reproduced"
 ```
 
 | Field | Required | Notes |
 |---|---|---|
-| `image` | ✅ | Container image reference. Image is expected to **ship with the recorded `rr` trace baked in**; entrypoint runs `rr replay` against the pinned trace. |
+| `image` | ✅ | Container image reference. |
 | `dockerfile` | ⏳ | Informational. |
 | `expected_verdict` | ⏳ | Default `"reproduced"`. |
 
-> ⚠️ Layer 3 replay needs a host with **CPUID-faulting support**
-> when the visitor's CPU differs from the recording CPU. GitHub
-> Actions hosted Ubuntu runners do not expose this capability.
-> Layer 3 manifests are therefore best consumed from self-hosted
-> runners or visitor desktops with modern Intel (Ivy Bridge+) /
-> recent AMD silicon.
+> ⚠️ Layer 3 is reserved for reproductions that Layers 1 and 2
+> cannot reach — deterministic simulation, microVM snapshots and
+> the like. Vivarium ships none today, so this table is a
+> declaration rather than a described practice. A consumer
+> encountering a third-party `layer = 3` manifest should expect the
+> runtime requirements to be documented by that manifest's author.
 
 ## Verdict semantics
 

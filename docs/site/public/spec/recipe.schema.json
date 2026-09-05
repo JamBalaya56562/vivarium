@@ -47,7 +47,7 @@
     "expected_runtime": {
       "type": "string",
       "minLength": 1,
-      "description": "Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name`. For Layer 1: 'pyodide' / 'ruby.wasm' / 'php-wasm' / 'rust-wasi' / 'browser' (the smoke test). For Layer 2: 'docker-snapshot'. For Layer 3: 'rr-replay'. Asserted by the regression suite alongside expected_verdict, and required in practice on the same terms: src/layer1_wasm/tests/repro.spec.ts refuses to start when the value is missing or unrecognised."
+      "description": "Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name`. For Layer 1: 'pyodide' / 'ruby.wasm' / 'php-wasm' / 'rust-wasi' / 'browser' (the smoke test). For Layer 2: 'docker-snapshot'. Layer 3 ships no recipes, so it has no established value. Asserted by the regression suite alongside expected_verdict, and required in practice on the same terms: src/layer1_wasm/tests/repro.spec.ts refuses to start when the value is missing or unrecognised."
     },
     "path_a": {
       "type": "boolean",

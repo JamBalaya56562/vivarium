@@ -94,7 +94,6 @@ src/layer2_docker/**/verdict.json
 src/layer2_docker/_assets/
 src/layer2_docker/_shared/
 
-src/layer3_thirdway/**/out/
 
 *.log
 logs/

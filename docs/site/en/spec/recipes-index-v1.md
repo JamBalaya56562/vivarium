@@ -51,7 +51,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `slug` | string (kebab-case) | ✅ | Recipe directory name under `src/layer{N}_*/`. Same convention as Manifest v1's `slug`. |
-| `layer` | integer (`1` \| `2` \| `3`) | ✅ | Layer 1 = WASM in browser; Layer 2 = Docker; Layer 3 = record-replay. |
+| `layer` | integer (`1` \| `2` \| `3`) | ✅ | Layer 1 = WASM in browser; Layer 2 = Docker; Layer 3 = third way. |
 | `project` | string | ✅ | Upstream project name (e.g. `"pandas"`, `"bash"`). |
 | `issue` | integer | ✅ | Upstream issue number; `0` if no upstream tracker entry. |
 | `title` | string | ✅ | Human-readable title, from the recipe README's first H1. |
@@ -64,7 +64,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `severity` | string | ⏳ | Optional. Free-form severity bucket (e.g. `"bug"`, `"regression"`, `"spec-violation"`, `"footgun"`). Sourced from `recipe.json`. Added 2026-05-03. |
 | `tags` | array of strings | ⏳ | Optional. Free-form tag list scored by the matcher (e.g. `["sqlite3", "pragma", "foreign-keys"]`). Sourced from `recipe.json`. Added 2026-05-03. |
 | `expected_verdict` | string (enum) | ⏳ | Optional. Verdict the regression suite expects the recipe page to produce — `"reproduced"` or `"unreproduced"`. Sourced from `recipe.json`. Added in the 2026-05-18 revision. |
-| `expected_runtime` | string | ⏳ | Optional. Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name` (e.g. `"pyodide"`, `"docker-snapshot"`, `"rr-replay"`). Sourced from `recipe.json`. Added 2026-05-18. |
+| `expected_runtime` | string | ⏳ | Optional. Runtime identifier the recipe's verdict envelope reports in `__VIVARIUM_RESULT__.runtime.name` (e.g. `"pyodide"`, `"docker-snapshot"`). Sourced from `recipe.json`. Added 2026-05-18. |
 | `path_a` | boolean | ⏳ | Optional. Present and `true` when the recipe page mounts the Path A "Try a fix" panel, so a consumer can hand a candidate fix to the page. Absent means it does not. Sourced from `recipe.json`. Added 2026-09-03. |
 
 ## Versioning

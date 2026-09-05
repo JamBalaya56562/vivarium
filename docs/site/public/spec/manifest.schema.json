@@ -19,7 +19,7 @@
     "layer": {
       "type": "integer",
       "enum": [1, 2, 3],
-      "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = record-replay (image ships with the recorded trace baked in)."
+      "description": "The reproduction's runtime layer. 1 = WASM in-browser. 2 = Docker (visitor runs `docker run`). 3 = third way, for reproductions Layers 1 and 2 cannot reach. Vivarium ships no Layer 3 recipe today; the layer remains valid for third-party manifests."
     },
     "title": {
       "type": "string",
@@ -99,7 +99,7 @@
         "image": {
           "type": "string",
           "minLength": 1,
-          "description": "Container image reference for an `rr replay` -based reproduction. The image is expected to ship with the recorded trace baked in; visitors run `docker run <image>` and the entrypoint replays the trace. Visitor's host needs CPUID-faulting support for cross-CPU replay — see ADR-0011."
+          "description": "Container image reference for a Layer 3 reproduction. Visitors run `docker run <image>` and the entrypoint produces the verdict. Vivarium ships no Layer 3 recipe today, so any runtime requirements beyond a container runtime are the manifest author's to document."
         },
         "dockerfile": {
           "type": "string",

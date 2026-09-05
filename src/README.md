@@ -27,7 +27,7 @@ longer-form argument.
 src/
 ├── layer1_wasm/      # browser-native, ms–s startup
 ├── layer2_docker/    # container-backed, s–min startup
-└── layer3_thirdway/  # record-replay, microVM, deterministic
+└── layer3_thirdway/  # declared catalogue, no recipes yet
 ```
 
 Each subdirectory has its own `README.md` describing the kinds of

@@ -26,7 +26,7 @@ We don't lock ourselves into a single technology. We combine:
 
 - **WASM** for instant, browser-native reproduction (Pyodide, sqlite-wasm, etc.)
 - **Docker** for full-fidelity environment reproduction
-- **Third-way approaches** like record-replay and deterministic simulation
+- **Third-way approaches** like deterministic simulation and microVM snapshots
 
 The goal is not to be "a WASM service" — the goal is to **reproduce bugs**.
 The technology is chosen by the problem, not the other way around.
@@ -37,7 +37,7 @@ The technology is chosen by the problem, not the other way around.
 
 Public specs:
 
-- **[Contract v1](https://aletheia-works.github.io/vivarium/spec/contract-v1)** — the reproduction-verdict surface every gallery page emits (revision 2 adds an optional evidence surface). JSON Schema at [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json), CI-validated on every Layer 2/3 `verdict.json`.
+- **[Contract v1](https://aletheia-works.github.io/vivarium/spec/contract-v1)** — the reproduction-verdict surface every gallery page emits (revision 2 adds an optional evidence surface). JSON Schema at [`verdict.schema.json`](https://aletheia-works.github.io/vivarium/spec/verdict.schema.json), CI-validated on every Layer 2 `verdict.json`.
 - **[Manifest v1](https://aletheia-works.github.io/vivarium/spec/manifest-v1)** — TOML manifest an external repo ships at `.vivarium/manifest.toml` to declare a Vivarium-runnable reproduction. JSON Schema at [`manifest.schema.json`](https://aletheia-works.github.io/vivarium/spec/manifest.schema.json).
 - **[Recipes index v1](https://aletheia-works.github.io/vivarium/spec/recipes-index-v1)** — machine-readable catalogue listing of every reproduction in this repo. Live endpoint: <https://aletheia-works.github.io/vivarium/api/recipes.json>.
 
@@ -63,9 +63,9 @@ repository settings via OpenTofu.
 External contributions land most naturally as **Vivarium-runnable
 reproductions in your own repo**: ship a `.vivarium/manifest.toml`
 that points at a static page (Layer 1) or a published container image
-(Layer 2/3) per the [Manifest v1 spec](https://aletheia-works.github.io/vivarium/spec/manifest-v1).
-Three reference manifests live under
-[`src/external_examples/`](src/external_examples/), one per layer.
+(Layer 2) per the [Manifest v1 spec](https://aletheia-works.github.io/vivarium/spec/manifest-v1).
+Reference manifests live under
+[`src/external_examples/`](src/external_examples/), one per shipping layer.
 
 Issue and PR contributions to this repo are also welcome.
 
@@ -75,7 +75,6 @@ Issue and PR contributions to this repo are also welcome.
 |---|---|
 | Layer 1 (WASM) | Pyodide, Ruby.wasm, php-wasm, Rust `wasm32-wasip1` |
 | Layer 2 (Docker) | Docker images published to GHCR per recipe |
-| Layer 3 (record-replay) | `rr` replay against trace baked into a GHCR image |
 | Docs site | rspress + Bun + GitHub Pages |
 | MCP server | TypeScript on Bun, dual-published to JSR + npm with OIDC + Sigstore provenance |
 | Infrastructure | OpenTofu, GitHub Actions (SHA-pinned), aletheia-works/.github reusables |

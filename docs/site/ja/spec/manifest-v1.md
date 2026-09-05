@@ -110,29 +110,29 @@ expected_verdict = "reproduced"
 | `dockerfile` | ⏳ | ソース Dockerfile へのリポジトリ相対パス。情報提供のみ——Vivarium はここからビルドしない。 |
 | `expected_verdict` | ⏳ | デフォルト `"reproduced"`。 |
 
-### `[layer3]` — Record-replay カタログ
+### `[layer3]` — 第三の道カタログ
 
 ```toml
 layer = 3
 
 [layer3]
-image = "ghcr.io/example-org/example-recipe-with-trace:latest"
+image = "ghcr.io/example-org/example-recipe:latest"
 dockerfile = "./Dockerfile"
 expected_verdict = "reproduced"
 ```
 
 | フィールド | 必須 | 注記 |
 |---|---|---|
-| `image` | ✅ | コンテナイメージ参照。イメージは**録音済みの `rr` トレースを焼き込んで**出荷することが期待される。エントリポイントはピン留めされたトレースに対して `rr replay` を実行する。 |
+| `image` | ✅ | コンテナイメージ参照。 |
 | `dockerfile` | ⏳ | 情報提供のみ。 |
 | `expected_verdict` | ⏳ | デフォルト `"reproduced"`。 |
 
-> ⚠️ Layer 3 replay は訪問者の CPU が録音 CPU と異なる場合に
-> **CPUID フォールティングサポート**を持つホストが必要。
-> GitHub Actions ホスト型 Ubuntu ランナーはこの機能を公開しない。
-> Layer 3 マニフェストは、セルフホストランナーまたは
-> 最新の Intel（Ivy Bridge 以降）/ 最新 AMD シリコンを持つ
-> 訪問者のデスクトップで消費するのが最適だ。
+> ⚠️ Layer 3 は Layer 1 / 2 が届かない再現——決定論的シミュレーション、
+> microVM スナップショットなど——のための枠。Vivarium は現在ひとつも
+> 出荷していないので、この表は実践の記述ではなく宣言に留まる。
+> 第三者の `layer = 3` マニフェストに出会った consumer は、
+> ランタイム要件がそのマニフェストの作者によって文書化されていることを
+> 期待してよい。
 
 ## Verdict セマンティクス
 

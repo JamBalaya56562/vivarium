@@ -91,7 +91,7 @@ const FIXTURE_INDEX = {
       language: 'c',
       symptom: 'lost-update-data-race',
       severity: 'datarace',
-      tags: ['rr-replay', 'deterministic'],
+      tags: ['data-race', 'deterministic'],
     },
   ],
 };

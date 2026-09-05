@@ -85,10 +85,6 @@ artefact is the source of truth either way.
 - **Verify Layer 1 (WASM) reproductions.** Layer 1 verdicts are
   produced live in-page by a browser; there is no Docker image to
   swap.
-- **Verify Layer 3 (rr replay) reproductions on hosted runners.**
-  GitHub-hosted Ubuntu runners cannot drive `rr replay`. Layer 3
-  branch-fix verification needs a self-hosted runner exposing CPUID
-  faulting.
 - **Authenticate to private registries.** v1 assumes the supplied
   image ref is anonymously pullable.
 

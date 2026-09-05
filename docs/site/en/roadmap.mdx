@@ -40,12 +40,11 @@ import siteStats from '../_generated/site-stats.json';
     <ul>
       <li><strong>Layer 1 — in-browser WebAssembly</strong>. Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1). No account, no install — open the page and it runs.</li>
       <li><strong>Layer 2 — Docker catalogue</strong>. Pinned Dockerfile + GHCR-published image. Visitor reproduces locally with one <code>docker run</code>.</li>
-      <li><strong>Layer 3 — record-replay</strong>. Self-contained GHCR images with the <code>rr</code> trace baked in. <code>rr replay</code> rewinds deterministically.</li>
     </ul>
 
     <h3>Reproduction catalogue</h3>
     <ul>
-      <li>{siteStats.recipes} recipes shipped across the three layers, from browser-native WASM pages to Docker and record-replay snapshots.</li>
+      <li>{siteStats.recipes} recipes shipped across {siteStats.layers} layers, from browser-native WASM pages to Docker snapshots.</li>
       <li>Faceted gallery, paste-an-error candidate matcher, project-level landing pages.</li>
     </ul>
 

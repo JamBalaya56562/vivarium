@@ -295,7 +295,7 @@ const STRINGS: Record<Lang, Strings> = {
           ? 'Layer 1 (WASM)'
           : layer === 2
             ? 'Layer 2 (Docker)'
-            : 'Layer 3 (record-replay)',
+            : 'Layer 3 (third way)',
     outputEyebrow: '// 02 · GENERATED TOML',
     slugLabel: 'slug',
     slugHelp:
@@ -307,9 +307,9 @@ const STRINGS: Record<Lang, Strings> = {
       'Long-form description. Markdown allowed; consumers may render it or display verbatim.',
     layerLabel: 'layer',
     layerHelp:
-      "1 = WASM in-browser, 2 = Docker, 3 = record-replay. Selecting a layer reveals that layer's required fields below.",
+      "1 = WASM in-browser, 2 = Docker, 3 = third way. Selecting a layer reveals that layer's required fields below.",
     layerOption: (n) =>
-      n === 1 ? '1 · WASM' : n === 2 ? '2 · Docker' : '3 · record-replay',
+      n === 1 ? '1 · WASM' : n === 2 ? '2 · Docker' : '3 · third way',
     bugProjectLabel: 'bug.project',
     bugIssueLabel: 'bug.issue',
     bugIssueHelp:
@@ -349,7 +349,7 @@ const STRINGS: Record<Lang, Strings> = {
           ? 'レイヤー 1 (WASM)'
           : layer === 2
             ? 'レイヤー 2 (Docker)'
-            : 'レイヤー 3 (記録再生)',
+            : 'レイヤー 3 (第三の道)',
     outputEyebrow: '// 02 · 生成された TOML',
     slugLabel: 'slug',
     slugHelp:
@@ -361,9 +361,9 @@ const STRINGS: Record<Lang, Strings> = {
       '長文の説明。Markdown 可。コンシューマー側がレンダリングするかそのまま表示するかを選ぶ。',
     layerLabel: 'layer',
     layerHelp:
-      '1 = ブラウザ内 WASM、2 = Docker、3 = 記録再生。レイヤーを選ぶと、そのレイヤーに必要なフィールドが下に出る。',
+      '1 = ブラウザ内 WASM、2 = Docker、3 = 第三の道。レイヤーを選ぶと、そのレイヤーに必要なフィールドが下に出る。',
     layerOption: (n) =>
-      n === 1 ? '1 · WASM' : n === 2 ? '2 · Docker' : '3 · 記録再生',
+      n === 1 ? '1 · WASM' : n === 2 ? '2 · Docker' : '3 · 第三の道',
     bugProjectLabel: 'bug.project',
     bugIssueLabel: 'bug.issue',
     bugIssueHelp:
@@ -729,7 +729,7 @@ export function ManifestScaffolder({ lang }: { lang: Lang }) {
                 className="v-mfs__input"
                 value={state.layer3.image}
                 onChange={(e) => updateLayer('layer3', 'image', e.target.value)}
-                placeholder="ghcr.io/example-org/example-recipe-rr:latest"
+                placeholder="ghcr.io/example-org/example-recipe:latest"
               />
             </Field>
             <Field

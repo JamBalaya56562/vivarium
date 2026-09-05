@@ -18,7 +18,7 @@ import { LiveExamples } from '../_components/LiveExamples';
   <PageHero
     eyebrow="// ARCHITECTURE"
     title="Three execution layers — one per bug."
-    sub="Layer 1 browser-native WebAssembly, Layer 2 containers, Layer 3 record-replay. The recipe declares which layer it runs on — you don't pick. The matrix below scans the trade-offs at a glance; the deep-dive sections follow."
+    sub="Layer 1 browser-native WebAssembly, Layer 2 containers, Layer 3 reserved for what neither reaches. The recipe declares which layer it runs on — you don't pick. The matrix below scans the trade-offs at a glance; the deep-dive sections follow."
   />
 
   <LayerMatrix
@@ -63,21 +63,21 @@ import { LiveExamples } from '../_components/LiveExamples';
         ],
       },
       {
-        pill: 'L3 / RECORD-REPLAY',
+        pill: 'L3 / THIRD WAY',
         accent: 'coral',
-        title: 'Trace bundled, replay anywhere.',
+        title: 'Reserved for what L1 and L2 cannot reach.',
         cells: [
           <>
-            <strong>Seconds to minutes (replay only)</strong>. Recording is offline-only on the Vivarium side; visitors just <code>rr replay</code>.
+            <strong>Not yet defined</strong>. No recipe ships here, so there is no runtime to characterise.
           </>,
           <>
             Data races, memory ordering, long-replay scenarios, distributed bugs depending on a specific interleave.
           </>,
           <>
-            Linux/x86_64 only (ARM/Windows fall back to Codespaces or WSL2); traces from tens of MB to single-digit GB.
+            Anything a reader cannot run and check on an ordinary machine — that bar is what keeps this layer empty.
           </>,
           <>
-            Self-contained GHCR images with the <code>rr</code> trace baked in.
+            None yet. Deterministic simulation, microVM snapshots and WASI Preview 3+ are the candidates.
           </>,
         ],
       },
@@ -168,18 +168,18 @@ import { LiveExamples } from '../_components/LiveExamples';
   />
 
   <LayerSection
-    pill="L3 / RECORD-REPLAY"
+    pill="L3 / THIRD WAY"
     accent="coral"
     eyebrow="// 03 · LAYER 3"
-    heading="Trace bundled, replay anywhere."
+    heading="Reserved for what L1 and L2 cannot reach."
     intro={
-      <p>For <strong>heisenbugs</strong> — bugs that don't reliably reproduce on a fresh re-run. Vivarium pre-records the trace, bakes it into a GHCR image, and you only have to <strong>replay</strong>.</p>
+      <p>For <strong>heisenbugs</strong> — bugs that don't reliably reproduce on a fresh re-run. The layer is declared, but <strong>no recipe ships here today</strong>.</p>
     }
     cellLabels={{
-      fits: 'Bugs this layer fits',
-      startup: 'How to use it',
-      cantReach: "What this layer can't reach",
-      runtimes: 'Live examples',
+      fits: 'Bugs this layer would fit',
+      startup: 'Why it is empty',
+      cantReach: 'What keeps it empty',
+      runtimes: 'Candidates',
     }}
     fits={
       <ul>
@@ -190,19 +190,18 @@ import { LiveExamples } from '../_components/LiveExamples';
       </ul>
     }
     startup={
-      <p>Each Layer 3 recipe ships as a self-contained GHCR image with the trace baked in. <code>rr replay</code> doesn't need a PMU, so replay runs on <strong>commodity Linux hosts</strong> — both for visitors and for CI. The recording itself does need a PMU-equipped Linux/x86_64 host, but that is done offline by Vivarium when the recipe is added — not something you have to repeat.</p>
+      <p>The first attempt here was <code>rr</code> record-replay. It was withdrawn: <code>rr</code> runs only on Linux/x86_64 and needs an exposed PMU plus CPUID faulting, so a reader on Windows or macOS could not verify the recipe at all — and with so few environments able to run it, nobody could cheaply tell a genuine reproduction from a broken one.</p>
     }
     cantReach={
       <ul>
-        <li><strong>Environment.</strong> Visitors need Linux/x86_64. ARM Mac or Windows users fall back to Codespaces or WSL2 + Docker.</li>
-        <li><strong>Coverage shape.</strong> <code>rr</code> targets single-process Linux x86_64; distributed-simulation tools target distributed systems — neither covers the other's territory.</li>
-        <li><strong>Trace size.</strong> Tens of MB to single-digit GB per recipe.</li>
+        <li><strong>The admission test.</strong> A recipe has to be reproducible by whoever reads it. A verdict nobody can independently check is not evidence.</li>
+        <li><strong>Kernel-bound techniques.</strong> CRIU and Firecracker snapshots inherit the same Linux dependency and would have to clear the same bar.</li>
       </ul>
     }
     runtimes={
       <ul>
-        <li><a href="/vivarium/repro/pthread/lost-update/">pthread lost-update</a> — a real pthread race captured deterministically; visitors only <code>rr replay</code>.</li>
-        <li>New Layer 3 recipes need offline PMU recording, so the cadence is slower than L1 / L2.</li>
+        <li>Deterministic simulation (Antithesis-style) and WASI Preview 3+ are the more promising candidates, precisely because they do not depend on a host kernel feature.</li>
+        <li>Until one lands, the gallery has no L3 entries.</li>
       </ul>
     }
   />

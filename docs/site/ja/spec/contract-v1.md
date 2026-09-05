@@ -19,7 +19,7 @@ Vivarium Contract v1 に準拠するページは以下を公開する:
 |---|---|---|
 | **Layer 1** (WASM) | DOM + JS グローバル。再現コードが実行しながらページによって設定される | なし——verdict はライブ |
 | **Layer 2** (Docker) | DOM + JS グローバル。ページ読み込み時に `verdict.json` からリフト | レシピと同梱される `verdict.json` |
-| **Layer 3** (record-replay) | DOM + JS グローバル。ページ読み込み時に `verdict.json` からリフト | メンテナーがコミットする `verdict.json` |
+| **Layer 3** (第三の道) | DOM + JS グローバル。ページ読み込み時に `verdict.json` からリフト | メンテナーがコミットする `verdict.json` |
 
 DOM/グローバルサーフェスは三つのレイヤー全体で同じだ。ファイルスナップショットは Layer 2 と Layer 3 にのみ存在する。
 

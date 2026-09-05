@@ -49,7 +49,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | フィールド | 型 | 必須 | 注記 |
 |---|---|---|---|
 | `slug` | 文字列（ケバブケース） | ✅ | `src/layer{N}_*/` 以下のレシピディレクトリ名。Manifest v1 の `slug` と同じ規約。 |
-| `layer` | 整数（`1` \| `2` \| `3`） | ✅ | Layer 1 = ブラウザ内 WASM。Layer 2 = Docker。Layer 3 = record-replay。 |
+| `layer` | 整数（`1` \| `2` \| `3`） | ✅ | Layer 1 = ブラウザ内 WASM。Layer 2 = Docker。Layer 3 = 第三の道。 |
 | `project` | 文字列 | ✅ | アップストリームプロジェクト名（例: `"pandas"`、`"bash"`）。 |
 | `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。 |
 | `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
@@ -62,7 +62,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `severity` | 文字列 | ⏳ | オプション。自由形式の重大度バケット（例: `"bug"`、`"regression"`、`"spec-violation"`、`"footgun"`）。`recipe.json` から供給。2026-05-03 追加。 |
 | `tags` | 文字列の配列 | ⏳ | オプション。マッチャーがスコア計算に使う自由形式タグリスト（例: `["sqlite3", "pragma", "foreign-keys"]`）。`recipe.json` から供給。2026-05-03 追加。 |
 | `expected_verdict` | 文字列（enum） | ⏳ | オプション。リグレッションスイートが期待する verdict — `"reproduced"` または `"unreproduced"`。`recipe.json` から供給。2026-05-18 リビジョンで追加。 |
-| `expected_runtime` | 文字列 | ⏳ | オプション。レシピの verdict envelope が `__VIVARIUM_RESULT__.runtime.name` に報告するランタイム識別子（例: `"pyodide"`、`"docker-snapshot"`、`"rr-replay"`）。`recipe.json` から供給。2026-05-18 追加。 |
+| `expected_runtime` | 文字列 | ⏳ | オプション。レシピの verdict envelope が `__VIVARIUM_RESULT__.runtime.name` に報告するランタイム識別子（例: `"pyodide"`、`"docker-snapshot"`）。`recipe.json` から供給。2026-05-18 追加。 |
 | `path_a` | 真偽値 | ⏳ | オプション。レシピページが Path A の「Try a fix」パネルを持つ場合にのみ `true` が出力される。コンシューマーはこれを見て、候補 fix をページに渡せるかを判断する。無い場合は持たない。`recipe.json` から供給。2026-09-03 追加。 |
 
 ## バージョニング

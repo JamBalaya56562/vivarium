@@ -28,9 +28,7 @@ That is the entire integration. A consumer repo's
 per recipe to track), each turning into a green / red signal in
 their own CI. Slugs are the directory names under
 [`src/layer2_docker/`](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
-(Layer 2 catalogue) and
-[`src/layer3_thirdway/`](https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway)
-(Layer 3 catalogue, where the trace is baked into the image).
+(Layer 2 catalogue).
 
 ## Inputs
 
@@ -81,13 +79,6 @@ Actions API.
   separate problem and does not benefit from a reusable
   workflow — the Vivarium gallery's Playwright suite is the
   canonical Layer 1 regression check.
-- **Layer 3 (rr replay) verification on hosted GHA runners.**
-  The `replay` step itself runs as part of the recipe's image
-  CMD, so this workflow does drive Layer 3 from the consumer
-  side, but **only on runners that expose CPUID faulting** to
-  the guest. GitHub-hosted Ubuntu runners do not. Self-hosted
-  runners on bare metal or PMU-exposing KVM are required for
-  Layer 3 consumer verification.
 
 ## See also
 
@@ -97,5 +88,3 @@ Actions API.
   the schema the workflow validates against.
 - [Layer 2 catalogue](https://github.com/aletheia-works/vivarium/tree/main/src/layer2_docker)
   — the slugs available for `inputs.slug`.
-- [Layer 3 catalogue](https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway)
-  — additional slugs (rr-replay; runner caveat above).

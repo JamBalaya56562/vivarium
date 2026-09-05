@@ -40,12 +40,11 @@ import siteStats from '../_generated/site-stats.json';
     <ul>
       <li><strong>Layer 1 — ブラウザ内 WebAssembly</strong>。Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1)。アカウント不要、ページを開けば動く。</li>
       <li><strong>Layer 2 — Docker カタログ</strong>。ピン留めされた Dockerfile + GHCR 公開イメージ。訪問者の <code>docker run</code> でローカル再現。</li>
-      <li><strong>Layer 3 — record-replay</strong>。<code>rr</code> トレースを焼き込んだ自己完結 GHCR イメージ。<code>rr replay</code> だけで決定論的に巻き戻る。</li>
     </ul>
 
     <h3>再現カタログ</h3>
     <ul>
-      <li>{siteStats.recipes} 件のレシピを {siteStats.layers} つのレイヤーにわたって出荷。ブラウザ内 WASM ページから Docker、record-replay スナップショットまで揃っています。</li>
+      <li>{siteStats.recipes} 件のレシピを {siteStats.layers} つのレイヤーにわたって出荷。ブラウザ内 WASM ページから Docker スナップショットまで揃っています。</li>
       <li>ファセット付きギャラリー、エラーメッセージ貼付による候補レシピ検索、プロジェクト別ランディングページ。</li>
     </ul>
 

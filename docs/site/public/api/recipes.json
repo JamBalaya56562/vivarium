@@ -267,26 +267,6 @@
       "expected_runtime": "docker-snapshot",
       "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/postgres/lost-update/",
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres/lost-update/verdict.json"
-    },
-    {
-      "slug": "lost-update",
-      "layer": 3,
-      "project": "pthread",
-      "issue": 0,
-      "title": "pthread lost-update data race (canonical)",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/pthread/lost-update/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_thirdway/lost-update",
-      "language": "c",
-      "tags": [
-        "pthread",
-        "rr-replay",
-        "deterministic"
-      ],
-      "symptom": "lost-update-data-race",
-      "severity": "datarace",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "rr-replay",
-      "verdict_url": "https://aletheia-works.github.io/vivarium/repro/pthread/lost-update/verdict.json"
     }
   ]
 }

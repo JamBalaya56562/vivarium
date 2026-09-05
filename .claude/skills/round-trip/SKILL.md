@@ -1,6 +1,6 @@
 ---
 name: round-trip
-description: End-to-end Vivarium round-trip automation. Given an upstream GitHub issue URL, orchestrates the full loop — scaffold a reproduction recipe, capture the unfixed verdict, open the Vivarium-side PR, wait while the contributor forks + pushes a candidate fix branch, capture the fixed verdict against the fork, open the upstream draft PR. The flow differs by layer — Layer 1 goes through the prepare_fix_candidate wheel pipeline (CI rebuild on Vivarium PR merge, then visual verdict confirmation on the live recipe page), while Layer 2/3 go through `mise run branch-fix:publish` + `branch-fix-verdict.yml`. On any stage failure the skill sets `roundtrip.json#/status` to `"blocked"`, appends the reason to `notes[]`, and hands back to the human. Use when the user pastes an upstream issue URL and asks to "do the round trip", "run /round-trip <url>", or equivalent in Japanese ("〜の round trip 回して"). Do NOT use for partial flows — for scaffold-only, use `scaffold-recipe-from-issue`; for verdict-capture-only, call `verify_and_report_fix` directly.
+description: End-to-end Vivarium round-trip automation. Given an upstream GitHub issue URL, orchestrates the full loop — scaffold a reproduction recipe, capture the unfixed verdict, open the Vivarium-side PR, wait while the contributor forks + pushes a candidate fix branch, capture the fixed verdict against the fork, open the upstream draft PR. The flow differs by layer — Layer 1 goes through the prepare_fix_candidate wheel pipeline (CI rebuild on Vivarium PR merge, then visual verdict confirmation on the live recipe page), while Layer 2 goes through `mise run branch-fix:publish` + `branch-fix-verdict.yml`. On any stage failure the skill sets `roundtrip.json#/status` to `"blocked"`, appends the reason to `notes[]`, and hands back to the human. Use when the user pastes an upstream issue URL and asks to "do the round trip", "run /round-trip <url>", or equivalent in Japanese ("〜の round trip 回して"). Do NOT use for partial flows — for scaffold-only, use `scaffold-recipe-from-issue`; for verdict-capture-only, call `verify_and_report_fix` directly.
 ---
 
 # round-trip
@@ -33,9 +33,9 @@ Do NOT invoke for partial flows:
 Confirm these before starting; ask if missing:
 
 1. **Upstream issue URL** — required, must be a GitHub issue URL.
-2. **Target layer** — 1 (WASM), 2 (Docker), or 3 (record-replay).
-   Default 2 unless the bug is clearly browser-runnable (Layer 1)
-   or needs record-replay (Layer 3).
+2. **Target layer** — 1 (WASM) or 2 (Docker). Default 2 unless the
+   bug is clearly browser-runnable (Layer 1). Layer 3 exists as a
+   catalogue but ships no recipes, so this skill does not target it.
 3. **One-line bug title** — used as the README H1.
 4. **Layer 2 only — Docker base image** (e.g. `node:26-slim`).
 
@@ -48,7 +48,7 @@ branches at Stage 6.
 |---|---|---|
 | 1 (WASM) | `prepare_fix_candidate` → `fix-candidate.json` → CI wheel build on Vivarium PR merge → recipe page renders baseline + fix-candidate side-by-side | The deployed page, confirmed visually by a human |
 | 2 (Docker) | `mise run branch-fix:publish` → GHCR image → `verify_and_report_fix({ branch_image })` → `branch-fix-verdict.yml` workflow + artefact | The downloaded artefact's `branch-fix-verdict.json` |
-| 3 (rr) | Not yet supported by `branch-fix-verdict.yml`; rejected upstream of this skill | — (skill bails to `manual_intervention`) |
+| 3 (third way) | Not supported by `branch-fix-verdict.yml`; no recipes exist to target | — (skill bails to `manual_intervention`) |
 
 Stages 0–5 are identical across layers; Stage 6 onwards branches.
 
@@ -89,7 +89,7 @@ Run the scaffold (Layer 2):
 mise run recipes:new -- <project> <issue> "<title>" --base <image>
 ```
 
-For Layer 1 / 3, copy from an existing recipe in the same layer.
+For Layer 1, copy from an existing recipe in the same layer.
 
 Write the returned `roundtrip_init` payload to `roundtrip_path` so
 the recipe directory now has a `roundtrip.json` with `status: draft`
@@ -104,10 +104,9 @@ the recipe files:
   Then `mise run repro:test` (or `mise run ci:repro`) to confirm.
 - **Layer 2**: `Dockerfile`, `repro.sh`, `README.md`, `index.html`.
   Then `mise run recipes:verify <slug>` to confirm.
-- **Layer 3**: per
-  [`.claude/rules/recipe-authoring.md`](../../rules/recipe-authoring.md)
-  Layer 3 specifics — needs a maintainer host with the rr
-  preconditions.
+- **Layer 3**: no authoring convention exists yet — see
+  [`src/layer3_thirdway/README.md`](../../../src/layer3_thirdway/README.md)
+  before starting one.
 
 Also write the per-recipe metadata file
 `src/layer{1,2,3}_*/<slug>/recipe.json` (the `recipe_json.contents`
@@ -212,9 +211,9 @@ commit with `sl amend`, then `sl pr submit`).
 
 - Layer 1 captures the fixed verdict via the `prepare_fix_candidate`
   wheel pipeline (Stage 6 below). No Docker image needed.
-- Layer 3's `verify_fixed` is not yet supported by
-  `branch-fix-verdict.yml`; the skill will bail with `status:
-  "blocked"` at Stage 6 if the layer is 3.
+- Layer 3 ships no recipes and `branch-fix-verdict.yml` does not
+  handle it; the skill will bail with `status: "blocked"` at Stage 6
+  if the layer is 3.
 
 For Layer 2, build a branch-fix Docker image whose base
 incorporates the fork's fix branch, then push to GHCR. The
@@ -350,9 +349,9 @@ Expect `executed.action === "verify_fixed"` and
 dispatches `branch-fix-verdict.yml`, polls until completion,
 downloads the verdict artefact.
 
-**Layer 3 (record-replay):** the tool currently rejects Layer 3
-`verify_fixed` (Phase 3 review fix). Stop with `status:
-"blocked"` and a note explaining workflow extension is needed.
+**Layer 3 (third way):** the tool rejects Layer 3 `verify_fixed`.
+Stop with `status: "blocked"` and a note explaining that the layer
+ships no recipes and the workflow does not handle it.
 
 ### Stage 7: Update the Vivarium PR with the fixed verdict (Layer 2/3 only)
 
@@ -477,8 +476,8 @@ just sequences them:
 - `verify_and_report_fix` short-circuits to `manual_intervention`
   when `status: "blocked"`; refuses to advance from a `merged` or
   `upstream_open` state.
-- `verify_and_report_fix` rejects Layer 3 `verify_fixed` (Phase 3
-  review fix — workflow extension needed).
+- `verify_and_report_fix` rejects Layer 3 `verify_fixed` — the layer
+  ships no recipes and the workflow does not handle it.
 - `create_fork_pr` defaults to `dry_run: true`; the skill flips it
   to `false` only at Stage 8, after every other precondition is
   satisfied.

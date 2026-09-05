@@ -86,7 +86,7 @@ const STRINGS: Record<Lang, Strings> = {
         ? 'L1 · WASM'
         : layer === 2
           ? 'L2 · Docker'
-          : 'L3 · Record-replay',
+          : 'L3 · Third way',
     issueLabel: 'Issue',
     titleLabel: 'Title',
     layerLabel: 'Layer',
@@ -105,7 +105,7 @@ const STRINGS: Record<Lang, Strings> = {
     homepage: 'ホームページ ↗',
     upstream: 'アップストリーム ↗',
     layerName: (layer) =>
-      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 記録再生',
+      layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · 第三の道',
     issueLabel: 'Issue',
     titleLabel: 'タイトル',
     layerLabel: 'レイヤー',

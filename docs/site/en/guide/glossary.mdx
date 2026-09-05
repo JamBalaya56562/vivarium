@@ -54,7 +54,7 @@ import {
       <dd>
         Which runtime a recipe lives on. Layer 1 = WASM in browser
         (instant). Layer 2 = Docker (full fidelity). Layer 3 = third way —
-        record-replay, deterministic simulation, microVM. The choice is
+        deterministic simulation, microVM snapshots. The choice is
         about <em>which kind of bug the recipe can reproduce</em>, not about
         which technology is fashionable. See
         <a href="/architecture">Architecture</a> for the long form.
@@ -173,7 +173,7 @@ import {
         A property describing surfaces that look the same regardless of
         which Layer (1 / 2 / 3) produced them. Contract v1 is
         layer-uniform: a verdict reads the same whether it came from
-        Pyodide, Docker, or rr replay.
+        Pyodide or Docker.
       </dd>
     </dl>
   </Section>
