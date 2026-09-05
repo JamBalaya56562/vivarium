@@ -14,14 +14,22 @@ With the multiline pattern over a small haystack the equivalence
 breaks:
 
 ```rust
-let haystack = "a\naaa\n";
-let re_plus     = Regex::new("(?m)(^|a)+").unwrap();
-let re_expanded = Regex::new("(?m)(^|a)(^|a)*").unwrap();
+// src/repro.rs (excerpt)
+fn matches(re: &Regex, haystack: &str) -> Vec<(usize, usize)> {
+    re.find_iter(haystack)
+        .map(|m| (m.start(), m.end()))
+        .collect()
+}
 
-let matches_plus     = re_plus.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
-let matches_expanded = re_expanded.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
+let haystack = "a\naaa\n";
+let pattern_plus = "(?m)(^|a)+";
+let pattern_expanded = "(?m)(^|a)(^|a)*";
+
+let re_plus = Regex::new(pattern_plus).expect("compile (re)+ pattern");
+let re_expanded = Regex::new(pattern_expanded).expect("compile (re)(re)* pattern");
+
+let matches_plus = matches(&re_plus, haystack);
+let matches_expanded = matches(&re_expanded, haystack);
 
 // Reported (regex 1.8.4 — pinned in this repro's Cargo.toml):
 //   matches_plus     == [(0, 0), (2, 2), (3, 5), (6, 6)]
