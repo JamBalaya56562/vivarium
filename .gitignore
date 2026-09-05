@@ -40,7 +40,7 @@ __pycache__/
 venv/
 env/
 
-target/
+target
 Cargo.lock
 
 node_modules/

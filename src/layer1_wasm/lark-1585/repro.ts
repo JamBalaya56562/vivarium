@@ -372,7 +372,7 @@ try {
     manifest = (await manifestRes.json()) as WheelManifest;
     const wheelUrl = new URL(
       `./wheels/${manifest.filename}`,
-      window.location.href,
+      document.baseURI,
     ).toString();
     setFixPane(
       `Installing ${manifest.filename} (${manifest.version})…\n` +

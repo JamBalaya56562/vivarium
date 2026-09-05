@@ -60,7 +60,7 @@ export async function fetchWheelManifest(opts?: {
   }
   const wheelUrl = new URL(
     `./wheels/${manifest.filename}`,
-    window.location.href,
+    document.baseURI,
   ).toString();
   return { ok: true, manifest, wheelUrl };
 }
