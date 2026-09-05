@@ -31,66 +31,56 @@ Bare ISO 8601 forms (``+04:00`` / ``-04:00`` without the ``UTC``
 prefix) parse correctly, so the inversion is isolated to the
 ``UTC`` + signed-offset code path.
 
-Exits 0 on ``reproduced`` (bug present — both UTC-prefixed inputs
-land on the wrong sign), 1 on ``unreproduced`` (the inversion is
-gone; likely fixed upstream or a runtime quirk).
+Prints one row per input — expected offset beside the offset
+``parse`` actually returned — and marks every row whose sign came
+back flipped. Exits 0 on ``reproduced`` (all four rows flipped),
+1 on ``unreproduced`` (at least one parsed correctly; likely fixed
+upstream or a runtime quirk).
 """
 
-import json
 import sys
 
 import dateutil
 from dateutil.parser import parse
 
-
-def utcoffset_seconds(spec: str) -> int:
-    dt = parse(f"2026-03-11 14:32:45 {spec}")
-    off = dt.utcoffset()
-    assert off is not None, f"parse({spec!r}) returned a naive datetime"
-    return int(off.total_seconds())
+STAMP = "2026-03-11 14:32:45"
+CASES = [("UTC-4", -4), ("UTC+4", +4), ("UTC-04:00", -4), ("UTC+04:00", +4)]
 
 
-# Each (input, expected_seconds) pair encodes one assertion. The
-# verdict is "reproduced" when at least one assertion fails AND the
-# failures match the sign-inversion shape (observed == -expected).
-CASES = [
-    ("UTC-4", -14400),
-    ("UTC+4", +14400),
-    ("UTC-04:00", -14400),
-    ("UTC+04:00", +14400),
-]
+def offset(seconds):
+    sign = "-" if seconds < 0 else "+"
+    return f"{sign}{abs(seconds) // 3600:02d}:{abs(seconds) % 3600 // 60:02d}"
 
-observations = []
-for label, expected in CASES:
-    actual = utcoffset_seconds(label)
-    observations.append(
+
+results = []
+for spec, expected_hours in CASES:
+    expected = expected_hours * 3600
+    actual = int(parse(f"{STAMP} {spec}").utcoffset().total_seconds())
+    results.append(
         {
-            "input": label,
+            "input": spec,
             "expected_offset_seconds": expected,
             "actual_offset_seconds": actual,
             "inverted": actual == -expected and actual != expected,
         }
     )
 
-# Sign-inversion bug is present when at least one of the UTC-prefixed
-# numeric forms returns the negated offset. We do not gate on "all
-# four inverted" because a partial fix upstream (e.g. only ":HH:MM"
-# patched) should still flip the verdict to unreproduced.
-inversions = sum(1 for o in observations if o["inverted"])
-reproduced = inversions == len(CASES)
+print(f"parse('{STAMP} <input>').utcoffset()")
+print()
+print(f"{'input':<12}{'expected':>10}{'actual':>10}")
+for row in results:
+    flag = "   <-- sign flipped" if row["inverted"] else ""
+    print(
+        f"{row['input']:<12}"
+        f"{offset(row['expected_offset_seconds']):>10}"
+        f"{offset(row['actual_offset_seconds']):>10}{flag}"
+    )
+print()
+flipped = sum(row["inverted"] for row in results)
+print(f"{flipped} of {len(results)} UTC-prefixed offsets came back negated.")
+print(f"python-dateutil {dateutil.__version__} / Python {sys.version.split()[0]}")
 
-result = {
-    "dateutil_version": dateutil.__version__,
-    "python_version": sys.version.split()[0],
-    "cases": observations,
-    "inverted_count": inversions,
-    "case_count": len(CASES),
-    "reproduced": reproduced,
-}
-
-print(json.dumps(result, indent=2))
-
-if reproduced:
+if flipped == len(results):
     print(
         "verdict=reproduced — every UTC±N input parsed to its negated offset",
         file=sys.stderr,

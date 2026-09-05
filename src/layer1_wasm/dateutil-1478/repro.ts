@@ -15,37 +15,46 @@ import {
 
 const REPRO_CODE = `
 import sys
+
 import dateutil
 from dateutil.parser import parse
 
-CASES = [
-    ("UTC-4", -14400),
-    ("UTC+4", +14400),
-    ("UTC-04:00", -14400),
-    ("UTC+04:00", +14400),
-]
+STAMP = "2026-03-11 14:32:45"
+CASES = [("UTC-4", -4), ("UTC+4", +4), ("UTC-04:00", -4), ("UTC+04:00", +4)]
 
-observations = []
-for label, expected in CASES:
-    dt = parse(f"2026-03-11 14:32:45 {label}")
-    actual = int(dt.utcoffset().total_seconds())
-    observations.append({
-        "input": label,
-        "expected_offset_seconds": expected,
-        "actual_offset_seconds": actual,
-        "inverted": actual == -expected and actual != expected,
-    })
 
-inversions = sum(1 for o in observations if o["inverted"])
+def offset(seconds):
+    sign = "-" if seconds < 0 else "+"
+    return f"{sign}{abs(seconds) // 3600:02d}:{abs(seconds) % 3600 // 60:02d}"
 
-{
-    "dateutil_version": dateutil.__version__,
-    "python_version": sys.version.split()[0],
-    "cases": observations,
-    "inverted_count": inversions,
-    "case_count": len(CASES),
-    "reproduced": inversions == len(CASES),
-}
+
+results = []
+for spec, expected_hours in CASES:
+    expected = expected_hours * 3600
+    actual = int(parse(f"{STAMP} {spec}").utcoffset().total_seconds())
+    results.append(
+        {
+            "input": spec,
+            "expected_offset_seconds": expected,
+            "actual_offset_seconds": actual,
+            "inverted": actual == -expected and actual != expected,
+        }
+    )
+
+print(f"parse('{STAMP} <input>').utcoffset()")
+print()
+print(f"{'input':<12}{'expected':>10}{'actual':>10}")
+for row in results:
+    flag = "   <-- sign flipped" if row["inverted"] else ""
+    print(
+        f"{row['input']:<12}"
+        f"{offset(row['expected_offset_seconds']):>10}"
+        f"{offset(row['actual_offset_seconds']):>10}{flag}"
+    )
+print()
+flipped = sum(row["inverted"] for row in results)
+print(f"{flipped} of {len(results)} UTC-prefixed offsets came back negated.")
+print(f"python-dateutil {dateutil.__version__} / Python {sys.version.split()[0]}")
 `.trim();
 
 interface CaseObservation {
@@ -56,22 +65,41 @@ interface CaseObservation {
 }
 
 interface ReproOutput {
-  dateutil_version: string;
-  python_version: string;
   cases: CaseObservation[];
   inverted_count: number;
   case_count: number;
   reproduced: boolean;
 }
 
+interface RuntimeVersions {
+  dateutil: string;
+  python: string;
+}
+
+interface PyProxy {
+  toJs(opts: { dict_converter: typeof Object.fromEntries }): unknown;
+  destroy?(): void;
+}
+
 interface PyodideRuntime {
-  runPythonAsync(code: string): Promise<{
-    toJs(opts: { dict_converter: typeof Object.fromEntries }): ReproOutput;
-    destroy?(): void;
-  }>;
+  runPythonAsync(code: string): Promise<unknown>;
+  setStdout(options: { batched: (text: string) => void }): void;
+  globals: {
+    get(name: string): unknown;
+    has(name: string): boolean;
+    delete(name: string): void;
+  };
+}
+
+interface CaptureResult {
+  run: PathACapturedRun;
+  parsed: ReproOutput | null;
 }
 
 const BASELINE_SPEC = 'python-dateutil==2.9.0.post0';
+
+const VERSION_QUERY =
+  'import dateutil, sys; [dateutil.__version__, sys.version.split()[0]]';
 
 const outputBaselineEl = document.getElementById('output');
 const outputFixEl = document.getElementById('output-fix');
@@ -84,10 +112,7 @@ if (!outputBaselineEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
-function setFixPane(
-  text: string,
-  status: 'pending' | 'ok' | 'error',
-): void {
+function setFixPane(text: string, status: 'pending' | 'ok' | 'error'): void {
   outputFixEl!.textContent = text;
   outputFixEl!.dataset['fixStatus'] = status;
 }
@@ -102,10 +127,60 @@ if (!reproCodeEl.firstChild) {
     .catch(() => {});
 }
 
-function evaluate(result: ReproOutput): {
+function isPyProxy(value: unknown): value is PyProxy {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as PyProxy).toJs === 'function'
+  );
+}
+
+function summarise(cases: CaseObservation[]): ReproOutput {
+  const inverted = cases.filter((c) => c.inverted).length;
+  return {
+    cases,
+    inverted_count: inverted,
+    case_count: cases.length,
+    reproduced: cases.length > 0 && inverted === cases.length,
+  };
+}
+
+function readResults(runtime: PyodideRuntime): ReproOutput | null {
+  const handle = runtime.globals.get('results');
+  if (!isPyProxy(handle)) return null;
+  try {
+    const rows = handle.toJs({ dict_converter: Object.fromEntries });
+    if (!Array.isArray(rows)) return null;
+    return summarise(rows as CaseObservation[]);
+  } finally {
+    handle.destroy?.();
+  }
+}
+
+async function readVersions(
+  runtime: PyodideRuntime,
+): Promise<RuntimeVersions | null> {
+  const handle = await runtime.runPythonAsync(VERSION_QUERY);
+  if (!isPyProxy(handle)) return null;
+  try {
+    const pair = handle.toJs({ dict_converter: Object.fromEntries });
+    if (!Array.isArray(pair) || pair.length !== 2) return null;
+    return { dateutil: String(pair[0]), python: String(pair[1]) };
+  } finally {
+    handle.destroy?.();
+  }
+}
+
+function evaluate(result: ReproOutput | null): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
+  if (!result) {
+    return {
+      verdict: 'unreproduced',
+      message: 'bug not reproduced — the script left no `results` list behind.',
+    };
+  }
   if (result.reproduced) {
     return {
       verdict: 'reproduced',
@@ -123,25 +198,39 @@ function evaluate(result: ReproOutput): {
 async function captureRun(
   runtime: PyodideRuntime,
   source: string,
-): Promise<PathACapturedRun> {
+): Promise<CaptureResult> {
+  const lines: string[] = [];
+  runtime.setStdout({
+    batched: (text) => {
+      lines.push(text);
+    },
+  });
+  // One Pyodide namespace spans every run: an edited script that never
+  // assigns `results` would otherwise be judged on the previous run's list.
+  if (runtime.globals.has('results')) runtime.globals.delete('results');
   try {
-    const proxy = await runtime.runPythonAsync(source);
-    const result = proxy.toJs({ dict_converter: Object.fromEntries });
-    proxy.destroy?.();
-    const ev = evaluate(result);
+    await runtime.runPythonAsync(source);
+    const parsed = readResults(runtime);
+    const ev = evaluate(parsed);
     return {
-      exitCode: 0,
-      verdict: ev.verdict,
-      message: ev.message,
-      stdout: JSON.stringify(result, null, 2),
+      run: {
+        exitCode: parsed ? 0 : 1,
+        verdict: ev.verdict,
+        message: ev.message,
+        stdout: lines.join('\n'),
+      },
+      parsed,
     };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return {
-      exitCode: 1,
-      verdict: 'unreproduced',
-      message: `runtime error: ${message}`,
-      stdout: message,
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${message}`,
+        stdout: [...lines, message].join('\n'),
+      },
+      parsed: null,
     };
   }
 }
@@ -160,8 +249,10 @@ const startedAt = new Date();
 
 let baselineCapture: PathACapturedRun | null = null;
 let baselineParsed: ReproOutput | null = null;
+let baselineVersions: RuntimeVersions | null = null;
 let fixCapture: PathACapturedRun | null = null;
 let fixParsed: ReproOutput | null = null;
+let fixVersions: RuntimeVersions | null = null;
 let manifest: WheelManifest | null = null;
 
 try {
@@ -175,12 +266,10 @@ try {
   await reinstallDateutil(runtime, BASELINE_SPEC);
 
   setVerdict('pending', 'Running reproduction script (baseline)…');
-  baselineCapture = await captureRun(runtime, REPRO_CODE);
-  try {
-    baselineParsed = JSON.parse(baselineCapture.stdout) as ReproOutput;
-  } catch {
-    baselineParsed = null;
-  }
+  const baseline = await captureRun(runtime, REPRO_CODE);
+  baselineCapture = baseline.run;
+  baselineParsed = baseline.parsed;
+  baselineVersions = await readVersions(runtime);
   outputBaselineEl.textContent = baselineCapture.stdout;
 
   const buildEnvelope = (): VivariumResultV1 | null => {
@@ -197,10 +286,10 @@ try {
         name: 'pyodide',
         version,
         extras: {
-          python: baselineParsed.python_version,
-          'python-dateutil': baselineParsed.dateutil_version,
+          python: baselineVersions?.python ?? '',
+          'python-dateutil': baselineVersions?.dateutil ?? '',
           ...(fixParsed
-            ? { 'python-dateutil_fix_candidate': fixParsed.dateutil_version }
+            ? { 'python-dateutil_fix_candidate': fixVersions?.dateutil ?? '' }
             : {}),
         },
       },
@@ -212,7 +301,7 @@ try {
         baseline: {
           spec: BASELINE_SPEC,
           verdict: baselineCapture.verdict,
-          dateutil_version: baselineParsed.dateutil_version,
+          dateutil_version: baselineVersions?.dateutil ?? '',
           cases: baselineParsed.cases,
           inverted_count: baselineParsed.inverted_count,
           case_count: baselineParsed.case_count,
@@ -223,7 +312,7 @@ try {
             ? {
                 spec: resolveFixCandidateSpec(manifest, 'python-dateutil'),
                 verdict: fixCapture.verdict,
-                dateutil_version: fixParsed.dateutil_version,
+                dateutil_version: fixVersions?.dateutil ?? '',
                 cases: fixParsed.cases,
                 inverted_count: fixParsed.inverted_count,
                 case_count: fixParsed.case_count,
@@ -246,8 +335,8 @@ try {
   setVerdict(baselineCapture.verdict, baselineCapture.message);
 
   metaEl.textContent =
-    `Baseline python-dateutil ${baselineParsed?.dateutil_version ?? '?'} on Python ` +
-    `${baselineParsed?.python_version ?? '?'} via Pyodide v${version}.`;
+    `Baseline python-dateutil ${baselineVersions?.dateutil ?? '?'} on Python ` +
+    `${baselineVersions?.python ?? '?'} via Pyodide v${version}.`;
 
   setFixPane('Fetching wheel manifest…', 'pending');
   const manifestResult = await fetchWheelManifest();
@@ -264,12 +353,10 @@ try {
     );
     try {
       await reinstallDateutil(runtime, manifestResult.wheelUrl);
-      fixCapture = await captureRun(runtime, REPRO_CODE);
-      try {
-        fixParsed = JSON.parse(fixCapture.stdout) as ReproOutput;
-      } catch {
-        fixParsed = null;
-      }
+      const fix = await captureRun(runtime, REPRO_CODE);
+      fixCapture = fix.run;
+      fixParsed = fix.parsed;
+      fixVersions = await readVersions(runtime);
       setFixPane(fixCapture.stdout, 'ok');
     } catch (err) {
       const errAny = err as { stack?: string; message?: string } | null;
@@ -295,7 +382,7 @@ try {
   enableRunner({
     slug: 'dateutil-1478',
     baselineSource: REPRO_CODE,
-    runFix: (source) => captureRun(runtime, source),
+    runFix: async (source) => (await captureRun(runtime, source)).run,
   });
 } catch (err: unknown) {
   console.error(err);
