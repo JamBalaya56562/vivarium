@@ -18,15 +18,20 @@ interface ReproOutput {
 const REPRO_SOURCE_HINT = `
 // src/repro.rs (excerpt — compiled by both crates in this directory)
 let haystack = "a\\naaa\\n";
-let re_plus     = Regex::new("(?m)(^|a)+").unwrap();
-let re_expanded = Regex::new("(?m)(^|a)(^|a)*").unwrap();
+let pattern_plus = "(?m)(^|a)+";
+let pattern_expanded = "(?m)(^|a)(^|a)*";
 
-let matches_plus     = re_plus.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
-let matches_expanded = re_expanded.find_iter(haystack)
-    .map(|m| (m.start(), m.end())).collect::<Vec<_>>();
+let re_plus = Regex::new(pattern_plus).expect("compile (re)+ pattern");
+let re_expanded = Regex::new(pattern_expanded).expect("compile (re)(re)* pattern");
 
+let matches_plus = matches(&re_plus, haystack);
+let matches_expanded = matches(&re_expanded, haystack);
 let reproduced = matches_plus != matches_expanded;
+
+println!("find_iter over haystack {haystack:?}");
+println!();
+println!("{pattern_plus:<20}{}", format_spans(&matches_plus));
+println!("{pattern_expanded:<20}{}", format_spans(&matches_expanded));
 `.trim();
 
 const outputEl = document.getElementById("output");
@@ -42,6 +47,16 @@ if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
 
 const BASELINE_REGEX_VERSION = "1.8.4";
 const FIX_REGEX_VERSION = "1.13.1";
+
+function parseMachineLine(stderr: string): ReproOutput | null {
+  const line = stderr.split("\n").find((l) => l.startsWith("{"));
+  if (!line) return null;
+  try {
+    return JSON.parse(line) as ReproOutput;
+  } catch {
+    return null;
+  }
+}
 
 function setFixPane(
   text: string,
@@ -76,9 +91,14 @@ try {
       `wasm produced no stdout (exitCode=${exitCode}, stderr=${stderr})`,
     );
   }
-  const result = JSON.parse(stdout) as ReproOutput;
+  const result = parseMachineLine(stderr);
+  if (!result) {
+    throw new Error(
+      `wasm produced no machine-readable line on stderr (exitCode=${exitCode}, stderr=${stderr})`,
+    );
+  }
 
-  outputEl.textContent = JSON.stringify(result, null, 2);
+  outputEl.textContent = stdout.trimEnd();
 
   if (result.reproduced && exitCode === 0) {
     setVerdict(
@@ -164,9 +184,14 @@ try {
         `fix-candidate wasm produced no stdout (exitCode=${fixRun.exitCode}, stderr=${fixRun.stderr})`,
       );
     }
-    fixResult = JSON.parse(fixRun.stdout) as ReproOutput;
+    fixResult = parseMachineLine(fixRun.stderr);
+    if (!fixResult) {
+      throw new Error(
+        `fix-candidate wasm produced no machine-readable line on stderr (exitCode=${fixRun.exitCode}, stderr=${fixRun.stderr})`,
+      );
+    }
     fixExitCode = fixRun.exitCode;
-    setFixPane(JSON.stringify(fixResult, null, 2), "ok");
+    setFixPane(fixRun.stdout.trimEnd(), "ok");
   } catch (fixErr: unknown) {
     const fixErrAny = fixErr as { message?: string } | null;
     console.error(fixErr);

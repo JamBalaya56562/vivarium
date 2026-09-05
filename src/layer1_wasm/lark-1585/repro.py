@@ -26,7 +26,6 @@ Verdict semantics:
   hang reported upstream did not trigger).
 """
 
-import json
 import subprocess
 import sys
 import time
@@ -50,6 +49,31 @@ def as_text(stream) -> str:
     return stream or ""
 
 
+def format_elapsed(ms: float) -> str:
+    return f"{ms / 1000:.1f} s" if ms >= 1000 else f"{ms:.0f} ms"
+
+
+def report(
+    headline: str,
+    elapsed: str,
+    note: str,
+    explanation: str,
+    lark_version: str,
+    python_version: str,
+) -> str:
+    return "\n".join(
+        [
+            headline,
+            "",
+            f"  budget     {TIMEOUT_S:.1f} s",
+            f"  elapsed    {elapsed}{note}",
+            "",
+            explanation,
+            f"lark {lark_version} / Python {python_version}",
+        ]
+    )
+
+
 def main() -> int:
     started = time.perf_counter()
     try:
@@ -63,17 +87,24 @@ def main() -> int:
         elapsed_ms = (time.perf_counter() - started) * 1000
         child_meta = completed.stderr.strip().splitlines()[-1] if completed.stderr.strip() else ""
         lark_version, _, python_version = child_meta.partition(" ")
-        result = {
-            "lark_version": lark_version or "unknown",
-            "python_version": python_version or sys.version.split()[0],
-            "outcome": "returned" if completed.returncode == 0 else "raised",
-            "exit_code": completed.returncode,
-            "stderr_tail": (completed.stderr or "").splitlines()[-5:],
-            "elapsed_ms": elapsed_ms,
-            "timeout_ms": TIMEOUT_S * 1000,
-            "reproduced": False,
-        }
-        print(json.dumps(result, indent=2))
+        returned = completed.returncode == 0
+        print(
+            report(
+                "parse('aa') returned."
+                if returned
+                else f"parse('aa') raised (child exited {completed.returncode}).",
+                format_elapsed(elapsed_ms),
+                "",
+                "The parse completed, so the infinite loop did not trigger."
+                if returned
+                else "The parse ended early, so the infinite loop did not trigger.",
+                lark_version or "unknown",
+                python_version or sys.version.split()[0],
+            )
+        )
+        if not returned:
+            for line in (completed.stderr or "").splitlines()[-5:]:
+                print(f"  {line}")
         if completed.returncode == 0:
             msg = "verdict=unreproduced — Lark(...).parse('aa') returned cleanly within the budget."
         else:
@@ -90,17 +121,16 @@ def main() -> int:
         stderr_str = as_text(exc.stderr)
         child_meta = stderr_str.strip().splitlines()[-1] if stderr_str.strip() else ""
         lark_version, _, python_version = child_meta.partition(" ")
-        result = {
-            "lark_version": lark_version or "unknown",
-            "python_version": python_version or sys.version.split()[0],
-            "outcome": "timeout",
-            "exit_code": None,
-            "stderr_tail": stderr_str.splitlines()[-5:],
-            "elapsed_ms": elapsed_ms,
-            "timeout_ms": TIMEOUT_S * 1000,
-            "reproduced": True,
-        }
-        print(json.dumps(result, indent=2))
+        print(
+            report(
+                "parse('aa') did not return.",
+                format_elapsed(elapsed_ms),
+                "   <-- terminated, still running",
+                "The LALR back-end is in an infinite loop on this grammar.",
+                lark_version or "unknown",
+                python_version or sys.version.split()[0],
+            )
+        )
         print(
             f"verdict=reproduced — Lark(...).parse('aa') hung past {TIMEOUT_S:.0f}s; "
             "the LALR back-end exhibits the infinite loop reported upstream.",

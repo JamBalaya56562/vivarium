@@ -304,10 +304,22 @@ of values it read back. The shape:
   file and mirror what it does back into the driver's string literal —
   otherwise the next autofix pass silently drifts the two apart.
 
-`dateutil-1478`, `cpython-137205`, `pandas-56679` and `numpy-28287`
-follow this. `lark-1585`, `regex-779` and `ruby-21709` predate it and
-still hand the pane a JSON string their driver built; they are being
-converted. Do not copy their output handling into a new recipe.
+Two recipes cannot take the rule literally, and neither is a licence to
+go back to JSON:
+
+- **The reproducing run never finishes.** `lark-1585`'s bug is an
+  infinite loop, so the script emits no stdout and the worker is
+  terminated. Its driver composes the pane text itself, using one
+  layout for all three outcomes so the timeout and the fix-candidate
+  panes read as a pair.
+- **A WASI command module has no globals to leave behind.** `regex-779`
+  prints its table to stdout and one JSON line to stderr; the driver
+  shows stdout and parses the first stderr line starting with `{` for
+  the envelope. stderr is the machine channel there, the way a named
+  global is under Pyodide.
+
+`ruby-21709` still hands its pane a JSON string its driver built. Do not
+copy its output handling into a new recipe.
 
 **Local validation**:
 

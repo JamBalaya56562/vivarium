@@ -107,16 +107,15 @@ mise install
 mise exec uv -- uv run src/layer1_wasm/lark-1585/repro.py
 
 # Expected output (lark 1.3.1):
-# {
-#   "lark_version": "1.3.1",
-#   "python_version": "3.14.x",
-#   "outcome": "timeout",
-#   "exit_code": null,
-#   "stderr_tail": ["1.3.1 3.14.x"],
-#   "elapsed_ms": 8000.x,
-#   "timeout_ms": 8000.0,
-#   "reproduced": true
-# }
+# parse('aa') did not return.
+#
+#   budget     8.0 s
+#   elapsed    8.0 s   <-- terminated, still running
+#
+# The LALR back-end is in an infinite loop on this grammar.
+# lark 1.3.1 / Python 3.14.x
+#
+# ...and on stderr:
 # verdict=reproduced — Lark(...).parse('aa') hung past 8s; the LALR back-end exhibits the infinite loop reported upstream.
 ```
 
