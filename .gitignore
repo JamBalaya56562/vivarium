@@ -40,7 +40,9 @@ __pycache__/
 venv/
 env/
 
-target/
+# No trailing slash: mbx points a recipe's target/ at its own cache with a
+# symlink, which a directory-only rule does not match.
+target
 Cargo.lock
 
 node_modules/
