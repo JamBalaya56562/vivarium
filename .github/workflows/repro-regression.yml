@@ -39,7 +39,7 @@ jobs:
   regression:
     name: regression (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -109,6 +109,7 @@ jobs:
         run: |
           mise run repro:typecheck
           mise run repro:build
+          mise run repro:i18n
 
       - name: Build, run, and snapshot Layer 2 Docker reproductions (no push)
         working-directory: ${{ github.workspace }}
