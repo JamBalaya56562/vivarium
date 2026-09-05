@@ -112,7 +112,7 @@ mise exec uv -- uv run src/layer1_wasm/lark-1585/repro.py
 #   "python_version": "3.14.x",
 #   "outcome": "timeout",
 #   "exit_code": null,
-#   "stderr_tail": [...],
+#   "stderr_tail": ["1.3.1 3.14.x"],
 #   "elapsed_ms": 8000.x,
 #   "timeout_ms": 8000.0,
 #   "reproduced": true

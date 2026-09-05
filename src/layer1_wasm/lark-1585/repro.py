@@ -43,6 +43,13 @@ Lark('start.1: "a" | start start*', parser='lalr').parse('aa')
 """
 
 
+def as_text(stream) -> str:
+    # TimeoutExpired.stderr is str on Windows and bytes on POSIX, even under text=True.
+    if isinstance(stream, (bytes, bytearray)):
+        return stream.decode(errors="replace")
+    return stream or ""
+
+
 def main() -> int:
     started = time.perf_counter()
     try:
@@ -79,14 +86,16 @@ def main() -> int:
         return 1
     except subprocess.TimeoutExpired as exc:
         elapsed_ms = (time.perf_counter() - started) * 1000
+        # The child flushes its version banner to stderr before it hangs.
+        stderr_str = as_text(exc.stderr)
+        child_meta = stderr_str.strip().splitlines()[-1] if stderr_str.strip() else ""
+        lark_version, _, python_version = child_meta.partition(" ")
         result = {
-            "lark_version": "1.3.1",
-            "python_version": sys.version.split()[0],
+            "lark_version": lark_version or "unknown",
+            "python_version": python_version or sys.version.split()[0],
             "outcome": "timeout",
             "exit_code": None,
-            "stderr_tail": (exc.stderr.decode(errors="replace") if exc.stderr else "").splitlines()[
-                -5:
-            ],
+            "stderr_tail": stderr_str.splitlines()[-5:],
             "elapsed_ms": elapsed_ms,
             "timeout_ms": TIMEOUT_S * 1000,
             "reproduced": True,
