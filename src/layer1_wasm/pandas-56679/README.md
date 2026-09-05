@@ -29,7 +29,7 @@ constructors should produce a consistent dtype for an empty input.
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
 | `repro.ts`   | **Main-thread driver.** Spawns the Pyodide Web Worker, relays its progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
-| `repro.worker.ts` | **Worker source.** Loads Pyodide and the `pandas` package, runs the reproduction script, and posts the result back. |
+| `repro.worker.ts` | **Worker source.** Loads Pyodide and the `pandas` package, runs the reproduction script, and posts back what the script printed together with the `result` mapping it left behind. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
@@ -106,14 +106,15 @@ mise install
 mise exec uv -- uv run src/layer1_wasm/pandas-56679/repro.py
 
 # Expected output (pandas 3.0.5):
-# {
-#   "pandas_version": "3.0.5",
-#   "python_version": "3.14.x",
-#   "series_dtype": "object",
-#   "df_dtype": "float64",
-#   "mismatch": true,
-#   "reproduced": true
-# }
+# Two empty containers built from the same empty input:
+#
+# pd.Series([]).dtype                 -> object
+# pd.DataFrame({"a": []})["a"].dtype  -> float64
+#
+# The two disagree: the same empty input yields different dtypes.
+# pandas 3.0.5 / Python 3.14.x
+#
+# ...and on stderr:
 # verdict=reproduced — Series and DataFrame disagree on empty-input dtype
 ```
 

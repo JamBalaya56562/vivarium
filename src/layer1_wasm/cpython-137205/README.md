@@ -59,7 +59,7 @@ the Python API surface.
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
 | `repro.ts`   | **Main-thread driver.** Spawns the Pyodide Web Worker, relays its progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
-| `repro.worker.ts` | **Worker source.** Loads Pyodide with the stdlib `sqlite3` it ships, runs the reproduction script, and posts the result back. |
+| `repro.worker.ts` | **Worker source.** Loads Pyodide with the stdlib `sqlite3` it ships, runs the reproduction script, and posts back what the script printed together with the `result` mapping it left behind. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. The bug is in the CPython binding layer, so no third-party deps are needed (PEP 723 `dependencies = []`). See "Native verification" below. |
 

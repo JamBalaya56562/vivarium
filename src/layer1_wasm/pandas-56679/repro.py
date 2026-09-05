@@ -19,12 +19,12 @@ The page runs the pandas Pyodide bundles (3.0.2), where it also
 reproduces. `uv run` reads the metadata and creates an ephemeral venv
 on first invocation; subsequent runs hit uv's cache.
 
-Prints `pass` if the bug REPRODUCES (Series and DataFrame disagree on
-empty-input dtype), `fail` otherwise. Exit code: 0 on `pass`, 1 on
-`fail` so CI can shell-script around it without parsing stdout.
+Builds an empty Series and an empty single-column DataFrame from the
+same empty input and prints the dtype each one reports. Exits 0 on
+`reproduced` (the two disagree), 1 on `unreproduced` (they agree;
+likely fixed upstream).
 """
 
-import json
 import sys
 
 import pandas as pd
@@ -39,10 +39,18 @@ result = {
     "series_dtype": series_dtype,
     "df_dtype": df_dtype,
     "mismatch": mismatch,
-    "reproduced": mismatch,
 }
 
-print(json.dumps(result, indent=2))
+print("Two empty containers built from the same empty input:")
+print()
+print("pd.Series([]).dtype".ljust(36) + "-> " + series_dtype)
+print('pd.DataFrame({"a": []})["a"].dtype'.ljust(36) + "-> " + df_dtype)
+print()
+if mismatch:
+    print("The two disagree: the same empty input yields different dtypes.")
+else:
+    print("The two agree: both empty containers report the same dtype.")
+print("pandas " + result["pandas_version"] + " / Python " + result["python_version"])
 
 if mismatch:
     print(
