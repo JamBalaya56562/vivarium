@@ -1,7 +1,3 @@
-export interface PyodideRuntime {
-  runPythonAsync(code: string): Promise<unknown>;
-}
-
 export interface WheelManifest {
   schema_version: number;
   package: string;
@@ -18,26 +14,6 @@ export interface WheelManifest {
   };
   upstream_pr?: string;
   fetched_at?: string;
-}
-
-export async function reinstallPyodidePackage(
-  runtime: PyodideRuntime,
-  args: {
-    pipPackageName: string;
-    pythonRootModule: string;
-    installSpec: string;
-  },
-): Promise<void> {
-  await runtime.runPythonAsync(`
-import micropip, sys
-try:
-    await micropip.uninstall(${JSON.stringify(args.pipPackageName)})
-except Exception:
-    pass
-for _name in [n for n in list(sys.modules) if n == ${JSON.stringify(args.pythonRootModule)} or n.startswith(${JSON.stringify(`${args.pythonRootModule}.`)})]:
-    del sys.modules[_name]
-await micropip.install(${JSON.stringify(args.installSpec)})
-`);
 }
 
 export type FetchWheelManifestOutcome =
