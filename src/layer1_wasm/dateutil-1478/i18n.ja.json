@@ -19,7 +19,7 @@
     "drawer.body.p2": "{0} は {1} を返す（期待値は {2}）、{3} は {4} を返す（期待値は {5}）。素の ISO 8601 形式（{8} 接頭辞のない {6} / {7}）は正しく parse されるので、この反転は {9} と符号付きオフセットの組み合わせの code path に限定される。",
     "drawer.body.p3": "このページのスクリプトは 4 つの形（{0}、{1}、{2}、{3}）を試し、parse された {4} をそれぞれ期待値と比較する。形ごとに 1 行ずつ print し、出力ペインにはその print された文字列がそのまま出る。スクリプトが残す {5} リストをページが読んで verdict を決める。",
     "drawer.body.p4": "議論の全体（動機、経緯、fix の進捗）は下の GitHub issue スレッドにある。",
-    "drawer.body.p5": "fix 候補のブランチ（{0}）が {1} 配下の pure-Python wheel としてビルドされ、baseline の実行が終わったあとに同じ Pyodide タブへインストールされる。1 回のページ読み込みで before/after の verdict を比較できる。",
+    "drawer.body.p5": "fix 候補のブランチ（{0}）が {1} 配下の pure-Python wheel としてビルドされ、baseline の実行が終わったあとに 2 つ目の Pyodide worker へインストールされる。1 回のページ読み込みで before/after の verdict を比較できる。",
     "chip.fixCandidate": "{0} fix 候補ブランチ",
     "section.baseline.h2": "baseline の出力",
     "output.pending": "(待機中)",

@@ -232,8 +232,8 @@ one. Copy the block from
 - Three ways to fill the fix pane, in order of preference:
   1. **Fork wheel** — `fix-candidate.json` + the helpers in
      [`_shared/fix-candidate.ts`](../../src/layer1_wasm/_shared/fix-candidate.ts).
-     Pure-Python packages only; see `dateutil-1478` (main-thread) and
-     `lark-1585` (one Web Worker per variant).
+     Pure-Python packages only. Both `dateutil-1478` and `lark-1585`
+     run each variant in its own Pyodide Web Worker; see below.
   2. **A second artefact built from a fixed dependency version** —
      e.g. a second `wasm32-wasip1` binary, or a different runtime build.
   3. **No candidate** — when no fixed build can be executed in the
