@@ -370,9 +370,11 @@ try {
 
   if (manifestRes && manifestRes.ok) {
     manifest = (await manifestRes.json()) as WheelManifest;
+    // baseURI, not location.href: the JA page is served from /ja/repro/… but
+    // carries a <base> pointing at the recipe directory, where the wheels are.
     const wheelUrl = new URL(
       `./wheels/${manifest.filename}`,
-      window.location.href,
+      document.baseURI,
     ).toString();
     setFixPane(
       `Installing ${manifest.filename} (${manifest.version})…\n` +

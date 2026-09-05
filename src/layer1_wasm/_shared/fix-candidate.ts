@@ -58,9 +58,11 @@ export async function fetchWheelManifest(opts?: {
       reason: 'wheel manifest is missing `filename` field.',
     };
   }
+  // baseURI, not location.href: the JA page is served from /ja/repro/… but
+  // carries a <base> pointing at the recipe directory, where the wheels are.
   const wheelUrl = new URL(
     `./wheels/${manifest.filename}`,
-    window.location.href,
+    document.baseURI,
   ).toString();
   return { ok: true, manifest, wheelUrl };
 }
