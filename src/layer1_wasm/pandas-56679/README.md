@@ -28,12 +28,26 @@ constructors should produce a consistent dtype for an empty input.
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.ts`   | **Main-thread driver.** Spawns the Pyodide Web Worker, relays its progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.worker.ts` | **Worker source.** Loads Pyodide and the `pandas` package, runs the reproduction script, and posts the result back. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css);
 this directory no longer carries its own copy.
+
+## Why the runtime lives in a Web Worker
+
+Booting Pyodide is pure CPU work. Run on the main thread it lands as a
+single task tens of seconds long, and Chrome offers to kill the tab
+before it finishes — measured at 25.8 s of total main-thread blocking with a
+25.1 s worst task on the deployed page. Moving it into a worker takes the
+same page to no long task at all.
+
+The worker imports nothing from `../_shared/`: `_shared/verdict.ts` pulls
+in `_assets/chrome.js`, which touches `document` at module-evaluation
+time and would throw inside a worker. Everything DOM-bound — the verdict
+pill, the envelope, the pane, the progress bar — stays in `repro.ts`.
 
 ## Verdict contract — `vivarium-contract: v1`
 
