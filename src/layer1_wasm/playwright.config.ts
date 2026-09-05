@@ -2,8 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export const LAYER1_PORT = 8767;
 export const LAYER2_PORT = 8768;
+export const DEPLOYED_SHAPE_PORT = 8769;
 export const LAYER1_BASE = `http://localhost:${LAYER1_PORT}`;
 export const LAYER2_BASE = `http://localhost:${LAYER2_PORT}`;
+export const DEPLOYED_SHAPE_BASE = `http://localhost:${DEPLOYED_SHAPE_PORT}`;
 
 export default defineConfig({
   testDir: "./tests",
@@ -38,6 +40,15 @@ export default defineConfig({
       command: `uv run --no-project python -m http.server ${LAYER2_PORT}`,
       cwd: "../layer2_docker",
       url: `${LAYER2_BASE}/`,
+      reuseExistingServer: !process.env["CI"],
+      timeout: 30_000,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      command: `bun run scripts/serve-repro.ts ${DEPLOYED_SHAPE_PORT}`,
+      cwd: "../../docs",
+      url: `${DEPLOYED_SHAPE_BASE}/`,
       reuseExistingServer: !process.env["CI"],
       timeout: 30_000,
       stdout: "pipe",

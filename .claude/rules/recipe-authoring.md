@@ -99,6 +99,19 @@ Rules:
 - `recipes.json` gains `page_url_ja` **only** for recipes that ship
   `i18n.ja.json`. Its absence is the signal that no Japanese page
   exists, so never derive that URL by inserting `/ja/`.
+- **The Japanese page is executed by the regression suite**, not just
+  key-checked. `tests/repro-ja.spec.ts` opens every `page_url_ja` and
+  asserts the verdict settles, the fix pane settles, and that nothing
+  under `/repro/` 404s. It is served by `docs/scripts/serve-repro.ts`,
+  which reproduces the deployed shape: the `/ja/` tree holds the page
+  and nothing else, so every asset has to resolve through the page's
+  `<base>` back into the English directory. A broken `<base>` shows up
+  as a 404, which is how a wheel that resolved into `/ja/` went
+  unnoticed until it was looked for.
+- The suite therefore needs `mise run repro:i18n` to have run —
+  `index.ja.html` is gitignored and is not built by `repro:build`.
+  `ci:repro` and `repro-regression.yml` both run it, after
+  `repro:build` so the Shiki inlining is already in place.
 
 `recipe.json` is the single source of truth for the gallery facets
 (`language` / `symptom` / `severity` / `tags`) and the regression
