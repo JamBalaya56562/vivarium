@@ -1,6 +1,7 @@
+import { pick } from '../_shared/i18n.js';
 import {
   DEFAULT_PYODIDE_VERSION,
-  loadVivariumPyodide,
+  totalEstimatedMB,
 } from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
 import { enableRunner } from '../_shared/runner.js';
@@ -34,12 +35,56 @@ interface ReproOutput {
   mismatch: boolean;
 }
 
-interface PyodideRuntime {
-  runPythonAsync(code: string): Promise<{
-    toJs(opts: { dict_converter: typeof Object.fromEntries }): ReproOutput;
-    destroy?(): void;
-  }>;
+type ProgressStage = 'init' | 'fetching-module' | 'loading-runtime' | 'ready';
+
+interface WorkerProgress {
+  type: 'progress';
+  pct: number;
+  stage: ProgressStage;
 }
+
+interface WorkerReady {
+  type: 'ready';
+  pyodideVersion: string;
+}
+
+interface WorkerRunResult {
+  type: 'result';
+  id: number;
+  result: ReproOutput | null;
+  error: string | null;
+}
+
+interface WorkerError {
+  type: 'error';
+  id?: number;
+  message: string;
+}
+
+type WorkerMessage =
+  | WorkerProgress
+  | WorkerReady
+  | WorkerRunResult
+  | WorkerError;
+
+const WORKER_PACKAGES = ['pandas'];
+const ESTIMATED_MB = totalEstimatedMB(WORKER_PACKAGES.length);
+
+const STRINGS: Record<ProgressStage, string> = {
+  init: 'Starting Pyodide worker…',
+  'fetching-module': 'Fetching Pyodide module…',
+  'loading-runtime': 'Loading runtime + pandas…',
+  ready: 'Runtime ready.',
+};
+
+const STRINGS_JA: Partial<Record<ProgressStage, string>> = {
+  init: 'Pyodide worker を起動中…',
+  'fetching-module': 'Pyodide モジュールを取得中…',
+  'loading-runtime': 'runtime と pandas を読み込み中…',
+  ready: 'runtime の準備完了。',
+};
+
+const S = pick(STRINGS, STRINGS_JA);
 
 const outputEl = document.getElementById('output');
 const metaEl = document.getElementById('meta');
@@ -61,6 +106,20 @@ if (!reproCodeEl.firstChild) {
     .catch(() => {});
 }
 
+function emitProgress(pct: number, stage: ProgressStage): void {
+  const loaded = stage === 'ready' ? ESTIMATED_MB : 0;
+  document.dispatchEvent(
+    new CustomEvent('vh-progress', {
+      detail: {
+        pct,
+        label: S[stage],
+        bytes: `${loaded.toFixed(1)} MB / ${ESTIMATED_MB.toFixed(1)} MB`,
+        stage: stage === 'ready' ? 'packages' : 'runtime',
+      },
+    }),
+  );
+}
+
 function evaluate(result: ReproOutput): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
@@ -77,58 +136,131 @@ function evaluate(result: ReproOutput): {
   };
 }
 
-async function captureRun(
-  runtime: PyodideRuntime,
-  source: string,
-): Promise<PathACapturedRun> {
-  try {
-    const proxy = await runtime.runPythonAsync(source);
-    const result = proxy.toJs({ dict_converter: Object.fromEntries });
-    proxy.destroy?.();
-    const ev = evaluate(result);
-    return {
-      exitCode: 0,
-      verdict: ev.verdict,
-      message: ev.message,
-      stdout: JSON.stringify(result, null, 2),
+function spawnWorker(): Worker {
+  const workerUrl = new URL('./repro.worker.js', import.meta.url);
+  workerUrl.searchParams.set('pyodide', DEFAULT_PYODIDE_VERSION);
+  workerUrl.searchParams.set('packages', WORKER_PACKAGES.join(','));
+  return new Worker(workerUrl, { type: 'module' });
+}
+
+function awaitReady(worker: Worker): Promise<WorkerReady> {
+  return new Promise<WorkerReady>((resolve, reject) => {
+    const cleanup = (): void => {
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
     };
+    const onError = (ev: ErrorEvent): void => {
+      cleanup();
+      reject(new Error(ev.message));
+    };
+    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
+      const msg = ev.data;
+      if (msg.type === 'progress') {
+        setVerdict('pending', S[msg.stage], 'loading');
+        emitProgress(msg.pct, msg.stage);
+        return;
+      }
+      if (msg.type === 'ready') {
+        cleanup();
+        resolve(msg);
+      } else if (msg.type === 'error') {
+        cleanup();
+        reject(new Error(msg.message));
+      }
+    };
+    worker.addEventListener('message', onMessage);
+    worker.addEventListener('error', onError);
+  });
+}
+
+let runId = 0;
+
+function runInWorker(worker: Worker, source: string): Promise<WorkerRunResult> {
+  const id = ++runId;
+  return new Promise<WorkerRunResult>((resolve, reject) => {
+    const cleanup = (): void => {
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
+    };
+    const onError = (ev: ErrorEvent): void => {
+      cleanup();
+      reject(new Error(ev.message));
+    };
+    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
+      const msg = ev.data;
+      if (msg.type !== 'result' && msg.type !== 'error') return;
+      if (msg.id !== id) return;
+      cleanup();
+      if (msg.type === 'result') resolve(msg);
+      else reject(new Error(msg.message));
+    };
+    worker.addEventListener('message', onMessage);
+    worker.addEventListener('error', onError);
+    worker.postMessage({ type: 'run', id, source });
+  });
+}
+
+interface CaptureResult {
+  run: PathACapturedRun;
+  parsed: ReproOutput | null;
+}
+
+async function captureIn(
+  worker: Worker,
+  source: string,
+): Promise<CaptureResult> {
+  let message: string;
+  try {
+    const result = await runInWorker(worker, source);
+    if (result.error === null && result.result !== null) {
+      const ev = evaluate(result.result);
+      return {
+        run: {
+          exitCode: 0,
+          verdict: ev.verdict,
+          message: ev.message,
+          stdout: JSON.stringify(result.result, null, 2),
+        },
+        parsed: result.result,
+      };
+    }
+    message = result.error ?? 'the worker returned no result.';
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
+    message = err instanceof Error ? err.message : String(err);
+  }
+  return {
+    run: {
       exitCode: 1,
       verdict: 'unreproduced',
       message: `runtime error: ${message}`,
       stdout: message,
-    };
-  }
+    },
+    parsed: null,
+  };
 }
 
 const startedAt = new Date();
 
 try {
-  const { pyodide, version } = await loadVivariumPyodide({
-    packages: ['pandas'],
-    pendingText: 'Loading Pyodide runtime and pandas…',
-  });
+  setVerdict('pending', S.init, 'loading');
+  emitProgress(5, 'init');
 
-  setVerdict('pending', 'Running reproduction script…');
-  const runtime = pyodide as PyodideRuntime;
-  const baseline = await captureRun(runtime, REPRO_CODE);
+  const worker = spawnWorker();
+  const ready = await awaitReady(worker);
 
-  let baselineResult: ReproOutput | null = null;
-  try {
-    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
-  } catch {
-    outputEl.textContent = baseline.stdout;
-    setVerdict(baseline.verdict, baseline.message);
-    throw new Error(baseline.message);
+  setVerdict('pending', 'Running reproduction script…', 'running');
+  const baseline = await captureIn(worker, REPRO_CODE);
+  outputEl.textContent = baseline.run.stdout;
+  setVerdict(baseline.run.verdict, baseline.run.message);
+
+  const baselineResult = baseline.parsed;
+  if (!baselineResult) {
+    throw new Error(baseline.run.message);
   }
 
   metaEl.textContent =
     `pandas ${baselineResult.pandas_version} on Python ${baselineResult.python_version} ` +
-    `via Pyodide v${version}.`;
-  outputEl.textContent = baseline.stdout;
-  setVerdict(baseline.verdict, baseline.message);
+    `via Pyodide v${ready.pyodideVersion} (Web Worker).`;
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -140,7 +272,7 @@ try {
     },
     runtime: {
       name: 'pyodide',
-      version,
+      version: ready.pyodideVersion,
       extras: {
         python: baselineResult.python_version,
         pandas: baselineResult.pandas_version,
@@ -162,7 +294,7 @@ try {
   enableRunner({
     slug: 'pandas-56679',
     baselineSource: REPRO_CODE,
-    runFix: (source) => captureRun(runtime, source),
+    runFix: async (source) => (await captureIn(worker, source)).run,
   });
 } catch (err: unknown) {
   console.error(err);
@@ -176,5 +308,3 @@ try {
     );
   }
 }
-
-void DEFAULT_PYODIDE_VERSION;
