@@ -28,7 +28,8 @@ of different encodings. The disagreement is the bug surface.
   succeeds — so the page emits a mechanically-distinguishable
   `reproduced` / `unreproduced`.
 - Open upstream (Status: Open) at the time of writing; reported
-  against Ruby 3.4 and confirmed to affect 3.2 / 3.3 / 3.4. A draft
+  against Ruby 3.4 and confirmed to affect 3.2 / 3.3 / 3.4; still
+  reproduces on 4.0 (Ruby 4.0.0 in the browser, 4.0.6 natively). A draft
   patch is in flight but has not landed.
 - Suits the WASM cell shape exactly — Ruby.wasm bundles full Onigmo
   and Encoding support, so this reproduces without runtime gaps.
@@ -78,26 +79,30 @@ python -m http.server -d . 8767
 The companion `repro.rb` script reproduces the bug without any
 WASM layer, so a contributor can confirm the gallery page is
 catching a *real* upstream behaviour rather than a Ruby.wasm
-quirk. The `mise.toml` at the repo root pins Ruby to **3.3.3**
-to match the version `@ruby/3.3-wasm-wasi` bundles, so:
+quirk. The `repro:native:ruby` task in the repo-root `mise.toml`
+pins Ruby to **4.0.6**, the latest release, matching the major.minor
+of the `@ruby/4.0-wasm-wasi` bundle the page runs, so:
 
 ```bash
 # One-time per machine / mise.toml change.
 mise install
 
-# Reproduces the bug; exits 0 on `reproduced`.
-mise exec ruby -- ruby src/layer1_wasm/ruby-21709/repro.rb
+# Reproduces the bug; exits 0 on `reproduced`. Run it through the
+# task rather than `mise exec ruby` — the 4.0.6 pin lives on the
+# task, so `mise exec` resolves to whatever Ruby mise picks.
+mise run repro:native:ruby
 
-# Expected output (Ruby 3.3.3):
-# {
-#   "ruby_version": "3.3.3",
-#   "regexp_built": false,
-#   "regexp_raised": "RegexpError",
-#   "string_built": true,
-#   "string_encoding": "UTF-8",
-#   "string_raised": null,
-#   "reproduced": true
-# }
+# Expected output:
+# Interpolating the same two fragments, one UTF-8 and one US-ASCII:
+#
+#   Regexp   /#{prefix}#{suffix}/    raised RegexpError   <-- rejected
+#   String   "#{prefix}#{suffix}"    built, encoding UTF-8
+#
+# The two forms disagree: Regexp interpolation rejects the mixed
+# encodings that String interpolation silently upgrades.
+# Ruby 4.0.6
+#
+# ...and on stderr:
 # verdict=reproduced — bug reproduces on this interpreter
 ```
 

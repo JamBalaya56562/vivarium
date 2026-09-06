@@ -287,11 +287,16 @@ of values it read back. The shape:
 - It `print`s a short human-readable summary: the inputs, the answer
   each one produced, and a marker on the ones that show the bug.
 - It leaves the machine-readable values in a named global — `result`
-  for a single mapping, `results` for a list of rows. The driver reads
+  for a single mapping, `results` for a list of rows, `$result` in Ruby
+  where a local would not survive to the next `eval`. The driver reads
   that global for the verdict and the Contract v1 envelope, and puts
   the captured stdout into `#output` unchanged.
-- Capture stdout with `setStdout({ batched })` under Pyodide, or
-  `ConsoleStdout.lineBuffered` under the WASI shim.
+- Capture stdout with `setStdout({ batched })` under Pyodide,
+  `consolePrinter({ stdout, stderr })` under Ruby.wasm, or
+  `ConsoleStdout.lineBuffered` under the WASI shim. Ruby.wasm's
+  `DefaultRubyVM` cannot do it — it hardcodes its fds and installs a
+  printer that writes to `console.log`, so `_shared/ruby_loader.ts`
+  builds the WASI itself and calls `RubyVM.instantiateModule`.
 - **Delete the global before every run.** One Pyodide namespace spans
   every run, including the ones a visitor triggers from the Edit box.
   Without `globals.delete`, a script that no longer assigns the global
@@ -318,8 +323,8 @@ go back to JSON:
   the envelope. stderr is the machine channel there, the way a named
   global is under Pyodide.
 
-`ruby-21709` still hands its pane a JSON string its driver built. Do not
-copy its output handling into a new recipe.
+Every other Layer 1 recipe follows the shape above. There is no
+remaining recipe to copy the old JSON-pane handling from.
 
 **Local validation**:
 

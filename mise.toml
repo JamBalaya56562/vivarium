@@ -139,8 +139,8 @@ description = "Run every src/layer1_wasm/*/repro.py against host Python (auto-di
 run = "bash scripts/run-layer1-python.sh"
 
 [tasks."repro:native:ruby"]
-description = "Run Ruby repros against host Ruby (3.3.x pin)"
-tools = { ruby = "3.3.3" }
+description = "Run Ruby repros against host Ruby (4.0.x pin)"
+tools = { ruby = "4.0.6" }
 run = "ruby src/layer1_wasm/ruby-21709/repro.rb"
 
 [tasks."repro:native:rust"]

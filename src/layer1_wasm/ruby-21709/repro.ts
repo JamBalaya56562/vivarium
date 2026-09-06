@@ -1,5 +1,9 @@
 import type { PathACapturedRun } from '../_shared/path_a.js';
-import { loadVivariumRuby } from '../_shared/ruby_loader.js';
+import {
+  loadVivariumRuby,
+  type RubyRunner,
+  type RunResult,
+} from '../_shared/ruby_loader.js';
 import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
@@ -8,35 +12,55 @@ import {
 } from '../_shared/verdict.js';
 
 const REPRO_CODE = String.raw`
-require "json"
-
-result = { ruby_version: RUBY_VERSION }
-
 prefix = '\p{In_Arabic}'
 suffix = '\p{In_Arabic}'.encode('US-ASCII')
 
 begin
   re = /#{prefix}#{suffix}/
-  result[:regexp_built] = true
-  result[:regexp_raised] = nil
+  regexp_raised = nil
 rescue => e
-  result[:regexp_built] = false
-  result[:regexp_raised] = e.class.name
+  regexp_raised = e.class.name
 end
 
 begin
-  s = "#{prefix}#{suffix}"
-  result[:string_built] = true
-  result[:string_encoding] = s.encoding.name
-  result[:string_raised] = nil
+  str = "#{prefix}#{suffix}"
+  string_encoding = str.encoding.name
+  string_raised = nil
 rescue => e
-  result[:string_built] = false
-  result[:string_encoding] = nil
-  result[:string_raised] = e.class.name
+  string_encoding = nil
+  string_raised = e.class.name
 end
 
-JSON.dump(result)
+$result = {
+  ruby_version: RUBY_VERSION,
+  regexp_built: regexp_raised.nil?,
+  regexp_raised: regexp_raised,
+  string_built: string_raised.nil?,
+  string_encoding: string_encoding,
+  string_raised: string_raised,
+}
+
+regexp_note =
+  regexp_raised ? "raised #{regexp_raised}   <-- rejected" : 'built'
+string_note =
+  string_raised ? "raised #{string_raised}" : "built, encoding #{string_encoding}"
+
+puts 'Interpolating the same two fragments, one UTF-8 and one US-ASCII:'
+puts
+puts '  Regexp   /#{prefix}#{suffix}/    ' + regexp_note
+puts '  String   "#{prefix}#{suffix}"    ' + string_note
+puts
+if regexp_raised && string_raised.nil?
+  puts 'The two forms disagree: Regexp interpolation rejects the mixed'
+  puts 'encodings that String interpolation silently upgrades.'
+else
+  puts 'The two forms agree on how to combine fragments of different encodings.'
+end
+puts "Ruby #{RUBY_VERSION}"
 `.trim();
+
+const RESET_RESULT = '$result = nil';
+const READ_RESULT = 'require "json"; JSON.dump($result)';
 
 interface ReproOutput {
   ruby_version: string;
@@ -45,10 +69,6 @@ interface ReproOutput {
   string_built: boolean;
   string_encoding: string | null;
   string_raised: string | null;
-}
-
-interface RubyVM {
-  eval(code: string): { toString(): string };
 }
 
 const outputEl = document.getElementById('output');
@@ -71,12 +91,17 @@ if (!reproCodeEl.firstChild) {
     .catch(() => {});
 }
 
-function evaluate(result: ReproOutput): {
+function evaluate(result: ReproOutput | null): {
   verdict: 'reproduced' | 'unreproduced';
   message: string;
 } {
-  const reproduced = !result.regexp_built && result.string_built;
-  if (reproduced) {
+  if (!result) {
+    return {
+      verdict: 'unreproduced',
+      message: 'bug not reproduced — the script left no `$result` hash behind.',
+    };
+  }
+  if (!result.regexp_built && result.string_built) {
     return {
       verdict: 'reproduced',
       message:
@@ -96,57 +121,72 @@ function evaluate(result: ReproOutput): {
   };
 }
 
-async function captureRun(
-  rb: RubyVM,
-  source: string,
-): Promise<PathACapturedRun> {
+function readResult(ruby: RubyRunner): ReproOutput | null {
+  const probe = ruby.eval(READ_RESULT);
+  if (probe.error !== null || probe.value === null) return null;
   try {
-    const jsonText = rb.eval(source).toString();
-    const result = JSON.parse(jsonText) as ReproOutput;
-    const ev = evaluate(result);
+    return JSON.parse(probe.value) as ReproOutput | null;
+  } catch {
+    return null;
+  }
+}
+
+interface CaptureResult {
+  run: PathACapturedRun;
+  parsed: ReproOutput | null;
+}
+
+function toCapture(run: RunResult, parsed: ReproOutput | null): CaptureResult {
+  if (run.error !== null) {
     return {
-      exitCode: 0,
-      verdict: ev.verdict,
-      message: ev.message,
-      stdout: JSON.stringify(result, null, 2),
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      exitCode: 1,
-      verdict: 'unreproduced',
-      message: `runtime error: ${message}`,
-      stdout: message,
+      run: {
+        exitCode: 1,
+        verdict: 'unreproduced',
+        message: `runtime error: ${run.error}`,
+        stdout: [run.stdout, run.error].filter(Boolean).join('\n'),
+      },
+      parsed: null,
     };
   }
+  const ev = evaluate(parsed);
+  return {
+    run: {
+      exitCode: parsed ? 0 : 1,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: run.stdout.trimEnd(),
+    },
+    parsed,
+  };
+}
+
+function captureRun(ruby: RubyRunner, source: string): CaptureResult {
+  ruby.eval(RESET_RESULT);
+  const run = ruby.eval(source);
+  return toCapture(run, run.error === null ? readResult(ruby) : null);
 }
 
 const startedAt = new Date();
 
 try {
-  const { vm, rubyWasmVersion, rubyVersion } = await loadVivariumRuby({
+  const { ruby, rubyWasmVersion, rubyVersion } = await loadVivariumRuby({
     pendingText: 'Loading Ruby.wasm runtime and stdlib…',
   });
 
   setVerdict('pending', 'Running reproduction script…');
-  const rb = vm as RubyVM;
-  const baseline = await captureRun(rb, REPRO_CODE);
+  const baseline = captureRun(ruby, REPRO_CODE);
 
-  let baselineResult: ReproOutput | null = null;
-  try {
-    baselineResult = JSON.parse(baseline.stdout) as ReproOutput;
-  } catch {
-    outputEl.textContent = baseline.stdout;
-    setVerdict(baseline.verdict, baseline.message);
-    throw new Error(baseline.message);
+  outputEl.textContent = baseline.run.stdout;
+  setVerdict(baseline.run.verdict, baseline.run.message);
+
+  const baselineResult = baseline.parsed;
+  if (!baselineResult) {
+    throw new Error(baseline.run.message);
   }
 
   metaEl.textContent = `Ruby ${baselineResult.ruby_version} via @ruby/${rubyVersion}-wasm-wasi v${rubyWasmVersion}.`;
-  outputEl.textContent = baseline.stdout;
-  setVerdict(baseline.verdict, baseline.message);
 
   const finishedAt = new Date();
-  const reproduced = baseline.verdict === 'reproduced';
   const envelope: VivariumResultV1 = {
     contract: 'v1',
     bug: {
@@ -168,7 +208,7 @@ try {
       string_built: baselineResult.string_built,
       string_encoding: baselineResult.string_encoding,
       string_raised: baselineResult.string_raised,
-      reproduced,
+      reproduced: baseline.run.verdict === 'reproduced',
     },
     timing: {
       started_at: startedAt.toISOString(),
@@ -181,7 +221,7 @@ try {
   enableRunner({
     slug: 'ruby-21709',
     baselineSource: REPRO_CODE,
-    runFix: (source) => captureRun(rb, source),
+    runFix: (source) => Promise.resolve(captureRun(ruby, source).run),
   });
 } catch (err: unknown) {
   console.error(err);
