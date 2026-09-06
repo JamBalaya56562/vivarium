@@ -28,8 +28,7 @@ constructors should produce a consistent dtype for an empty input.
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | **Main-thread driver.** Spawns the Pyodide Web Worker, relays its progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
-| `repro.worker.ts` | **Worker source.** Loads Pyodide and the `pandas` package, runs the reproduction script, and posts back what the script printed together with the `result` mapping it left behind. |
+| `repro.ts`   | **Main-thread driver.** Calls `startPyodideWorker` from [`../_shared/pyodide-worker-client.ts`](../_shared/pyodide-worker-client.ts), which spawns the shared Pyodide worker and relays its progress into the page. Owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
@@ -44,10 +43,13 @@ before it finishes — measured at 25.8 s of total main-thread blocking with a
 25.1 s worst task on the deployed page. Moving it into a worker takes the
 same page to no long task at all.
 
-The worker imports nothing from `../_shared/`: `_shared/verdict.ts` pulls
-in `_assets/chrome.js`, which touches `document` at module-evaluation
-time and would throw inside a worker. Everything DOM-bound — the verdict
-pill, the envelope, the pane, the progress bar — stays in `repro.ts`.
+The worker itself is [`../_shared/pyodide-worker.ts`](../_shared/pyodide-worker.ts),
+shared by every Pyodide recipe — a recipe does not ship one of its own, so
+there is nothing to forget. It imports nothing from the rest of
+`../_shared/`: `_shared/verdict.ts` pulls in `_assets/chrome.js`, which
+touches `document` at module-evaluation time and would throw inside a
+worker. Everything DOM-bound — the verdict pill, the envelope, the pane,
+the progress bar — stays on the main thread.
 
 ## Verdict contract — `vivarium-contract: v1`
 

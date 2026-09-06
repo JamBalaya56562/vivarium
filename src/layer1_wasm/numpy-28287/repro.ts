@@ -1,5 +1,9 @@
-import { loadVivariumPyodide } from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
+import {
+  type PyodideWorker,
+  type RunResult,
+  startPyodideWorker,
+} from '../_shared/pyodide-worker-client.js';
 import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
@@ -58,21 +62,6 @@ interface ReproOutput {
   transitivity_violated: boolean;
 }
 
-interface PyProxy {
-  toJs(opts: { dict_converter: typeof Object.fromEntries }): unknown;
-  destroy?(): void;
-}
-
-interface PyodideRuntime {
-  runPythonAsync(code: string): Promise<unknown>;
-  setStdout(options: { batched: (text: string) => void }): void;
-  globals: {
-    get(name: string): unknown;
-    has(name: string): boolean;
-    delete(name: string): void;
-  };
-}
-
 const outputEl = document.getElementById('output');
 const metaEl = document.getElementById('meta');
 const reproCodeEl = document.getElementById('repro-code');
@@ -117,82 +106,60 @@ function evaluate(result: ReproOutput | null): {
   };
 }
 
-function isPyProxy(value: unknown): value is PyProxy {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as PyProxy).toJs === 'function'
-  );
-}
-
-function readResult(runtime: PyodideRuntime): ReproOutput | null {
-  const handle = runtime.globals.get('result');
-  if (!isPyProxy(handle)) return null;
-  try {
-    return handle.toJs({ dict_converter: Object.fromEntries }) as ReproOutput;
-  } finally {
-    handle.destroy?.();
-  }
-}
-
 interface CaptureResult {
   run: PathACapturedRun;
   parsed: ReproOutput | null;
 }
 
-async function captureRun(
-  runtime: PyodideRuntime,
-  source: string,
-): Promise<CaptureResult> {
-  const lines: string[] = [];
-  runtime.setStdout({
-    batched: (text) => {
-      lines.push(text);
-    },
-  });
-  // One Pyodide namespace spans every run: an edited script that never
-  // assigns `result` would otherwise be judged on the previous run's values.
-  if (runtime.globals.has('result')) runtime.globals.delete('result');
-
-  try {
-    await runtime.runPythonAsync(source);
-    const parsed = readResult(runtime);
-    const ev = evaluate(parsed);
-    return {
-      run: {
-        exitCode: parsed ? 0 : 1,
-        verdict: ev.verdict,
-        message: ev.message,
-        stdout: lines.join('\n'),
-      },
-      parsed,
-    };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+function toCapture(run: RunResult): CaptureResult {
+  if (run.error !== null) {
     return {
       run: {
         exitCode: 1,
         verdict: 'unreproduced',
-        message: `runtime error: ${message}`,
-        stdout: [...lines, message].join('\n'),
+        message: `runtime error: ${run.error}`,
+        stdout: run.stdout,
       },
       parsed: null,
     };
   }
+  const value = run.value;
+  const parsed =
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as ReproOutput)
+      : null;
+  const ev = evaluate(parsed);
+  return {
+    run: {
+      exitCode: parsed ? 0 : 1,
+      verdict: ev.verdict,
+      message: ev.message,
+      stdout: run.stdout,
+    },
+    parsed,
+  };
+}
+
+async function captureIn(
+  worker: PyodideWorker,
+  source: string,
+): Promise<CaptureResult> {
+  return toCapture(await worker.run(source));
 }
 
 const startedAt = new Date();
 
 try {
-  const { pyodide, version } = await loadVivariumPyodide({
+  const worker = await startPyodideWorker({
     packages: ['numpy'],
-    pendingText: 'Loading Pyodide runtime and numpy…',
+    runtimeLabel: {
+      en: 'Loading runtime + numpy…',
+      ja: 'runtime と numpy を読み込み中…',
+    },
   });
 
-  setVerdict('pending', 'Running reproduction script…');
-  const runtime = pyodide as PyodideRuntime;
-  const baseline = await captureRun(runtime, REPRO_CODE);
-
+  setVerdict('pending', 'Running reproduction script…', 'running');
+  const baseline = await captureIn(worker, REPRO_CODE);
   outputEl.textContent = baseline.run.stdout;
   setVerdict(baseline.run.verdict, baseline.run.message);
 
@@ -203,7 +170,7 @@ try {
 
   metaEl.textContent =
     `numpy ${baselineResult.numpy_version} on Python ${baselineResult.python_version} ` +
-    `via Pyodide v${version}.`;
+    `via Pyodide v${worker.pyodideVersion} (Web Worker).`;
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -215,7 +182,7 @@ try {
     },
     runtime: {
       name: 'pyodide',
-      version,
+      version: worker.pyodideVersion,
       extras: {
         python: baselineResult.python_version,
         numpy: baselineResult.numpy_version,
@@ -238,7 +205,7 @@ try {
   enableRunner({
     slug: 'numpy-28287',
     baselineSource: REPRO_CODE,
-    runFix: async (source) => (await captureRun(runtime, source)).run,
+    runFix: async (source) => (await captureIn(worker, source)).run,
   });
 } catch (err: unknown) {
   console.error(err);

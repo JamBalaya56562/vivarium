@@ -1,9 +1,9 @@
-import { pick } from '../_shared/i18n.js';
-import {
-  DEFAULT_PYODIDE_VERSION,
-  totalEstimatedMB,
-} from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
+import {
+  type PyodideWorker,
+  type RunResult,
+  startPyodideWorker,
+} from '../_shared/pyodide-worker-client.js';
 import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
@@ -48,58 +48,6 @@ interface ReproOutput {
   mismatch: boolean;
 }
 
-type ProgressStage = 'init' | 'fetching-module' | 'loading-runtime' | 'ready';
-
-interface WorkerProgress {
-  type: 'progress';
-  pct: number;
-  stage: ProgressStage;
-}
-
-interface WorkerReady {
-  type: 'ready';
-  pyodideVersion: string;
-}
-
-interface WorkerRunResult {
-  type: 'result';
-  id: number;
-  stdout: string;
-  result: ReproOutput | null;
-  error: string | null;
-}
-
-interface WorkerError {
-  type: 'error';
-  id?: number;
-  message: string;
-}
-
-type WorkerMessage =
-  | WorkerProgress
-  | WorkerReady
-  | WorkerRunResult
-  | WorkerError;
-
-const WORKER_PACKAGES = ['pandas'];
-const ESTIMATED_MB = totalEstimatedMB(WORKER_PACKAGES.length);
-
-const STRINGS: Record<ProgressStage, string> = {
-  init: 'Starting Pyodide worker…',
-  'fetching-module': 'Fetching Pyodide module…',
-  'loading-runtime': 'Loading runtime + pandas…',
-  ready: 'Runtime ready.',
-};
-
-const STRINGS_JA: Partial<Record<ProgressStage, string>> = {
-  init: 'Pyodide worker を起動中…',
-  'fetching-module': 'Pyodide モジュールを取得中…',
-  'loading-runtime': 'runtime と pandas を読み込み中…',
-  ready: 'runtime の準備完了。',
-};
-
-const S = pick(STRINGS, STRINGS_JA);
-
 const outputEl = document.getElementById('output');
 const metaEl = document.getElementById('meta');
 const reproCodeEl = document.getElementById('repro-code');
@@ -118,20 +66,6 @@ if (!reproCodeEl.firstChild) {
       if (html) reproCodeEl.innerHTML = html;
     })
     .catch(() => {});
-}
-
-function emitProgress(pct: number, stage: ProgressStage): void {
-  const loaded = stage === 'ready' ? ESTIMATED_MB : 0;
-  document.dispatchEvent(
-    new CustomEvent('vh-progress', {
-      detail: {
-        pct,
-        label: S[stage],
-        bytes: `${loaded.toFixed(1)} MB / ${ESTIMATED_MB.toFixed(1)} MB`,
-        stage: stage === 'ready' ? 'packages' : 'runtime',
-      },
-    }),
-  );
 }
 
 function evaluate(result: ReproOutput | null): {
@@ -156,127 +90,57 @@ function evaluate(result: ReproOutput | null): {
   };
 }
 
-function spawnWorker(): Worker {
-  const workerUrl = new URL('./repro.worker.js', import.meta.url);
-  workerUrl.searchParams.set('pyodide', DEFAULT_PYODIDE_VERSION);
-  workerUrl.searchParams.set('packages', WORKER_PACKAGES.join(','));
-  return new Worker(workerUrl, { type: 'module' });
-}
-
-function awaitReady(worker: Worker): Promise<WorkerReady> {
-  return new Promise<WorkerReady>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    const onError = (ev: ErrorEvent): void => {
-      cleanup();
-      reject(new Error(ev.message));
-    };
-    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
-      const msg = ev.data;
-      if (msg.type === 'progress') {
-        setVerdict('pending', S[msg.stage], 'loading');
-        emitProgress(msg.pct, msg.stage);
-        return;
-      }
-      if (msg.type === 'ready') {
-        cleanup();
-        resolve(msg);
-      } else if (msg.type === 'error') {
-        cleanup();
-        reject(new Error(msg.message));
-      }
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
-  });
-}
-
-let runId = 0;
-
-function runInWorker(worker: Worker, source: string): Promise<WorkerRunResult> {
-  const id = ++runId;
-  return new Promise<WorkerRunResult>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    const onError = (ev: ErrorEvent): void => {
-      cleanup();
-      reject(new Error(ev.message));
-    };
-    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
-      const msg = ev.data;
-      if (msg.type !== 'result' && msg.type !== 'error') return;
-      if (msg.id !== id) return;
-      cleanup();
-      if (msg.type === 'result') resolve(msg);
-      else reject(new Error(msg.message));
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
-    worker.postMessage({ type: 'run', id, source });
-  });
-}
-
 interface CaptureResult {
   run: PathACapturedRun;
   parsed: ReproOutput | null;
 }
 
-function toCapture(result: WorkerRunResult): CaptureResult {
-  if (result.error !== null) {
+function toCapture(run: RunResult): CaptureResult {
+  if (run.error !== null) {
     return {
       run: {
         exitCode: 1,
         verdict: 'unreproduced',
-        message: `runtime error: ${result.error}`,
-        stdout: result.stdout,
+        message: `runtime error: ${run.error}`,
+        stdout: run.stdout,
       },
       parsed: null,
     };
   }
-  const ev = evaluate(result.result);
+  const value = run.value;
+  const parsed =
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as ReproOutput)
+      : null;
+  const ev = evaluate(parsed);
   return {
     run: {
-      exitCode: result.result ? 0 : 1,
+      exitCode: parsed ? 0 : 1,
       verdict: ev.verdict,
       message: ev.message,
-      stdout: result.stdout,
+      stdout: run.stdout,
     },
-    parsed: result.result,
+    parsed,
   };
 }
 
 async function captureIn(
-  worker: Worker,
+  worker: PyodideWorker,
   source: string,
 ): Promise<CaptureResult> {
-  try {
-    return toCapture(await runInWorker(worker, source));
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      run: {
-        exitCode: 1,
-        verdict: 'unreproduced',
-        message: `runtime error: ${message}`,
-        stdout: message,
-      },
-      parsed: null,
-    };
-  }
+  return toCapture(await worker.run(source));
 }
 
 const startedAt = new Date();
 
 try {
-  setVerdict('pending', S.init, 'loading');
-  emitProgress(5, 'init');
-
-  const worker = spawnWorker();
-  const ready = await awaitReady(worker);
+  const worker = await startPyodideWorker({
+    packages: ['pandas'],
+    runtimeLabel: {
+      en: 'Loading runtime + pandas…',
+      ja: 'runtime と pandas を読み込み中…',
+    },
+  });
 
   setVerdict('pending', 'Running reproduction script…', 'running');
   const baseline = await captureIn(worker, REPRO_CODE);
@@ -290,7 +154,7 @@ try {
 
   metaEl.textContent =
     `pandas ${baselineResult.pandas_version} on Python ${baselineResult.python_version} ` +
-    `via Pyodide v${ready.pyodideVersion} (Web Worker).`;
+    `via Pyodide v${worker.pyodideVersion} (Web Worker).`;
 
   const finishedAt = new Date();
   const envelope: VivariumResultV1 = {
@@ -302,7 +166,7 @@ try {
     },
     runtime: {
       name: 'pyodide',
-      version: ready.pyodideVersion,
+      version: worker.pyodideVersion,
       extras: {
         python: baselineResult.python_version,
         pandas: baselineResult.pandas_version,
