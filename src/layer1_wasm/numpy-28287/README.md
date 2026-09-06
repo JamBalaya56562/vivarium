@@ -38,11 +38,29 @@ contradicts itself is a clear violation.
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.ts`   | **Main-thread driver.** Calls `startPyodideWorker` from [`../_shared/pyodide-worker-client.ts`](../_shared/pyodide-worker-client.ts), which spawns the shared Pyodide worker and relays its progress into the page. Owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css).
+
+## Why the runtime lives in a Web Worker
+
+This page ran Pyodide on the main thread longer than its siblings did.
+At 2.5 s of total main-thread blocking with a 1.9 s worst task it never
+reached the level that had `cpython-137205` and `pandas-56679` offering
+to kill the tab, and moving it then would have meant writing a worker
+file for a problem nobody had reported. Once the worker moved into
+[`../_shared/pyodide-worker.ts`](../_shared/pyodide-worker.ts) that cost
+went away, and this page went with it: **2.5 s of blocking became 82 ms**.
+
+The worker is shared by every Pyodide recipe — a recipe does not ship
+one of its own, so there is nothing to forget. It imports nothing from
+the rest of `../_shared/`: `_shared/verdict.ts` pulls in
+`_assets/chrome.js`, which touches `document` at module-evaluation time
+and would throw inside a worker. Everything DOM-bound — the verdict
+pill, the envelope, the pane, the progress bar — stays on the main
+thread.
 
 ## Verdict contract — `vivarium-contract: v1`
 

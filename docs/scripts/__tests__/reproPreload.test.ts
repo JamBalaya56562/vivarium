@@ -49,9 +49,8 @@ describe('runtime shells — preloaded modules come from the backing loader', ()
     const loaderFile = LOADER_FOR_RUNTIME[runtime];
     const hrefs = modulePreloadHrefs(shell.preload);
 
-    test(`${runtime} maps to a known loader and preloads a module`, () => {
+    test(`${runtime} maps to a known loader`, () => {
       expect(loaderFile).toBeDefined();
-      expect(hrefs.length).toBeGreaterThan(0);
     });
 
     if (!loaderFile) continue;
@@ -62,5 +61,17 @@ describe('runtime shells — preloaded modules come from the backing loader', ()
         expect(imported).toContain(href);
       });
     }
+  }
+});
+
+test('pyodide preloads nothing, because it runs in a worker', () => {
+  const shell = runtimeShells().pyodide;
+  expect(shell?.preload).toBe('');
+});
+
+test('every runtime that is not pyodide preloads at least one module', () => {
+  for (const [runtime, shell] of Object.entries(runtimeShells())) {
+    if (runtime === 'pyodide') continue;
+    expect(modulePreloadHrefs(shell.preload).length).toBeGreaterThan(0);
   }
 });

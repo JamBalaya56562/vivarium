@@ -26,10 +26,17 @@ and runner — `bun install`, `bun run build`, `bun run typecheck`.
 | Source (.ts) | Compiled (.js, gitignored) | Purpose |
 | --- | --- | --- |
 | `verdict.ts` | `verdict.js` | `setVerdict()` / `setResult()` + `VivariumResultV1` interface. |
-| `loader.ts` | `loader.js` | `loadVivariumPyodide()` — Pyodide bootstrap with version pin and package preload. |
+| `pyodide-worker-client.ts` | `pyodide-worker-client.js` | `startPyodideWorker()` — spawns the shared worker, drives the progress bar and the pending verdict, and returns `run` / `evaluate` / `install`. Every Pyodide recipe enters the runtime through this; none ships a worker of its own. |
+| `pyodide-worker.ts` | `pyodide-worker.js` | The shared Pyodide worker. Loads the runtime, optionally installs a spec, captures each run's stdout and reads back a named global. Imports nothing else from this directory — `verdict.ts` reaches `_assets/chrome.js`, which touches `document`. |
+| `loader.ts` | `loader.js` | `DEFAULT_PYODIDE_VERSION` (the version the worker and the generated pages both pin to), `totalEstimatedMB()` and `markReproductionDone()`. |
+| `i18n.ts` | `i18n.js` | `pick()` — chooses the English or Japanese variant of a strings object from the page's `lang`. |
+| `php_loader.ts` | `php_loader.js` | `loadVivariumPhp()` — php-wasm bootstrap. |
+| `ruby_loader.ts` | `ruby_loader.js` | `loadVivariumRuby()` — builds the WASI shim, installs a `consolePrinter` that captures stdout, and instantiates the Ruby VM. |
+| `rust_loader.ts` | `rust_loader.js` | `loadVivariumRust()` — WASI shim + a `wasm32-wasip1` artefact, one fresh instance per `run()`. |
 | `fix-candidate.ts` | `fix-candidate.js` | `fetchWheelManifest()` / `resolveFixCandidateSpec()` + `WheelManifest` interface — resolves the CI-built wheel a recipe renders beside its baseline; installing it is the recipe's own job. `dateutil-1478` is the only consumer — `lark-1585` fetches and resolves its manifest inline instead. |
 | `runner.ts` | `runner.js` | `enableRunner()` — Edit/Run/Reset buttons that hand the (possibly edited) source back to the recipe's `captureRun`. |
 | `path_a.ts` | `path_a.js` | `PathACapturedRun` type + the Path A "fix URL?" UI panel. |
+| `page.template.html` | — | Layer 1 page shell the generator fills; see `docs/scripts/generate-repro-pages.ts`. |
 | `_test/repro.ts` | `_test/repro.js` | Smoke test validating the contract-v1 surface (no Pyodide). |
 | `style.css` | — | Shared CSS for the gallery's visual presentation. |
 | `_test/index.html` | — | Smoke test entrypoint. References `./repro.js`. |
