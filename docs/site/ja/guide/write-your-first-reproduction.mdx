@@ -93,19 +93,43 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     eyebrow="// 4 · repro.ts を書き換える"
     heading="再現ロジックだけ差し替える。helper はそのまま。"
   >
-    <p>コピー元の <code>repro.ts</code> は <code>../_shared/loader.js</code> と{' '} <code>../_shared/verdict.js</code> を import している部分が共通骨格です。 ここはそのまま残して、<strong>再現コード本体だけ</strong>差し替えます。 Python レシピなら以下のような形:</p>
+    <p>コピー元の <code>repro.ts</code> は <code>../_shared/verdict.js</code> の verdict helper と、Python レシピなら{' '} <code>../_shared/pyodide-worker-client.js</code> の{' '} <code>startPyodideWorker</code> を import している部分が共通骨格です （Ruby / PHP / Rust はそれぞれ <code>ruby_loader.js</code> /{' '} <code>php_loader.js</code> / <code>rust_loader.js</code>）。 ここはそのまま残して、<strong>再現コード本体だけ</strong>差し替えます。</p>
+    <p>ページを読めるものにするための規則が 2 つあり、どちらも重要です:</p>
+    <ul>
+      <li><strong>普通のコードとして書き、起きたことを <code>print</code> する。</strong> 出力ペインにはスクリプトの実 stdout がそのまま出るので、訪問者はなぜその答えになるのかを読めます。ページに拾わせるための裸の式でスクリプトを終わらせないこと — 誰も読みません。</li>
+      <li><strong>機械可読な値は <code>result</code> という名前のグローバルに残す</strong>（行の並びなら <code>results</code>）。verdict と Contract v1 envelope はここから組み立てられます。</li>
+    </ul>
     <pre><code>{`const REPRO_CODE = \`
 import pandas as pd
 # ↑ 上流バグを表す最小コード
+
+left = ...   # 比較する値 1
+right = ...  # 比較する値 2
+mismatch = left != right
+
 result = {
-  "left": ...,   # 比較する値 1
-  "right": ...,  # 比較する値 2
-  "mismatch": <left> != <right>,
+    "left": left,
+    "right": right,
+    "mismatch": mismatch,
 }
-result
+
+print("left ".ljust(10) + str(left))
+print("right".ljust(10) + str(right))
+print()
+if mismatch:
+    print("The two disagree.")
+else:
+    print("The two agree.")
 \`.trim();
 `}</code></pre>
+    <p>driver は毎回の実行前に <code>result</code> を削除します。訪問者がブラウザ上でスクリプトを編集して代入を消した場合、前回の答えではなく{' '} <code>unreproduced</code> になります。</p>
     <p>verdict 設定は helper が面倒を見ます: 比較が <code>true</code>（バグが再現した）なら <code>setVerdict("reproduced", "...")</code>、そうでなければ <code>setVerdict("unreproduced", "...")</code>。 <code>setResult({`{ contract: "v1", bug, runtime, result, timing }`})</code>{' '} で <code>__VIVARIUM_RESULT__</code> envelope も書き出されます。</p>
+    <Callout>
+      Pyodide は全 Python レシピが共有する Web Worker で動くので、起動が
+      ページを固めることはありません。worker ファイルを書く必要もありません。{' '}
+      <code>startPyodideWorker</code> がそれを起動し、<code>run</code> /{' '}
+      <code>evaluate</code> / <code>install</code> を返します。
+    </Callout>
   </Section>
 
   <Section
@@ -138,9 +162,18 @@ python -m http.server -d src/layer1_wasm/<あなたの slug> 8765
 # requires-python = ">=3.14"
 # dependencies = ["pandas==2.3.3"]
 # ///
-import pandas as pd
-# … 同じ再現ロジック …
+"""… どんなバグで、このファイルをどう走らせるか …"""
+
+# ← ここの本体は REPRO_CODE と 1 文字も違わない同じテキスト
+
+if mismatch:
+    print("verdict=reproduced — …", file=sys.stderr)
+    sys.exit(0)
+else:
+    print("verdict=unreproduced — …", file=sys.stderr)
+    sys.exit(1)
 `}</code></pre>
+    <p>本体は <code>REPRO_CODE</code> と<strong>同一</strong>に保ちます。 追加してよいのは PEP 723 ヘッダ、docstring、<code>verdict=</code> 行と exit code だけです。 これがあって初めて native 実行はブラウザ側の検算になり、似ているだけの別スクリプトになりません。 native ファイルにリポジトリの formatter をかけ、その結果を文字列リテラル側にも反映してください。 さもないと次の autofix で 2 つが乖離します。</p>
     <p><code>mise exec uv -- uv run repro.py</code> で ephemeral venv が組まれて走ります。Ruby、PHP、Rust も同様で、既存レシピの <code>repro.rb</code> / <code>repro.php</code> / <code>Cargo.toml</code>{' '} が雛形になります。</p>
   </Section>
 
