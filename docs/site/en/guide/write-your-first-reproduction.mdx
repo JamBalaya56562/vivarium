@@ -174,7 +174,12 @@ else:
     sys.exit(1)
 `}</code></pre>
     <p>Keep the body <strong>identical</strong> to <code>REPRO_CODE</code>. Only the PEP 723 header, the docstring, and the{' '} <code>verdict=</code> line plus exit code are extra — that is what makes the native run a check on the browser one rather than a second script that merely looks similar. Run the repo's formatter over the native file and mirror whatever it does back into the string literal, or the next autofix pass will drift them apart.</p>
-    <p><code>mise exec uv -- uv run repro.py</code> spins up an ephemeral venv and runs it. Ruby, PHP, and Rust use the same pattern — existing recipes' <code>repro.rb</code> /{' '} <code>repro.php</code> / <code>Cargo.toml</code> are good starting points.</p>
+    <p><code>mise exec uv -- uv run repro.py</code> spins up an ephemeral venv and runs it. The other languages share the idea, not the mechanism:</p>
+    <ul>
+      <li><strong>Ruby</strong> — a plain <code>repro.rb</code> the interpreter runs; there is no PEP 723 equivalent. Run it with{' '} <code>mise run repro:native:ruby</code> rather than{' '} <code>mise exec ruby</code>, because the version pin lives on the task. See <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" /></code>.</li>
+      <li><strong>Rust</strong> — no companion file at all. The crate that compiles to <code>repro.wasm</code> <em>is</em> the native CLI, so{' '} <code>mise run repro:native:rust</code> runs the same{' '} <code>src/repro.rs</code> the page runs. See{' '} <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" /></code>.</li>
+    </ul>
+    <p><code>mise run repro:native</code> runs all of them. No php-wasm recipe has been authored yet, so there is no <code>repro.php</code> to copy —{' '} <code>_shared/php_loader.ts</code> is in place for whoever writes the first one.</p>
   </Section>
 
   <Section

@@ -174,7 +174,12 @@ else:
     sys.exit(1)
 `}</code></pre>
     <p>本体は <code>REPRO_CODE</code> と<strong>同一</strong>に保ちます。 追加してよいのは PEP 723 ヘッダ、docstring、<code>verdict=</code> 行と exit code だけです。 これがあって初めて native 実行はブラウザ側の検算になり、似ているだけの別スクリプトになりません。 native ファイルにリポジトリの formatter をかけ、その結果を文字列リテラル側にも反映してください。 さもないと次の autofix で 2 つが乖離します。</p>
-    <p><code>mise exec uv -- uv run repro.py</code> で ephemeral venv が組まれて走ります。Ruby、PHP、Rust も同様で、既存レシピの <code>repro.rb</code> / <code>repro.php</code> / <code>Cargo.toml</code>{' '} が雛形になります。</p>
+    <p><code>mise exec uv -- uv run repro.py</code> で ephemeral venv が組まれて走ります。他の言語も考え方は同じですが、仕組みは共有していません:</p>
+    <ul>
+      <li><strong>Ruby</strong> — インタプリタがそのまま走らせる <code>repro.rb</code> で、PEP 723 に相当するものはありません。 <code>mise exec ruby</code> ではなく{' '} <code>mise run repro:native:ruby</code> で実行してください。 バージョンのピンがタスク側にあるためです。 <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" /></code> を参照。</li>
+      <li><strong>Rust</strong> — コンパニオンファイルはありません。<code>repro.wasm</code> にコンパイルされる crate <em>そのもの</em>が native CLI なので、{' '} <code>mise run repro:native:rust</code> はページが走らせるのと同じ{' '} <code>src/repro.rs</code> を実行します。 <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" /></code> を参照。</li>
+    </ul>
+    <p><code>mise run repro:native</code> で全部まとめて走ります。 php-wasm のレシピはまだ書かれていないので、雛形にする <code>repro.php</code> は存在しません。 <code>_shared/php_loader.ts</code> は最初の 1 本を書く人のために用意されています。</p>
   </Section>
 
   <Section
