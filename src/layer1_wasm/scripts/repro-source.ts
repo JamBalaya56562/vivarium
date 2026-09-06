@@ -24,7 +24,7 @@ export function extractTemplateLiteral(
   name: string,
 ): string | null {
   const re = new RegExp(
-    `const\\s+${name}\\s*=\\s*(String\\.raw)?\\s*\`([\\s\\S]*?)\``,
+    `const\\s+${name}\\s*=\\s*(String\\.raw)?\\s*\`((?:\\\\[\\s\\S]|[^\\\\\`])*)\``,
     'm',
   );
   const m = src.match(re);
