@@ -93,19 +93,43 @@ import { ExampleSlug } from '../../_components/LiveExamples';
     eyebrow="// 4 · EDIT REPRO.TS"
     heading="Swap the reproduction logic; keep the helpers."
   >
-    <p>The copied <code>repro.ts</code> imports from{' '} <code>../_shared/loader.js</code> and{' '} <code>../_shared/verdict.js</code>. Leave that frame alone and swap only the <strong>reproduction body</strong>. For a Python recipe:</p>
+    <p>The copied <code>repro.ts</code> imports the verdict helpers from{' '} <code>../_shared/verdict.js</code> and, for a Python recipe,{' '} <code>startPyodideWorker</code> from{' '} <code>../_shared/pyodide-worker-client.js</code> (Ruby, PHP and Rust use{' '} <code>ruby_loader.js</code>, <code>php_loader.js</code> and{' '} <code>rust_loader.js</code> instead). Leave that frame alone and swap only the <strong>reproduction body</strong>.</p>
+    <p>Two rules make the page readable, and both matter:</p>
+    <ul>
+      <li><strong>Write ordinary code and <code>print</code> what happened.</strong> The output pane shows the script's real stdout, so a visitor can see why the answer is what it is. Do not end the script in a bare expression for the page to pick up — nothing reads it.</li>
+      <li><strong>Leave the machine-readable values in a global named <code>result</code></strong> (or <code>results</code> for a list of rows). That is what the verdict and the Contract v1 envelope are built from.</li>
+    </ul>
     <pre><code>{`const REPRO_CODE = \`
 import pandas as pd
 # ↑ minimum code that exercises the upstream bug
+
+left = ...   # value 1
+right = ...  # value 2
+mismatch = left != right
+
 result = {
-  "left": ...,   # value 1
-  "right": ...,  # value 2
-  "mismatch": <left> != <right>,
+    "left": left,
+    "right": right,
+    "mismatch": mismatch,
 }
-result
+
+print("left ".ljust(10) + str(left))
+print("right".ljust(10) + str(right))
+print()
+if mismatch:
+    print("The two disagree.")
+else:
+    print("The two agree.")
 \`.trim();
 `}</code></pre>
+    <p>The driver deletes <code>result</code> before every run, so a visitor who edits the script in the browser and removes the assignment gets{' '} <code>unreproduced</code> rather than the previous run's answer.</p>
     <p>The helpers handle the verdict wiring: if the comparison is{' '} <code>true</code> (bug reproduced), call{' '} <code>setVerdict("reproduced", "...")</code>; otherwise{' '} <code>setVerdict("unreproduced", "...")</code>.{' '} <code>setResult({`{ contract: "v1", bug, runtime, result, timing }`})</code>{' '} writes the <code>__VIVARIUM_RESULT__</code> envelope.</p>
+    <Callout>
+      Pyodide runs in a Web Worker shared by every Python recipe, so
+      booting it never freezes the page — and there is no worker file to
+      write. <code>startPyodideWorker</code> spawns it and returns{' '}
+      <code>run</code> / <code>evaluate</code> / <code>install</code>.
+    </Callout>
   </Section>
 
   <Section
@@ -138,9 +162,18 @@ python -m http.server -d src/layer1_wasm/<your-slug> 8765
 # requires-python = ">=3.14"
 # dependencies = ["pandas==2.3.3"]
 # ///
-import pandas as pd
-# … same reproduction logic …
+"""… what the bug is, and how to run this file …"""
+
+# ← the body here is the same text as REPRO_CODE, character for character
+
+if mismatch:
+    print("verdict=reproduced — …", file=sys.stderr)
+    sys.exit(0)
+else:
+    print("verdict=unreproduced — …", file=sys.stderr)
+    sys.exit(1)
 `}</code></pre>
+    <p>Keep the body <strong>identical</strong> to <code>REPRO_CODE</code>. Only the PEP 723 header, the docstring, and the{' '} <code>verdict=</code> line plus exit code are extra — that is what makes the native run a check on the browser one rather than a second script that merely looks similar. Run the repo's formatter over the native file and mirror whatever it does back into the string literal, or the next autofix pass will drift them apart.</p>
     <p><code>mise exec uv -- uv run repro.py</code> spins up an ephemeral venv and runs it. Ruby, PHP, and Rust use the same pattern — existing recipes' <code>repro.rb</code> /{' '} <code>repro.php</code> / <code>Cargo.toml</code> are good starting points.</p>
   </Section>
 
