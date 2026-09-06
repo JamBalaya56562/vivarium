@@ -38,7 +38,7 @@ contradicts itself is a clear violation.
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. |
-| `repro.ts`   | TypeScript source. Imports `loadVivariumPyodide` and the verdict helpers from `../_shared/`. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.ts`   | **Main-thread driver.** Calls `startPyodideWorker` from [`../_shared/pyodide-worker-client.ts`](../_shared/pyodide-worker-client.ts), which spawns the shared Pyodide worker and relays its progress into the page. Owns the verdict, the Contract v1 envelope and the output pane. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
 | `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 

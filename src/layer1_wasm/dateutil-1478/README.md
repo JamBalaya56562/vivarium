@@ -39,9 +39,8 @@ signed-offset code path. Both the short (`-4`) and the long
 | File         | Role                                                              |
 | ------------ | ----------------------------------------------------------------- |
 | `index.html` | Static page; declares `<meta name="vivarium-contract" content="v1">`. Renders baseline + fix-candidate output panes side-by-side. |
-| `repro.ts`   | **Main-thread driver.** Spawns one Pyodide Web Worker per variant, relays their progress into the page's progress bar, and owns the verdict, the Contract v1 envelope and both output panes. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
-| `repro.worker.ts` | **Worker source.** Loads Pyodide and installs the spec passed on the worker URL's query string (`python-dateutil==2.9.0.post0` for baseline, the wheel URL for the fix candidate), then runs the reproduction script and reports its stdout and its `results` list back. |
-| `repro.js` / `repro.worker.js` | Generated; gitignored. Loaded by `index.html` at runtime. |
+| `repro.ts`   | **Main-thread driver.** Calls `startPyodideWorker` from [`../_shared/pyodide-worker-client.ts`](../_shared/pyodide-worker-client.ts), which spawns the shared Pyodide worker and relays its progress into the page. Owns the verdict, the Contract v1 envelope and both output panes. Compiled to `repro.js` by `bun run build` from `src/layer1_wasm/`. |
+| `repro.js`   | Generated; gitignored. Loaded by `index.html` at runtime.         |
 | `repro.py`   | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. See "Native verification" below. |
 | `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `scripts/build-layer1-wheels.sh`. |
 | `wheels/`    | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `python_dateutil-<version>-py2.py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load, resolves the wheel URL, and hands it to a second worker. |
@@ -106,14 +105,18 @@ total main-thread blocking with a 15.0 s worst task on the deployed
 page. Moving both into a worker takes the same page to a few hundred
 milliseconds.
 
-There are two workers, and they differ in lifetime. The **baseline**
-worker is kept alive for the whole page, because `enableRunner`'s Run
-button re-runs the visitor's edited script inside it; it never has the
-fix-candidate wheel installed, so Run always exercises the buggy
-version. The **fix-candidate** worker is spawned after the baseline
-verdict settles and terminated as soon as its pane is filled.
+One worker serves both panes. A second worker would mean a second
+Pyodide — another download, another WASM compile, another micropip — and
+when this page shipped that, the fix-candidate pane took 45.5 s to
+appear. Swapping the wheel inside the one worker (`micropip.uninstall` +
+`install`, purging `sys.modules` between, or the old module stays
+imported) brought it to a few seconds. The baseline spec is reinstalled
+afterwards, so `enableRunner`'s Run button always exercises the buggy
+version.
 
-The worker imports nothing from `../_shared/`: `_shared/verdict.ts`
+The worker itself is [`../_shared/pyodide-worker.ts`](../_shared/pyodide-worker.ts),
+shared by every Pyodide recipe. It imports nothing from the rest of
+`../_shared/`: `_shared/verdict.ts`
 pulls in `_assets/chrome.js`, which touches `document` at module
 evaluation time and would throw inside a worker. Everything DOM-bound —
 the verdict pill, the envelope, the panes, the progress bar, the i18n —

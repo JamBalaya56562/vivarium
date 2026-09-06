@@ -7,11 +7,10 @@ const workerScope = self as unknown as {
   location: { href: string };
 };
 
-interface MainMessage {
-  type: 'run';
-  id: number;
-  source: string;
-}
+type MainMessage =
+  | { type: 'run'; id: number; source: string }
+  | { type: 'eval'; id: number; source: string }
+  | { type: 'install'; id: number; spec: string };
 
 interface PyProxy {
   toJs(opts: { dict_converter: typeof Object.fromEntries }): unknown;
@@ -38,6 +37,10 @@ interface PyodideModule {
 const params = new URL(workerScope.location.href).searchParams;
 const PYODIDE_VERSION = params.get('pyodide') ?? '';
 const PACKAGES = (params.get('packages') ?? '').split(',').filter(Boolean);
+const INSTALL_SPEC = params.get('spec') ?? '';
+const PIP_PACKAGE = params.get('pip') ?? '';
+const ROOT_MODULE = params.get('module') ?? '';
+const RESULT_GLOBAL = params.get('global') ?? 'result';
 
 function progress(pct: number, stage: string): void {
   workerScope.postMessage({ type: 'progress', pct, stage });
@@ -55,14 +58,35 @@ function isPyProxy(value: unknown): value is PyProxy {
   );
 }
 
-function readResult(runtime: PyodideRuntime): unknown {
-  const handle = runtime.globals.get('result');
+function toJs(handle: unknown): unknown {
   if (!isPyProxy(handle)) return null;
   try {
     return handle.toJs({ dict_converter: Object.fromEntries });
   } finally {
     handle.destroy?.();
   }
+}
+
+function installSource(spec: string): string {
+  const lines = ['import micropip, sys'];
+  if (PIP_PACKAGE) {
+    lines.push(
+      'try:',
+      `    await micropip.uninstall(${JSON.stringify(PIP_PACKAGE)})`,
+      'except Exception:',
+      '    pass',
+    );
+  }
+  if (ROOT_MODULE) {
+    const prefix = JSON.stringify(`${ROOT_MODULE}.`);
+    lines.push(
+      `_stale = [n for n in list(sys.modules) if n == ${JSON.stringify(ROOT_MODULE)} or n.startswith(${prefix})]`,
+      'for _name in _stale:',
+      '    del sys.modules[_name]',
+    );
+  }
+  lines.push(`await micropip.install(${JSON.stringify(spec)})`);
+  return lines.join('\n');
 }
 
 async function bootstrap(): Promise<PyodideRuntime> {
@@ -78,16 +102,31 @@ async function bootstrap(): Promise<PyodideRuntime> {
     packages: PACKAGES,
   });
 
+  if (INSTALL_SPEC) {
+    progress(70, 'installing-package');
+    await runtime.runPythonAsync(installSource(INSTALL_SPEC));
+  }
+
   progress(92, 'ready');
   return runtime;
 }
 
 let runtimeRef: PyodideRuntime | null = null;
 
-async function runOnce(
+function reply(
+  id: number,
+  stdout: string,
+  value: unknown,
+  error: string | null,
+): void {
+  workerScope.postMessage({ type: 'result', id, stdout, value, error });
+}
+
+async function capture(
   runtime: PyodideRuntime,
   id: number,
   source: string,
+  read: (returned: unknown) => unknown,
 ): Promise<void> {
   const lines: string[] = [];
   runtime.setStdout({
@@ -95,39 +134,45 @@ async function runOnce(
       lines.push(text);
     },
   });
-  // One Pyodide namespace spans every run: an edited script that never
-  // assigns `result` would otherwise be judged on the previous run's values.
-  if (runtime.globals.has('result')) runtime.globals.delete('result');
 
   try {
-    await runtime.runPythonAsync(source);
-    workerScope.postMessage({
-      type: 'result',
-      id,
-      stdout: lines.join('\n'),
-      result: readResult(runtime),
-      error: null,
-    });
+    const returned = await runtime.runPythonAsync(source);
+    reply(id, lines.join('\n'), read(returned), null);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    workerScope.postMessage({
-      type: 'result',
-      id,
-      stdout: [...lines, message].join('\n'),
-      result: null,
-      error: message,
-    });
+    reply(id, [...lines, message].join('\n'), null, message);
   }
+}
+
+function handle(runtime: PyodideRuntime, msg: MainMessage): void {
+  if (msg.type === 'run') {
+    // One Pyodide namespace spans every run: an edited script that never
+    // assigns the global would otherwise be judged on the previous run's values.
+    if (runtime.globals.has(RESULT_GLOBAL)) {
+      runtime.globals.delete(RESULT_GLOBAL);
+    }
+    void capture(runtime, msg.id, msg.source, () =>
+      toJs(runtime.globals.get(RESULT_GLOBAL)),
+    );
+    return;
+  }
+  if (msg.type === 'eval') {
+    void capture(runtime, msg.id, msg.source, (returned) => toJs(returned));
+    return;
+  }
+  void capture(runtime, msg.id, installSource(msg.spec), () => null);
 }
 
 workerScope.addEventListener('message', (ev: MessageEvent<MainMessage>) => {
   const msg = ev.data;
-  if (msg?.type !== 'run') return;
-  if (runtimeRef === null) {
-    fail('worker received a run request before the runtime was ready.', msg.id);
+  if (msg?.type !== 'run' && msg?.type !== 'eval' && msg?.type !== 'install') {
     return;
   }
-  void runOnce(runtimeRef, msg.id, msg.source);
+  if (runtimeRef === null) {
+    fail('worker received a request before the runtime was ready.', msg.id);
+    return;
+  }
+  handle(runtimeRef, msg);
 });
 
 if (!PYODIDE_VERSION) {
