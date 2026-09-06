@@ -17,7 +17,7 @@ interface RecipeIndexEntry {
   title: string;
 }
 
-interface RuntimeShell {
+export interface RuntimeShell {
   preconnect: string;
   preload: string;
   kicker: string;
@@ -59,13 +59,18 @@ const RUNTIME_VERSIONS: Record<string, string> = {
     'rust_loader.ts',
     'DEFAULT_WASI_SHIM_VERSION',
   ),
+  RUBY_WASI_SHIM_VERSION: loaderConstant(
+    'ruby_loader.ts',
+    'DEFAULT_WASI_SHIM_VERSION',
+  ),
 };
 
-function runtimeShells(): Record<string, RuntimeShell> {
+export function runtimeShells(): Record<string, RuntimeShell> {
   const pyodide = RUNTIME_VERSIONS.PYODIDE_VERSION as string;
   const php = RUNTIME_VERSIONS.PHP_WASM_VERSION as string;
   const ruby = RUNTIME_VERSIONS.RUBY_WASM_VERSION as string;
   const wasi = RUNTIME_VERSIONS.WASI_SHIM_VERSION as string;
+  const rubyWasi = RUNTIME_VERSIONS.RUBY_WASI_SHIM_VERSION as string;
   const pyodideBase = `https://cdn.jsdelivr.net/pyodide/v${pyodide}/full`;
   return {
     pyodide: {
@@ -89,9 +94,14 @@ function runtimeShells(): Record<string, RuntimeShell> {
     },
     'ruby.wasm': {
       preconnect: CDN_PRECONNECT,
-      preload: modulePreload(
-        `https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@${ruby}/dist/browser/+esm`,
-      ),
+      preload: [
+        modulePreload(
+          `https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@${ruby}/+esm`,
+        ),
+        modulePreload(
+          `https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@${rubyWasi}/dist/index.js`,
+        ),
+      ].join('\n'),
       kicker: 'L1 · Ruby.wasm',
       verdictPending: 'Loading Ruby.wasm runtime…',
     },
@@ -336,12 +346,14 @@ function renderLayer2(): void {
   }
 }
 
-renderLayer1();
-renderLayer2();
+if (import.meta.main) {
+  renderLayer1();
+  renderLayer2();
 
-console.log(`[generate-repro-pages] wrote ${written} reproduction page(s).`);
-if (unhighlighted.length > 0) {
-  console.warn(
-    `[generate-repro-pages] plain source inlined for ${unhighlighted.join(', ')} — run \`mise run repro:build:ts\` to render the highlighted version.`,
-  );
+  console.log(`[generate-repro-pages] wrote ${written} reproduction page(s).`);
+  if (unhighlighted.length > 0) {
+    console.warn(
+      `[generate-repro-pages] plain source inlined for ${unhighlighted.join(', ')} — run \`mise run repro:build:ts\` to render the highlighted version.`,
+    );
+  }
 }
