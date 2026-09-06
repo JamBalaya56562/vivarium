@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "language": "ruby",
-  "symptom": "unicode-normalize-nfd",
+  "symptom": "regexp-interpolation-encoding-mismatch",
   "severity": "bug",
-  "tags": ["string", "unicode", "combining-diacritics"],
+  "tags": ["regexp", "string-interpolation", "encoding", "onigmo"],
   "expected_verdict": "reproduced",
   "expected_runtime": "ruby.wasm"
 }
