@@ -28,7 +28,7 @@ and runner — `bun install`, `bun run build`, `bun run typecheck`.
 | `verdict.ts` | `verdict.js` | `setVerdict()` / `setResult()` + `VivariumResultV1` interface. |
 | `pyodide-worker-client.ts` | `pyodide-worker-client.js` | `startPyodideWorker()` — spawns the shared worker, drives the progress bar and the pending verdict, and returns `run` / `evaluate` / `install`. Every Pyodide recipe enters the runtime through this; none ships a worker of its own. |
 | `pyodide-worker.ts` | `pyodide-worker.js` | The shared Pyodide worker. Loads the runtime, optionally installs a spec, captures each run's stdout and reads back a named global. Imports nothing else from this directory — `verdict.ts` reaches `_assets/chrome.js`, which touches `document`. |
-| `loader.ts` | `loader.js` | `DEFAULT_PYODIDE_VERSION` (the version the worker and the generated pages both pin to), `totalEstimatedMB()` and `markReproductionDone()`. |
+| `loader.ts` | `loader.js` | `DEFAULT_PYODIDE_VERSION` (the version the worker and the generated pages both pin to) and `totalEstimatedMB()`. |
 | `i18n.ts` | `i18n.js` | `pick()` — chooses the English or Japanese variant of a strings object from the page's `lang`. |
 | `php_loader.ts` | `php_loader.js` | `loadVivariumPhp()` — php-wasm bootstrap. |
 | `ruby_loader.ts` | `ruby_loader.js` | `loadVivariumRuby()` — builds the WASI shim, installs a `consolePrinter` that captures stdout, and instantiates the Ruby VM. |
