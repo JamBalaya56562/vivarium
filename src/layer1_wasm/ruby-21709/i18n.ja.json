@@ -20,7 +20,7 @@
     "page.title": "Vivarium · ruby/ruby#21709 の再現",
     "verdict.pending": "Ruby.wasm runtime を読み込み中…",
     "drawer.body.p1": "Ruby の Regexp の式展開はエンコーディングの異なる断片を拒否するのに、String の式展開は黙って UTF-8 に昇格させる。{0} と {1} を使うと、{2} は {3} を送出する一方で {4} は UTF-8 の文字列を組み立てる。",
-    "drawer.body.p2": "2 つの式展開は、エンコーディングの異なる断片をどう結合するかで一致すべき。このページのスクリプトは両方を試し、それぞれが例外を送出したかを記録して、verdict のロジックが reproduced か unreproduced かを決めるのに使う JSON サマリを返す。",
+    "drawer.body.p2": "2 つの式展開は、エンコーディングの異なる断片をどう結合するかで一致すべき。このページのスクリプトは両方を試してそれぞれの結果を印字し、verdict のロジックは同じ観測値をスクリプトが残した {0} ハッシュから読み戻す。",
     "drawer.body.p3": "議論の全体（動機、fix の進捗）は下の GitHub issue スレッドにある。",
     "runner.edit": "編集",
     "runner.run": "実行",
