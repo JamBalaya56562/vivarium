@@ -40,12 +40,12 @@ const STRINGS = {
       waiting: 'waiting for both transactions to commit…',
     },
     ruby: {
-      eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · UNICODE',
+      eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · ENCODING',
       title: 'Reproducing ruby/ruby#21709',
-      lede: 'String#unicode_normalize edge case for combining diacritics in NFD form.',
+      lede: 'Regexp interpolation rejects the mixed encodings that String interpolation silently upgrades.',
       verdictText: '✓ REPRODUCED — bug reproduced',
       tabVerified: 'verified',
-      okLine: 'round-trip lost (RuntimeError raised as expected)',
+      okLine: 'Regexp raised RegexpError; String built UTF-8',
       verdictTrace:
         'verdict: REPRODUCED — issue#21709 reproducible in ruby.wasm',
     },
@@ -84,12 +84,12 @@ const STRINGS = {
       waiting: '両トランザクションのコミットを待機中…',
     },
     ruby: {
-      eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · UNICODE',
+      eyebrow: 'VIVARIUM · LAYER 1 · RUBY.WASM · ENCODING',
       title: 'ruby/ruby#21709 を再現',
-      lede: 'NFD 形式の結合ダイアクリティカル記号における String#unicode_normalize のエッジケース。',
+      lede: 'String の式展開が黙って昇格させるエンコーディングの混在を、Regexp の式展開は拒否する。',
       verdictText: '✓ REPRODUCED — バグ再現',
       tabVerified: '検証済み',
-      okLine: 'round-trip lost (RuntimeError を期待通り raise)',
+      okLine: 'Regexp は RegexpError を raise、String は UTF-8 で構築',
       verdictTrace: 'verdict: REPRODUCED — issue#21709 が ruby.wasm で再現可能',
     },
   },
@@ -291,20 +291,22 @@ const RubyInner = ({ s }: { s: typeof STRINGS.en }) => (
       <div className="v-code">
         <span className="v-code__comment"># repro.rb</span>
         <span className="v-code__line">
-          s = <span className="v-code__str">"café"</span>
+          prefix ={' '}
+          <span className="v-code__str">'\p&#123;In_Arabic&#125;'</span>
         </span>
         <span className="v-code__line">
-          nfd = s.unicode_normalize(
-          <span className="v-code__str">:nfd</span>)
+          suffix = prefix.encode(
+          <span className="v-code__str">'US-ASCII'</span>)
         </span>
         <span className="v-code__line">
-          back = nfd.unicode_normalize(
-          <span className="v-code__str">:nfc</span>)
+          re = /<span className="v-code__str">#&#123;prefix&#125;</span>
+          <span className="v-code__str">#&#123;suffix&#125;</span>/
         </span>
         <span className="v-code__line">
-          <span className="v-code__kw">raise</span>{' '}
-          <span className="v-code__str">"round-trip lost"</span>{' '}
-          <span className="v-code__kw">unless</span> s == back
+          str ={' '}
+          <span className="v-code__str">
+            "#&#123;prefix&#125;#&#123;suffix&#125;"
+          </span>
         </span>
       </div>
 
