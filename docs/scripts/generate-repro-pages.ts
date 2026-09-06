@@ -66,21 +66,14 @@ const RUNTIME_VERSIONS: Record<string, string> = {
 };
 
 export function runtimeShells(): Record<string, RuntimeShell> {
-  const pyodide = RUNTIME_VERSIONS.PYODIDE_VERSION as string;
   const php = RUNTIME_VERSIONS.PHP_WASM_VERSION as string;
   const ruby = RUNTIME_VERSIONS.RUBY_WASM_VERSION as string;
   const wasi = RUNTIME_VERSIONS.WASI_SHIM_VERSION as string;
   const rubyWasi = RUNTIME_VERSIONS.RUBY_WASI_SHIM_VERSION as string;
-  const pyodideBase = `https://cdn.jsdelivr.net/pyodide/v${pyodide}/full`;
   return {
     pyodide: {
       preconnect: CDN_PRECONNECT,
-      preload: [
-        `    <link rel="preload" href="${pyodideBase}/pyodide.asm.wasm" as="fetch" type="application/wasm" crossorigin />`,
-        `    <link rel="preload" href="${pyodideBase}/python_stdlib.zip" as="fetch" crossorigin />`,
-        `    <link rel="preload" href="${pyodideBase}/pyodide-lock.json" as="fetch" type="application/json" crossorigin />`,
-        modulePreload(`${pyodideBase}/pyodide.mjs`),
-      ].join('\n'),
+      preload: '',
       kicker: 'L1 · Pyodide',
       verdictPending: 'Loading Pyodide runtime…',
     },
@@ -211,8 +204,8 @@ const RUNNER_BUTTONS: ReadonlyArray<readonly [string, string, string, string]> =
     ],
   ];
 
-function runtimeHead(recipeDir: string, shell: RuntimeShell): string {
-  if (existsSync(join(recipeDir, 'repro.worker.ts'))) return shell.preconnect;
+function runtimeHead(shell: RuntimeShell): string {
+  if (!shell.preload) return shell.preconnect;
   return `${shell.preconnect}\n${shell.preload}`;
 }
 
@@ -301,7 +294,7 @@ function renderLayer1(): void {
       TITLE: entry.title,
       PROJECT: entry.title.split('#')[0] as string,
       ISSUE: String(entry.issue),
-      RUNTIME_HEAD: runtimeHead(dir, shell),
+      RUNTIME_HEAD: runtimeHead(shell),
       RUNTIME_LABEL: expandVersions(
         slots['runtime-label'] ?? '',
         RUNTIME_VERSIONS,

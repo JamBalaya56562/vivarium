@@ -3,12 +3,12 @@ import {
   resolveFixCandidateSpec,
   type WheelManifest,
 } from '../_shared/fix-candidate.js';
-import { pick } from '../_shared/i18n.js';
-import {
-  DEFAULT_PYODIDE_VERSION,
-  totalEstimatedMB,
-} from '../_shared/loader.js';
 import type { PathACapturedRun } from '../_shared/path_a.js';
+import {
+  type PyodideWorker,
+  type RunResult,
+  startPyodideWorker,
+} from '../_shared/pyodide-worker-client.js';
 import { enableRunner } from '../_shared/runner.js';
 import {
   setResult,
@@ -60,6 +60,11 @@ print(f"{flipped} of {len(results)} UTC-prefixed offsets came back negated.")
 print(f"python-dateutil {dateutil.__version__} / Python {sys.version.split()[0]}")
 `.trim();
 
+const VERSION_QUERY =
+  'import dateutil, sys; [dateutil.__version__, sys.version.split()[0]]';
+
+const BASELINE_SPEC = 'python-dateutil==2.9.0.post0';
+
 interface CaseObservation {
   input: string;
   expected_offset_seconds: number;
@@ -74,82 +79,10 @@ interface ReproOutput {
   reproduced: boolean;
 }
 
-interface WorkerProgress {
-  type: 'progress';
-  pct: number;
-  stage: ProgressStage;
-}
-
-interface WorkerReady {
-  type: 'ready';
-  pyodideVersion: string;
-  dateutilVersion: string;
-  pythonVersion: string;
-}
-
-interface WorkerRunResult {
-  type: 'result';
-  id: number;
-  stdout: string;
-  cases: CaseObservation[] | null;
-  error: string | null;
-  dateutilVersion: string;
-  pythonVersion: string;
-}
-
-interface WorkerInstalled {
-  type: 'installed';
-  id: number;
-  dateutilVersion: string;
-  pythonVersion: string;
-}
-
-interface WorkerError {
-  type: 'error';
-  id?: number;
-  message: string;
-}
-
-type WorkerMessage =
-  | WorkerProgress
-  | WorkerReady
-  | WorkerRunResult
-  | WorkerInstalled
-  | WorkerError;
-
-type ProgressStage =
-  | 'init'
-  | 'fetching-module'
-  | 'loading-runtime'
-  | 'installing-package'
-  | 'ready';
-
 interface CaptureResult {
   run: PathACapturedRun;
   parsed: ReproOutput | null;
 }
-
-const BASELINE_SPEC = 'python-dateutil==2.9.0.post0';
-const WORKER_PACKAGES = ['micropip'];
-const ESTIMATED_MB = totalEstimatedMB(WORKER_PACKAGES.length);
-
-const STRINGS: Record<ProgressStage, string> = {
-  init: 'Starting Pyodide worker…',
-  'fetching-module': 'Fetching Pyodide module…',
-  'loading-runtime': 'Loading runtime + stdlib…',
-  'installing-package': 'Installing python-dateutil…',
-  ready: 'Runtime ready.',
-};
-
-const STRINGS_JA: Partial<Record<ProgressStage, string>> = {
-  init: 'Pyodide worker を起動中…',
-  'fetching-module': 'Pyodide モジュールを取得中…',
-  'loading-runtime': 'runtime と stdlib を読み込み中…',
-  'installing-package': 'python-dateutil をインストール中…',
-  ready: 'runtime の準備完了。',
-};
-
-const S = pick(STRINGS, STRINGS_JA);
 
 const outputBaselineEl = document.getElementById('output');
 const outputFixEl = document.getElementById('output-fix');
@@ -175,20 +108,6 @@ if (!reproCodeEl.firstChild) {
       if (html) reproCodeEl.innerHTML = html;
     })
     .catch(() => {});
-}
-
-function emitProgress(pct: number, stage: ProgressStage): void {
-  const loaded = stage === 'ready' ? ESTIMATED_MB : 0;
-  document.dispatchEvent(
-    new CustomEvent('vh-progress', {
-      detail: {
-        pct,
-        label: S[stage],
-        bytes: `${loaded.toFixed(1)} MB / ${ESTIMATED_MB.toFixed(1)} MB`,
-        stage: stage === 'ready' ? 'packages' : 'runtime',
-      },
-    }),
-  );
 }
 
 function summarise(cases: CaseObservation[]): ReproOutput {
@@ -225,164 +144,72 @@ function evaluate(result: ReproOutput | null): {
   };
 }
 
-function spawnWorker(spec: string): Worker {
-  const workerUrl = new URL('./repro.worker.js', import.meta.url);
-  workerUrl.searchParams.set('spec', spec);
-  workerUrl.searchParams.set('pyodide', DEFAULT_PYODIDE_VERSION);
-  workerUrl.searchParams.set('packages', WORKER_PACKAGES.join(','));
-  return new Worker(workerUrl, { type: 'module' });
-}
-
-function awaitReady(worker: Worker): Promise<WorkerReady> {
-  return new Promise<WorkerReady>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    const onError = (ev: ErrorEvent): void => {
-      cleanup();
-      reject(new Error(ev.message));
-    };
-    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
-      const msg = ev.data;
-      if (msg.type === 'progress') {
-        setVerdict('pending', S[msg.stage], 'loading');
-        emitProgress(msg.pct, msg.stage);
-        return;
-      }
-      if (msg.type === 'ready') {
-        cleanup();
-        resolve(msg);
-      } else if (msg.type === 'error') {
-        cleanup();
-        reject(new Error(msg.message));
-      }
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
-  });
-}
-
-let runId = 0;
-
-function runInWorker(worker: Worker, source: string): Promise<WorkerRunResult> {
-  const id = ++runId;
-  return new Promise<WorkerRunResult>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    const onError = (ev: ErrorEvent): void => {
-      cleanup();
-      reject(new Error(ev.message));
-    };
-    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
-      const msg = ev.data;
-      if (msg.type !== 'result' && msg.type !== 'error') return;
-      if (msg.id !== id) return;
-      if (msg.type === 'result') {
-        cleanup();
-        resolve(msg);
-      } else if (msg.type === 'error') {
-        cleanup();
-        reject(new Error(msg.message));
-      }
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
-    worker.postMessage({ type: 'run', id, source });
-  });
-}
-
-function installInWorker(
-  worker: Worker,
-  spec: string,
-): Promise<WorkerInstalled> {
-  const id = ++runId;
-  return new Promise<WorkerInstalled>((resolve, reject) => {
-    const cleanup = (): void => {
-      worker.removeEventListener('message', onMessage);
-      worker.removeEventListener('error', onError);
-    };
-    const onError = (ev: ErrorEvent): void => {
-      cleanup();
-      reject(new Error(ev.message));
-    };
-    const onMessage = (ev: MessageEvent<WorkerMessage>): void => {
-      const msg = ev.data;
-      if (msg.type !== 'installed' && msg.type !== 'error') return;
-      if (msg.id !== id) return;
-      cleanup();
-      if (msg.type === 'installed') resolve(msg);
-      else reject(new Error(msg.message));
-    };
-    worker.addEventListener('message', onMessage);
-    worker.addEventListener('error', onError);
-    worker.postMessage({ type: 'install', id, spec });
-  });
-}
-
-function toCapture(result: WorkerRunResult): CaptureResult {
-  if (result.error !== null) {
+function toCapture(run: RunResult): CaptureResult {
+  if (run.error !== null) {
     return {
       run: {
         exitCode: 1,
         verdict: 'unreproduced',
-        message: `runtime error: ${result.error}`,
-        stdout: result.stdout,
+        message: `runtime error: ${run.error}`,
+        stdout: run.stdout,
       },
       parsed: null,
     };
   }
-  const parsed = result.cases ? summarise(result.cases) : null;
+  const rows = Array.isArray(run.value) ? (run.value as CaseObservation[]) : null;
+  const parsed = rows ? summarise(rows) : null;
   const ev = evaluate(parsed);
   return {
     run: {
       exitCode: parsed ? 0 : 1,
       verdict: ev.verdict,
       message: ev.message,
-      stdout: result.stdout,
+      stdout: run.stdout,
     },
     parsed,
   };
 }
 
 async function captureIn(
-  worker: Worker,
+  worker: PyodideWorker,
   source: string,
 ): Promise<CaptureResult> {
-  try {
-    return toCapture(await runInWorker(worker, source));
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      run: {
-        exitCode: 1,
-        verdict: 'unreproduced',
-        message: `runtime error: ${message}`,
-        stdout: message,
-      },
-      parsed: null,
-    };
-  }
+  return toCapture(await worker.run(source));
+}
+
+async function readVersions(
+  worker: PyodideWorker,
+): Promise<{ dateutil: string; python: string }> {
+  const probe = await worker.evaluate(VERSION_QUERY);
+  const pair = Array.isArray(probe.value) ? probe.value : [];
+  return { dateutil: String(pair[0] ?? ''), python: String(pair[1] ?? '') };
 }
 
 const startedAt = new Date();
 
 let baselineCapture: PathACapturedRun | null = null;
 let baselineParsed: ReproOutput | null = null;
-let baselineReady: WorkerReady | null = null;
+let baselineVersions: { dateutil: string; python: string } | null = null;
+let pyodideVersion = '';
 let fixCapture: PathACapturedRun | null = null;
 let fixParsed: ReproOutput | null = null;
 let fixDateutilVersion = '';
 let manifest: WheelManifest | null = null;
 
 try {
-  setVerdict('pending', S.init, 'loading');
-  emitProgress(5, 'init');
-
-  const worker = spawnWorker(BASELINE_SPEC);
-  baselineReady = await awaitReady(worker);
+  const worker = await startPyodideWorker({
+    packages: ['micropip'],
+    spec: BASELINE_SPEC,
+    pipPackage: 'python-dateutil',
+    rootModule: 'dateutil',
+    resultGlobal: 'results',
+    installLabel: {
+      en: 'Installing python-dateutil…',
+      ja: 'python-dateutil をインストール中…',
+    },
+  });
+  pyodideVersion = worker.pyodideVersion;
+  baselineVersions = await readVersions(worker);
 
   setVerdict('pending', 'Running reproduction script (baseline)…', 'running');
   const baseline = await captureIn(worker, REPRO_CODE);
@@ -391,7 +218,7 @@ try {
   outputBaselineEl.textContent = baselineCapture.stdout;
 
   const buildEnvelope = (): VivariumResultV1 | null => {
-    if (!baselineParsed || !baselineCapture || !baselineReady) return null;
+    if (!baselineParsed || !baselineCapture || !baselineVersions) return null;
     const finishedAt = new Date();
     return {
       contract: 'v1',
@@ -402,10 +229,10 @@ try {
       },
       runtime: {
         name: 'pyodide',
-        version: baselineReady.pyodideVersion,
+        version: pyodideVersion,
         extras: {
-          python: baselineReady.pythonVersion,
-          'python-dateutil': baselineReady.dateutilVersion,
+          python: baselineVersions.python,
+          'python-dateutil': baselineVersions.dateutil,
           ...(fixParsed
             ? { 'python-dateutil_fix_candidate': fixDateutilVersion }
             : {}),
@@ -419,7 +246,7 @@ try {
         baseline: {
           spec: BASELINE_SPEC,
           verdict: baselineCapture.verdict,
-          dateutil_version: baselineReady.dateutilVersion,
+          dateutil_version: baselineVersions.dateutil,
           cases: baselineParsed.cases,
           inverted_count: baselineParsed.inverted_count,
           case_count: baselineParsed.case_count,
@@ -453,8 +280,8 @@ try {
   setVerdict(baselineCapture.verdict, baselineCapture.message);
 
   metaEl.textContent =
-    `Baseline python-dateutil ${baselineReady.dateutilVersion || '?'} on Python ` +
-    `${baselineReady.pythonVersion || '?'} via Pyodide v${baselineReady.pyodideVersion} ` +
+    `Baseline python-dateutil ${baselineVersions.dateutil || '?'} on Python ` +
+    `${baselineVersions.python || '?'} via Pyodide v${pyodideVersion} ` +
     `(Web Worker).`;
 
   setFixPane('Fetching wheel manifest…', 'pending');
@@ -470,23 +297,19 @@ try {
           : ''),
       'pending',
     );
-    try {
-      const installed = await installInWorker(worker, manifestResult.wheelUrl);
+    const installed = await worker.install(manifestResult.wheelUrl);
+    if (installed.error !== null) {
+      setFixPane(`Fix-candidate install failed: ${installed.error}`, 'error');
+    } else {
+      fixDateutilVersion = (await readVersions(worker)).dateutil;
       const fix = await captureIn(worker, REPRO_CODE);
       fixCapture = fix.run;
       fixParsed = fix.parsed;
-      fixDateutilVersion = installed.dateutilVersion;
-      setFixPane(fixCapture.stdout, 'ok');
-    } catch (err) {
-      const errAny = err as { stack?: string; message?: string } | null;
-      const message =
-        (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-      setFixPane(`Fix-candidate install/run failed: ${message}`, 'error');
+      setFixPane(fixCapture.stdout, fixParsed ? 'ok' : 'error');
     }
 
-    try {
-      await installInWorker(worker, BASELINE_SPEC);
-    } catch {
+    const restored = await worker.install(BASELINE_SPEC);
+    if (restored.error !== null) {
       console.warn(
         'dateutil-1478: failed to restore the baseline install; Run will exercise the fix candidate.',
       );

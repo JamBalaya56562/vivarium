@@ -350,35 +350,52 @@ PRs 180 / 189 / 192.
 - **System calls.** Pyodide ships an MEMFS-like virtual FS, not
   the real one. Anything depending on real filesystem semantics,
   fork/exec, sockets, or signals → Layer 2.
-- **Pyodide belongs in a Web Worker.** Booting it and resolving a
-  micropip install are pure CPU work; on the main thread they land as
-  one task tens of seconds long and Chrome offers to kill the tab.
-  `dateutil-1478` measured 19.9 s of main-thread blocking with a
-  15.0 s worst task before the runtime moved into a worker, and 353 ms
-  after. A worker cannot import `_shared/verdict.ts`, `loader.ts` or
-  `runner.ts` — all three reach `_assets/chrome.js`, which touches
-  `document` at module-evaluation time — so it loads Pyodide itself and
-  posts results back. See `dateutil-1478/repro.worker.ts`.
-  `cpython-137205` and `pandas-56679` followed: 18.3–20.1 s and 25.8 s
-  of blocking became 259 ms and none. The cost is the runtime, not the
-  packages — cpython loads none and still blocked for 18 s. Measure
-  before assuming a recipe is light: `numpy-28287` blocks 2.5 s and is
-  deliberately left on the main thread.
+- **Pyodide runs in the shared worker; a recipe writes none of its own.**
+  Booting it and resolving a micropip install are pure CPU work; on the
+  main thread they land as one task tens of seconds long and Chrome
+  offers to kill the tab. `dateutil-1478` measured 19.9 s of main-thread
+  blocking with a 15.0 s worst task before the runtime moved into a
+  worker; `cpython-137205` 18.3–20.1 s and `pandas-56679` 25.8 s. The
+  cost is the runtime, not the packages — cpython loads none and still
+  blocked for 18 s, and `numpy-28287` at a mere 2.5 s still dropped to
+  82 ms once it moved.
+
+  Call `startPyodideWorker` from
+  [`_shared/pyodide-worker-client.ts`](../../src/layer1_wasm/_shared/pyodide-worker-client.ts).
+  It spawns [`_shared/pyodide-worker.ts`](../../src/layer1_wasm/_shared/pyodide-worker.ts),
+  drives the progress bar, and hands back `run` / `evaluate` / `install`.
+  Options cover packages, an install spec, the pip package and root
+  module to purge when swapping a wheel, and the name of the global to
+  read back. There is no per-recipe worker file to forget.
+
+  A worker cannot import `_shared/verdict.ts` or `runner.ts` — both
+  reach `_assets/chrome.js`, which touches `document` at
+  module-evaluation time. The shared worker imports nothing from its own
+  directory at all, which keeps that a rule rather than a per-file
+  judgement: the version it loads arrives on its URL, and everything
+  DOM-bound stays on the main thread.
 - **One worker per page, not one per variant.** A second worker is a
   second Pyodide — another download, another WASM compile, another
   micropip. `dateutil-1478` shipped that for one release and the
   fix-candidate pane took 45.5 s to appear; swapping the wheel inside
   the one worker with `micropip.uninstall` + `install` (purging
   `sys.modules` between, or the old module stays imported) brought it
-  to 2.8 s. Measure time-to-fix-pane, not just main-thread blocking —
-  the first version of that change measured only the latter and shipped
-  a regression.
+  to a few seconds. Measure time-to-fix-pane, not just main-thread
+  blocking — the first version of that change measured only the latter
+  and shipped a regression.
 - **A worker cannot use the page's `rel="preload"`.** The preload cache
   belongs to the document, so those tags download the runtime a second
-  time and Chrome warns that nothing used them.
-  `generate-repro-pages.ts` emits them only for recipes with no
-  `repro.worker.ts`; `preconnect` stays for everyone, since warming the
-  connection is per-origin.
+  time and Chrome warns that nothing used them. Every Pyodide recipe
+  runs in the worker, so `generate-repro-pages.ts` emits no preload for
+  that runtime at all; `preconnect` stays for everyone, since warming
+  the connection is per-origin. `reproPreload.test.ts` holds both halves
+  of that: pyodide preloads nothing, and every other runtime preloads
+  only URLs its own loader imports at its own pinned version.
+- **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
+  the main thread times out and calls `terminate()`, and its harness
+  wraps the visitor script in `time.perf_counter()` + `except
+  BaseException` rather than reading a global back. Neither fits the
+  shared worker, and bending it to fit would cost every other recipe.
 
 ---
 
