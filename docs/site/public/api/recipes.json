@@ -173,11 +173,12 @@
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/ruby-21709",
       "language": "ruby",
       "tags": [
-        "string",
-        "unicode",
-        "combining-diacritics"
+        "regexp",
+        "string-interpolation",
+        "encoding",
+        "onigmo"
       ],
-      "symptom": "unicode-normalize-nfd",
+      "symptom": "regexp-interpolation-encoding-mismatch",
       "severity": "bug",
       "expected_verdict": "reproduced",
       "expected_runtime": "ruby.wasm",
