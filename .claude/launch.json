@@ -3,13 +3,13 @@
   "configurations": [
     {
       "name": "vivarium-docs",
-      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\bun\\1.4.0\\bin\\bun.exe",
+      "runtimeExecutable": "bun",
       "runtimeArgs": ["--cwd=docs", "run", "dev"],
       "port": 3000
     },
     {
       "name": "vivarium-layer1",
-      "runtimeExecutable": "C:\\Users\\Jam\\AppData\\Local\\mise\\installs\\uv\\0.12.9\\uv.exe",
+      "runtimeExecutable": "uv",
       "runtimeArgs": ["run", "--no-project", "--python", "3.13", "python", "-m", "http.server", "8767", "--directory", "src/layer1_wasm"],
       "port": 8767
     }
