@@ -30,7 +30,7 @@
     "ajv-cli": "5.0.0",
     "ajv-formats": "3.0.1",
     "jszip": "^3.10.1",
-    "node-html-parser": "^9.0.3"
+    "node-html-parser": "^9.0.4"
   },
   "dependencies": {
     "lucide-react": "^1.41.0"
