@@ -161,8 +161,8 @@ with the `roundtrip_init` payload. The payload validates against
 `docs/site/public/spec/roundtrip.schema.json` (schema_version 1) and
 starts in `status: draft`.
 
-Sapling tracks the file automatically once `sl addremove` runs at PR
-time.
+Jujutsu snapshots the new file into the working-copy commit on the
+next `jj` command; there is no add step.
 
 ### 5. Report next steps to the user
 

@@ -67,14 +67,14 @@ import {
           ),
         },
         {
-          lead: 'Sapling (sl) がインストール済み。',
+          lead: 'Jujutsu (jj) がインストール済み。',
           body: (
             <>
               Vivarium は SCM として Git ではなく{' '}
-              <a href="https://sapling-scm.com">Sapling</a>{' '}
+              <a href="https://jj-vcs.github.io/jj/">Jujutsu</a>{' '}
               を使います。スキルは Vivarium 側 PR のために{' '}
-              <code>sl addremove</code> / <code>sl commit</code> / <code>sl amend</code> / <code>sl pr submit</code>{' '}
-              を駆動します。
+              <code>jj describe</code> / <code>jj bookmark</code> / <code>jj git push</code>{' '}
+              を駆動し、<code>gh pr create</code> で PR を開きます。
             </>
           ),
         },
@@ -104,7 +104,7 @@ import {
 Stage 1    Scaffold (prepare_new_recipe + mise run recipes:new)
 Stage 2    再現実装 (人間 + AI)
 Stage 3    unfixed verdict 取得 (verify_and_report_fix)
-Stage 4    Vivarium PR open (sl pr submit、ai: generated ラベル付与)
+Stage 4    Vivarium PR open (jj git push + gh pr create、ai: generated ラベル付与)
 Stage 5    Upstream fork + fix branch push (人間)
 Stage 5.5  Layer 2 のみ: branch-fix image を build & push
              (mise run branch-fix:publish)
@@ -114,12 +114,12 @@ Stage 6    fixed verdict 取得
              - Layer 2: verify_and_report_fix に branch_image を渡す →
                         branch-fix-verdict.yml + artefact
 Stage 7    Vivarium PR を fixed verdict で更新
-             (Layer 2 のみ; sl amend + sl pr submit)
+             (Layer 2 のみ; jj git push --bookmark)
 Stage 8    Upstream draft PR open
              - Layer 1: prepare_fix_candidate が返したコマンドを実行
              - Layer 2: create_fork_pr (dry_run: false)
 Stage 9    最終 Vivarium 側 commit
-             (Layer 2 のみ; sl amend + sl pr submit)`}</code>
+             (Layer 2 のみ; jj git push --bookmark)`}</code>
     </pre>
   </Section>
 

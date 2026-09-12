@@ -149,17 +149,23 @@ with a note explaining.
 ### Stage 4: Open the Vivarium-side PR (unfixed only)
 
 The recipe + roundtrip.json need to land on `main` so contributors
-on other machines can see the verified-unfixed state. Use Sapling
-(this repo's SCM):
+on other machines can see the verified-unfixed state. Use Jujutsu
+(this repo's SCM); new files are picked up automatically on the
+next `jj` command, so there is no add step:
 
 ```bash
-sl addremove
-sl commit -m "feat(layer<N>): <slug> reproduction (unfixed verdict captured)"
-sl pull
-sl pr submit
+jj git fetch --all-remotes
+jj rebase -d 'trunk()'
+jj describe -m "feat(layer<N>): <slug> reproduction (unfixed verdict captured)"
+jj bookmark create roundtrip/<slug> -r '@'
+jj git push --bookmark roundtrip/<slug> --remote origin
+gh pr create --repo aletheia-works/vivarium --base main \
+  --head "$(gh api user -q .login):roundtrip/<slug>" \
+  --title "feat(layer<N>): <slug> reproduction (unfixed verdict captured)" \
+  --body "<summary>"
 ```
 
-After `sl pr submit` returns the PR URL, apply the `ai: generated`
+After `gh pr create` returns the PR URL, apply the `ai: generated`
 label (AGENTS.md §4.6 — Vivarium-internal contract, the label and
 permission both exist here):
 
@@ -167,17 +173,18 @@ permission both exist here):
 gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"
 ```
 
-Record the PR URL as `roundtrip.json#/vivarium_pr` and amend the
-last commit (`sl amend` after editing `roundtrip.json`) so the
-recorded URL is visible in the same commit.
+Record the PR URL as `roundtrip.json#/vivarium_pr` and push again
+(`jj git push --bookmark roundtrip/<slug>`) so the recorded URL is
+visible in the same commit.
 
-This is the commit that subsequent stages will keep updating via
-`sl amend` (NOT new commits on top) so the PR branch stays a
-single commit. Sapling's `sl pr submit` on a fresh commit creates
-a *new* PR; `sl amend` rewrites the existing one in place and
-`sl pr submit` then force-pushes the same branch. This matches
-the project convention (see `.claude/CLAUDE.local.md` /
-feedback_sl_pr_clean_stack).
+This is the commit that subsequent stages keep updating so the PR
+branch stays a single commit. Leave it checked out as `@` for the
+rest of the round-trip: every edit is folded into it on the next
+`jj` command, and `jj git push --bookmark roundtrip/<slug>`
+force-pushes the rewritten commit to the same PR. Do NOT `jj new`
+on top and push a stack — the bookmark would stay behind and the
+PR would not see the change. If `@` has already moved on, fold it
+back with `jj squash --into roundtrip/<slug>` before pushing.
 
 **Do not wait for merge** to continue from this stage on Layer 2/3.
 Layer 1 *does* need the merge (Stage 6 below) so the CI wheel
@@ -202,8 +209,8 @@ git push origin fix-issue-<n>
 ```
 
 When the human confirms the branch is pushed, record
-`roundtrip.json#/fork = { owner, repo, branch }` (amend the Stage-4
-commit with `sl amend`, then `sl pr submit`).
+`roundtrip.json#/fork = { owner, repo, branch }` (the edit lands in the
+Stage-4 commit; push it with `jj git push --bookmark roundtrip/<slug>`).
 
 ### Stage 5.5: Build and push branch-fix Docker image (Layer 2 only)
 
@@ -273,7 +280,7 @@ Write the returned `fix_candidate_json` content to
 
 **Wire the recipe page to render the fix-candidate variant.** The
 wheel pipeline only builds the artefact — it does **not** modify
-`index.html` / `repro.ts`. Before amending, verify the recipe page
+`index.html` / `repro.ts`. Before pushing, verify the recipe page
 renders both variants side-by-side:
 
 - `index.html` output section uses
@@ -303,8 +310,8 @@ Web Worker isolation) and adapt the package name / install spec.
 Without this step the live page will display only the baseline
 pane after merge and Stage 8's visual confirmation will fail.
 
-Then amend the Stage-4 Vivarium commit
-(`sl addremove && sl amend && sl pr submit`) so the same PR now
+Then push the Stage-4 Vivarium commit again
+(`jj git push --bookmark roundtrip/<slug>`) so the same PR now
 carries the fix-candidate registration **and** the recipe-page
 dual-variant wiring.
 
@@ -323,7 +330,7 @@ human. The remaining flow:
    commands themselves.
 
 For Layer 1, Stage 7 (Vivarium PR update with the fixed verdict)
-is rolled into this stage's amend; there is no separate "update
+is rolled into this stage's push; there is no separate "update
 PR with fixed verdict" step.
 
 **Layer 2 (Docker) — via `branch-fix-verdict.yml` + artefact:**
@@ -355,21 +362,20 @@ ships no recipes and the workflow does not handle it.
 
 ### Stage 7: Update the Vivarium PR with the fixed verdict (Layer 2/3 only)
 
-**Layer 1 already did this in Stage 6's amend — skip.**
+**Layer 1 already did this in Stage 6's push — skip.**
 
 For Layer 2 / 3:
 
 ```bash
-# `roundtrip.json` is already edited locally with verdicts.fixed.
-sl addremove        # rare; in case the verdict capture created files
-sl amend            # rewrites the Stage-4 commit in place
-sl pr submit        # force-pushes the same PR branch
+# `roundtrip.json` is already edited locally with verdicts.fixed,
+# so `@` (the Stage-4 commit) already carries it.
+jj git push --bookmark roundtrip/<slug>   # force-pushes the same PR branch
 ```
 
-`sl amend` (instead of a new `sl commit`) is load-bearing here.
-Stacking new commits on top would cause `sl pr submit` to create
-a *new* PR rather than updating the existing one — see the
-project's `feedback_sl_pr_clean_stack` convention.
+Pushing the rewritten Stage-4 commit (instead of a new commit on
+top) is load-bearing here: the PR must stay a single commit, and a
+stacked commit would not be reached by the bookmark at all — see
+Stage 4.
 
 ### Stage 8: Open the upstream draft PR
 
@@ -422,21 +428,21 @@ the user can fix the missing precondition.
 points back at the live recipe page, and the Vivarium PR's
 commits already include the fix-candidate registration. The human
 can later update the Vivarium PR with the upstream PR URL via a
-manual `sl amend`, but it's not load-bearing for the round-trip
-loop.
+manual edit + `jj git push --bookmark roundtrip/<slug>`, but it's
+not load-bearing for the round-trip loop.
 
 For Layer 2 / 3:
 
 ```bash
 # `roundtrip.json` is already edited locally with upstream_pr URL
 # and status: "upstream_open".
-sl addremove
-sl amend -m "feat(layer<N>): <slug> round-trip complete (upstream PR opened)"
-sl pr submit
+jj describe -m "feat(layer<N>): <slug> round-trip complete (upstream PR opened)"
+jj git push --bookmark roundtrip/<slug>
 ```
 
-`sl amend -m` updates both the commit content and message in
-place; `sl pr submit` force-pushes the same PR branch.
+`jj describe -m` rewrites the Stage-4 commit's message in place (its
+content already holds the edit); `jj git push` force-pushes the same
+PR branch.
 
 The round-trip is now visible from both sides:
 
@@ -459,7 +465,7 @@ At any stage, on failure:
    `roundtrip.json#/notes[]`.
 3. Bump `roundtrip.json#/updated_at`.
 4. Commit the updated `roundtrip.json` to the Vivarium PR if Stage
-   4 has already run (`sl amend` + `sl pr submit`); otherwise
+   4 has already run (`jj git push --bookmark roundtrip/<slug>`); otherwise
    leave it as an uncommitted local change for the human to
    inspect.
 5. Stop. Do NOT auto-retry.

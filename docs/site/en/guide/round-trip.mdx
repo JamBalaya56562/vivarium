@@ -80,15 +80,15 @@ import {
           ),
         },
         {
-          lead: 'Sapling (sl) on this side.',
+          lead: 'Jujutsu (jj) on this side.',
           body: (
             <>
               Vivarium uses{' '}
-              <a href="https://sapling-scm.com">Sapling</a> as its SCM
-              rather than Git directly. The skill drives{' '}
-              <code>sl addremove</code> / <code>sl commit</code> /{' '}
-              <code>sl amend</code> / <code>sl pr submit</code> for
-              the Vivarium-side PR.
+              <a href="https://jj-vcs.github.io/jj/">Jujutsu</a> as its
+              SCM rather than Git directly. The skill drives{' '}
+              <code>jj describe</code> / <code>jj bookmark</code> /{' '}
+              <code>jj git push</code> for the Vivarium-side PR and opens
+              it with <code>gh pr create</code>.
             </>
           ),
         },
@@ -122,7 +122,7 @@ import {
 Stage 1    Scaffold (prepare_new_recipe + mise run recipes:new)
 Stage 2    Implement reproduction (human + AI)
 Stage 3    Capture unfixed verdict (verify_and_report_fix)
-Stage 4    Open the Vivarium PR (sl pr submit, label ai: generated)
+Stage 4    Open the Vivarium PR (jj git push + gh pr create, label ai: generated)
 Stage 5    Fork upstream + push fix branch (human)
 Stage 5.5  Layer 2 only: build & push branch-fix image
              (mise run branch-fix:publish)
@@ -132,12 +132,12 @@ Stage 6    Capture fixed verdict
              - Layer 2: verify_and_report_fix with branch_image →
                         branch-fix-verdict.yml + artefact
 Stage 7    Update Vivarium PR with fixed verdict
-             (Layer 2 only; sl amend + sl pr submit)
+             (Layer 2 only; jj git push --bookmark)
 Stage 8    Open upstream draft PR
              - Layer 1: commands returned by prepare_fix_candidate
              - Layer 2: create_fork_pr (dry_run: false)
 Stage 9    Final Vivarium-side commit
-             (Layer 2 only; sl amend + sl pr submit)`}</code>
+             (Layer 2 only; jj git push --bookmark)`}</code>
     </pre>
   </Section>
 
