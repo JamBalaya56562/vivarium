@@ -49,7 +49,7 @@ If unsure whether an action crosses the line, stop and ask.
 1. **Problem first, technology second.** Before proposing WASM vs Docker vs
    anything else, state the reproduction problem being solved.
 2. **Modern defaults, no legacy fallbacks.** Lead with fine-grained PATs,
-   OIDC, OpenTofu (not Terraform), Sapling (not Git), Conventional Commits,
+   OIDC, OpenTofu (not Terraform), Jujutsu (not Git), Conventional Commits,
    etc. Do not add backwards-compatibility shims for tooling the user has
    already moved off.
 3. **Mechanical over judgement.** Labels, versions, and routing come from
@@ -130,8 +130,12 @@ and public machine-readable assets stay under `docs/site/`.
 
 ### 4.3 Source-control
 
-- SCM is **Sapling (`sl`)**, not Git. Use `sl status`, `sl diff`, `sl commit`,
-  `sl log`. Do not look for `.git/`; the repository metadata lives in `.sl/`.
+- SCM is **Jujutsu (`jj`)**, not Git. Use `jj status`, `jj diff`, `jj commit`,
+  `jj log`. The repository is colocated (`.jj/` and `.git/` both exist), but
+  drive it through `jj`, never `git`.
+- Remotes: `origin` is the contributor's fork, `upstream` is
+  `aletheia-works/vivarium`. `trunk()` resolves to `main@upstream`; fetch with
+  `jj git fetch --all-remotes`.
 - GitHub is the hosting remote; workflows and branch protection still apply
   normally.
 

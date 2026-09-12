@@ -22,8 +22,9 @@
 
 - **Shell**: `bash` under Windows. Use POSIX syntax (`/dev/null`, forward
   slashes in paths), not `cmd.exe`/PowerShell idioms.
-- **SCM**: Sapling (`sl`), not Git. The global user CLAUDE.md already covers
-  this; repeated here because it is the most common miss.
+- **SCM**: Jujutsu (`jj`), not Git. The global user CLAUDE.md already covers
+  this; repeated here because it is the most common miss. In PowerShell,
+  quote `@` (`jj log -r '@'`).
 - **Infra CLI**: OpenTofu (`tofu`), not Terraform.
 - **GitHub CLI**: `gh` is available and authenticated.
 - **Dedicated tools beat Bash.** Use `Read` / `Edit` / `Write` / `Glob` /
