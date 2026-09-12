@@ -661,7 +661,7 @@ describe('verify_and_report_fix', () => {
     }
   });
 
-  it('verified state without vivarium_pr → next_action=open_vivarium_pr + sl pr submit', async () => {
+  it('verified state without vivarium_pr → next_action=open_vivarium_pr + jj git push', async () => {
     const r = await verifyAndReportFix({
       slug: 'pandas-56679',
       auto_execute: false,
@@ -684,7 +684,16 @@ describe('verify_and_report_fix', () => {
     assert.equal(r.ok, true);
     if (r.ok) {
       assert.equal(r.next_action, 'open_vivarium_pr');
-      assert.ok(r.commands.some((c) => c === 'sl pr submit'));
+      assert.ok(
+        r.commands.some(
+          (c) => c === 'jj git push --bookmark roundtrip/pandas-56679 --remote origin',
+        ),
+      );
+      assert.ok(
+        r.commands.some((c) =>
+          c.startsWith('gh pr create --repo aletheia-works/vivarium '),
+        ),
+      );
     }
   });
 
@@ -788,7 +797,7 @@ describe('verify_and_report_fix', () => {
         'commands should annotate that the round-trip is paused',
       );
       assert.ok(
-        !r.commands.some((c) => c.startsWith('gh ') || c.startsWith('sl ')),
+        !r.commands.some((c) => c.startsWith('gh ') || c.startsWith('jj ')),
         'manual_intervention must NOT emit executable commands',
       );
     }

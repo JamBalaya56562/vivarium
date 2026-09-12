@@ -183,10 +183,13 @@ function buildCommands(args: BuildCommandsArgs): string[] {
     }
     case 'open_vivarium_pr':
       return [
-        `# Submit the Vivarium-side PR carrying the recipe and roundtrip.json update.`,
-        `sl addremove`,
-        `sl commit -m 'feat(layer${layer}): ${slug} — round-trip verdicts captured'`,
-        `sl pr submit`,
+        `# Open the Vivarium-side PR carrying the recipe and roundtrip.json update.`,
+        `jj git fetch --all-remotes`,
+        `jj rebase -d 'trunk()'`,
+        `jj describe -m 'feat(layer${layer}): ${slug} — round-trip verdicts captured'`,
+        `jj bookmark create roundtrip/${slug} -r '@'`,
+        `jj git push --bookmark roundtrip/${slug} --remote origin`,
+        `gh pr create --repo aletheia-works/vivarium --base main --head "$(gh api user -q .login):roundtrip/${slug}" --title 'feat(layer${layer}): ${slug} — round-trip verdicts captured' --body '<body>'`,
       ];
     case 'manual_intervention':
       return [
