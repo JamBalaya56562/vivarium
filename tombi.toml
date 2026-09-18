@@ -8,7 +8,6 @@ exclude = [
   "**/target/**",
   "**/doc_build/**",
   "**/.venv/**",
-  ".sl/**",
 ]
 
 [schema]
