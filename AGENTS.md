@@ -215,7 +215,7 @@ human-readable version or branch name as a trailing comment:
 
 ```yaml
 uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-uses: aletheia-works/.github/.github/workflows/commitlint.yml@2869d127c99b5cd8bcfb22d7ade8a31d1204019c # main
+uses: aletheia-works/.github/.github/workflows/commitlint.yml@f8efae13d9ff4ea96692f7feac3cfdc4a7add308 # main
 ```
 
 The trailing comment is mandatory — the SHA alone is unreviewable.

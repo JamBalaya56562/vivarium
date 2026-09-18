@@ -21,7 +21,7 @@ jobs:
       github.repository_owner == 'aletheia-works' &&
       (github.event_name != 'workflow_run' ||
        github.event.workflow_run.conclusion == 'success')
-    uses: aletheia-works/.github/.github/workflows/terraform-state-backup.yml@1d569c881f73c1c9215fae92ad15e9d223a8d2c8 # main
+    uses: aletheia-works/.github/.github/workflows/terraform-state-backup.yml@f8efae13d9ff4ea96692f7feac3cfdc4a7add308 # main
     with:
       working_directory: infra/github
     secrets:

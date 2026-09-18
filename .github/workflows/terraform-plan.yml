@@ -14,7 +14,7 @@ permissions:
 jobs:
   plan:
     if: github.repository_owner == 'aletheia-works'
-    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@ffd7b8b9619fe8da13233a21c920b4d56b126f28 # main
+    uses: aletheia-works/.github/.github/workflows/terraform-plan.yml@f8efae13d9ff4ea96692f7feac3cfdc4a7add308 # main
     with:
       working_directory: infra/github
       tfvar_assignments: |
