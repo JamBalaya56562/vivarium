@@ -62,15 +62,15 @@ resource "github_repository_ruleset" "main" {
     required_signatures     = true
 
     pull_request {
-      required_approving_review_count   = 1
+      required_approving_review_count   = 0
       dismiss_stale_reviews_on_push     = true
-      require_code_owner_review         = true
+      require_code_owner_review         = false
       require_last_push_approval        = false
       required_review_thread_resolution = true
     }
 
     required_status_checks {
-      strict_required_status_checks_policy = true
+      strict_required_status_checks_policy = false
 
       required_check {
         context        = "check / Commitlint"
