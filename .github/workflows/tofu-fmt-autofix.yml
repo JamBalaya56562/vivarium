@@ -13,7 +13,7 @@ permissions:
 jobs:
   autofix:
     if: github.repository_owner == 'aletheia-works'
-    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@f8efae13d9ff4ea96692f7feac3cfdc4a7add308 # main
+    uses: aletheia-works/.github/.github/workflows/terraform-autofix.yml@4f9b6d6865f083952f13557c91eaf839045e55e1 # v1.0.0
     with:
       working_directory: infra/github
       commit_message: 'style(infra): tofu fmt -recursive'

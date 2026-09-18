@@ -215,11 +215,14 @@ human-readable version or branch name as a trailing comment:
 
 ```yaml
 uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-uses: aletheia-works/.github/.github/workflows/commitlint.yml@f8efae13d9ff4ea96692f7feac3cfdc4a7add308 # main
+uses: aletheia-works/.github/.github/workflows/commitlint.yml@4f9b6d6865f083952f13557c91eaf839045e55e1 # v1.0.0
 ```
 
 The trailing comment is mandatory — the SHA alone is unreviewable.
-Resolve the latest SHA with:
+For the org's reusables in `aletheia-works/.github`, the comment is the
+`vX.Y.Z` tag its `release.yml` cuts, never `main`: Dependabot follows
+tags, so a tag comment is a pin it can move and a branch comment is
+one it cannot. Resolve the latest SHA with:
 
 ```bash
 gh api repos/<owner>/<repo>/commits/<tag-or-branch> --jq '.sha'
