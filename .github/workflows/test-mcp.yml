@@ -3,9 +3,6 @@ name: Test MCP
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'packages/mcp-server/**'
-      - '.github/workflows/test-mcp.yml'
 
 permissions:
   contents: read

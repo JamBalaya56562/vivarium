@@ -3,16 +3,8 @@ name: Test docs (unit + build + E2E)
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - 'src/layer1_wasm/_assets/**'
-      - '.github/workflows/test-docs.yml'
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - 'src/layer1_wasm/_assets/**'
-      - '.github/workflows/test-docs.yml'
   workflow_dispatch:
 
 permissions:

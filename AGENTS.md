@@ -285,10 +285,11 @@ tokens. Tag form: `<package-name>-v<semver>`
 
 ### 4.12 Pre-PR local validation
 
-**Run the matching CI checks locally before pushing.** Each PR triggers
-the workflows under `.github/workflows/` whose `paths:` filter matches
-the diff; the `mise run ci:*` tasks in [`mise.toml`](mise.toml) mirror
-them job-for-job:
+**Run the matching CI checks locally before pushing.** Every PR runs
+the test workflows under `.github/workflows/` whatever it touches (only
+the Terraform workflows and the deploy keep a `paths:` filter), and
+the ruleset requires them; the `mise run ci:*` tasks in
+[`mise.toml`](mise.toml) mirror them job-for-job:
 
 | Task                | Workflow                  |
 | ------------------- | ------------------------- |

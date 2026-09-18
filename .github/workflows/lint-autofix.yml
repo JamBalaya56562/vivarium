@@ -2,32 +2,7 @@ name: Polyglot lint autofix
 
 on:
   pull_request:
-    paths:
-      - 'docs/**/*.ts'
-      - 'docs/**/*.tsx'
-      - 'docs/**/*.js'
-      - 'docs/**/*.mjs'
-      - 'docs/**/*.cjs'
-      - 'docs/**/*.css'
-      - 'docs/**/*.json'
-      - 'docs/biome.json'
-      - 'docs/package.json'
-      - 'docs/bun.lock'
-      - 'src/layer1_wasm/**/*.php'
-      - 'src/layer1_wasm/**/*.py'
-      - 'src/layer1_wasm/**/*.rs'
-      - 'src/layer1_wasm/**/Cargo.toml'
-      - 'src/layer1_wasm/**/Cargo.lock'
-      - 'docs/scripts/**/*.py'
-      - '**/*.toml'
-      - '**/*.md'
-      - 'mago.toml'
-      - 'ruff.toml'
-      - 'tombi.toml'
-      - '.rumdl.toml'
-      - 'mise.toml'
-      - '.github/workflows/lint-autofix.yml'
-      - '.github/workflows/lint-autofix-apply.yml'
+    branches: [main]
 
 permissions:
   contents: read

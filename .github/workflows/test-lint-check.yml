@@ -3,32 +3,6 @@ name: Test polyglot lint
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'docs/**/*.ts'
-      - 'docs/**/*.tsx'
-      - 'docs/**/*.js'
-      - 'docs/**/*.mjs'
-      - 'docs/**/*.cjs'
-      - 'docs/**/*.css'
-      - 'docs/**/*.json'
-      - 'docs/biome.json'
-      - 'docs/package.json'
-      - 'docs/bun.lock'
-      - 'src/layer1_wasm/**/*.php'
-      - 'src/layer1_wasm/**/*.py'
-      - 'src/layer1_wasm/**/*.rs'
-      - 'src/layer1_wasm/**/Cargo.toml'
-      - 'src/layer1_wasm/**/Cargo.lock'
-      - 'docs/scripts/**/*.py'
-      - '**/*.toml'
-      - '**/*.md'
-      - 'mago.toml'
-      - 'ruff.toml'
-      - 'tombi.toml'
-      - '.rumdl.toml'
-      - 'mise.toml'
-      - '**/*.sh'
-      - '.github/workflows/**'
 
 permissions:
   contents: read

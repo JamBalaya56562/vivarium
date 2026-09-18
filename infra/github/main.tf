@@ -36,6 +36,21 @@ resource "github_repository_pages" "this" {
   build_type = "workflow"
 }
 
+locals {
+  required_checks = [
+    "check / Commitlint",
+    "Polyglot lint",
+    "Unit (resolveReproFile)",
+    "E2E (chromium)",
+    "E2E (firefox)",
+    "E2E (webkit)",
+    "Test MCP server",
+    "regression (chromium)",
+    "regression (firefox)",
+    "regression (webkit)",
+  ]
+}
+
 resource "github_repository_ruleset" "main" {
   name        = "main"
   repository  = github_repository.this.name
@@ -72,9 +87,13 @@ resource "github_repository_ruleset" "main" {
     required_status_checks {
       strict_required_status_checks_policy = false
 
-      required_check {
-        context        = "check / Commitlint"
-        integration_id = 15368
+      dynamic "required_check" {
+        for_each = local.required_checks
+
+        content {
+          context        = required_check.value
+          integration_id = 15368
+        }
       }
     }
   }

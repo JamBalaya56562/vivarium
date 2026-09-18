@@ -3,27 +3,8 @@ name: repro-regression
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/layer1_wasm/**'
-      - 'src/layer2_docker/**'
-      - 'src/external_examples/**'
-      - 'docs/site/public/spec/manifest.schema.json'
-      - 'docs/site/public/spec/verdict.schema.json'
-      - 'docs/scripts/**'
-      - 'scripts/**'
-      - '.github/workflows/repro-regression.yml'
-      - 'mise.toml'
   pull_request:
-    paths:
-      - 'src/layer1_wasm/**'
-      - 'src/layer2_docker/**'
-      - 'src/external_examples/**'
-      - 'docs/site/public/spec/manifest.schema.json'
-      - 'docs/site/public/spec/verdict.schema.json'
-      - 'docs/scripts/**'
-      - 'scripts/**'
-      - '.github/workflows/repro-regression.yml'
-      - 'mise.toml'
+    branches: [main]
   schedule:
     - cron: '0 0 * * 1'
   workflow_dispatch:
