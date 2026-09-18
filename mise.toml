@@ -36,7 +36,7 @@ run = "tofu init"
 dir = "infra/github"
 
 [hooks]
-enter = ["mise upgrade -q", "mise deps -q"]
+enter = ["mise deps -q"]
 
 [tasks."docs:install"]
 description = "Install docs site dependencies"
