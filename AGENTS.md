@@ -89,7 +89,7 @@ vivarium/
 │   ├── labeler.yml        # path-based label rules (mechanical)
 │   └── release.yml
 ├── infra/
-│   └── github/            # GitHub Settings-as-Code via OpenTofu (labels, milestones, branch protection)
+│   └── github/            # GitHub Settings-as-Code via OpenTofu (labels, milestones, main ruleset)
 ├── docs/                  # rspress docs site
 │   ├── package.json       # rspress + bun deps
 │   ├── rspress.config.ts
@@ -136,7 +136,7 @@ and public machine-readable assets stay under `docs/site/`.
 - Remotes: `origin` is the contributor's fork, `upstream` is
   `aletheia-works/vivarium`. `trunk()` resolves to `main@upstream`; fetch with
   `jj git fetch --all-remotes`.
-- GitHub is the hosting remote; workflows and branch protection still apply
+- GitHub is the hosting remote; workflows and the branch ruleset still apply
   normally.
 
 ### 4.4 Commits

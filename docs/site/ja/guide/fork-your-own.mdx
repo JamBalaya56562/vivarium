@@ -71,7 +71,7 @@ cd vivarium`}</code></pre>
 
   <Section
     eyebrow="// 4 · OpenTofu でフォーク側のリポジトリ設定を整える"
-    heading="ラベル、Pages、ブランチ保護を一括反映。"
+    heading="ラベル、Pages、main のルールセットを一括反映。"
   >
     <NumberedList
       items={[
@@ -85,7 +85,7 @@ cd vivarium`}</code></pre>
         },
         {
           lead: 'plan して apply。',
-          body: 'cd infra/github && tofu init && tofu plan の出力を確認した上で tofu apply。Pages の有効化、ラベル、ブランチ保護がフォーク側に反映されます。',
+          body: 'cd infra/github && tofu init && tofu plan の出力を確認した上で tofu apply。Pages の有効化、ラベル、main ブランチのルールセットがフォーク側に反映されます。',
         },
       ]}
     />

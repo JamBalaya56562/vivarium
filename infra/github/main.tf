@@ -36,34 +36,48 @@ resource "github_repository_pages" "this" {
   build_type = "workflow"
 }
 
-resource "github_branch_protection" "main" {
-  repository_id = github_repository.this.node_id
-  pattern       = "main"
+resource "github_repository_ruleset" "main" {
+  name        = "main"
+  repository  = github_repository.this.name
+  target      = "branch"
+  enforcement = "active"
 
-  required_pull_request_reviews {
-    required_approving_review_count = 1
-    dismiss_stale_reviews           = true
-    require_code_owner_reviews      = true
-    require_last_push_approval      = false
+  conditions {
+    ref_name {
+      include = ["~DEFAULT_BRANCH"]
+      exclude = []
+    }
   }
 
-  required_status_checks {
-    strict = true
-    contexts = [
-      "check / Commitlint",
-    ]
+  bypass_actors {
+    actor_id    = 5
+    actor_type  = "RepositoryRole"
+    bypass_mode = "always"
   }
 
-  enforce_admins = false
+  rules {
+    deletion                = true
+    non_fast_forward        = true
+    required_linear_history = true
+    required_signatures     = true
 
-  required_linear_history = true
+    pull_request {
+      required_approving_review_count   = 1
+      dismiss_stale_reviews_on_push     = true
+      require_code_owner_review         = true
+      require_last_push_approval        = false
+      required_review_thread_resolution = true
+    }
 
-  allows_force_pushes = false
-  allows_deletions    = false
+    required_status_checks {
+      strict_required_status_checks_policy = true
 
-  require_conversation_resolution = true
-
-  require_signed_commits = true
+      required_check {
+        context        = "check / Commitlint"
+        integration_id = 15368
+      }
+    }
+  }
 }
 
 locals {
