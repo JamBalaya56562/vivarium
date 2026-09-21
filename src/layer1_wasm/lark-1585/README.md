@@ -43,9 +43,9 @@ sets the verdict to `reproduced`.
 | `repro.js` /      | Generated from the TS sources; gitignored.                    |
 | `repro.worker.js` |                                                               |
 | `repro.py`        | **Native CLI variant.** Same reproduction logic, runnable directly under a real CPython interpreter via `uv run`. Uses `subprocess` + `TimeoutExpired` so the timeout works on Windows as well as POSIX. |
-| `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `scripts/build-layer1-wheels.sh`. |
+| `fix-candidate.json` | **Tracked.** Single source of truth for the fix branch the page renders alongside the baseline (fork repo URL + branch ref). Read by `mise-tasks/repro/build/wheels.sh`. |
 | `verify_fix.py`   | **Maintainer convenience.** PEP 723 native orchestrator that runs the reproduction against **both** the baseline pin and the fix-candidate spec in side-by-side `uv run --no-project --with <spec>` venvs, so a reviewer can see the before/after verdict in one command. Exits 0 iff baseline reproduces (hangs past the budget) AND fix-candidate does not. Deleted once the fix is merged upstream and released on PyPI. |
-| `wheels/`         | Generated; gitignored. `mise run repro:build:wheels` (`scripts/build-layer1-wheels.sh`) builds `lark-<version>-py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in a second Pyodide worker. |
+| `wheels/`         | Generated; gitignored. `mise run repro:build:wheels` (`mise-tasks/repro/build/wheels.sh`) builds `lark-<version>-py3-none-any.whl` from `fix-candidate.json` plus a `manifest.json` (filename + version + resolved commit + spec). `repro.ts` fetches the manifest at page load to install the fix candidate in a second Pyodide worker. |
 | `roundtrip.json`  | Tracked workflow state (round-trip schema_version 1).         |
 
 Shared visual presentation lives in [`../_shared/style.css`](../_shared/style.css);

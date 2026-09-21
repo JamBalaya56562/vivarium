@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#MISE description="Build every Layer 2 image + capture verdict.json into the slug dir (local dev parity with the CI snapshot — lets `bun --cwd docs run dev` show real verdicts)"
+#MISE depends=["docker:build"]
 set -euo pipefail
 shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do

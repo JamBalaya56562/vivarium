@@ -15,23 +15,26 @@ rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wa
 experimental = true
 
 [deps.bun-docs]
-sources = ["docs/package.json", "docs/bun.lock"]
+sources = ["package.json", "bun.lock"]
+outputs = ["node_modules"]
 run = "bun install"
 dir = "docs"
 
 [deps.bun-mcp]
-sources = ["packages/mcp-server/package.json", "packages/mcp-server/bun.lock"]
+sources = ["package.json", "bun.lock"]
+outputs = ["node_modules"]
 run = "bun install"
 dir = "packages/mcp-server"
 
 [deps.bun-wasm]
-sources = ["src/layer1_wasm/package.json", "src/layer1_wasm/bun.lock"]
+sources = ["package.json", "bun.lock"]
+outputs = ["node_modules"]
 run = "bun install"
 dir = "src/layer1_wasm"
 
 [deps.tofu]
-sources = ["infra/github/versions.tf", "infra/github/providers.tf"]
-outputs = ["infra/github/.terraform.lock.hcl"]
+sources = ["versions.tf", "providers.tf"]
+outputs = [".terraform.lock.hcl"]
 run = "tofu init"
 dir = "infra/github"
 
@@ -100,15 +103,6 @@ depends = ["repro:install"]
 dir = "src/layer1_wasm"
 run = "bun run build"
 
-[tasks."repro:build:rust"]
-description = "Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
-run = "bash scripts/build-layer1-rust.sh"
-
-[tasks."repro:build:wheels"]
-description = "Build Layer 1 fix-candidate wheels from each src/layer1_wasm/<slug>/wheels/source.json (gitignored output; ADR-0040)"
-shell = "bash -c"  # script uses `set -o pipefail` + `shopt -s nullglob`
-run = "bash scripts/build-layer1-wheels.sh"
-
 [tasks."repro:pages"]
 description = "Render each recipe's index.html from its layer template + page.en.html (gitignored output)"
 depends = ["docs:install", "repro:build:ts"]
@@ -129,14 +123,7 @@ depends = ["repro:build:ts", "repro:pages", "repro:build:rust", "repro:build:whe
 description = "Run Playwright contract-v1 regression suite for Layer 1"
 depends = ["repro:install"]
 dir = "src/layer1_wasm"
-run = '''
-bunx playwright install --with-deps chromium
-bun run test
-'''
-
-[tasks."repro:native:python"]
-description = "Run every src/layer1_wasm/*/repro.py against host Python (auto-discovered; PEP 723 inline metadata pins each script's deps)"
-run = "bash scripts/run-layer1-python.sh"
+run = ["bunx playwright install --with-deps chromium", "bun run test"]
 
 [tasks."repro:native:ruby"]
 description = "Run Ruby repros against host Ruby (4.0.x pin)"
@@ -151,94 +138,10 @@ run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
 description = "Run all repros against host interpreters/compilers"
 depends = ["repro:native:python", "repro:native:ruby", "repro:native:rust"]
 
-[tasks."docker:build"]
-description = "Build all Layer 2 Docker reproduction images locally"
-run = "bash scripts/build-layer2-images.sh"
-
-[tasks."docker:run"]
-description = "Run a Layer 2 reproduction (set SLUG=<recipe>; e.g. SLUG=postgres-lost-update)"
-run = "bash scripts/run-layer2-image.sh"
-
-[tasks."docker:capture-verdicts"]
-description = "Build every Layer 2 image + capture verdict.json into the slug dir (local dev parity with the CI snapshot — lets `bun --cwd docs run dev` show real verdicts)"
-depends = ["docker:build"]
-run = "bash scripts/capture-layer2-verdicts.sh"
-
-[tasks."ghcr:login"]
-description = "Log in to ghcr.io using a write:packages-scoped PAT file (does not touch gh CLI auth state)"
-shell = "bash -c"
-run = '''
-set -euo pipefail
-pat_file="${VIVARIUM_GHCR_PAT_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/vivarium/ghcr-pat}"
-if [ ! -f "$pat_file" ]; then
-  cat <<EOF >&2
-ghcr.io PAT file not found: $pat_file
-
-One-time setup (ghcr.io requires a CLASSIC PAT; fine-grained PATs are
-not supported for container-registry auth as of this writing — see
-https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry):
-
-  1. https://github.com/settings/tokens/new?scopes=write:packages
-     - Note: e.g. "vivarium-ghcr-push"
-     - Expiration: 30 days (or shorter)
-     - Scopes: write:packages (auto-includes read:packages)
-  2. mkdir -p "\$(dirname "$pat_file")"
-  3. printf '%s' '<paste-token>' > "$pat_file" && chmod 600 "$pat_file"
-
-The file is read at push time only; the credential is dropped from the
-docker config immediately after \`branch-fix:publish\` completes.
-EOF
-  exit 1
-fi
-user="${GHCR_USER:-$(gh api user --jq .login 2>/dev/null || true)}"
-[ -z "$user" ] && { echo "Set GHCR_USER=<username> or run 'gh auth login'." >&2; exit 1; }
-docker login ghcr.io -u "$user" --password-stdin < "$pat_file"
-'''
-
-[tasks."branch-fix:publish"]
-description = "Build a branch-fix image and push to ghcr.io/<user>/vivarium-<slug>-fix:<tag>; auto-logout after push"
-depends = ["ghcr:login"]
-usage = '''
-arg "<slug>"       help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
-arg "<tag>"        help="image tag, typically the fix commit SHA (e.g. 04d86dab)"
-arg "<dockerfile>" help="path to the branch-fix Dockerfile"
-arg "<context>"    help="docker build context dir"
-'''
-run = "bash scripts/publish-branch-fix.sh \"{{usage.slug}}\" \"{{usage.dockerfile}}\" \"{{usage.context}}\" \"{{usage.tag}}\""
-
-[tasks."branch-fix:verdict"]
-description = "Trigger aletheia-works/vivarium branch-fix-verdict.yml against a published image (thin wrapper over `gh workflow run`)"
-usage = '''
-arg "<slug>"  help="recipe slug under src/layer2_docker/"
-arg "<image>" help="published image ref (e.g. ghcr.io/<user>/vivarium-<slug>-fix:<sha>)"
-flag "--expected <verdict>" help="expected branch-fix verdict (default: unreproduced)" default="unreproduced"
-'''
-run = "bash scripts/capture-branch-fix-verdict.sh \"{{usage.slug}}\" \"{{usage.image}}\" \"{{usage.expected}}\""
-
 [tasks."recipes:index"]
 description = "Regenerate docs public API + site-only generated data from src/layer*/"
 dir = "docs"
 run = "bun run generate"
-
-[tasks."recipes:new"]
-description = "Scaffold a new Layer 2 recipe directory from src/layer2_docker/_template/"
-dir = "docs"
-shell = "bash -c"
-usage = '''
-arg "<project>" help="upstream project name (kebab-case, e.g. node, cpython)"
-arg "<issue>" help="upstream issue number"
-arg "<title>" help="bug title (one line)"
-flag "--base <image>" help="docker base image (e.g. node:26-slim)"
-flag "--repo <owner/repo>" help="upstream owner/repo override (default: heuristic per project)"
-'''
-run = '''bun run scripts/new-recipe.ts "{{usage.project}}" "{{usage.issue}}" "{{usage.title}}"{% if usage.base %} --base "{{usage.base}}"{% endif %}{% if usage.repo %} --repo "{{usage.repo}}"{% endif %}'''
-
-[tasks."recipes:verify"]
-description = "Verify a single Layer 2 recipe end-to-end (build + run + verdict + schema + indices + lint + docs build)"
-usage = '''
-arg "<slug>" help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
-'''
-run = "bash scripts/verify-recipe.sh \"{{usage.slug}}\""
 
 [tasks."mcp:install"]
 description = "Install vivarium-mcp dependencies"
@@ -282,51 +185,38 @@ run = "tofu apply"
 [tasks."ci:docs"]
 description = "Local docs build sanity (mirrors the build step inside test-docs.yml's E2E lane)"
 dir = "docs"
-run = '''
-bun install --frozen-lockfile
-bun run build
-'''
+run = ["bun install --frozen-lockfile", "bun run build"]
 
 [tasks."ci:repro"]
 description = "Local equivalent of repro-regression.yml (typecheck + build + Playwright)"
 dir = "src/layer1_wasm"
-shell = "bash -c"  # need `set -o pipefail`, not in POSIX sh
-run = '''
-set -euo pipefail
-bun install --frozen-lockfile
-bun run typecheck
-mise run repro:build
-mise run repro:i18n
-bunx playwright install --with-deps chromium
-bun run test
-'''
+run = [
+  "bun install --frozen-lockfile",
+  "bun run typecheck",
+  "mise run repro:build",
+  "mise run repro:i18n",
+  "bunx playwright install --with-deps chromium",
+  "bun run test",
+]
 
 [tasks."ci:mcp"]
 description = "Local equivalent of test-mcp.yml"
 dir = "packages/mcp-server"
-run = '''
-bun install --frozen-lockfile
-bun run test
-'''
+run = ["bun install --frozen-lockfile", "bun run test"]
 
 [tasks."ci:docs-unit"]
 description = "Local equivalent of test-docs.yml unit lane (resolveReproFile etc.)"
 dir = "docs"
-run = '''
-bun install --frozen-lockfile
-bun run test:unit
-'''
+run = ["bun install --frozen-lockfile", "bun run test:unit"]
 
 [tasks."ci:docs-e2e"]
 description = "Local equivalent of test-docs.yml E2E lane (Playwright against rspress preview, Chromium + Firefox + WebKit)"
 dir = "docs"
-shell = "bash -c"  # need `set -o pipefail`
-run = '''
-set -euo pipefail
-bun install --frozen-lockfile
-bunx playwright install --with-deps chromium firefox webkit
-bun run test:e2e
-'''
+run = [
+  "bun install --frozen-lockfile",
+  "bunx playwright install --with-deps chromium firefox webkit",
+  "bun run test:e2e",
+]
 
 [tasks."ci:commitlint"]
 description = "Lint the most recent commit message against Conventional Commits"
@@ -364,32 +254,9 @@ run = "tombi format"
 description = "rumdl — Markdown lint (read-only)"
 run = "rumdl check ."
 
-[tasks."shell:check"]
-description = "ShellCheck — scripts/ (read-only)"
-# Only scripts/. A recipe's repro.sh reproduces a shell footgun, so it
-# trips the check that detects that footgun — SC2155 and SC2038 are the
-# bugs two Layer 2 recipes exist to demonstrate.
-shell = "bash -c"  # the default Windows shell passes the glob through unexpanded
-run = "shellcheck scripts/*.sh"
-
-[tasks."actions:check"]
-description = "actionlint — workflow syntax + ShellCheck over every run: block (read-only)"
-# Paths are explicit because actionlint finds workflows via `.git`,
-# which this repository does not have.
-shell = "bash -c"  # the default Windows shell passes the glob through unexpanded
-run = "actionlint .github/workflows/*.yml"
-
 [tasks."markdown:check:fix"]
 description = "rumdl — apply Markdown autofix (in-place)"
 run = "rumdl fmt ."
-
-[tasks."rust:check"]
-description = "cargo fmt --check + cargo clippy --deny warnings on Layer 1 Rust crates"
-run = "bash scripts/check-layer1-rust.sh"
-
-[tasks."rust:check:fix"]
-description = "cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
-run = "bash scripts/format-layer1-rust.sh"
 
 [tasks."lint:all"]
 description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust + ShellCheck + actionlint"

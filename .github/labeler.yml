@@ -8,6 +8,8 @@
           - ".github/ISSUE_TEMPLATE/**"
           - ".github/PULL_REQUEST_TEMPLATE.md"
           - "mise.toml"
+          - "mise-tasks/**"
+          - "scripts/**"
           - ".gitignore"
           - ".editorconfig"
           - ".gitattributes"

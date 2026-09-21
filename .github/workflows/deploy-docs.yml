@@ -8,6 +8,7 @@ on:
       - 'src/layer1_wasm/**'
       - 'src/layer2_docker/**'
       - 'mise.toml'
+      - 'mise-tasks/**'
       - 'scripts/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:

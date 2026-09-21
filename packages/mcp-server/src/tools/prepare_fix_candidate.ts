@@ -72,7 +72,7 @@ function buildPrBody(args: {
   if (args.upstreamPr) lines.push(`- Upstream PR: <${args.upstreamPr}>`);
   lines.push('');
   lines.push(
-    `After merge, CI builds the fix-candidate wheel from the fork branch on every deploy via \`scripts/build-layer1-wheels.sh\`. The recipe page then installs both \`${args.pkg}\` from PyPI and the fork-branch wheel into the same Pyodide tab and runs the same probe against each — the bug should reproduce under the baseline and not under the fix candidate.`,
+    `After merge, CI builds the fix-candidate wheel from the fork branch on every deploy via \`mise-tasks/repro/build/wheels.sh\`. The recipe page then installs both \`${args.pkg}\` from PyPI and the fork-branch wheel into the same Pyodide tab and runs the same probe against each — the bug should reproduce under the baseline and not under the fix candidate.`,
   );
   lines.push('');
   lines.push('<details>');
@@ -222,7 +222,7 @@ export async function prepareFixCandidate(
       rules:
         'https://github.com/aletheia-works/vivarium/blob/main/.claude/rules/recipe-authoring.md',
       builder_script:
-        'https://github.com/aletheia-works/vivarium/blob/main/scripts/build-layer1-wheels.sh',
+        'https://github.com/aletheia-works/vivarium/blob/main/mise-tasks/repro/build/wheels.sh',
     },
   };
 }

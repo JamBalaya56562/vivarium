@@ -319,7 +319,7 @@ dual-variant wiring.
 human. The remaining flow:
 
 1. Human merges the Vivarium PR. `deploy-docs.yml` rebuilds the
-   site and `scripts/build-layer1-wheels.sh` builds a wheel from
+   site and `mise-tasks/repro/build/wheels.sh` builds a wheel from
    the fork branch.
 2. Human opens the live recipe page in a browser; the page
    renders the baseline verdict + the fix-candidate verdict.

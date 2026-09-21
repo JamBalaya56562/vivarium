@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
+#MISE description="Build Layer 1 fix-candidate wheels from each src/layer1_wasm/<slug>/fix-candidate.json (gitignored output; ADR-0040)"
 
 set -euo pipefail
 shopt -s nullglob
-
-cd "$(dirname "$0")/.."
 
 sources=(src/layer1_wasm/*/fix-candidate.json)
 if [ ${#sources[@]} -eq 0 ]; then

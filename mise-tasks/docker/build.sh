@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#MISE description="Build all Layer 2 Docker reproduction images locally"
 set -euo pipefail
 shopt -s nullglob
 for dockerfile in src/layer2_docker/*/Dockerfile; do

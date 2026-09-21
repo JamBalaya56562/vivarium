@@ -79,7 +79,8 @@ vivarium/
 ├── AGENTS.md              # this file — standing AI instructions
 ├── README.md              # public project overview
 ├── LICENSE                # Apache-2.0
-├── mise.toml              # mise-en-place tool versions (bun, opentofu, etc.)
+├── mise.toml              # mise-en-place tool versions (bun, opentofu, etc.) + TOML tasks
+├── mise-tasks/            # mise file tasks — one script per task, namespaced by directory
 ├── .claude/                # Claude Code config (team-shared)
 │   ├── CLAUDE.md          # Claude Code-specific addenda; auto-loads `@../AGENTS.md`
 │   └── rules/             # path-scoped operational rules (e.g. recipe-authoring.md)
@@ -108,6 +109,7 @@ vivarium/
 │       └── ja/            # Japanese docs content
 ├── packages/
 │   └── mcp-server/        # @aletheia-works/vivarium-mcp (JSR + npm dual publish)
+├── scripts/               # shell steps CI calls directly (verdict capture, Pages bundling)
 ├── src/
 │   ├── layer1_wasm/       # Layer 1 reproductions (Pyodide, Ruby.wasm, php-wasm, Rust wasm32-wasip1)
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
@@ -259,6 +261,21 @@ action — `test-mcp.yml` needs bun solely to run the package's own
 tests and so uses `oven-sh/setup-bun`.
 
 When adding a new tool, pin it in `mise.toml` first.
+
+Tasks are split by what the body needs. A command, a list of commands
+mise runs one after another, or a `depends` aggregate stays in
+`mise.toml`. A task that needs a shell of its own — a loop, a
+conditional, argument handling, a heredoc, a glob the default shell
+will not expand, or a `shopt` that has to hold over the whole body —
+is a **file task** under `mise-tasks/`: mise runs one entry of a `run`
+list per shell, so anything shared across lines has to be a script.
+The directory path is the `:` namespace
+(`mise-tasks/repro/build/rust.sh` is `repro:build:rust`), and the
+`#MISE` / `#USAGE` header carries `description`, `depends`, `dir`, and
+the argument spec that `--help` prints. mise runs file tasks from the
+repository root. Write one rather than reach for a `shell` override or
+a `set -euo pipefail` prologue inside a TOML string. `scripts/` is for
+shell CI calls directly by path, not through `mise run`.
 
 ### 4.10 Spec evolution policy
 

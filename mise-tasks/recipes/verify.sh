@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
+#MISE description="Verify a single Layer 2 recipe end-to-end (build + run + verdict + schema + indices + lint + docs build)"
+#USAGE arg "<slug>" help="recipe slug under src/layer2_docker/ (e.g. node-63041)"
+# shellcheck disable=SC2154  # usage_* are exported by mise from the #USAGE spec
 set -euo pipefail
 
-slug="${1}"
+slug="${usage_slug}"
 recipe_dir="src/layer2_docker/${slug}"
 
 if [ ! -d "${recipe_dir}" ]; then

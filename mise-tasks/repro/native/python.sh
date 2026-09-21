@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#MISE description="Run every src/layer1_wasm/*/repro.py against host Python (auto-discovered; PEP 723 inline metadata pins each script's deps)"
 set -euo pipefail
 shopt -s nullglob
 matched=0
