@@ -34,13 +34,8 @@ jobs:
     timeout-minutes: ${{ inputs.timeout_minutes }}
 
     steps:
-      - name: Setup Bun (for ajv-cli)
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: latest
-
-      - name: Install ajv-cli for verdict schema validation
-        run: bun add --global ajv-cli@5 ajv-formats
+      - name: Install jsonschema CLI for verdict schema validation
+        uses: sourcemeta/jsonschema@8919b7ad9d938d23c3fa3e0287fff4691355df36 # v16.11.0
 
       - name: Fetch contract v1 verdict schema
         run: |
@@ -146,11 +141,7 @@ jobs:
 
       - name: Validate verdict against contract v1 schema
         run: |
-          ajv validate \
-            --spec=draft2020 \
-            -c ajv-formats \
-            -s /tmp/verdict.schema.json \
-            -d verdict.json
+          jsonschema validate --format-assertion /tmp/verdict.schema.json verdict.json
 
       - name: Assert verdict matches expected
         env:

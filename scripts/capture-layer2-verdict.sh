@@ -87,10 +87,6 @@ jq -n \
     stderr_tail: $stderr_tail
   }' >"$output_path"
 
-"${AJV_BIN:-ajv}" validate \
-  --spec=draft2020 \
-  -c ajv-formats \
-  -s "$schema" \
-  -d "$output_path"
+jsonschema validate --format-assertion "$schema" "$output_path"
 
 echo "Captured Layer 2 verdict: image=${image_ref} verdict=${verdict} exit=${exit_code} → ${output_path}"

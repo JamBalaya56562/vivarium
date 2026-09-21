@@ -22,12 +22,8 @@ if [ ! -f "${recipe_dir}/Dockerfile" ]; then
   exit 1
 fi
 
-echo "==> [1/6] ensure docs/ deps installed (ajv-cli ships there as devDep)"
+echo "==> [1/6] ensure docs/ deps installed"
 (cd docs && bun install --frozen-lockfile)
-ajv_bin_dir="$(cd docs/node_modules/.bin && pwd)"
-AJV_BIN="${ajv_bin_dir}/ajv"
-[ -x "${AJV_BIN}" ] || AJV_BIN="${AJV_BIN}.exe"
-export AJV_BIN
 
 echo "==> [2/6] docker build ${slug}"
 tag="vivarium-${slug}:dev"

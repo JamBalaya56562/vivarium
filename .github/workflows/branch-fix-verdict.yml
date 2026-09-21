@@ -39,13 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: latest
-
-      - name: Install ajv-cli for verdict schema validation
-        run: bun add --global ajv-cli@5 ajv-formats
+      - name: Install jsonschema CLI for verdict schema validation
+        uses: sourcemeta/jsonschema@8919b7ad9d938d23c3fa3e0287fff4691355df36 # v16.11.0
 
       - name: Confirm recipe slug exists in tree
         run: |
@@ -115,11 +110,9 @@ jobs:
             case "$http_status" in
               200)
                 echo "Deployed original verdict fetched."
-                ajv validate \
-                  --spec=draft2020 \
-                  -c ajv-formats \
-                  -s "docs/site/public/spec/verdict.schema.json" \
-                  -d "$out"
+                jsonschema validate --format-assertion \
+                  "docs/site/public/spec/verdict.schema.json" \
+                  "$out"
                 ;;
               404)
                 echo "::warning::No deployed verdict at ${url}. Original-side of the bundle will be omitted."

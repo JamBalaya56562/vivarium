@@ -284,15 +284,15 @@ A reproduction page conforms to Vivarium Contract v1 when:
 4. If it ships a `verdict.json`, the file validates against
    [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/verdict.schema.json).
 
-CI enforces these clauses mechanically — currently via
+CI enforces these clauses mechanically — via
 [`src/layer1_wasm/tests/repro.spec.ts`](https://github.com/aletheia-works/vivarium/blob/main/src/layer1_wasm/tests/repro.spec.ts)
-(Playwright assertions on clauses 1–3) and the
-`jq -e '.contract == "v1" and …'` predicates in
-[`.github/workflows/repro-regression.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/repro-regression.yml)
-(clause 4). The follow-up PR for [Issue #109](https://github.com/aletheia-works/vivarium/issues/109)
-will replace clause 4's `jq` validators with an `ajv-cli` schema
-validator pointed at the schema file above, keeping clause-4
-enforcement single-sourced.
+(Playwright assertions on clauses 1–3) and, for clause 4,
+`jsonschema validate --format-assertion` against the schema file
+above, run by
+[`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+every time a `verdict.json` is captured. The schema pins
+`contract` to the constant `"v1"`, so the version literal is
+checked by the same validation and nowhere else.
 
 The optional revision-2 evidence surface deliberately has **no**
 conformance clause: gating an optional surface on CI would create
@@ -323,7 +323,7 @@ pages stay conformant unchanged.
   — Playwright assertions on the surface.
 - [`src/layer2_docker/_layer2-shared/layer2.js`](https://github.com/aletheia-works/vivarium/blob/main/src/layer2_docker/_layer2-shared/layer2.js)
   — gallery-side `verdict.json` → in-page surface lift.
-- [`.github/workflows/repro-regression.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/repro-regression.yml)
-  — current `jq -e` validators (target for replacement in PR 2).
+- [`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+  — `verdict.json` capture + schema validation (clause 4).
 - [`.github/workflows/deploy-docs.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/deploy-docs.yml)
   — Layer 2 build/run/snapshot workflow.

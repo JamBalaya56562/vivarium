@@ -9,6 +9,7 @@ rumdl = "latest"
 shellcheck = "latest"
 actionlint = "latest"
 jq = "latest"
+jsonschema = "latest"
 rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 
 [settings]

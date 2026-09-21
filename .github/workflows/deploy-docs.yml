@@ -35,25 +35,16 @@ jobs:
         with:
           fetch-depth: 0 # for `lastUpdated` timestamps
 
-      - name: Setup mise (bun, uv, jq)
+      - name: Setup mise (bun, uv, jq, jsonschema)
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
           cache: true
           experimental: true
-          install_args: bun uv jq
+          install_args: bun uv jq jsonschema
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Install ajv-cli for verdict schema validation
-        run: |
-          BUN="$(mise which bun)"
-          cd "$RUNNER_TEMP"
-          "$BUN" init -y >/dev/null
-          "$BUN" add ajv-cli@5 ajv-formats
-          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Build docs (mise run docs:build)
         working-directory: ${{ github.workspace }}

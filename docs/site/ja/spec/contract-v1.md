@@ -256,11 +256,14 @@ Layer 1（再現コードがキャプチャしたいテキストを直接出力�
    [`verdict.schema.json`](https://github.com/aletheia-works/vivarium/blob/main/docs/site/public/spec/verdict.schema.json)
    を検証パスする。
 
-CI はこれらの条項を機械的に強制する——現在は
+CI はこれらの条項を機械的に強制する——
 [`src/layer1_wasm/tests/repro.spec.ts`](https://github.com/aletheia-works/vivarium/blob/main/src/layer1_wasm/tests/repro.spec.ts)
-（条項 1〜3 に対する Playwright アサーション）と
-[`.github/workflows/repro-regression.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/repro-regression.yml)
-内の `jq -e '.contract == "v1" and …'` 述語（条項 4）による。
+（条項 1〜3 に対する Playwright アサーション）と、条項 4 については
+[`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+が `verdict.json` を取得するたびに上記スキーマファイルに対して実行する
+`jsonschema validate --format-assertion` による。スキーマは `contract` を
+定数 `"v1"` に固定しているので、バージョンリテラルの検査も同じ検証で
+行われ、他の場所にはない。
 
 ## リビジョン履歴
 
@@ -282,7 +285,7 @@ CI はこれらの条項を機械的に強制する——現在は
   — サーフェスに対する Playwright アサーション。
 - [`src/layer2_docker/_layer2-shared/layer2.js`](https://github.com/aletheia-works/vivarium/blob/main/src/layer2_docker/_layer2-shared/layer2.js)
   — ギャラリー側の `verdict.json` → ページ内サーフェスリフト。
-- [`.github/workflows/repro-regression.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/repro-regression.yml)
-  — 現在の `jq -e` バリデーター。
+- [`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+  — `verdict.json` の取得 + スキーマ検証（条項 4）。
 - [`.github/workflows/deploy-docs.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/deploy-docs.yml)
   — Layer 2 ビルド/実行/スナップショットワークフロー。

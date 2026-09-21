@@ -31,22 +31,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup mise (bun)
+      - name: Setup mise (bun, jsonschema)
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           install: true
           cache: true
           experimental: true
-          install_args: bun
-
-      - name: Install ajv-cli for verdict schema validation
-        run: |
-          BUN="$(mise which bun)"
-          cd "$RUNNER_TEMP"
-          "$BUN" init -y >/dev/null
-          "$BUN" add ajv-cli@5 ajv-formats
-          echo "AJV_BIN=$RUNNER_TEMP/node_modules/.bin/ajv" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/node_modules/.bin" >> "$GITHUB_PATH"
+          install_args: bun jsonschema
 
       - name: Validate external manifest examples (manifest v1)
         working-directory: ${{ github.workspace }}
@@ -70,11 +61,7 @@ jobs:
             example="$(basename "$(dirname "$(dirname "$manifest")")")"
             echo "Validating ${example}: ${manifest}"
             python3 -c "import json, sys, tomllib; sys.stdout.write(json.dumps(tomllib.load(open(sys.argv[1], 'rb'))))" "$manifest" > "$tmp_json"
-            if ! "$AJV_BIN" validate \
-              --spec=draft2020 \
-              -c ajv-formats \
-              -s "$schema" \
-              -d "$tmp_json"; then
+            if ! jsonschema validate --format-assertion "$schema" "$tmp_json"; then
               echo "::error::Manifest validation failed for ${example} (${manifest})"
               fail=$((fail + 1))
             fi

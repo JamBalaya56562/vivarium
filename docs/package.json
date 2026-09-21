@@ -27,7 +27,6 @@
     "@types/bun": "^1.4.2",
     "@types/node": "^26.6.1",
     "ajv": "8.20.0",
-    "ajv-cli": "5.0.0",
     "ajv-formats": "3.0.1",
     "jszip": "^3.10.2",
     "node-html-parser": "^9.0.4"
