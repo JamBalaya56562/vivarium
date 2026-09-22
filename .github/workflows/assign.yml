@@ -1,4 +1,4 @@
-name: Auto Assign Owner
+name: Auto Assign
 
 on:
   issues:
@@ -32,3 +32,34 @@ jobs:
         env:
           NUMBER: ${{ github.event.pull_request.number }}
         run: gh pr edit "$NUMBER" --repo "$REPO" --add-assignee "$OWNER"
+
+  milestone:
+    name: Assign milestone
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve the open milestone
+        id: resolve
+        run: |
+          set -euo pipefail
+          milestones="$(gh api "repos/${REPO}/milestones?state=open")"
+          count="$(jq 'length' <<<"$milestones")"
+          if [ "$count" -ne 1 ]; then
+            echo "::warning::${count} open milestones; refusing to guess."
+            exit 0
+          fi
+          jq -r '"title=" + .[0].title' <<<"$milestones" >>"$GITHUB_OUTPUT"
+
+      - name: Assign issue milestone
+        if: steps.resolve.outputs.title && github.event_name == 'issues' && github.event.issue.milestone == null
+        env:
+          NUMBER: ${{ github.event.issue.number }}
+          MILESTONE: ${{ steps.resolve.outputs.title }}
+        run: gh issue edit "$NUMBER" --repo "$REPO" --milestone "$MILESTONE"
+
+      - name: Assign pull request milestone
+        if: steps.resolve.outputs.title && github.event_name == 'pull_request_target' && github.event.pull_request.milestone == null
+        env:
+          NUMBER: ${{ github.event.pull_request.number }}
+          MILESTONE: ${{ steps.resolve.outputs.title }}
+        run: gh pr edit "$NUMBER" --repo "$REPO" --milestone "$MILESTONE"
