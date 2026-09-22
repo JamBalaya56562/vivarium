@@ -163,13 +163,12 @@ run = "tofu apply"
 [tasks."ci:docs"]
 description = "Local docs build sanity (mirrors the build step inside test-docs.yml's E2E lane)"
 dir = "docs"
-run = ["bun install --frozen-lockfile", "bun run build"]
+run = "bun run build"
 
 [tasks."ci:repro"]
 description = "Local equivalent of repro-regression.yml (typecheck + build + Playwright)"
 dir = "src/layer1_wasm"
 run = [
-  "bun install --frozen-lockfile",
   "bun run typecheck",
   "mise run repro:build",
   "mise run repro:i18n",
@@ -180,18 +179,17 @@ run = [
 [tasks."ci:mcp"]
 description = "Local equivalent of test-mcp.yml"
 dir = "packages/mcp-server"
-run = ["bun install --frozen-lockfile", "bun run test"]
+run = "bun run test"
 
 [tasks."ci:docs-unit"]
 description = "Local equivalent of test-docs.yml unit lane (resolveReproFile etc.)"
 dir = "docs"
-run = ["bun install --frozen-lockfile", "bun run test:unit"]
+run = "bun run test:unit"
 
 [tasks."ci:docs-e2e"]
 description = "Local equivalent of test-docs.yml E2E lane (Playwright against rspress preview, Chromium + Firefox + WebKit)"
 dir = "docs"
 run = [
-  "bun install --frozen-lockfile",
   "bunx playwright install --with-deps chromium firefox webkit",
   "bun run test:e2e",
 ]

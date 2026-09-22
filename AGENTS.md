@@ -313,6 +313,10 @@ the ruleset requires them; the matching tasks in
 | `ci:mcp`            | `test-mcp.yml`            |
 | `ci:all`            | union of the above        |
 
+The Bun install step in local `ci:*` tasks is supplied by the automatic
+`deps.bun-*` providers, which run `bun install --frozen-lockfile` before
+the tasks start. GitHub Actions jobs install dependencies directly.
+
 For one-off autofix passes use the matching per-language `*:check:fix`
 tasks (`docs:check:fix`, `python:check:fix`, etc.); CI's
 `lint-autofix.yml` runs the same set on each PR and commits any
