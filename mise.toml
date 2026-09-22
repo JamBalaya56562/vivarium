@@ -16,21 +16,24 @@ rust = { version = "1.98.0", components = "rustfmt,clippy", targets = "wasm32-wa
 experimental = true
 
 [deps.bun-docs]
+auto = true
 sources = ["package.json", "bun.lock"]
 outputs = ["node_modules"]
-run = "bun install"
+run = "bun install --frozen-lockfile"
 dir = "docs"
 
 [deps.bun-mcp]
+auto = true
 sources = ["package.json", "bun.lock"]
 outputs = ["node_modules"]
-run = "bun install"
+run = "bun install --frozen-lockfile"
 dir = "packages/mcp-server"
 
 [deps.bun-wasm]
+auto = true
 sources = ["package.json", "bun.lock"]
 outputs = ["node_modules"]
-run = "bun install"
+run = "bun install --frozen-lockfile"
 dir = "src/layer1_wasm"
 
 [deps.tofu]
@@ -42,11 +45,6 @@ dir = "infra/github"
 [hooks]
 enter = ["mise deps -q"]
 
-[tasks."docs:install"]
-description = "Install docs site dependencies"
-dir = "docs"
-run = "bun install"
-
 [tasks."docs:dev"]
 description = "Run rspress dev server on :3000 (auto-runs prebuild-repro)"
 dir = "docs"
@@ -54,7 +52,6 @@ run = "bun run dev"
 
 [tasks."docs:build"]
 description = "Build static docs site to docs/doc_build/"
-depends = ["docs:install"]
 dir = "docs"
 run = "bun run build"
 
@@ -65,54 +62,42 @@ run = "bun run preview"
 
 [tasks."docs:fmt"]
 description = "Format docs/ JS/TS/CSS/JSON with Biome (in-place)"
-depends = ["docs:install"]
 dir = "docs"
 run = "bunx --bun biome format --write ."
 
 [tasks."docs:lint"]
 description = "Lint docs/ with Biome (read-only, exits non-zero on errors)"
-depends = ["docs:install"]
 dir = "docs"
 run = "bunx --bun biome lint ."
 
 [tasks."docs:check"]
 description = "Biome check (format + lint + import-organize, read-only)"
-depends = ["docs:install"]
 dir = "docs"
 run = "bunx --bun biome check ."
 
 [tasks."docs:check:fix"]
 description = "Biome check + apply safe + unsafe auto-fixes"
-depends = ["docs:install"]
 dir = "docs"
 run = "bunx --bun biome check --write --unsafe ."
 
-[tasks."repro:install"]
-description = "Install Layer 1 (WASM) sources dependencies"
-dir = "src/layer1_wasm"
-run = "bun install"
-
 [tasks."repro:typecheck"]
 description = "TypeScript type-check Layer 1 sources + tests"
-depends = ["repro:install"]
 dir = "src/layer1_wasm"
 run = "bun run typecheck"
 
 [tasks."repro:build:ts"]
 description = "Compile Layer 1 TypeScript to .js next to each repro"
-depends = ["repro:install"]
 dir = "src/layer1_wasm"
 run = "bun run build"
 
 [tasks."repro:pages"]
 description = "Render each recipe's index.html from its layer template + page.en.html (gitignored output)"
-depends = ["docs:install", "repro:build:ts"]
+depends = ["repro:build:ts"]
 dir = "docs"
 run = "bun run generate-repro-pages"
 
 [tasks."repro:i18n"]
 description = "Regenerate each recipe's index.ja.html from index.html + i18n.ja.json (gitignored output)"
-depends = ["docs:install"]
 dir = "docs"
 run = "bun run generate-repro-i18n"
 
@@ -122,7 +107,6 @@ depends = ["repro:build:ts", "repro:pages", "repro:build:rust", "repro:build:whe
 
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"
-depends = ["repro:install"]
 dir = "src/layer1_wasm"
 run = ["bunx playwright install --with-deps chromium", "bun run test"]
 
@@ -144,20 +128,13 @@ description = "Regenerate docs public API + site-only generated data from src/la
 dir = "docs"
 run = "bun run generate"
 
-[tasks."mcp:install"]
-description = "Install vivarium-mcp dependencies"
-dir = "packages/mcp-server"
-run = "bun install"
-
 [tasks."mcp:build"]
 description = "Build the MCP server package"
-depends = ["mcp:install"]
 dir = "packages/mcp-server"
 run = "bun run build"
 
 [tasks."mcp:test"]
 description = "Test the MCP server package"
-depends = ["mcp:install"]
 dir = "packages/mcp-server"
 run = "bun run test"
 
