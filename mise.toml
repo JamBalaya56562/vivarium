@@ -37,8 +37,8 @@ run = "bun install --frozen-lockfile"
 dir = "src/layer1_wasm"
 
 [deps.tofu]
-sources = ["versions.tf", "providers.tf"]
-outputs = [".terraform.lock.hcl"]
+sources = ["versions.tf", "providers.tf", ".terraform.lock.hcl"]
+outputs = [".terraform/providers"]
 run = "tofu init"
 dir = "infra/github"
 
