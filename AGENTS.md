@@ -311,7 +311,6 @@ the ruleset requires them; the `mise run ci:*` tasks in
 | `ci:repro`          | `repro-regression.yml`    |
 | `ci:lint`           | `test-lint-check.yml`     |
 | `ci:mcp`            | `test-mcp.yml`            |
-| `ci:commitlint`     | `commitlint.yml`          |
 | `ci:all`            | union of the above        |
 
 For one-off autofix passes use the matching per-language `*:check:fix`

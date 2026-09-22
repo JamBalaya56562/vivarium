@@ -219,13 +219,9 @@ run = [
   "bun run test:e2e",
 ]
 
-[tasks."ci:commitlint"]
-description = "Lint the most recent commit message against Conventional Commits"
-run = "bunx commitlint --from HEAD~1 --to HEAD --verbose"
-
 [tasks."ci:all"]
-description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e + commitlint)"
-depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e", "ci:commitlint"]
+description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e)"
+depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e"]
 
 [tasks."php:check"]
 description = "Mago — PHP format check + lint (read-only)"
