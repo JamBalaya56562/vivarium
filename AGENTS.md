@@ -300,7 +300,7 @@ tokens. Tag form: `<package-name>-v<semver>`
 **Run the matching CI checks locally before pushing.** Every PR runs
 the test workflows under `.github/workflows/` whatever it touches (only
 the Terraform workflows and the deploy keep a `paths:` filter), and
-the ruleset requires them; the `mise run ci:*` tasks in
+the ruleset requires them; the matching tasks in
 [`mise.toml`](mise.toml) mirror them job-for-job:
 
 | Task                | Workflow                  |
@@ -309,7 +309,7 @@ the ruleset requires them; the `mise run ci:*` tasks in
 | `ci:docs-unit`      | `test-docs.yml` (unit lane) |
 | `ci:docs-e2e`       | `test-docs.yml` (E2E lane)  |
 | `ci:repro`          | `repro-regression.yml`    |
-| `ci:lint`           | `test-lint-check.yml`     |
+| `lint:all`          | `test-lint-check.yml`     |
 | `ci:mcp`            | `test-mcp.yml`            |
 | `ci:all`            | union of the above        |
 

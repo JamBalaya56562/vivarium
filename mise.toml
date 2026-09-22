@@ -198,7 +198,7 @@ run = [
 
 [tasks."ci:all"]
 description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e)"
-depends = ["ci:docs", "ci:lint", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e"]
+depends = ["ci:docs", "lint:all", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e"]
 
 [tasks."php:check"]
 description = "Mago — PHP format check + lint (read-only)"
@@ -233,7 +233,7 @@ description = "rumdl — apply Markdown autofix (in-place)"
 run = "rumdl fmt ."
 
 [tasks."lint:all"]
-description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Taplo + rumdl + Rust + ShellCheck + actionlint"
+description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint"
 depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check"]
 
 [tasks."lint:all:fix"]
@@ -246,7 +246,3 @@ depends = [
   "markdown:check:fix",
   "rust:check:fix",
 ]
-
-[tasks."ci:lint"]
-description = "Local equivalent of test-lint-check.yml (Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint)"
-depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check"]

@@ -31,4 +31,4 @@ jobs:
           rustup target add wasm32-wasip1
 
       - name: Run polyglot lint
-        run: mise run ci:lint
+        run: mise run lint:all
