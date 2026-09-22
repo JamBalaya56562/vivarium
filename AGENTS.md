@@ -29,15 +29,12 @@
 AI agents **must not** take any of these actions — always hand off to the human:
 
 - Creating accounts, entering credentials, or handling payments.
-- Approving or merging pull requests on the human's behalf.
 - Destructive operations on shared state: `tofu destroy`, production database
   writes, force-push to `main` once the first PR has been merged, deleting
   released tags, rewriting pushed history on a repo with collaborators.
 - Rotating, exporting, or committing secrets. If a secret is needed at
   runtime, reference it via GitHub Actions secrets or environment variables;
   never inline.
-- External contracts, legal judgements, or community-facing human dialogue
-  (issue replies to real users, social posts, etc.).
 - **Strategic pivots.** Scope, vision, phase ordering, and technology-stack
   choices at the architecture layer are human decisions. Implementation
   choices inside an agreed scope are fair game.
@@ -64,11 +61,6 @@ If unsure whether an action crosses the line, stop and ask.
 6. **Verify before asserting.** When citing a file path, function, or flag,
    confirm it exists in the current tree. Memory and training data both go
    stale.
-7. **Respect `status: blocked`.** Issues with that label are off-limits
-   for agent pick-up. If you hit an unresolvable blocker mid-task,
-   apply the label with a comment summarising the blocker and the
-   signal to watch for, then stop — do not invent a partial
-   implementation.
 
 ## 4. Repository conventions
 
@@ -130,18 +122,7 @@ mounted UI components, global styles, hand-curated data overlays,
 generated site-only modules, and public assets. Visitor-facing pages
 and public machine-readable assets stay under `docs/site/`.
 
-### 4.3 Source-control
-
-- SCM is **Jujutsu (`jj`)**, not Git. Use `jj status`, `jj diff`, `jj commit`,
-  `jj log`. The repository is colocated (`.jj/` and `.git/` both exist), but
-  drive it through `jj`, never `git`.
-- Remotes: `origin` is the contributor's fork, `upstream` is
-  `aletheia-works/vivarium`. `trunk()` resolves to `main@upstream`; fetch with
-  `jj git fetch --all-remotes`.
-- GitHub is the hosting remote; workflows and the branch ruleset still apply
-  normally.
-
-### 4.4 Commits
+### 4.3 Commits
 
 - **Conventional Commits always.** Form: `type(scope)?: subject`,
   enforced by the org-level commitlint reusable with the unmodified
@@ -157,10 +138,10 @@ and public machine-readable assets stay under `docs/site/`.
   `type`/`scope`, body separated by blank line, `type` from the
   standard set (`feat`/`fix`/`docs`/`style`/`refactor`/`perf`/`test`/`build`/`ci`/`chore`/`revert`).
 
-### 4.5 Labels
+### 4.4 Labels
 
 - All labels use the `prefix: value` form with a space after the colon:
-  `type: bug`, `scope: ci`, `priority: p0`, `status: triage`, `ai: generated`.
+  `type: bug`, `scope: ci`, `priority: p0`, `status: triage`, `ai: verified`.
   Non-prefixed labels (`good-first-issue`, `help-wanted`, `discussion`) keep
   hyphenated single-word form.
 - Label definitions live in [`infra/github/main.tf`](infra/github/main.tf).
@@ -168,32 +149,26 @@ and public machine-readable assets stay under `docs/site/`.
   in [`.github/labeler.yml`](.github/labeler.yml) when `scope: *` is
   involved), never via the GitHub UI — the IaC apply propagates the
   change. Milestones follow the same pattern, also in `main.tf`.
-- **Issue Type field is required.** Every Issue must carry a GitHub
-  Issue Type (Bug / Feature / Task) set explicitly via the GraphQL
-  `updateIssueIssueType` mutation. The `type: *` label alone is
-  insufficient — Projects v2 swimlanes and queries dispatch on the
-  Issue Type field, not on the label. AI agents may need a PAT with
-  Issue Types: read+write to set this; if scope is missing, leave the
-  Issue created and ask the human to set the field.
 - **Mechanical labelling only.** `scope: *` comes from
   [`.github/labeler.yml`](.github/labeler.yml) path rules; `type: *` comes
   from the Conventional-Commit prefix of the PR; `priority: *` and
   `status: *` are set by CI or humans, never by AI guess.
 
-### 4.6 AI authorship disclosure
+### 4.5 AI authorship disclosure
 
-Every PR opened or substantively edited by an AI agent **must** carry
-the `ai: generated` label by the time it leaves draft. The agent
-self-applies it:
+Every PR opened or substantively edited by an AI agent **must** name
+the tool and model in its description, as the last line of the body:
 
-```bash
-gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"
+```text
+🤖 Generated with [Claude Code](https://claude.com/claude-code) — Claude Opus 5
 ```
 
-Missing the label on an AI-authored PR is a defect; backfilling old
-PRs is legitimate housekeeping.
+The description is the one surface every author can write, whatever
+permissions they hold on the repository. Missing disclosure on an
+AI-authored PR is a defect; adding it to an open PR is legitimate
+housekeeping.
 
-### 4.7 Organisation-level reusable workflows
+### 4.6 Organisation-level reusable workflows
 
 Shared cross-repo CI logic (commitlint, release notes, etc.) lives in
 `aletheia-works/.github` as `workflow_call` reusables. Vivarium-specific
@@ -201,7 +176,7 @@ reusable workflows, such as verdict capture tied to Contract v1, live in this
 repository. If a workflow here starts duplicating logic that would belong in
 the org, flag it for promotion rather than copying.
 
-### 4.8 GitHub Actions: latest versions, pinned by SHA
+### 4.7 GitHub Actions: latest versions, pinned by SHA
 
 **(a) Latest at authoring time.** Use the most recent published
 version of every action, runtime, and reusable-workflow ref when
@@ -234,7 +209,7 @@ If a newer major bumps an action's interface and migration is
 non-trivial, pin the older major's latest SHA with a comment
 explaining the deliberate hold (`# pinned at v3 until <link>`).
 
-### 4.9 Toolchain (mise-managed)
+### 4.8 Toolchain (mise-managed)
 
 Local development tool versions are pinned in
 [`mise.toml`](mise.toml). Run `mise install` after cloning.
@@ -272,7 +247,7 @@ repository root. Write one rather than reach for a `shell` override or
 a `set -euo pipefail` prologue inside a TOML string. `scripts/` is for
 shell CI calls directly by path, not through `mise run`.
 
-### 4.10 Spec evolution policy
+### 4.9 Spec evolution policy
 
 Public specs (Contract v1, Manifest v1, Recipes index v1) follow a
 two-tier policy:
@@ -287,7 +262,7 @@ read (`<meta name="vivarium-contract">`, `manifest = "v1"`,
 `index = "v1"`). Revisions never touch that literal; consumers
 feature-detect new optional surface.
 
-### 4.11 Package distribution
+### 4.10 Package distribution
 
 Runtime artefacts (Vivarium MCP today, future CLI / SDK) dual-
 publish to JSR (canonical) and npm (npx ergonomics) with OIDC
@@ -295,7 +270,7 @@ trusted publishing + Sigstore provenance — no long-lived registry
 tokens. Tag form: `<package-name>-v<semver>`
 (e.g. `mcp-server-v0.1.0`).
 
-### 4.12 Pre-PR local validation
+### 4.11 Pre-PR local validation
 
 **Run the matching CI checks locally before pushing.** Every PR runs
 the test workflows under `.github/workflows/` whatever it touches (only
@@ -327,7 +302,7 @@ its `run:` steps from the YAML and execute them by hand. **When CI
 catches something local missed**, extend the matching `ci:*` task —
 local and CI should converge on the same surface in both directions.
 
-### 4.13 Comments
+### 4.12 Comments
 
 **Default: no comment.** Names, small functions, and types carry the
 explanation. A comment is a second source of truth that no test, type
@@ -341,7 +316,7 @@ Write a comment only when it is one of these two:
 
 | Kind | Test | Example |
 |---|---|---|
-| **Functional** | The file does not work without it | PEP 723 `# /// script` blocks, `// biome-ignore`, `// eslint-disable-next-line`, the `# v6.0.2` version note every SHA pin requires (§4.8) |
+| **Functional** | The file does not work without it | PEP 723 `# /// script` blocks, `// biome-ignore`, `// eslint-disable-next-line`, the `# v6.0.2` version note every SHA pin requires (§4.7) |
 | **Non-recoverable why** | The obvious reading of the code invites a "fix" that would break it, and nothing else records why | `# =1.8.4 — last release before the NFA compiler fixed #779` |
 
 A non-recoverable why is one or two lines. If it needs a paragraph, it
@@ -356,7 +331,7 @@ Delete rather than write:
   rot first. A map that is worth maintaining belongs in `docs/`, where
   it is a page with an owner.
 - Rationale for the change being made. That is the commit message
-  (§4.4) and the PR body. Code records what is true now, not how it
+  (§4.3) and the PR body. Code records what is true now, not how it
   got that way.
 - Section banners (`// ─── Repository ───`), TODOs, changelog notes,
   and commented-out code.

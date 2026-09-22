@@ -165,13 +165,8 @@ gh pr create --repo aletheia-works/vivarium --base main \
   --body "<summary>"
 ```
 
-After `gh pr create` returns the PR URL, apply the `ai: generated`
-label (AGENTS.md §4.6 — Vivarium-internal contract, the label and
-permission both exist here):
-
-```bash
-gh pr edit <num> --repo aletheia-works/vivarium --add-label "ai: generated"
-```
+The `--body` ends with the AI-authorship footer naming the tool and
+model (AGENTS.md §4.5).
 
 Record the PR URL as `roundtrip.json#/vivarium_pr` and push again
 (`jj git push --bookmark roundtrip/<slug>`) so the recorded URL is
@@ -410,7 +405,7 @@ The tool will:
   no existing `upstream_pr`, verdicts verified, `vivarium_pr` set).
 - Run `gh auth status` to ensure write scope is available.
 - Verify the fork exists and the branch is pushed.
-- Run `gh pr create --repo <upstream> --head <fork>:<branch> --draft --title --body`. The body has an AI-authorship footer appended automatically (the `ai: generated` label is NOT applied — upstream usually doesn't carry that label or grant permission to create it).
+- Run `gh pr create --repo <upstream> --head <fork>:<branch> --draft --title --body`. The body has an AI-authorship footer appended automatically.
 - Return the PR URL.
 
 Record `roundtrip.json#/upstream_pr` with the returned URL and set
@@ -489,8 +484,8 @@ just sequences them:
   satisfied.
 - The upstream PR is always opened with `--draft`; merging out of
   draft stays a human action.
-- AI authorship disclosure: body footer on the upstream PR (Phase
-  4), `ai: generated` label on the Vivarium PR (AGENTS.md §4.6).
+- AI authorship disclosure: body footer naming the tool and model,
+  on both the Vivarium and the upstream PR (AGENTS.md §4.5).
 - The contributor's fork is created manually via `gh repo fork`;
   the skill never forks on the user's behalf.
 

@@ -31,7 +31,8 @@ Closes #<issue-number>.
 ## Process notes
 
 <!-- Delete the bullets that do not apply. -->
-- AI-authored? If yes, the `ai: generated` label must be set on this PR.
+- AI-authored? If yes, the description's last line names the tool and
+  model that wrote it (AGENTS.md §4.5).
 - Scope-creep check: the diff still matches the title and linked Issue.
 - Claude's automated review agrees, or you have pushed back with a specific
   justification on each disagreement (silent capitulation corrupts the

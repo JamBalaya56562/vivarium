@@ -22,9 +22,6 @@
 
 - **Shell**: `bash` under Windows. Use POSIX syntax (`/dev/null`, forward
   slashes in paths), not `cmd.exe`/PowerShell idioms.
-- **SCM**: Jujutsu (`jj`), not Git. The global user CLAUDE.md already covers
-  this; repeated here because it is the most common miss. In PowerShell,
-  quote `@` (`jj log -r '@'`).
 - **Infra CLI**: OpenTofu (`tofu`), not Terraform.
 - **GitHub CLI**: `gh` is available and authenticated.
 - **Dedicated tools beat Bash.** Use `Read` / `Edit` / `Write` / `Glob` /
@@ -42,22 +39,21 @@
 ## 3. Autonomous-loop mode
 
 When invoked via `/loop`, the same §2 guardrails from `AGENTS.md`
-apply unchanged. The loop **must not** merge / approve PRs,
-force-push to `main`, create or rotate secrets, run `tofu apply`
-against production state, or pivot scope without human
-confirmation. End the loop at natural stopping points rather than
-inventing filler tasks.
+apply unchanged. The loop **must not** force-push to `main`,
+create or rotate secrets, run `tofu apply` against production
+state, or pivot scope without human confirmation. End the loop
+at natural stopping points rather than inventing filler tasks.
 
 ## 4. Comments
 
-`AGENTS.md` §4.13 is the rule; these are the agent-specific failure
+`AGENTS.md` §4.12 is the rule; these are the agent-specific failure
 modes it exists to stop.
 
 - Do not annotate your own work. Why you chose an approach, what you
   changed, and what you verified belong in the commit message body and
   the PR description — never in a comment next to the code.
 - When you touch a region that already carries a comment, delete the
-  comment unless it passes one of §4.13's two tests. A half-true
+  comment unless it passes one of §4.12's two tests. A half-true
   comment beside an edited line is worse than either keeping or
   removing the whole thing.
 - Do not restore a comment an earlier pass removed.
