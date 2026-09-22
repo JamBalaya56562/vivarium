@@ -221,10 +221,6 @@ job stays readable from the YAML alone through `install_args`, which
 names the tools that job needs — `mise.toml` holds the version, the
 workflow holds the list.
 
-`publish-mcp.yml`, `test-docs.yml`, and `test-mcp.yml` still pin bun
-with `oven-sh/setup-bun` and convert as they are next touched. A new
-workflow uses `jdx/mise-action`.
-
 `vivarium-verdict.yml` is the exception that stays: it is a
 `workflow_call` reusable that runs in a consumer's repository, where
 there is no Vivarium checkout and so no `mise.toml` to read. It
