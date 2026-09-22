@@ -9,6 +9,6 @@ for dockerfile in src/layer2_docker/*/Dockerfile; do
   case "$slug" in _*) continue ;; esac
   tag="vivarium-${slug}:dev"
   echo "==> capture verdict.json for ${slug}"
-  bash scripts/capture-layer2-verdict.sh "$tag" "${slug_dir}/verdict.json"
+  mise run verdict:capture-layer2 "$tag" "${slug_dir}/verdict.json"
 done
 echo "Done. Refresh http://localhost:3000/vivarium/repro/<project>/<issue_path>/ to see captured verdicts."

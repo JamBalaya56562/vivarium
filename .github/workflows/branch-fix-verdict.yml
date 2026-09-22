@@ -39,8 +39,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install jsonschema CLI for verdict schema validation
-        uses: sourcemeta/jsonschema@8919b7ad9d938d23c3fa3e0287fff4691355df36 # v16.11.0
+      - name: Setup mise (jq, jsonschema)
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: jq jsonschema
 
       - name: Confirm recipe slug exists in tree
         run: |
@@ -70,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p verdict-bundle
-          bash scripts/capture-layer2-verdict.sh \
+          mise run verdict:capture-layer2 \
             "${{ inputs.branch_image }}" \
             "verdict-bundle/branch-fix-verdict.json" \
             --image-tag "${{ inputs.branch_image }}"
@@ -85,7 +90,7 @@ jobs:
           if [ -n "$original_image" ]; then
             echo "Re-capturing original verdict from supplied image: ${original_image}"
             docker pull "$original_image"
-            bash scripts/capture-layer2-verdict.sh \
+            mise run verdict:capture-layer2 \
               "$original_image" \
               "$out" \
               --image-tag "$original_image"

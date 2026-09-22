@@ -37,7 +37,7 @@ jobs:
           install: true
           cache: true
           experimental: true
-          install_args: bun jsonschema
+          install_args: bun jq jsonschema
 
       - name: Validate external manifest examples (manifest v1)
         working-directory: ${{ github.workspace }}
@@ -92,7 +92,7 @@ jobs:
             echo "Building Layer 2 image for regression: ${slug}"
             docker build --tag "$tag" "$slug_dir"
 
-            bash scripts/capture-layer2-verdict.sh \
+            mise run verdict:capture-layer2 \
               "$tag" \
               "${slug_dir}/verdict.json"
 

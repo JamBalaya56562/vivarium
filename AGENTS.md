@@ -109,7 +109,7 @@ vivarium/
 │       └── ja/            # Japanese docs content
 ├── packages/
 │   └── mcp-server/        # @aletheia-works/vivarium-mcp (JSR + npm dual publish)
-├── scripts/               # shell steps CI calls directly (verdict capture, Pages bundling)
+├── scripts/               # shell steps CI calls directly by path (image publishing, Pages bundling)
 ├── src/
 │   ├── layer1_wasm/       # Layer 1 reproductions (Pyodide, Ruby.wasm, php-wasm, Rust wasm32-wasip1)
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
@@ -239,26 +239,21 @@ explaining the deliberate hold (`# pinned at v3 until <link>`).
 Local development tool versions are pinned in
 [`mise.toml`](mise.toml). Run `mise install` after cloning.
 
-CI does **not** use mise for runtime versions (Bun, Node, Python,
-Rust); each workflow step spells out the setup action directly so
-the runtime is auditable from the workflow YAML alone. Versions in
-`mise.toml` and CI workflows can drift; bumps land in separate PRs.
+CI installs its tools the same way, with `jdx/mise-action` reading
+the same `mise.toml`, so a workflow and a fresh checkout resolve one
+toolchain and there is no second set of versions to keep in sync. The
+job stays readable from the YAML alone through `install_args`, which
+names the tools that job needs — `mise.toml` holds the version, the
+workflow holds the list.
 
-Two sets of workflows are documented exceptions.
+`publish-mcp.yml`, `test-docs.yml`, and `test-mcp.yml` still pin bun
+with `oven-sh/setup-bun` and convert as they are next touched. A new
+workflow uses `jdx/mise-action`.
 
-`test-lint-check.yml` and `lint-autofix.yml` install the polyglot lint
-toolchain (Mago / Ruff / Tombi / rumdl / ShellCheck / actionlint, plus
-cargo fmt and clippy) via `jdx/mise-action` to avoid a separate
-org-level third-party action allowlist registration for each one.
-
-`deploy-docs.yml` and `repro-regression.yml` use `jdx/mise-action`
-because they invoke `mise run` tasks (`docs:build`, `repro:build`,
-`repro:typecheck`, `repro:i18n`) rather than calling a runtime
-directly. There mise is the build entry point, not a way of
-installing a runtime, so the rule above does not reach it. A
-workflow that only needs a runtime uses that runtime's setup
-action — `test-mcp.yml` needs bun solely to run the package's own
-tests and so uses `oven-sh/setup-bun`.
+`vivarium-verdict.yml` is the exception that stays: it is a
+`workflow_call` reusable that runs in a consumer's repository, where
+there is no Vivarium checkout and so no `mise.toml` to read. It
+installs its own tools by action and fetches the schema over HTTP.
 
 When adding a new tool, pin it in `mise.toml` first.
 

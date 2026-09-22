@@ -289,7 +289,7 @@ CI enforces these clauses mechanically — via
 (Playwright assertions on clauses 1–3) and, for clause 4,
 `jsonschema validate --format-assertion` against the schema file
 above, run by
-[`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+[`mise-tasks/verdict/capture-layer2.sh`](https://github.com/aletheia-works/vivarium/blob/main/mise-tasks/verdict/capture-layer2.sh)
 every time a `verdict.json` is captured. The schema pins
 `contract` to the constant `"v1"`, so the version literal is
 checked by the same validation and nowhere else.
@@ -323,7 +323,7 @@ pages stay conformant unchanged.
   — Playwright assertions on the surface.
 - [`src/layer2_docker/_layer2-shared/layer2.js`](https://github.com/aletheia-works/vivarium/blob/main/src/layer2_docker/_layer2-shared/layer2.js)
   — gallery-side `verdict.json` → in-page surface lift.
-- [`scripts/capture-layer2-verdict.sh`](https://github.com/aletheia-works/vivarium/blob/main/scripts/capture-layer2-verdict.sh)
+- [`mise-tasks/verdict/capture-layer2.sh`](https://github.com/aletheia-works/vivarium/blob/main/mise-tasks/verdict/capture-layer2.sh)
   — `verdict.json` capture + schema validation (clause 4).
 - [`.github/workflows/deploy-docs.yml`](https://github.com/aletheia-works/vivarium/blob/main/.github/workflows/deploy-docs.yml)
   — Layer 2 build/run/snapshot workflow.

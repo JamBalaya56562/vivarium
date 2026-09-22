@@ -1,49 +1,18 @@
 #!/usr/bin/env bash
-
+#MISE description="Run a Layer 2 image, write its Contract v1 verdict.json, and validate it against the schema"
+#USAGE arg "<image>" help="image ref to run (e.g. ghcr.io/aletheia-works/vivarium-<slug>:latest)"
+#USAGE arg "<output>" help="path to write the verdict.json to"
+#USAGE flag "--image-tag <tag>" help="image_tag to record in the verdict (default: the image ref that was run)"
+#USAGE flag "--image-digest <digest>" help="image_digest to record in the verdict (default: empty)"
+# shellcheck disable=SC2154  # usage_* are exported by mise from the #USAGE spec
 set -euo pipefail
 
-usage() {
-  sed -n '2,40p' "$0"
-}
+image_ref="${usage_image}"
+output_path="${usage_output}"
+image_tag="${usage_image_tag:-$image_ref}"
+image_digest="${usage_image_digest:-}"
 
-if [ "$#" -lt 2 ]; then
-  usage >&2
-  exit 64
-fi
-
-image_ref="$1"
-output_path="$2"
-shift 2
-
-image_tag="$image_ref"
-image_digest=""
-
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --image-tag)
-      image_tag="${2:?--image-tag requires a value}"
-      shift 2
-      ;;
-    --image-digest)
-      image_digest="${2:?--image-digest requires a value}"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "::error::Unknown argument: $1" >&2
-      usage >&2
-      exit 64
-      ;;
-  esac
-done
-
-if [ -z "${REPO_ROOT:-}" ]; then
-  REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-fi
-schema="${REPO_ROOT}/docs/site/public/spec/verdict.schema.json"
+schema="docs/site/public/spec/verdict.schema.json"
 if [ ! -f "$schema" ]; then
   echo "::error::Contract v1 schema missing at ${schema}" >&2
   exit 1
