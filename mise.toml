@@ -115,10 +115,6 @@ description = "Run Ruby repros against host Ruby (4.0.x pin)"
 tools = { ruby = "4.0.6" }
 run = "ruby src/layer1_wasm/ruby-21709/repro.rb"
 
-[tasks."repro:native:rust"]
-description = "Run Rust repros against host Rust toolchain"
-run = "cargo run --release --manifest-path src/layer1_wasm/regex-779/Cargo.toml"
-
 [tasks."repro:native"]
 description = "Run all repros against host interpreters/compilers"
 depends = ["repro:native:python", "repro:native:ruby", "repro:native:rust"]

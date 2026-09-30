@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 #MISE description="Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
 set -euo pipefail
-find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
+for prepare in src/layer1_wasm/*/prepare.sh; do
+  if [ -f "$prepare" ]; then
+    bash "$prepare"
+  fi
+done
+find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -not -path '*/.aube/*' -print | sort | while IFS= read -r cargo_toml; do
   crate_dir=$(dirname "$cargo_toml")
   if [ -f "${crate_dir}/recipe.json" ]; then
     recipe_dir="$crate_dir"

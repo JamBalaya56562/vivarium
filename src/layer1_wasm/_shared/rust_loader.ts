@@ -13,6 +13,7 @@ export interface LoadOptions {
   wasiShimVersion?: string;
   pendingText?: string;
   announceVerdict?: boolean;
+  preopens?: string[];
 }
 
 export interface RunResult {
@@ -35,12 +36,14 @@ interface WasiShimModule {
     args: string[],
     env: string[],
     fds: unknown[],
+    options?: { debug?: boolean },
   ) => {
     wasiImport: WebAssembly.ModuleImports;
     start(instance: WebAssembly.Instance): number | undefined;
   };
   OpenFile: new (file: unknown) => unknown;
   File: new (data: Uint8Array | number[]) => unknown;
+  PreopenDirectory: new (name: string, contents: Map<string, unknown>) => unknown;
   ConsoleStdout: {
     lineBuffered(onLine: (line: string) => void): unknown;
   };
@@ -91,8 +94,12 @@ export async function loadVivariumRust(
           shim.ConsoleStdout.lineBuffered((line: string) => {
             stderr += `${line}\n`;
           }),
+          ...(options.preopens ?? []).map(
+            (path) => new shim.PreopenDirectory(path, new Map()),
+          ),
         ];
-        const wasi = new shim.WASI([], [], fds);
+        // The shim treats an omitted `debug` as on and logs every file operation.
+        const wasi = new shim.WASI([], [], fds, { debug: false });
         const instance = await WebAssembly.instantiate(wasmModule, {
           wasi_snapshot_preview1: wasi.wasiImport,
         });

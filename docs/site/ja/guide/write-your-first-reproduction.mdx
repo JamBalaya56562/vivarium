@@ -64,7 +64,7 @@ import { ExampleSlug } from '../../_components/LiveExamples';
         },
         {
           lead: '一番近い既存レシピをコピーする。',
-          body: <>言語が同じレシピを丸ごとコピーするのが楽です。Python なら <code>src/layer1_wasm/<ExampleSlug layer={1} language="python" />/</code>、Ruby なら <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" />/</code>、PHP なら <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" />/</code>、Rust なら <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" />/</code>。<code>cp -r src/layer1_wasm/<ExampleSlug layer={1} language="python" /> src/layer1_wasm/&lt;あなたの slug&gt;</code> でディレクトリごと複製。</>,
+          body: <>言語が同じレシピを丸ごとコピーするのが楽です。Python なら <code>src/layer1_wasm/<ExampleSlug layer={1} language="python" />/</code>、Ruby なら <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" />/</code>、PHP なら <code><ExampleSlug layer={1} language="php" fallback="<php-slug>" />/</code>、Rust なら <code><ExampleSlug layer={1} language="rust" project="regex" fallback="<rust-slug>" />/</code>。<code>cp -r src/layer1_wasm/<ExampleSlug layer={1} language="python" /> src/layer1_wasm/&lt;あなたの slug&gt;</code> でディレクトリごと複製。</>,
         },
       ]}
     />
@@ -177,7 +177,7 @@ else:
     <p><code>mise exec uv -- uv run repro.py</code> で ephemeral venv が組まれて走ります。他の言語も考え方は同じですが、仕組みは共有していません:</p>
     <ul>
       <li><strong>Ruby</strong> — インタプリタがそのまま走らせる <code>repro.rb</code> で、PEP 723 に相当するものはありません。 <code>mise exec ruby</code> ではなく{' '} <code>mise run repro:native:ruby</code> で実行してください。 バージョンのピンがタスク側にあるためです。 <code><ExampleSlug layer={1} language="ruby" fallback="<ruby-slug>" /></code> を参照。</li>
-      <li><strong>Rust</strong> — コンパニオンファイルはありません。<code>repro.wasm</code> にコンパイルされる crate <em>そのもの</em>が native CLI なので、{' '} <code>mise run repro:native:rust</code> はページが走らせるのと同じ{' '} <code>src/repro.rs</code> を実行します。 <code><ExampleSlug layer={1} language="rust" fallback="<rust-slug>" /></code> を参照。</li>
+      <li><strong>Rust</strong> — コンパニオンファイルはありません。<code>repro.wasm</code> にコンパイルされる crate <em>そのもの</em>が native CLI なので、{' '} <code>mise run repro:native:rust</code> はページが走らせるのと同じ{' '} <code>src/repro.rs</code> を実行します。 <code><ExampleSlug layer={1} language="rust" project="regex" fallback="<rust-slug>" /></code> を参照。</li>
     </ul>
     <p><code>mise run repro:native</code> で全部まとめて走ります。 php-wasm のレシピはまだ書かれていないので、雛形にする <code>repro.php</code> は存在しません。 <code>_shared/php_loader.ts</code> は最初の 1 本を書く人のために用意されています。</p>
   </Section>

@@ -1,0 +1,65 @@
+diff --git a/crates/aube-util/Cargo.toml b/crates/aube-util/Cargo.toml
+--- a/crates/aube-util/Cargo.toml
++++ b/crates/aube-util/Cargo.toml
+@@ -14,14 +14,10 @@
+ rustc-hash = { workspace = true }
+ foldhash = { workspace = true }
+ blake3 = { workspace = true }
+-reflink-copy = { workspace = true }
+ serde = { workspace = true }
+ serde_json = { workspace = true }
+ tracing = { workspace = true }
+ bytes = "1"
+-tokio = { workspace = true }
+-reqwest = { workspace = true }
+-webpki-root-certs = { workspace = true }
+ thiserror = { workspace = true }
+ 
+ [features]
+@@ -32,6 +28,15 @@
+ default = []
+ rustls = ["reqwest/rustls"]
+ 
++[target.'cfg(not(target_family = "wasm"))'.dependencies]
++reflink-copy = { workspace = true }
++tokio = { workspace = true }
++reqwest = { workspace = true }
++webpki-root-certs = { workspace = true }
++
++[target.'cfg(target_family = "wasm")'.dependencies]
++tokio = { version = "1", default-features = false, features = ["sync", "rt", "time"] }
++
+ [target.'cfg(unix)'.dependencies]
+ libc = { workspace = true }
+ 
+diff --git a/crates/aube-util/src/lib.rs b/crates/aube-util/src/lib.rs
+--- a/crates/aube-util/src/lib.rs
++++ b/crates/aube-util/src/lib.rs
+@@ -1,3 +1,4 @@
++#[cfg(not(target_family = "wasm"))]
+ pub mod adaptive;
+ pub mod buf;
+ pub mod cache;
+@@ -11,11 +12,14 @@
+ // Convenience re-exports of the diagnostics public API so binaries can
+ // reference `aube_util::DiagConfig` instead of `aube_util::diag::DiagConfig`.
+ pub use diag::{DiagConfig, Slot, Span, jstr};
++#[cfg(not(target_family = "wasm"))]
+ pub mod fs;
+ pub mod fs_atomic;
+ pub mod hash;
++#[cfg(not(target_family = "wasm"))]
+ pub mod http;
+ pub mod identity;
++#[cfg(not(target_family = "wasm"))]
+ pub mod io;
+ 
+ // Convenience re-exports so consumers can reference `aube_util::Embedder`
+@@ -29,6 +33,7 @@
+ };
+ pub mod path;
+ pub mod pkg;
++#[cfg(not(target_family = "wasm"))]
+ pub mod snapshot;
+ pub mod terminal;
+ pub mod url;

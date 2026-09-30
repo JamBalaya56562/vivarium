@@ -66,6 +66,7 @@ src/layer2_docker/**/index.html
 
 src/layer1_wasm/**/wheels/*.whl
 src/layer1_wasm/**/wheels/manifest.json
+src/layer1_wasm/**/.aube/
 
 src/layer1_wasm/playwright-report/
 src/layer1_wasm/test-results/

@@ -64,6 +64,15 @@
       "homepage": "https://dateutil.readthedocs.io/",
       "github": "https://github.com/dateutil/dateutil"
     },
+    "aube": {
+      "display_name": "aube",
+      "tagline": "A Node.js package manager written in Rust.",
+      "tagline_ja": "Rust で書かれた Node.js のパッケージマネージャ。",
+      "description": "aube's own crates compiled to wasm32-wasip1 and run against a fixture project in an in-memory filesystem. Each page runs the latest release next to the fixing pull request, so the verdict flips once the fix is released.",
+      "description_ja": "aube 自身の crate を wasm32-wasip1 にコンパイルし、インメモリのファイルシステム上のフィクスチャのプロジェクトに対して動かす。各ページは最新リリースと、それを直す pull request を並べて実行するため、fix がリリースされると verdict が反転する。",
+      "homepage": "https://aube.sh/",
+      "github": "https://github.com/aubepkg/aube"
+    },
     "bash": {
       "display_name": "bash",
       "tagline": "GNU bash and POSIX shell semantics.",

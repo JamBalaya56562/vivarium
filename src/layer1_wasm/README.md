@@ -78,7 +78,7 @@ How the pane gets filled is not prescribed. Three shapes exist today:
 | Shape | Mechanism | Recipes |
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel and the page installs it | `dateutil-1478`, `lark-1585` |
-| Second artefact | a sibling crate compiled from the same source against a fixed dependency version | `regex-779` |
+| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit | `regex-779`, `aube-1645` |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 ## Verdict surface

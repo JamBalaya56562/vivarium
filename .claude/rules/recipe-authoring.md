@@ -318,7 +318,7 @@ go back to JSON:
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
 - **A WASI command module has no globals to leave behind.** `regex-779`
-  prints its table to stdout and one JSON line to stderr; the driver
+  and `aube-1645` print their table to stdout and one JSON line to stderr; the driver
   shows stdout and parses the first stderr line starting with `{` for
   the envelope. stderr is the machine channel there, the way a named
   global is under Pyodide.
@@ -391,6 +391,17 @@ PRs 180 / 189 / 192.
   the connection is per-origin. `reproPreload.test.ts` holds both halves
   of that: pyodide preloads nothing, and every other runtime preloads
   only URLs its own loader imports at its own pinned version.
+- **A Rust recipe can compile an upstream application from source.**
+  `aube-1645` depends on aube's crates by path. Its `prepare.sh` fetches
+  the pinned commits into a gitignored `.aube/`, keeps only the crates
+  the reproduction needs, and applies `wasm-compat.patch`;
+  `repro:build:rust` and `rust:check` run every `*/prepare.sh` first and
+  skip `.aube/` in their crate scan. Depend on upstream crates with the
+  feature set upstream itself uses — aube pulls `aube-manifest` in with
+  `default-features = false`, and the default set adds tree-sitter, a C
+  build that has no compiler for `wasm32-wasip1`. A reproduction that
+  needs a filesystem passes `preopens: ["/tmp"]` to `loadVivariumRust`
+  and writes its fixture there.
 - **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
   the main thread times out and calls `terminate()`, and its harness
   wraps the visitor script in `time.perf_counter()` + `except
