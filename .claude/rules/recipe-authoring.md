@@ -271,7 +271,7 @@ one. Copy the block from
   to the `_shared/*_loader.ts` helper. Otherwise it knocks `#verdict`
   back to `pending` on entry, and a 404 on the second artefact flips a
   correct `reproduced` to `unreproduced`, reporting a fix nobody
-  observed. See `regex-779/repro.ts`.
+  observed. See `aube-1645/repro.ts`.
 
 **Output shape — the script prints, the page shows what it printed**:
 
@@ -317,8 +317,8 @@ go back to JSON:
   terminated. Its driver composes the pane text itself, using one
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
-- **A WASI command module has no globals to leave behind.** `regex-779`
-  and `aube-1645` print their table to stdout and one JSON line to stderr; the driver
+- **A WASI command module has no globals to leave behind.** `aube-1645`
+  prints its table to stdout and one JSON line to stderr; the driver
   shows stdout and parses the first stderr line starting with `{` for
   the envelope. stderr is the machine channel there, the way a named
   global is under Pyodide.

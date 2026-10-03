@@ -166,25 +166,6 @@
       "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/pandas/56679/"
     },
     {
-      "slug": "regex-779",
-      "layer": 1,
-      "project": "regex",
-      "issue": 779,
-      "title": "rust-lang/regex#779",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/regex/779/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/regex-779",
-      "language": "rust",
-      "tags": [
-        "regex",
-        "wasm32-wasip1"
-      ],
-      "symptom": "regex-engine-edge-case",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "rust-wasi",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/regex/779/"
-    },
-    {
       "slug": "ruby-21709",
       "layer": 1,
       "project": "ruby",

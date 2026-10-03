@@ -40,7 +40,7 @@ here.
 ## Catalogue
 
 Layer 1 recipes are immediate subdirectories such as
-[`pandas-56679/`](./pandas-56679/), [`regex-779/`](./regex-779/), and
+[`pandas-56679/`](./pandas-56679/), [`aube-1645/`](./aube-1645/), and
 [`ruby-21709/`](./ruby-21709/). They are static browser pages published
 under `/vivarium/repro/<project>/<issue_path>/` by the `deploy-docs`
 workflow.
@@ -78,7 +78,7 @@ How the pane gets filled is not prescribed. Three shapes exist today:
 | Shape | Mechanism | Recipes |
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel and the page installs it | `dateutil-1478`, `lark-1585` |
-| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit | `regex-779`, `aube-1645` |
+| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit | `aube-1645` |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 ## Verdict surface

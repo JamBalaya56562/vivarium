@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "language": "rust",
-  "symptom": "regex-engine-edge-case",
-  "severity": "bug",
-  "tags": ["regex", "wasm32-wasip1"],
-  "expected_verdict": "reproduced",
-  "expected_runtime": "rust-wasi"
-}
