@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Compile Layer 1 Rust crates (regex-779 etc.) to wasm32-wasip1"
+#MISE description="Compile Layer 1 Rust crates (aube-1645 etc.) to wasm32-wasip1"
 set -euo pipefail
 for prepare in src/layer1_wasm/*/prepare.sh; do
   if [ -f "$prepare" ]; then

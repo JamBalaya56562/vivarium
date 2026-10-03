@@ -8,16 +8,16 @@ const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const LAYER1 = path.join(REPO_ROOT, 'src', 'layer1_wasm');
 const LAYER2 = path.join(REPO_ROOT, 'src', 'layer2_docker');
 
-const REGEX_779_DIR = path.join(LAYER1, 'regex-779');
-const REGEX_779_INDEX = path.join(REGEX_779_DIR, 'index.html');
+const AUBE_1645_DIR = path.join(LAYER1, 'aube-1645');
+const AUBE_1645_INDEX = path.join(AUBE_1645_DIR, 'index.html');
 
 const BASH_LOCAL_DIR = path.join(LAYER2, 'bash-local-shadows-exit');
 const BASH_LOCAL_INDEX = path.join(BASH_LOCAL_DIR, 'index.html');
 
 describe('resolveReproFile — hierarchical (canonical) URLs', () => {
-  test('hierarchical recipe URL (/regex/779/) → Layer 1 index.html', () => {
-    const result = resolveReproFile('regex/779/');
-    expect(result).toBe(REGEX_779_INDEX);
+  test('hierarchical recipe URL (/aube/1645/) → Layer 1 index.html', () => {
+    const result = resolveReproFile('aube/1645/');
+    expect(result).toBe(AUBE_1645_INDEX);
   });
 
   test('hierarchical Layer 2 recipe URL (/bash/local-shadows-exit/) → Layer 2 index.html', () => {
@@ -25,20 +25,20 @@ describe('resolveReproFile — hierarchical (canonical) URLs', () => {
     expect(result).toBe(BASH_LOCAL_INDEX);
   });
 
-  test('hierarchical asset (/regex/779/Cargo.toml) → Layer 1 file', () => {
-    const result = resolveReproFile('regex/779/Cargo.toml');
-    expect(result).toBe(path.join(REGEX_779_DIR, 'Cargo.toml'));
+  test('hierarchical asset (/aube/1645/Cargo.toml) → Layer 1 file', () => {
+    const result = resolveReproFile('aube/1645/Cargo.toml');
+    expect(result).toBe(path.join(AUBE_1645_DIR, 'Cargo.toml'));
     expect(existsSync(result!)).toBe(true);
   });
 
-  test('hierarchical asset (/regex/779/repro.ts) → Layer 1 file (TS source, tracked)', () => {
-    const result = resolveReproFile('regex/779/repro.ts');
-    expect(result).toBe(path.join(REGEX_779_DIR, 'repro.ts'));
+  test('hierarchical asset (/aube/1645/repro.ts) → Layer 1 file (TS source, tracked)', () => {
+    const result = resolveReproFile('aube/1645/repro.ts');
+    expect(result).toBe(path.join(AUBE_1645_DIR, 'repro.ts'));
     expect(existsSync(result!)).toBe(true);
   });
 
   test('non-existent asset under existing recipe → null', () => {
-    expect(resolveReproFile('regex/779/does-not-exist.js')).toBe(null);
+    expect(resolveReproFile('aube/1645/does-not-exist.js')).toBe(null);
   });
 });
 
@@ -87,22 +87,22 @@ describe('resolveReproFile — Japanese locale', () => {
   });
 
   test('an untranslated recipe falls back to English rather than 404ing', () => {
-    const ja = path.join(REGEX_779_DIR, 'index.ja.html');
+    const ja = path.join(AUBE_1645_DIR, 'index.ja.html');
     if (existsSync(ja)) return; // already translated; nothing to assert
-    expect(resolveReproFile('regex/779/', 'ja')).toBe(
-      path.join(REGEX_779_DIR, 'index.html'),
+    expect(resolveReproFile('aube/1645/', 'ja')).toBe(
+      path.join(AUBE_1645_DIR, 'index.html'),
     );
   });
 
   test('non-HTML assets resolve identically in both locales', () => {
-    expect(resolveReproFile('regex/779/Cargo.toml', 'ja')).toBe(
-      resolveReproFile('regex/779/Cargo.toml'),
+    expect(resolveReproFile('aube/1645/Cargo.toml', 'ja')).toBe(
+      resolveReproFile('aube/1645/Cargo.toml'),
     );
   });
 
   test('the JA gallery and project landing still fall through to rspress', () => {
     expect(resolveReproFile('', 'ja')).toBe(null);
-    expect(resolveReproFile('regex/', 'ja')).toBe(null);
+    expect(resolveReproFile('aube/', 'ja')).toBe(null);
   });
 });
 
@@ -112,6 +112,6 @@ describe('resolveReproFile — single-segment project routes', () => {
   });
 
   test('project landing single-segment (/repro/<project>/) → null (rspress handles it)', () => {
-    expect(resolveReproFile('regex/')).toBe(null);
+    expect(resolveReproFile('aube/')).toBe(null);
   });
 });

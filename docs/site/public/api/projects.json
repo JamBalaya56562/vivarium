@@ -152,21 +152,6 @@
       "github": "https://github.com/postgres/postgres"
     },
     {
-      "project": "regex",
-      "display_name": "rust-lang/regex",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/regex/",
-      "tagline": "Rust's standard regex crate.",
-      "tagline_ja": "Rust の標準的な regex crate。",
-      "description": "Compiled to wasm32-wasip1 with a pinned crate version, so verdicts flip when the upstream fix lands in a future regex release — turning the page into a fix-detection sentinel.",
-      "description_ja": "crate の版を固定して wasm32-wasip1 にコンパイルしてあるため、upstream の fix が将来の regex リリースに入ると verdict が反転する——ページ自体が fix 検知のセンサーになる。",
-      "homepage": "https://docs.rs/regex/",
-      "github": "https://github.com/rust-lang/regex"
-    },
-    {
       "project": "ruby",
       "display_name": "Ruby",
       "recipe_count": 1,
