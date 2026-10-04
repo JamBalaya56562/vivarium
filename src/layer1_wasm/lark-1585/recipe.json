@@ -5,5 +5,10 @@
   "severity": "bug",
   "tags": ["lark", "lalr", "cyk", "grammar-priority", "infinite-loop"],
   "expected_verdict": "reproduced",
-  "expected_runtime": "pyodide"
+  "expected_runtime": "pyodide",
+  "upstream": {
+    "registry": "pypi",
+    "package": "lark",
+    "version": "1.3.1"
+  }
 }

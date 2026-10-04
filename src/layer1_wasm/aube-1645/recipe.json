@@ -5,5 +5,11 @@
   "severity": "bug",
   "tags": ["aube", "lockfile", "package-manager", "wasm32-wasip1"],
   "expected_verdict": "reproduced",
-  "expected_runtime": "rust-wasi"
+  "expected_runtime": "rust-wasi",
+  "upstream": {
+    "registry": "github",
+    "repository": "aubepkg/aube",
+    "version": "v2.6.1",
+    "commit": "bd94e42f54d3b5e3dd102716b7197f316cb5f4ed"
+  }
 }

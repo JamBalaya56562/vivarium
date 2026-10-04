@@ -86,6 +86,7 @@ There is no current v2.
 | 2026-05-18 | Added optional `expected_verdict` / `expected_runtime` fields, and moved the source of the existing `language` / `symptom` / `severity` / `tags` fields from the retired `docs/site/_data/recipe-facets.json` overlay to per-recipe `src/layer*_*/<slug>/recipe.json` files (schema: [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json)). Backwards-compatible — v1 consumers ignore the new fields and read the existing ones unchanged. |
 | 2026-09-02 | Added optional `page_url_ja`, the Japanese rendering of a recipe's reproduction page. Emitted only for recipes that ship a translation, so its presence is the signal that a Japanese page exists. Backwards-compatible — v1 consumers ignore it. |
 | 2026-09-03 | Added optional `path_a`. Layer alone no longer implies a page can run a supplied fix: Layer 1 recipes opt into the panel one at a time, and consumers that used to dispatch on `layer === 1` should read this field instead. Backwards-compatible — v1 consumers ignore it. |
+| 2026-10-04 | [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) gains optional `upstream`, the upstream release a Layer 1 recipe's baseline pins, read by the daily upstream-bump workflow. The index does not export it, so recipe entries are unchanged. |
 
 ## Generation
 

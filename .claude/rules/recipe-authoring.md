@@ -402,6 +402,19 @@ PRs 180 / 189 / 192.
   build that has no compiler for `wasm32-wasip1`. A reproduction that
   needs a filesystem passes `preopens: ["/tmp"]` to `loadVivariumRust`
   and writes its fixture there.
+- **Declare the upstream release the baseline pins.** When the baseline
+  runs a released upstream version (a PyPI wheel, a GitHub release)
+  rather than the copy a runtime bundles, put it in `recipe.json` as
+  `upstream` (`registry: "pypi"` with `package`, or `registry: "github"`
+  with `repository` and the tag's `commit`), written exactly as the
+  recipe's files write it — and write it that one way everywhere, since
+  another spelling (a normalised version, a shortened commit) is not
+  rewritten. The daily `upstream-bump` workflow moves the
+  pin to the latest release in every non-Markdown file of the recipe
+  and opens a pull request; README prose and `roundtrip.json` stay as
+  written and are only listed. Runtime-bundled targets (Pyodide's
+  numpy, pandas or CPython, ruby.wasm's Ruby) need no field: the weekly
+  runtime bump covers them.
 - **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
   the main thread times out and calls `terminate()`, and its harness
   wraps the visitor script in `time.perf_counter()` + `except

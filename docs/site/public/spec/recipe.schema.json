@@ -52,6 +52,32 @@
     "path_a": {
       "type": "boolean",
       "description": "Whether the recipe page mounts the Path A \"Try a fix\" panel (enablePathA). Layer 1 only; absent means no."
+    },
+    "upstream": {
+      "description": "The released upstream version the recipe's baseline runs, for recipes whose baseline is pinned to an upstream release rather than to a runtime's bundled copy. Layer 1 only. The upstream-bump workflow compares it with the upstream's latest release every day and, when they differ, opens a pull request that moves the pin everywhere it appears in the recipe's non-Markdown files; that pull request's regression run then shows whether the bug still reproduces on the new release.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["registry", "package", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "registry": { "const": "pypi" },
+            "package": { "type": "string", "minLength": 1, "description": "PyPI project name." },
+            "version": { "type": "string", "minLength": 1, "description": "Pinned release, exactly as written in the recipe's files." }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["registry", "repository", "version", "commit"],
+          "additionalProperties": false,
+          "properties": {
+            "registry": { "const": "github" },
+            "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$", "description": "owner/name of the GitHub repository whose latest release is tracked." },
+            "version": { "type": "string", "minLength": 1, "description": "Tag of the pinned release." },
+            "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$", "description": "Commit the tag points to; the recipe fetches this commit." }
+          }
+        }
+      ]
     }
   },
   "examples": [

@@ -11,5 +11,10 @@
     "utc-offset"
   ],
   "expected_verdict": "reproduced",
-  "expected_runtime": "pyodide"
+  "expected_runtime": "pyodide",
+  "upstream": {
+    "registry": "pypi",
+    "package": "python-dateutil",
+    "version": "2.9.0.post0"
+  }
 }

@@ -110,6 +110,16 @@ description = "Move Layer 1's Pyodide, ruby.wasm and browser_wasi_shim pins to t
 dir = "src/layer1_wasm"
 run = "bun run scripts/bump-runtimes.ts"
 
+[tasks."repro:upstream:list"]
+description = "List the Layer 1 recipes whose recipe.json declares an upstream release"
+dir = "src/layer1_wasm"
+run = "bun run scripts/bump-upstream.ts --list"
+
+[tasks."repro:upstream:bump"]
+description = "Move one Layer 1 recipe's upstream pin to the latest release (pass the slug); prints a Markdown summary when anything changed"
+dir = "src/layer1_wasm"
+run = "bun run scripts/bump-upstream.ts"
+
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"
 dir = "src/layer1_wasm"
