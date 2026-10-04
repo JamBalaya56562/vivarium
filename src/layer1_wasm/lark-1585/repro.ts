@@ -1,3 +1,4 @@
+import { DEFAULT_PYODIDE_VERSION as PYODIDE_VERSION } from '../_shared/loader.js';
 import {
   setResult,
   setVerdict,
@@ -5,7 +6,6 @@ import {
 } from '../_shared/verdict.js';
 
 const TIMEOUT_MS = 8000;
-const PYODIDE_VERSION = '314.0.6';
 const BASELINE_SPEC = 'lark==1.3.1';
 
 const REPRO_CODE = `

@@ -105,6 +105,11 @@ run = "bun run generate-repro-i18n"
 description = "Build all Layer 1 reproductions (TS + Rust wasm + fix-candidate wheels)"
 depends = ["repro:build:ts", "repro:pages", "repro:build:rust", "repro:build:wheels"]
 
+[tasks."repro:runtimes:bump"]
+description = "Move Layer 1's Pyodide, ruby.wasm and browser_wasi_shim pins to their latest releases; prints a Markdown summary when anything changed"
+dir = "src/layer1_wasm"
+run = "bun run scripts/bump-runtimes.ts"
+
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"
 dir = "src/layer1_wasm"

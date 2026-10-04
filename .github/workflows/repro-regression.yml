@@ -13,10 +13,70 @@ permissions:
   contents: read
 
 concurrency:
-  group: repro-regression-${{ github.ref }}
+  group: repro-regression-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
+  runtime-bump:
+    name: bump Layer 1 runtimes
+    if: >-
+      github.repository_owner == 'aletheia-works' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BRANCH: chore/bump-layer1-runtimes
+      TITLE: 'chore(wasm): bump layer 1 runtimes'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ secrets.TF_TOKEN_GITHUB }}
+          persist-credentials: true
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Move runtime pins to their latest releases
+        id: bump
+        run: |
+          set -euo pipefail
+          mise run repro:runtimes:bump > "${RUNNER_TEMP}/bump.md"
+          if git diff --quiet; then
+            echo "Every Layer 1 runtime pin is already on its latest release."
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+          else
+            cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Open or update the bump pull request
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.TF_TOKEN_GITHUB }}
+        run: |
+          set -euo pipefail
+          {
+            cat "${RUNNER_TEMP}/bump.md"
+            echo
+            echo "This pull request's own repro-regression run re-checks every Layer 1 recipe on the new runtimes. A recipe whose verdict flips is a result, not a breakage: the bundled library or the runtime changed underneath it."
+          } > "${RUNNER_TEMP}/body.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "${BRANCH}"
+          git commit -am "${TITLE}"
+          git push --force origin "HEAD:${BRANCH}"
+          if [ "$(gh pr view "${BRANCH}" --json state --jq .state 2>/dev/null || true)" = "OPEN" ]; then
+            gh pr edit "${BRANCH}" --title "${TITLE}" --body-file "${RUNNER_TEMP}/body.md"
+          else
+            gh pr create --base main --head "${BRANCH}" --title "${TITLE}" --body-file "${RUNNER_TEMP}/body.md"
+          fi
+
   regression:
     name: regression (${{ matrix.browser }})
     runs-on: ubuntu-latest
@@ -32,7 +92,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup mise (bun, jsonschema)
-        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
         with:
           install: true
           cache: true

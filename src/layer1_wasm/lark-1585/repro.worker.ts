@@ -1,3 +1,5 @@
+import { DEFAULT_PYODIDE_VERSION as PYODIDE_VERSION } from '../_shared/loader.js';
+
 const workerScope = self as unknown as {
   postMessage: (msg: unknown) => void;
   addEventListener: (
@@ -7,7 +9,6 @@ const workerScope = self as unknown as {
   location: { href: string };
 };
 
-const PYODIDE_VERSION = '314.0.6';
 const DEFAULT_LARK_SPEC = 'lark==1.3.1';
 
 const workerUrl = new URL(workerScope.location.href);
