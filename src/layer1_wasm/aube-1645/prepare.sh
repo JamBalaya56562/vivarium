@@ -26,4 +26,4 @@ fetch() {
 # v2.6.1 — the latest release.
 fetch v2.6.1 bd94e42f54d3b5e3dd102716b7197f316cb5f4ed
 # Head of aubepkg/aube#1645, the fix.
-fetch pr-1645 e10ac8a4d1104cbe0de8b48ec3df0dc08bb52dfd
+fetch pr-1645 8b56aa1ef2d120525f787169f6421302c1d8b80b
