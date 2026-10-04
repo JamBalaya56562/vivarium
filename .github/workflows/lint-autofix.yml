@@ -35,8 +35,13 @@ jobs:
           rustup component add rustfmt clippy
           rustup target add wasm32-wasip1
 
+      # Fixers exit non-zero after applying what they can when an unfixable issue
+      # remains, so keep the patch; Polyglot lint fails the PR for what is left.
       - name: Run polyglot lint autofix
-        run: mise run lint:all:fix || true
+        run: |
+          if ! mise run lint:all:fix; then
+            echo "::warning::lint:all:fix exited non-zero: an issue it cannot fix is left, or a tool failed. Polyglot lint reports what remains."
+          fi
 
       - name: Capture autofix patch
         run: |

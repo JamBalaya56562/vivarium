@@ -43,12 +43,46 @@ jobs:
             echo "apply=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
-          if grep -qE '^diff --git a/\.github/workflows/' "${patch}"; then
-            echo "::error::Autofix patch touches .github/workflows/; refusing to apply."
-            exit 1
+          # The PR's own mise.toml produced this patch, so it is untrusted.
+          fail() { echo "::error::Autofix patch rejected: $1"; exit 1; }
+          if grep -qE '^(index [0-9a-f]+\.\.[0-9a-f]+ 120000|new file mode|deleted file mode|old mode|new mode|rename from|rename to|copy from|copy to|similarity index|dissimilarity index|Binary files|GIT binary patch)' "${patch}"; then
+            fail "it creates, deletes, renames, copies or re-modes a file, edits a symlink, or is binary"
           fi
+          allowed='\.(js|mjs|cjs|jsx|ts|mts|cts|tsx|json|jsonc|css|html|php|py|pyi|rs|toml|md)$'
+          check_path() {
+            case "$1" in
+              .github/workflows/* | ../* | */../* | */.. | /*) fail "path not allowed: $1" ;;
+            esac
+            [[ "$1" =~ ${allowed} ]] || fail "not a file type the fixers touch: $1"
+          }
           echo "Patch touches:"
-          grep -E '^diff --git ' "${patch}" | sed 's/^diff --git a\///; s/ b\/.*$//'
+          headers=0
+          in_header=false
+          while IFS= read -r line; do
+            case "${line}" in
+              'diff --git '*)
+                headers=$((headers + 1))
+                in_header=true
+                rest=${line#diff --git a/}
+                [ "${rest}" != "${line}" ] || fail "unexpected header: ${line}"
+                path=${rest:0:$(((${#rest} - 3) / 2))}
+                [ "${rest}" = "${path} b/${path}" ] || fail "header names two paths: ${line}"
+                check_path "${path}"
+                echo "  ${path}"
+                ;;
+              '@@'*) in_header=false ;;
+              '--- '* | '+++ '*)
+                if ${in_header}; then
+                  p=${line:4}
+                  case "${p}" in
+                    a/* | b/*) check_path "${p:2}" ;;
+                    *) fail "unexpected path line: ${line}" ;;
+                  esac
+                fi
+                ;;
+            esac
+          done <"${patch}"
+          [ "${headers}" -gt 0 ] || fail "no file headers"
           echo "apply=true" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout PR branch
