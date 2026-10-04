@@ -19,6 +19,7 @@ for src_json in "${sources[@]}"; do
   pkg=$(jq -r '.package' "$src_json")
   url=$(jq -r '.source.url' "$src_json")
   ref=$(jq -r '.source.ref' "$src_json")
+  pinned=$(jq -r '.source.commit // ""' "$src_json")
   subdirectory=$(jq -r '.source.subdirectory // ""' "$src_json")
   upstream_pr=$(jq -r '.upstream_pr // ""' "$src_json")
   purpose=$(jq -r '.purpose // ""' "$src_json")
@@ -28,7 +29,7 @@ for src_json in "${sources[@]}"; do
     continue
   fi
 
-  pip_spec="${pkg} @ git+${url}@${ref}"
+  pip_spec="${pkg} @ git+${url}@${pinned:-$ref}"
   if [ -n "$subdirectory" ]; then
     pip_spec="${pip_spec}#subdirectory=${subdirectory}"
   fi
@@ -54,7 +55,7 @@ for src_json in "${sources[@]}"; do
   fi
   filename=$(basename "$whl")
   version=$(echo "$filename" | sed -E 's/^[^-]+-([^-]+)-.*/\1/')
-  commit=$(git ls-remote "$url" "$ref" | awk '{print $1}')
+  commit=${pinned:-$(git ls-remote "$url" "$ref" | awk '{print $1}')}
   fetched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
   jq -n \

@@ -111,12 +111,12 @@ dir = "src/layer1_wasm"
 run = "bun run scripts/bump-runtimes.ts"
 
 [tasks."repro:upstream:list"]
-description = "List the Layer 1 recipes whose recipe.json declares an upstream release"
+description = "List the Layer 1 pins the daily bump tracks, one '<slug><TAB><upstream|fix>' per line"
 dir = "src/layer1_wasm"
 run = "bun run scripts/bump-upstream.ts --list"
 
 [tasks."repro:upstream:bump"]
-description = "Move one Layer 1 recipe's upstream pin to the latest release (pass the slug); prints a Markdown summary when anything changed"
+description = "Move one Layer 1 pin (pass the slug, then upstream or fix): upstream to the latest release, fix to the fix branch head; prints a Markdown summary when anything changed"
 dir = "src/layer1_wasm"
 run = "bun run scripts/bump-upstream.ts"
 

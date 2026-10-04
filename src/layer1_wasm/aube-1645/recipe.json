@@ -11,5 +11,10 @@
     "repository": "aubepkg/aube",
     "version": "v2.6.1",
     "commit": "bd94e42f54d3b5e3dd102716b7197f316cb5f4ed"
+  },
+  "fix_candidate": {
+    "repository": "JamBalaya56562/aube",
+    "branch": "fix-local-dep-versions",
+    "commit": "e10ac8a4d1104cbe0de8b48ec3df0dc08bb52dfd"
   }
 }

@@ -5,7 +5,8 @@
   "source": {
     "type": "git",
     "url": "https://github.com/JamBalaya56562/lark",
-    "ref": "claude/fix-lark-1585-QLVa7"
+    "ref": "claude/fix-lark-1585-QLVa7",
+    "commit": "d7c5cae1a98a45d0f2fd918c01494b47d4655a32"
   },
   "upstream_pr": ""
 }

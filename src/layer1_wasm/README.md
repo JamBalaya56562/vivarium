@@ -77,9 +77,12 @@ How the pane gets filled is not prescribed. Three shapes exist today:
 
 | Shape | Mechanism | Recipes |
 | ----- | --------- | ------- |
-| Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel and the page installs it | `dateutil-1478`, `lark-1585` |
-| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit | `aube-1645` |
+| Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
+| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | `aube-1645` |
 | No runnable fix | a static note naming the upstream status | the rest |
+
+A pinned fix candidate follows its branch: the daily `upstream-bump`
+workflow opens a pull request when the branch head moves past the pin.
 
 ## Verdict surface
 

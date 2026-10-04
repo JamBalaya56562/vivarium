@@ -416,6 +416,15 @@ PRs 180 / 189 / 192.
   written and are only listed. Runtime-bundled targets (Pyodide's
   numpy, pandas or CPython, ruby.wasm's Ruby) need no field: the weekly
   runtime bump covers them.
+- **Pin the fix candidate's commit too.** A fork wheel pins it as
+  `source.commit` in `fix-candidate.json` (the wheel is built from that
+  commit, with `source.ref` as the branch to follow); a recipe that
+  builds the fix branch from source declares `fix_candidate` in
+  `recipe.json` (`repository`, `branch`, `commit`). The same daily
+  workflow opens a pull request when the branch head moves, rewriting
+  the commit and its first eight characters in the recipe's
+  non-Markdown files. Without a pin, a fork wheel is built from the
+  branch head at deploy time and nothing tracks it.
 - **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
   the main thread times out and calls `terminate()`, and its harness
   wraps the visitor script in `time.perf_counter()` + `except

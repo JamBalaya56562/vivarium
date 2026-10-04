@@ -78,6 +78,17 @@
           }
         }
       ]
+    },
+    "fix_candidate": {
+      "type": "object",
+      "description": "The branch a Layer 1 recipe's fix-candidate pane builds from source, pinned to a commit, for recipes that do not use fix-candidate.json (whose source.commit plays the same role for fork wheels). The upstream-bump workflow compares the pin with the branch head every day and, when they differ, opens a pull request that moves the commit, and its first eight characters, everywhere they appear in the recipe's non-Markdown files.",
+      "required": ["repository", "branch", "commit"],
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$", "description": "owner/name of the GitHub repository holding the branch." },
+        "branch": { "type": "string", "minLength": 1, "description": "Branch the fix is developed on, usually the head of the upstream pull request." },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$", "description": "Pinned commit the recipe builds." }
+      }
     }
   },
   "examples": [

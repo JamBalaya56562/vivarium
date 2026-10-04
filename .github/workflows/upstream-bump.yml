@@ -14,12 +14,12 @@ concurrency:
 
 jobs:
   recipes:
-    name: list recipes with an upstream pin
+    name: list tracked pins
     if: github.repository_owner == 'aletheia-works' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      slugs: ${{ steps.list.outputs.slugs }}
+      pins: ${{ steps.list.outputs.pins }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -38,20 +38,21 @@ jobs:
         working-directory: src/layer1_wasm
         run: |
           set -euo pipefail
-          echo "slugs=$(bun run scripts/bump-upstream.ts --list | jq -Rnc '[inputs | select(length > 0)]')" >> "${GITHUB_OUTPUT}"
+          echo "pins=$(bun run scripts/bump-upstream.ts --list | jq -Rnc '[inputs | select(length > 0) | split("\t") | {slug: .[0], kind: .[1]}]')" >> "${GITHUB_OUTPUT}"
 
   bump:
-    name: bump ${{ matrix.slug }}
+    name: bump ${{ matrix.slug }} ${{ matrix.kind }}
     needs: recipes
-    if: needs.recipes.outputs.slugs != '[]'
+    if: needs.recipes.outputs.pins != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        slug: ${{ fromJSON(needs.recipes.outputs.slugs) }}
+        include: ${{ fromJSON(needs.recipes.outputs.pins) }}
     env:
       SLUG: ${{ matrix.slug }}
+      KIND: ${{ matrix.kind }}
     steps:
       - name: Get an aletheia-works-bot token
         id: app-token
@@ -74,27 +75,40 @@ jobs:
           experimental: true
           install_args: bun jq
 
-      - name: Move the pin to the latest release
+      - name: Move the pin
         id: bump
         run: |
           set -euo pipefail
-          (cd src/layer1_wasm && bun run scripts/bump-upstream.ts "${SLUG}") > "${RUNNER_TEMP}/bump.md"
+          dir="src/layer1_wasm/${SLUG}"
+          (cd src/layer1_wasm && bun run scripts/bump-upstream.ts "${SLUG}" "${KIND}") > "${RUNNER_TEMP}/bump.md"
           if git diff --quiet; then
-            echo "${SLUG} is already on the latest upstream release."
+            echo "${SLUG} ${KIND} pin is current."
             echo "changed=false" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
           cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
-          version="$(jq -r '.upstream.version' "src/layer1_wasm/${SLUG}/recipe.json")"
-          echo "title=chore(wasm): bump the ${SLUG} baseline to ${version}" >> "${GITHUB_OUTPUT}"
+          if [ "${KIND}" = upstream ]; then
+            version="$(jq -r '.upstream.version' "${dir}/recipe.json")"
+            title="chore(wasm): bump the ${SLUG} baseline to ${version}"
+          elif [ -f "${dir}/fix-candidate.json" ]; then
+            title="chore(wasm): bump the ${SLUG} fix candidate to $(jq -r '.source.commit[0:8]' "${dir}/fix-candidate.json")"
+          else
+            title="chore(wasm): bump the ${SLUG} fix candidate to $(jq -r '.fix_candidate.commit[0:8]' "${dir}/recipe.json")"
+          fi
+          echo "title=${title}" >> "${GITHUB_OUTPUT}"
           {
             cat "${RUNNER_TEMP}/bump.md"
             echo
-            echo "This pull request's own repro-regression run re-checks the recipe on the new release, and the pull request merges itself once the required checks pass."
+            echo "This pull request's own repro-regression run re-checks the recipe, and the pull request merges itself once the required checks pass."
             echo
-            echo "- If the verdict flips to unreproduced, the bug is fixed upstream: retire the recipe or point it at the last release that still reproduces, rather than reverting this pin."
-            echo "- If the build fails instead, something the recipe applies to the upstream source (a patch, a build step) no longer fits the new release. Fix the recipe on this branch; once the branch differs from what the bot last pushed, the nightly run leaves it alone."
-            echo "- The fix-candidate pane is not rebuilt here, so until it is, the two panes may run different upstream bases."
+            if [ "${KIND}" = upstream ]; then
+              echo "- If the verdict flips to unreproduced, the bug is fixed upstream: retire the recipe or point it at the last release that still reproduces, rather than reverting this pin."
+              echo "- If the build fails instead, something the recipe applies to the upstream source (a patch, a build step) no longer fits the new release."
+            else
+              echo "- The regression run checks that the fix-candidate pane runs, not what it shows; open the recipe page if the fix itself is in question."
+              echo "- If the build fails, something the recipe applies to the fix branch (a patch, a build step) no longer fits its new head."
+            fi
+            echo "- Fix the recipe on this branch; once the branch differs from what the bot last pushed, the nightly run leaves it alone."
           } > "${RUNNER_TEMP}/body.md"
           echo "changed=true" >> "${GITHUB_OUTPUT}"
 
@@ -103,6 +117,6 @@ jobs:
         uses: ./.github/actions/bot-pull-request
         with:
           token: ${{ steps.app-token.outputs.token }}
-          branch: chore/bump-upstream-${{ matrix.slug }}
+          branch: chore/bump-${{ matrix.kind }}-${{ matrix.slug }}
           title: ${{ steps.bump.outputs.title }}
           body-path: ${{ runner.temp }}/body.md

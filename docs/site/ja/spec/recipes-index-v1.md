@@ -85,6 +85,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 2026-09-02 | オプションの `page_url_ja`（レシピ再現ページの日本語版）を追加。翻訳を持つレシピにのみ出力されるため、その存在自体が日本語ページの有無を示すシグナルになる。後方互換 — v1 コンシューマーは無視できる。 |
 | 2026-09-03 | オプションの `path_a` を追加。layer だけでは「そのページが渡された fix を実行できるか」を判断できなくなった——Layer 1 レシピはパネルに個別に opt-in する。`layer === 1` で分岐していたコンシューマーはこのフィールドを読むこと。後方互換 — v1 コンシューマーは無視できる。 |
 | 2026-10-04 | [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) にオプションの `upstream` を追加。Layer 1 レシピの baseline が固定している upstream のリリースで、毎日の upstream-bump ワークフローが読む。index には出力しないため、レシピのエントリは変わらない。 |
+| 2026-10-04 | `recipe.schema.json` にオプションの `fix_candidate` も追加。レシピの fix 候補ペインがソースからビルドするブランチと、固定したコミットで、同じワークフローが読む。これも index には出力しない。 |
 
 ## 生成方法
 
