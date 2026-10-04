@@ -411,7 +411,8 @@ PRs 180 / 189 / 192.
   another spelling (a normalised version, a shortened commit) is not
   rewritten. The daily `upstream-bump` workflow moves the
   pin to the latest release in every non-Markdown file of the recipe
-  and opens a pull request; README prose and `roundtrip.json` stay as
+  and opens a pull request as `aletheia-works-bot`, which merges itself
+  once the required checks pass; README prose and `roundtrip.json` stay as
   written and are only listed. Runtime-bundled targets (Pyodide's
   numpy, pandas or CPython, ruby.wasm's Ruby) need no field: the weekly
   runtime bump covers them.

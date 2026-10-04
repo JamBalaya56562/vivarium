@@ -35,9 +35,10 @@ jobs:
 
       - name: List them
         id: list
+        working-directory: src/layer1_wasm
         run: |
           set -euo pipefail
-          echo "slugs=$(mise run repro:upstream:list | jq -Rnc '[inputs | select(length > 0)]')" >> "${GITHUB_OUTPUT}"
+          echo "slugs=$(bun run scripts/bump-upstream.ts --list | jq -Rnc '[inputs | select(length > 0)]')" >> "${GITHUB_OUTPUT}"
 
   bump:
     name: bump ${{ matrix.slug }}
@@ -51,13 +52,19 @@ jobs:
         slug: ${{ fromJSON(needs.recipes.outputs.slugs) }}
     env:
       SLUG: ${{ matrix.slug }}
-      BRANCH: chore/bump-upstream-${{ matrix.slug }}
     steps:
+      - name: Get an aletheia-works-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.TF_TOKEN_GITHUB }}
-          persist-credentials: true
-          fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup mise (bun, jq)
         uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
@@ -71,72 +78,31 @@ jobs:
         id: bump
         run: |
           set -euo pipefail
-          mise run repro:upstream:bump "${SLUG}" > "${RUNNER_TEMP}/bump.md"
+          (cd src/layer1_wasm && bun run scripts/bump-upstream.ts "${SLUG}") > "${RUNNER_TEMP}/bump.md"
           if git diff --quiet; then
             echo "${SLUG} is already on the latest upstream release."
             echo "changed=false" >> "${GITHUB_OUTPUT}"
-          else
-            cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
-            echo "changed=true" >> "${GITHUB_OUTPUT}"
+            exit 0
           fi
-
-      - name: Open or update the pull request
-        if: steps.bump.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.TF_TOKEN_GITHUB }}
-          BOT_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-        run: |
-          set -euo pipefail
+          cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
           version="$(jq -r '.upstream.version' "src/layer1_wasm/${SLUG}/recipe.json")"
-          title="chore(wasm): bump the ${SLUG} baseline to ${version}"
-          git config user.name "github-actions[bot]"
-          git config user.email "${BOT_EMAIL}"
-          git switch --quiet -C "${BRANCH}"
-          git commit --quiet -am "${title}"
-          pushed=false
-          remote=0
-          git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null || remote=$?
-          if [ "${remote}" != 0 ] && [ "${remote}" != 2 ]; then
-            echo "::error::Could not look up ${BRANCH} on origin (git ls-remote exited ${remote})."
-            exit 1
-          fi
-          if [ "${remote}" = 0 ]; then
-            git fetch --quiet origin "${BRANCH}"
-            others="$(git log --format='%ae%n%ce' "${GITHUB_SHA}..FETCH_HEAD" | grep -cvxF "${BOT_EMAIL}" || true)"
-            if [ "${others}" != 0 ]; then
-              echo "${BRANCH} has commits from someone other than this workflow; leaving it and its pull request to them."
-              exit 0
-            fi
-            if [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'FETCH_HEAD^{tree}')" ]; then
-              pushed=true
-            fi
-          fi
-          # shellcheck disable=SC2016
-          closed="$(TITLE="${title}" gh pr list --head "${BRANCH}" --state closed --json title,mergedAt \
-            --jq '[.[] | select(.mergedAt == null and .title == $ENV.TITLE)] | length')"
-          if [ "${closed}" != 0 ]; then
-            echo "A pull request for this exact bump was closed unmerged; not opening it again."
-            exit 0
-          fi
-          if [ "${pushed}" = true ] &&
-            [ "$(gh pr list --head "${BRANCH}" --state all --json number --jq length)" != 0 ]; then
-            echo "${BRANCH} already carries this change and has a pull request; leaving both as they are."
-            exit 0
-          fi
+          echo "title=chore(wasm): bump the ${SLUG} baseline to ${version}" >> "${GITHUB_OUTPUT}"
           {
             cat "${RUNNER_TEMP}/bump.md"
             echo
-            echo "This pull request's own repro-regression run re-checks the recipe on the new release."
+            echo "This pull request's own repro-regression run re-checks the recipe on the new release, and the pull request merges itself once the required checks pass."
             echo
             echo "- If the verdict flips to unreproduced, the bug is fixed upstream: retire the recipe or point it at the last release that still reproduces, rather than reverting this pin."
-            echo "- If the build fails instead, something the recipe applies to the upstream source (a patch, a build step) no longer fits the new release. Fix the recipe on this branch; once it carries a commit from anyone else, the nightly run stops rewriting it."
+            echo "- If the build fails instead, something the recipe applies to the upstream source (a patch, a build step) no longer fits the new release. Fix the recipe on this branch; once the branch differs from what the bot last pushed, the nightly run leaves it alone."
             echo "- The fix-candidate pane is not rebuilt here, so until it is, the two panes may run different upstream bases."
           } > "${RUNNER_TEMP}/body.md"
-          if [ "${pushed}" = false ]; then
-            git push --quiet --force origin "HEAD:${BRANCH}"
-          fi
-          if [ "$(gh pr view "${BRANCH}" --json state --jq .state 2>/dev/null || true)" = "OPEN" ]; then
-            gh pr edit "${BRANCH}" --title "${title}" --body-file "${RUNNER_TEMP}/body.md"
-          else
-            gh pr create --base main --head "${BRANCH}" --title "${title}" --body-file "${RUNNER_TEMP}/body.md"
-          fi
+          echo "changed=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Open or update the pull request
+        if: steps.bump.outputs.changed == 'true'
+        uses: ./.github/actions/bot-pull-request
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: chore/bump-upstream-${{ matrix.slug }}
+          title: ${{ steps.bump.outputs.title }}
+          body-path: ${{ runner.temp }}/body.md

@@ -25,14 +25,19 @@ jobs:
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      BRANCH: chore/bump-layer1-runtimes
-      TITLE: 'chore(wasm): bump layer 1 runtimes'
     steps:
+      - name: Get an aletheia-works-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.TF_TOKEN_GITHUB }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Setup mise (bun)
         uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
@@ -44,39 +49,33 @@ jobs:
 
       - name: Move runtime pins to their latest releases
         id: bump
+        env:
+          BUMP_TITLE_FILE: ${{ runner.temp }}/title.txt
         run: |
           set -euo pipefail
-          mise run repro:runtimes:bump > "${RUNNER_TEMP}/bump.md"
+          (cd src/layer1_wasm && bun run scripts/bump-runtimes.ts) > "${RUNNER_TEMP}/bump.md"
           if git diff --quiet; then
             echo "Every Layer 1 runtime pin is already on its latest release."
             echo "changed=false" >> "${GITHUB_OUTPUT}"
-          else
-            cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
-            echo "changed=true" >> "${GITHUB_OUTPUT}"
+            exit 0
           fi
-
-      - name: Open or update the bump pull request
-        if: steps.bump.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.TF_TOKEN_GITHUB }}
-        run: |
-          set -euo pipefail
+          cat "${RUNNER_TEMP}/bump.md" >> "${GITHUB_STEP_SUMMARY}"
+          echo "title=$(cat "${BUMP_TITLE_FILE}")" >> "${GITHUB_OUTPUT}"
           {
             cat "${RUNNER_TEMP}/bump.md"
             echo
-            echo "This pull request's own repro-regression run re-checks every Layer 1 recipe on the new runtimes. A recipe whose verdict flips is a result, not a breakage: the bundled library or the runtime changed underneath it."
+            echo "This pull request's own repro-regression run re-checks every Layer 1 recipe on the new runtimes, and the pull request merges itself once the required checks pass. A recipe whose verdict flips is a result, not a breakage: the bundled library or the runtime changed underneath it."
           } > "${RUNNER_TEMP}/body.md"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -C "${BRANCH}"
-          git commit -am "${TITLE}"
-          git push --force origin "HEAD:${BRANCH}"
-          if [ "$(gh pr view "${BRANCH}" --json state --jq .state 2>/dev/null || true)" = "OPEN" ]; then
-            gh pr edit "${BRANCH}" --title "${TITLE}" --body-file "${RUNNER_TEMP}/body.md"
-          else
-            gh pr create --base main --head "${BRANCH}" --title "${TITLE}" --body-file "${RUNNER_TEMP}/body.md"
-          fi
+          echo "changed=true" >> "${GITHUB_OUTPUT}"
 
+      - name: Open or update the bump pull request
+        if: steps.bump.outputs.changed == 'true'
+        uses: ./.github/actions/bot-pull-request
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: chore/bump-layer1-runtimes
+          title: ${{ steps.bump.outputs.title }}
+          body-path: ${{ runner.temp }}/body.md
   regression:
     name: regression (${{ matrix.browser }})
     runs-on: ubuntu-latest

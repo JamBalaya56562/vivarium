@@ -1,0 +1,98 @@
+name: Bot pull request
+description: >-
+  Commit the working tree's changes as aletheia-works-bot with a signed
+  commit, open or update a pull request for them, and enable auto-merge.
+  Leaves the branch alone when someone else has changed it since the
+  bot's last push, or when a pull request with the same title was closed
+  unmerged.
+
+inputs:
+  token:
+    description: Installation token of aletheia-works-bot (contents and pull-requests write).
+    required: true
+  branch:
+    description: Branch the pull request comes from.
+    required: true
+  title:
+    description: Pull request title, also used as the commit message.
+    required: true
+  body-path:
+    description: File holding the pull request body.
+    required: true
+
+outputs:
+  pull-request-number:
+    description: Number of the pull request, when one was opened or updated.
+    value: ${{ steps.pr.outputs.pull-request-number }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check whether the branch is still the bot's
+      id: guard
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        BRANCH: ${{ inputs.branch }}
+        TITLE: ${{ inputs.title }}
+      run: |
+        set -euo pipefail
+        # shellcheck disable=SC2016
+        closed="$(gh pr list --head "${BRANCH}" --state closed --json title,mergedAt \
+          --jq '[.[] | select(.mergedAt == null and .title == $ENV.TITLE)] | length')"
+        if [ "${closed}" != 0 ]; then
+          echo "A pull request for this exact change was closed unmerged; not opening it again."
+          echo "proceed=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+        open="$(gh pr list --head "${BRANCH}" --state open --json headRefOid,body \
+          --jq '.[0] // empty | [.headRefOid, ((.body // "") | capture("<!-- bot-head: (?<sha>[0-9a-f]{40}) -->").sha // "")] | @tsv')"
+        if [ -n "${open}" ]; then
+          head="$(cut -f1 <<< "${open}")"
+          pushed="$(cut -f2 <<< "${open}")"
+          if [ "${head}" != "${pushed}" ]; then
+            echo "${BRANCH} changed after the bot's last push (${pushed:-none recorded} -> ${head}); leaving it and its pull request alone."
+            echo "proceed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+        fi
+        echo "proceed=true" >> "${GITHUB_OUTPUT}"
+
+    - name: Commit and open or update the pull request
+      id: pr
+      if: steps.guard.outputs.proceed == 'true'
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ inputs.token }}
+        branch: ${{ inputs.branch }}
+        base: main
+        title: ${{ inputs.title }}
+        commit-message: ${{ inputs.title }}
+        body-path: ${{ inputs.body-path }}
+        sign-commits: true
+
+    - name: Record the pushed head and enable auto-merge
+      if: >-
+        steps.guard.outputs.proceed == 'true' &&
+        (steps.pr.outputs.pull-request-operation == 'created' ||
+        steps.pr.outputs.pull-request-operation == 'updated')
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+        HEAD_SHA: ${{ steps.pr.outputs.pull-request-head-sha }}
+        VERIFIED: ${{ steps.pr.outputs.pull-request-commits-verified }}
+        BODY_PATH: ${{ inputs.body-path }}
+      run: |
+        set -euo pipefail
+        {
+          cat "${BODY_PATH}"
+          echo
+          echo "<!-- bot-head: ${HEAD_SHA} -->"
+        } > "${RUNNER_TEMP}/bot-pr-body.md"
+        gh pr edit "${NUMBER}" --body-file "${RUNNER_TEMP}/bot-pr-body.md"
+        if [ "${VERIFIED}" != "true" ]; then
+          echo "::error::The commits on #${NUMBER} are not verified, so main's signed-commit rule would block the merge; auto-merge left off."
+          exit 1
+        fi
+        gh pr merge "${NUMBER}" --auto --squash

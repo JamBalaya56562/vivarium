@@ -10,6 +10,7 @@ const REPO_ROOT = dirname(dirname(LAYER1_DIR));
 
 interface Pin {
   label: string;
+  short: string;
   file: string;
   name: string;
 }
@@ -19,11 +20,11 @@ interface NpmPackument {
   versions: Record<string, { dependencies?: Record<string, string> }>;
 }
 
-const PYODIDE: Pin = { label: 'Pyodide', file: 'loader.ts', name: 'DEFAULT_PYODIDE_VERSION' };
-const RUBY_WASM: Pin = { label: 'ruby.wasm', file: 'ruby_loader.ts', name: 'DEFAULT_RUBY_WASM_VERSION' };
-const RUBY: Pin = { label: 'Ruby (ruby.wasm line)', file: 'ruby_loader.ts', name: 'DEFAULT_RUBY_VERSION' };
-const RUBY_WASI_SHIM: Pin = { label: 'browser_wasi_shim (Ruby)', file: 'ruby_loader.ts', name: 'DEFAULT_WASI_SHIM_VERSION' };
-const RUST_WASI_SHIM: Pin = { label: 'browser_wasi_shim (Rust)', file: 'rust_loader.ts', name: 'DEFAULT_WASI_SHIM_VERSION' };
+const PYODIDE: Pin = { label: 'Pyodide', short: 'Pyodide', file: 'loader.ts', name: 'DEFAULT_PYODIDE_VERSION' };
+const RUBY_WASM: Pin = { label: 'ruby.wasm', short: 'ruby.wasm', file: 'ruby_loader.ts', name: 'DEFAULT_RUBY_WASM_VERSION' };
+const RUBY: Pin = { label: 'Ruby (ruby.wasm line)', short: 'Ruby', file: 'ruby_loader.ts', name: 'DEFAULT_RUBY_VERSION' };
+const RUBY_WASI_SHIM: Pin = { label: 'browser_wasi_shim (Ruby)', short: 'wasi-shim', file: 'ruby_loader.ts', name: 'DEFAULT_WASI_SHIM_VERSION' };
+const RUST_WASI_SHIM: Pin = { label: 'browser_wasi_shim (Rust)', short: 'wasi-shim', file: 'rust_loader.ts', name: 'DEFAULT_WASI_SHIM_VERSION' };
 
 function pinPattern(pin: Pin): RegExp {
   return new RegExp(`(export const ${pin.name}\\s*=\\s*["'])([^"']+)(["'])`);
@@ -133,4 +134,10 @@ if (bumps.length > 0) {
     );
   }
   console.log(lines.join('\n'));
+
+  const titleFile = process.env.BUMP_TITLE_FILE;
+  if (titleFile) {
+    const versions = [...new Set(bumps.map(({ pin, to }) => `${pin.short} ${to}`))].join(', ');
+    writeFileSync(titleFile, `chore(wasm): bump layer 1 runtimes (${versions})`.slice(0, 100));
+  }
 }
