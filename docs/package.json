@@ -21,17 +21,17 @@
     "generate-repro-pages": "bun run scripts/generate-repro-pages.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.14",
+    "@biomejs/biome": "^2.5.15",
     "@playwright/test": "^1.63.0",
     "@rspress/core": "^2.0.23",
     "@types/bun": "^1.4.2",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "jszip": "^3.10.2",
     "node-html-parser": "^9.0.4"
   },
   "dependencies": {
-    "lucide-react": "^1.48.0"
+    "lucide-react": "^1.49.0"
   }
 }
