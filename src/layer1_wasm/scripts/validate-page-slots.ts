@@ -3,6 +3,11 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  pageTemplateFor,
+  SCRIPT_TEMPLATE,
+  TERMINAL_TEMPLATE,
+} from './page-templates';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const LAYER1_DIR = dirname(SCRIPT_DIR);
@@ -41,6 +46,34 @@ const LAYER1_SLOTS: ReadonlyArray<readonly [string, string]> = [
     'the fix-candidate pane would render empty. Every Layer 1 page carries both panes: either the waiting-for-baseline pre, or a note saying why no fix runs.',
   ],
 ];
+
+const TERMINAL_SLOTS: ReadonlyArray<readonly [string, string]> = [
+  [
+    'drawer-body',
+    'the bug-context drawer would render empty — a visitor gets a reproduction with no explanation of the bug.',
+  ],
+  [
+    'runtime-label',
+    'the drawer\'s Runtime row would render empty; it names the runtime the verdict was produced against.',
+  ],
+  [
+    'baseline-heading',
+    'the baseline terminal would be headed with the generic "Baseline output" instead of the build it runs.',
+  ],
+  [
+    'fix-heading',
+    'the fix-candidate terminal would be headed with the generic "Fix-candidate output" instead of the build it runs.',
+  ],
+];
+
+function layer1Slots(recipeDir: string): ReadonlyArray<readonly [string, string]> {
+  const recipePath = join(recipeDir, 'recipe.json');
+  const runtime = existsSync(recipePath)
+    ? (JSON.parse(readFileSync(recipePath, 'utf-8')) as { expected_runtime?: string })
+        .expected_runtime
+    : undefined;
+  return pageTemplateFor(runtime) === TERMINAL_TEMPLATE ? TERMINAL_SLOTS : LAYER1_SLOTS;
+}
 
 const LAYER2_SLOTS: ReadonlyArray<readonly [string, string]> = [
   ['title', 'the page <title> would render as "Vivarium · Reproducing ".'],
@@ -141,7 +174,7 @@ function checkTemplate(path: string): void {
 
 function checkRecipes(
   layerDir: string,
-  required: ReadonlyArray<readonly [string, string]>,
+  requiredFor: (recipeDir: string) => ReadonlyArray<readonly [string, string]>,
 ): number {
   let checked = 0;
   const slugs = readdirSync(layerDir, { withFileTypes: true })
@@ -167,7 +200,7 @@ function checkRecipes(
     checked++;
     const body = readFileSync(pagePath, 'utf-8');
     const slots = slotNames(body);
-    for (const [slot, reason] of required) {
+    for (const [slot, reason] of requiredFor(recipeDir)) {
       if (!slots.has(slot)) {
         failures.push({
           slug,
@@ -213,12 +246,13 @@ function checkRecipes(
   return checked;
 }
 
-checkTemplate(join(LAYER1_DIR, '_shared', 'page.template.html'));
+checkTemplate(join(LAYER1_DIR, '_shared', SCRIPT_TEMPLATE));
+checkTemplate(join(LAYER1_DIR, '_shared', TERMINAL_TEMPLATE));
 checkTemplate(join(LAYER2_DIR, '_layer2-shared', 'page.template.html'));
 
 const recipesChecked =
-  checkRecipes(LAYER1_DIR, LAYER1_SLOTS) +
-  checkRecipes(LAYER2_DIR, LAYER2_SLOTS);
+  checkRecipes(LAYER1_DIR, layer1Slots) +
+  checkRecipes(LAYER2_DIR, () => LAYER2_SLOTS);
 
 const sharedStylePath = join(LAYER1_DIR, '_shared', 'style.css');
 if (
@@ -239,7 +273,7 @@ if (
 
 if (failures.length === 0) {
   console.log(
-    `[validate-page-slots] OK — 2 template(s) and ${recipesChecked} recipe(s) carry every slot their page needs.`,
+    `[validate-page-slots] OK — 3 template(s) and ${recipesChecked} recipe(s) carry every slot their page needs.`,
   );
   process.exit(0);
 }

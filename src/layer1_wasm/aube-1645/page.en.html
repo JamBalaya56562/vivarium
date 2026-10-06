@@ -1,6 +1,8 @@
-<template data-slot="script-heading">Terminal session</template>
-
 <template data-slot="upstream-url">https://github.com/aubepkg/aube/pull/1645</template>
+
+<template data-slot="baseline-heading">aube main</template>
+
+<template data-slot="fix-heading">Fix candidate · #1645</template>
 
 <template data-slot="drawer-body">
     <p data-i18n="drawer.body.p1">
@@ -15,15 +17,15 @@
       the version from their own <code>package.json</code>.
     </p>
     <p data-i18n="drawer.body.p2">
-      Each pane is a terrarium terminal: the aube CLI compiled to
-      WebAssembly and running in this tab, with a project that has
-      one <code>file:</code> and one <code>link:</code> dependency
-      in <code>/work</code>. The page types the session on the left
+      Each terminal runs the aube CLI compiled to WebAssembly by
+      terrarium, in this tab, with a project that has one
+      <code>file:</code> and one <code>link:</code> dependency in
+      <code>/work</code>. The left one runs aube's latest
+      <code>main</code>; the right one runs the head of the pull
+      request that fixes the bug. The page types the same session
       into both, then compares each package's version in
       <code>aube list</code> with the one in its
-      <code>package.json</code>. The baseline pane runs aube v2.6.1,
-      the latest release; the fix-candidate pane runs the head of
-      the pull request that fixes the bug.
+      <code>package.json</code>.
     </p>
     <p data-i18n="drawer.body.p3">
       Both builds are aube's own source, unchanged. Once the session
@@ -32,12 +34,3 @@
 </template>
 
 <template data-slot="runtime-label">terrarium</template>
-
-<template data-slot="fix-pane">
-<div
-    id="output-fix"
-    class="vh-variant-output vh-variant-output--terminal"
-    data-fix-status="pending"
-    data-i18n="output.waitingBaseline"
-  >(waiting for baseline)</div>
-</template>

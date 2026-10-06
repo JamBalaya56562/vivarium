@@ -70,7 +70,11 @@ Vivarium reproduces, it does not assert.
 
 The markup is shared: it lives once in
 [`_shared/page.template.html`](./_shared/page.template.html), and each
-recipe supplies only its own slots in `page.en.html`.
+recipe supplies only its own slots in `page.en.html`. A CLI recipe run
+in terrarium uses
+[`_shared/page.terminal.template.html`](./_shared/page.terminal.template.html)
+instead: two terminals of equal width, the baseline on the left and the
+fix candidate on the right, with no script column.
 [`scripts/validate-page-slots.ts`](./scripts/validate-page-slots.ts)
 requires those slots at build time.
 

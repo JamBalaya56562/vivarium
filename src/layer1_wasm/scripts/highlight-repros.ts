@@ -4,6 +4,7 @@ import { codeToHtml, type BundledLanguage } from 'shiki';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pageTemplateFor, TERMINAL_TEMPLATE } from './page-templates';
 import { extractReproSource } from './repro-source';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,13 @@ function readRecipeLanguage(recipeDir: string): BundledLanguage | null {
     );
   }
   return null;
+}
+
+function readRecipeRuntime(recipeDir: string): string | undefined {
+  const recipePath = join(recipeDir, 'recipe.json');
+  if (!existsSync(recipePath)) return undefined;
+  const meta = JSON.parse(readFileSync(recipePath, 'utf-8')) as { expected_runtime?: string };
+  return meta.expected_runtime;
 }
 
 const SKIP_DIRS = new Set([
@@ -53,6 +61,7 @@ for (const slug of slugs) {
   if (!existsSync(reproPath)) continue;
 
   const recipeDir = join(LAYER1_DIR, slug);
+  if (pageTemplateFor(readRecipeRuntime(recipeDir)) === TERMINAL_TEMPLATE) continue;
   const lang = readRecipeLanguage(recipeDir);
   if (!lang) {
     console.warn(

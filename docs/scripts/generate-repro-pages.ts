@@ -3,6 +3,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'node-html-parser';
+import { pageTemplateFor } from '../../src/layer1_wasm/scripts/page-templates';
 import { extractReproSource } from '../../src/layer1_wasm/scripts/repro-source';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
@@ -278,10 +279,16 @@ function recipeSlugs(dir: string): string[] {
 let written = 0;
 
 function renderLayer1(): void {
-  const template = readFileSync(
-    join(LAYER1_DIR, '_shared', 'page.template.html'),
-    'utf-8',
-  );
+  const templates = new Map<string, string>();
+  const templateFor = (runtime: string): string => {
+    const name = pageTemplateFor(runtime);
+    let template = templates.get(name);
+    if (template === undefined) {
+      template = readFileSync(join(LAYER1_DIR, '_shared', name), 'utf-8');
+      templates.set(name, template);
+    }
+    return template;
+  };
   for (const slug of recipeSlugs(LAYER1_DIR)) {
     const dir = join(LAYER1_DIR, slug);
     const slots = readSlots(join(dir, 'page.en.html'));
@@ -306,7 +313,7 @@ function renderLayer1(): void {
         `${slug}: no upstream URL — add an "upstream-url" slot or a github entry for "${entry.project}" in projects.json`,
       );
     }
-    const page = fill(template, {
+    const page = fill(templateFor(runtime), {
       TITLE: entry.title,
       PROJECT: entry.title.split('#')[0] as string,
       ISSUE: String(entry.issue),
@@ -324,6 +331,8 @@ function renderLayer1(): void {
       RUNNER_ACTIONS: runnerActions(dir),
       REPRO_CODE: reproCode(dir, slug),
       FIX_PANE: indent(slots['fix-pane'] ?? '', 10),
+      BASELINE_HEADING: slots['baseline-heading'] ?? 'Baseline output',
+      FIX_HEADING: slots['fix-heading'] ?? 'Fix-candidate output',
       EXTRA_SECTIONS: slots.sections ? `\n${indent(slots.sections, 6)}\n` : '',
     });
     writeFileSync(join(dir, 'index.html'), page, 'utf-8');

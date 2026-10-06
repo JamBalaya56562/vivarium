@@ -1539,8 +1539,19 @@ body.vh-drawer-open:has(#path-a-mount) {
   overflow: hidden;
 }
 
-.vh-variant-output > terrarium-terminal {
-  height: 22rem;
+@media (min-width: 1024px) {
+  .vh-main__cols.vh-main__cols--terminals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vh-main__cols.vh-main__cols--terminals .vh-output-multi .vh-variant-stage,
+.vh-main__cols.vh-main__cols--terminals .vh-output-multi #output-fix {
+  min-height: 24rem;
+}
+
+.vh-main__cols--terminals terrarium-terminal {
+  height: 100%;
 }
 
 .vh-main__col--output.vh-output-multi {

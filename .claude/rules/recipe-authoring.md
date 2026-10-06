@@ -65,7 +65,10 @@ docs/site/_data/projects.json           ← add a row keyed by <project> (only i
 
 `index.html` is **generated** and gitignored:
 `docs/scripts/generate-repro-pages.ts` renders it from the layer's
-`page.template.html` plus the recipe's `page.en.html`. You edit
+page template plus the recipe's `page.en.html`. Layer 1 has two —
+`page.template.html`, and `page.terminal.template.html` for terrarium
+recipes — chosen by runtime in `src/layer1_wasm/scripts/page-templates.ts`;
+a change to the shared shell goes into both. You edit
 `page.en.html` — the slots only your recipe knows — and run
 `mise run repro:pages`. The generated English page is the input to the
 Japanese one: visitor-facing prose nodes carry `data-i18n="<key>"`, the
@@ -398,7 +401,17 @@ PRs 180 / 189 / 192.
   `loadTerrarium` from `_shared/terrarium_loader.ts`, which imports
   `@aletheia-works/terrarium` from jsDelivr at a pinned version, and
   mounts one `<terrarium-terminal>` per build with terrarium's `ref`
-  names (`v2.6.1`, `pr-1645`). terrarium must already publish a build
+  names (`main`, `pr-1645`). The page renders from
+  `_shared/page.terminal.template.html` instead of the script template:
+  two terminals of equal width, the baseline on the left and the fix
+  candidate on the right, with no script column — the terminals are the
+  reproduction, and a visitor can type into them. Its slots are
+  `drawer-body`, `runtime-label`, `baseline-heading` and `fix-heading`;
+  `src/layer1_wasm/scripts/page-templates.ts` maps the runtime to the
+  template for the generator, the slot validator and the highlighter.
+  A baseline on `main` declares no `upstream` in `recipe.json`: there is
+  no release to pin, and terrarium rebuilds `main` daily on its own.
+  terrarium must already publish a build
   for each ref; its `builds.json` lists them. The tool uses threads, so
   the page has to be cross-origin isolated: the recipe ships
   `coi-serviceworker.js` next to its page, the runtime shell loads it,
@@ -466,7 +479,8 @@ paint, and the page renders unstyled until it lands. The empty
 (`.vh-topnav` is a fixed height, `.vh-footer:empty::before` holds one
 line), so filling them shifts nothing.
 
-This block lives in `_shared/page.template.html` (Layer 1) and
+This block lives in `_shared/page.template.html` and
+`_shared/page.terminal.template.html` (Layer 1) and
 `_layer2-shared/page.template.html` (Layer 2). A recipe never repeats
 it; a recipe that needs a shape the template cannot express gets a new
 template rather than a hand-written page.

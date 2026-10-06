@@ -54,6 +54,7 @@ export async function loadTerrarium(
   setVerdict("pending", options.pendingText ?? S.pending, "loading");
   emitProgress(10, "Initialising…");
 
+  await waitForIsolatingReload();
   if (!globalThis.crossOriginIsolated) {
     throw new Error(S.notIsolated);
   }
@@ -77,6 +78,18 @@ export async function loadTerrarium(
       return terminal;
     },
   };
+}
+
+const ISOLATING_RELOAD_TIMEOUT_MS = 15_000;
+
+async function waitForIsolatingReload(): Promise<void> {
+  if (globalThis.crossOriginIsolated) return;
+  if (!("serviceWorker" in navigator) || navigator.serviceWorker.controller) {
+    return;
+  }
+  await new Promise((resolve) =>
+    setTimeout(resolve, ISOLATING_RELOAD_TIMEOUT_MS),
+  );
 }
 
 function emitProgress(pct: number, label: string): void {

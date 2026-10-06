@@ -5,25 +5,21 @@ import {
   type VivariumResultV1,
 } from "../_shared/verdict.js";
 
-const REPRO_SOURCE_HINT = `
-$ aube install
-$ rm -rf node_modules
-$ aube install --frozen-lockfile
-$ aube list
-$ cat filedep/package.json
-$ cat ../outside/linked/package.json
-`.trim();
-
-const SESSION = REPRO_SOURCE_HINT.split("\n").map((line) =>
-  line.replace(/^\$ /, ""),
-);
+const SESSION = [
+  "aube install",
+  "rm -rf node_modules",
+  "aube install --frozen-lockfile",
+  "aube list",
+  "cat filedep/package.json",
+  "cat ../outside/linked/package.json",
+];
 
 const LOCAL_PACKAGES = [
   { name: "filedep", manifest: "cat filedep/package.json" },
   { name: "linked", manifest: "cat ../outside/linked/package.json" },
 ];
 
-const BASELINE_REF = "v2.6.1";
+const BASELINE_REF = "main";
 const FIX_REF = "pr-1645";
 
 interface PackageRow {
@@ -43,16 +39,11 @@ interface SessionResult {
 const outputEl = document.getElementById("output");
 const outputFixEl = document.getElementById("output-fix");
 const metaEl = document.getElementById("meta");
-const reproCodeEl = document.getElementById("repro-code");
 
-if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
+if (!outputEl || !outputFixEl || !metaEl) {
   throw new Error(
-    "aube-1645: missing required DOM elements (#output, #output-fix, #meta, #repro-code).",
+    "aube-1645: missing required DOM elements (#output, #output-fix, #meta).",
   );
-}
-
-if (!reproCodeEl.firstChild) {
-  reproCodeEl.textContent = REPRO_SOURCE_HINT;
 }
 
 function stripAnsi(text: string): string {
