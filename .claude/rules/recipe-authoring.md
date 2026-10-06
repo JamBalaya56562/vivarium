@@ -444,6 +444,14 @@ PRs 180 / 189 / 192.
   branch head at deploy time and nothing tracks it. A terrarium recipe
   pins neither: terrarium builds `pr-<number>` from the pull request's
   head, and the envelope records the commit it reports.
+- **Name the pull request that fixes the bug.** Put it in `recipe.json`
+  as `upstream_pr` (a fork wheel already carries it in
+  `fix-candidate.json`). The daily `retire-merged` workflow checks it
+  and, once it is merged, opens a pull request as `aletheia-works-bot`
+  that deletes the recipe and regenerates the index, then merges itself
+  once the required checks pass. Its body lists any file that still
+  names the slug. A recipe pinned to the landing-page hero is not
+  removed: the run warns instead, since the hero copy needs a human.
 - **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
   the main thread times out and calls `terminate()`, and its harness
   wraps the visitor script in `time.perf_counter()` + `except

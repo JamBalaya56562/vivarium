@@ -90,6 +90,11 @@ How the pane gets filled is not prescribed. Three shapes exist today:
 A pinned fix candidate follows its branch: the daily `upstream-bump`
 workflow opens a pull request when the branch head moves past the pin.
 
+A recipe whose fixing pull request is known retires itself: the daily
+`retire-merged` workflow checks `upstream_pr` (in `recipe.json`, or in
+`fix-candidate.json` for a fork wheel) and, once that pull request is
+merged, opens a pull request that removes the recipe.
+
 ## Verdict surface
 
 Every Layer 1 reproduction emits its verdict via the in-page surface

@@ -88,6 +88,7 @@ There is no current v2.
 | 2026-09-03 | Added optional `path_a`. Layer alone no longer implies a page can run a supplied fix: Layer 1 recipes opt into the panel one at a time, and consumers that used to dispatch on `layer === 1` should read this field instead. Backwards-compatible — v1 consumers ignore it. |
 | 2026-10-04 | [`recipe.schema.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) gains optional `upstream`, the upstream release a Layer 1 recipe's baseline pins, read by the daily upstream-bump workflow. The index does not export it, so recipe entries are unchanged. |
 | 2026-10-04 | `recipe.schema.json` also gains optional `fix_candidate`, the branch and pinned commit a recipe's fix-candidate pane builds from source, read by the same workflow. Not exported to the index either. |
+| 2026-10-06 | `recipe.schema.json` gains optional `upstream_pr`, the upstream pull request that fixes the recipe's bug, read by the daily retire-merged workflow, which removes the recipe once that pull request is merged. Not exported to the index. |
 
 ## Generation
 

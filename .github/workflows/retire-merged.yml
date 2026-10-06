@@ -1,0 +1,116 @@
+name: retire-merged
+
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retire-merged
+  cancel-in-progress: false
+
+jobs:
+  recipes:
+    name: list tracked pull requests
+    if: github.repository_owner == 'aletheia-works' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      slugs: ${{ steps.list.outputs.slugs }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise (bun, jq)
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun jq
+
+      - name: List them
+        id: list
+        working-directory: docs
+        run: |
+          set -euo pipefail
+          echo "slugs=$(bun run scripts/retire-merged-recipes.ts --list | jq -Rnc '[inputs | select(length > 0) | split("\t")[0]]')" >> "${GITHUB_OUTPUT}"
+
+  retire:
+    name: retire ${{ matrix.slug }}
+    needs: recipes
+    if: needs.recipes.outputs.slugs != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        slug: ${{ fromJSON(needs.recipes.outputs.slugs) }}
+    env:
+      SLUG: ${{ matrix.slug }}
+    steps:
+      - name: Get an aletheia-works-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise (bun, jq)
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun jq
+
+      - name: Remove the recipe if its pull request is merged
+        id: retire
+        working-directory: docs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bun run scripts/retire-merged-recipes.ts "${SLUG}" > "${RUNNER_TEMP}/body.md"
+          if git diff --quiet; then
+            echo "${SLUG} is still waiting on its upstream pull request."
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          bun install --frozen-lockfile
+          bun run generate
+          {
+            echo
+            echo "This pull request's own checks re-run without the recipe, and the pull request merges itself once the required checks pass."
+            if left="$(git -C "${GITHUB_WORKSPACE}" grep -n -F "${SLUG}" -- . ':!docs/site/public/api/')"; then
+              echo
+              echo "<details><summary>Files that still name ${SLUG} (left as written)</summary>"
+              echo
+              echo '```text'
+              echo "${left}"
+              echo '```'
+              echo
+              echo "</details>"
+            fi
+          } >> "${RUNNER_TEMP}/body.md"
+          cat "${RUNNER_TEMP}/body.md" >> "${GITHUB_STEP_SUMMARY}"
+          echo "changed=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Open or update the pull request
+        if: steps.retire.outputs.changed == 'true'
+        uses: ./.github/actions/bot-pull-request
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: chore/retire-${{ matrix.slug }}
+          title: 'chore(repro): retire ${{ matrix.slug }}, fixed upstream'
+          body-path: ${{ runner.temp }}/body.md

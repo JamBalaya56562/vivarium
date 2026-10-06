@@ -79,6 +79,11 @@
         }
       ]
     },
+    "upstream_pr": {
+      "type": "string",
+      "pattern": "^https://github\\.com/[^/]+/[^/]+/pull/[0-9]+$",
+      "description": "The upstream pull request that fixes the bug, for recipes that do not use fix-candidate.json (whose upstream_pr plays the same role). The retire-merged workflow checks it every day and, once it is merged, opens a pull request that removes the recipe."
+    },
     "fix_candidate": {
       "type": "object",
       "description": "The branch a Layer 1 recipe's fix-candidate pane builds from source, pinned to a commit, for recipes that do not use fix-candidate.json (whose source.commit plays the same role for fork wheels). The upstream-bump workflow compares the pin with the branch head every day and, when they differ, opens a pull request that moves the commit, and its first eight characters, everywhere they appear in the recipe's non-Markdown files.",

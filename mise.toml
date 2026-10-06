@@ -139,6 +139,16 @@ description = "Regenerate docs public API + site-only generated data from src/la
 dir = "docs"
 run = "bun run generate"
 
+[tasks."recipes:retire:list"]
+description = "List the recipes the daily retire-merged workflow tracks, one '<slug><TAB><upstream pull request>' per line"
+dir = "docs"
+run = "bun run scripts/retire-merged-recipes.ts --list"
+
+[tasks."recipes:retire"]
+description = "Remove one recipe (pass the slug) if its upstream pull request is merged; prints the pull request body when it does"
+dir = "docs"
+run = "bun run scripts/retire-merged-recipes.ts"
+
 [tasks."mcp:build"]
 description = "Build the MCP server package"
 dir = "packages/mcp-server"

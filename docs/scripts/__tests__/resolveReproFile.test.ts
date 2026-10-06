@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { resolveReproFile } from '../repro-dev-middleware';
 
@@ -8,16 +8,34 @@ const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
 const LAYER1 = path.join(REPO_ROOT, 'src', 'layer1_wasm');
 const LAYER2 = path.join(REPO_ROOT, 'src', 'layer2_docker');
 
-const AUBE_1645_DIR = path.join(LAYER1, 'aube-1645');
-const AUBE_1645_INDEX = path.join(AUBE_1645_DIR, 'index.html');
+const LAYER1_RECIPE = (
+  JSON.parse(
+    readFileSync(
+      path.join(REPO_ROOT, 'docs', 'site', 'public', 'api', 'recipes.json'),
+      'utf-8',
+    ),
+  ) as {
+    recipes: Array<{
+      slug: string;
+      layer: number;
+      project: string;
+      issue: number;
+    }>;
+  }
+).recipes.find((r) => r.layer === 1 && r.issue > 0);
+if (!LAYER1_RECIPE)
+  throw new Error('recipes.json lists no Layer 1 recipe with an issue number');
+const L1_URL = `${LAYER1_RECIPE.project}/${LAYER1_RECIPE.issue}/`;
+const L1_DIR = path.join(LAYER1, LAYER1_RECIPE.slug);
+const L1_INDEX = path.join(L1_DIR, 'index.html');
 
 const BASH_LOCAL_DIR = path.join(LAYER2, 'bash-local-shadows-exit');
 const BASH_LOCAL_INDEX = path.join(BASH_LOCAL_DIR, 'index.html');
 
 describe('resolveReproFile — hierarchical (canonical) URLs', () => {
-  test('hierarchical recipe URL (/aube/1645/) → Layer 1 index.html', () => {
-    const result = resolveReproFile('aube/1645/');
-    expect(result).toBe(AUBE_1645_INDEX);
+  test('hierarchical recipe URL (/<project>/<issue>/) → Layer 1 index.html', () => {
+    const result = resolveReproFile(L1_URL);
+    expect(result).toBe(L1_INDEX);
   });
 
   test('hierarchical Layer 2 recipe URL (/bash/local-shadows-exit/) → Layer 2 index.html', () => {
@@ -25,20 +43,20 @@ describe('resolveReproFile — hierarchical (canonical) URLs', () => {
     expect(result).toBe(BASH_LOCAL_INDEX);
   });
 
-  test('hierarchical asset (/aube/1645/recipe.json) → Layer 1 file', () => {
-    const result = resolveReproFile('aube/1645/recipe.json');
-    expect(result).toBe(path.join(AUBE_1645_DIR, 'recipe.json'));
+  test('hierarchical asset (/<project>/<issue>/recipe.json) → Layer 1 file', () => {
+    const result = resolveReproFile(`${L1_URL}recipe.json`);
+    expect(result).toBe(path.join(L1_DIR, 'recipe.json'));
     expect(existsSync(result!)).toBe(true);
   });
 
-  test('hierarchical asset (/aube/1645/repro.ts) → Layer 1 file (TS source, tracked)', () => {
-    const result = resolveReproFile('aube/1645/repro.ts');
-    expect(result).toBe(path.join(AUBE_1645_DIR, 'repro.ts'));
+  test('hierarchical asset (/<project>/<issue>/repro.ts) → Layer 1 file (TS source, tracked)', () => {
+    const result = resolveReproFile(`${L1_URL}repro.ts`);
+    expect(result).toBe(path.join(L1_DIR, 'repro.ts'));
     expect(existsSync(result!)).toBe(true);
   });
 
   test('non-existent asset under existing recipe → null', () => {
-    expect(resolveReproFile('aube/1645/does-not-exist.js')).toBe(null);
+    expect(resolveReproFile(`${L1_URL}does-not-exist.js`)).toBe(null);
   });
 });
 
@@ -87,22 +105,20 @@ describe('resolveReproFile — Japanese locale', () => {
   });
 
   test('an untranslated recipe falls back to English rather than 404ing', () => {
-    const ja = path.join(AUBE_1645_DIR, 'index.ja.html');
+    const ja = path.join(L1_DIR, 'index.ja.html');
     if (existsSync(ja)) return; // already translated; nothing to assert
-    expect(resolveReproFile('aube/1645/', 'ja')).toBe(
-      path.join(AUBE_1645_DIR, 'index.html'),
-    );
+    expect(resolveReproFile(L1_URL, 'ja')).toBe(L1_INDEX);
   });
 
   test('non-HTML assets resolve identically in both locales', () => {
-    expect(resolveReproFile('aube/1645/recipe.json', 'ja')).toBe(
-      resolveReproFile('aube/1645/recipe.json'),
+    expect(resolveReproFile(`${L1_URL}recipe.json`, 'ja')).toBe(
+      resolveReproFile(`${L1_URL}recipe.json`),
     );
   });
 
   test('the JA gallery and project landing still fall through to rspress', () => {
     expect(resolveReproFile('', 'ja')).toBe(null);
-    expect(resolveReproFile('aube/', 'ja')).toBe(null);
+    expect(resolveReproFile(`${LAYER1_RECIPE.project}/`, 'ja')).toBe(null);
   });
 });
 
@@ -112,6 +128,6 @@ describe('resolveReproFile — single-segment project routes', () => {
   });
 
   test('project landing single-segment (/repro/<project>/) → null (rspress handles it)', () => {
-    expect(resolveReproFile('aube/')).toBe(null);
+    expect(resolveReproFile(`${LAYER1_RECIPE.project}/`)).toBe(null);
   });
 });
