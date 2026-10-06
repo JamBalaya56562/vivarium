@@ -64,7 +64,7 @@ if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
 }
 
 const BASELINE_AUBE = "v2.6.1";
-const FIX_AUBE = "#1645 (8b56aa1e)";
+const FIX_AUBE = "#1645 (ac51f946)";
 
 // The reproduction writes its fixture project under /tmp before handing
 // it to aube's lockfile reader, so each run gets a fresh in-memory /tmp.
