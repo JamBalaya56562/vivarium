@@ -52,18 +52,15 @@ export async function loadTerrarium(
 ): Promise<LoadResult> {
   const terrariumVersion = options.terrariumVersion ?? DEFAULT_TERRARIUM_VERSION;
   setVerdict("pending", options.pendingText ?? S.pending, "loading");
-  emitProgress(10, "Initialising…");
 
   await waitForIsolatingReload();
   if (!globalThis.crossOriginIsolated) {
     throw new Error(S.notIsolated);
   }
 
-  emitProgress(40, "Fetching terrarium…");
   const moduleUrl = `https://cdn.jsdelivr.net/npm/@aletheia-works/terrarium@${terrariumVersion}/+esm`;
   await import(/* @vite-ignore */ moduleUrl);
   await customElements.whenDefined("terrarium-terminal");
-  emitProgress(94, "Runtime ready.");
 
   return {
     terrariumVersion,
@@ -89,13 +86,5 @@ async function waitForIsolatingReload(): Promise<void> {
   }
   await new Promise((resolve) =>
     setTimeout(resolve, ISOLATING_RELOAD_TIMEOUT_MS),
-  );
-}
-
-function emitProgress(pct: number, label: string): void {
-  document.dispatchEvent(
-    new CustomEvent("vh-progress", {
-      detail: { pct, label, bytes: "", stage: "runtime" },
-    }),
   );
 }

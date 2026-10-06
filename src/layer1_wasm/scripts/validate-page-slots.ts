@@ -103,10 +103,11 @@ const TEMPLATE_MARKUP: ReadonlyArray<readonly [string, string]> = [
     '<footer class="vh-footer"></footer>',
     'the static footer placeholder is missing, so the footer appears only once chrome.js runs.',
   ],
-  [
-    'class="vh-progress"',
-    'the static loading panel is missing, so the overlay only appears once chrome.js has built it.',
-  ],
+];
+
+const PROGRESS_MARKUP: readonly [string, string] = [
+  'class="vh-progress"',
+  'the static loading panel is missing, so the overlay chrome.js puts over #output only appears once chrome.js has built it.',
 ];
 
 const TEMPLATE_HEAD_MARKUP: ReadonlyArray<readonly [RegExp, string]> = [
@@ -148,7 +149,10 @@ function checkTemplate(path: string): void {
   const body = readFileSync(path, 'utf-8');
   const headEnd = body.indexOf('</head>');
   const head = headEnd === -1 ? '' : body.slice(0, headEnd);
-  for (const [needle, reason] of TEMPLATE_MARKUP) {
+  const markup = body.includes('id="output"')
+    ? [...TEMPLATE_MARKUP, PROGRESS_MARKUP]
+    : TEMPLATE_MARKUP;
+  for (const [needle, reason] of markup) {
     if (!body.includes(needle)) {
       failures.push({
         slug: '_template',

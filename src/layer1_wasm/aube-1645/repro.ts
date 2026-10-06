@@ -36,13 +36,13 @@ interface SessionResult {
   failed_command: string | null;
 }
 
-const outputEl = document.getElementById("output");
+const outputEl = document.getElementById("output-baseline");
 const outputFixEl = document.getElementById("output-fix");
 const metaEl = document.getElementById("meta");
 
 if (!outputEl || !outputFixEl || !metaEl) {
   throw new Error(
-    "aube-1645: missing required DOM elements (#output, #output-fix, #meta).",
+    "aube-1645: missing required DOM elements (#output-baseline, #output-fix, #meta).",
   );
 }
 
