@@ -11,6 +11,7 @@ const LOADER_FOR_RUNTIME: Record<string, string> = {
   'php-wasm': 'php_loader.ts',
   'ruby.wasm': 'ruby_loader.ts',
   'rust-wasi': 'rust_loader.ts',
+  terrarium: 'terrarium_loader.ts',
 };
 
 function resolvedCdnUrls(loaderFile: string): string[] {

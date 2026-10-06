@@ -25,9 +25,9 @@ describe('resolveReproFile — hierarchical (canonical) URLs', () => {
     expect(result).toBe(BASH_LOCAL_INDEX);
   });
 
-  test('hierarchical asset (/aube/1645/Cargo.toml) → Layer 1 file', () => {
-    const result = resolveReproFile('aube/1645/Cargo.toml');
-    expect(result).toBe(path.join(AUBE_1645_DIR, 'Cargo.toml'));
+  test('hierarchical asset (/aube/1645/recipe.json) → Layer 1 file', () => {
+    const result = resolveReproFile('aube/1645/recipe.json');
+    expect(result).toBe(path.join(AUBE_1645_DIR, 'recipe.json'));
     expect(existsSync(result!)).toBe(true);
   });
 
@@ -95,8 +95,8 @@ describe('resolveReproFile — Japanese locale', () => {
   });
 
   test('non-HTML assets resolve identically in both locales', () => {
-    expect(resolveReproFile('aube/1645/Cargo.toml', 'ja')).toBe(
-      resolveReproFile('aube/1645/Cargo.toml'),
+    expect(resolveReproFile('aube/1645/recipe.json', 'ja')).toBe(
+      resolveReproFile('aube/1645/recipe.json'),
     );
   });
 

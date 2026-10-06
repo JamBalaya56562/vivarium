@@ -1534,6 +1534,15 @@ body.vh-drawer-open:has(#path-a-mount) {
   overflow-wrap: anywhere;
 }
 
+.vh-variant-output:has(> terrarium-terminal) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.vh-variant-output > terrarium-terminal {
+  height: 22rem;
+}
+
 .vh-main__col--output.vh-output-multi {
   display: flex;
   flex-direction: column;

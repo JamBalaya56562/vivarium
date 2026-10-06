@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="cargo fmt --apply + clippy --fix on Layer 1 Rust crates"
 set -euo pipefail
-for prepare in src/layer1_wasm/*/prepare.sh; do
-  if [ -f "$prepare" ]; then
-    bash "$prepare"
-  fi
-done
-find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -not -path '*/.aube/*' -print | sort | while IFS= read -r cargo_toml; do
+find src/layer1_wasm -name Cargo.toml -not -path '*/target/*' -print | sort | while IFS= read -r cargo_toml; do
   echo "==> cargo fmt + clippy --fix $cargo_toml"
   cargo fmt --manifest-path "$cargo_toml"
   cargo clippy --manifest-path "$cargo_toml" --target wasm32-wasip1 --release --fix --allow-no-vcs --allow-dirty --allow-staged

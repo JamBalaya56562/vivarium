@@ -1,20 +1,15 @@
 {
   "schema_version": 1,
-  "language": "rust",
+  "language": "shellsession",
   "symptom": "wrong-lockfile-version",
   "severity": "bug",
-  "tags": ["aube", "lockfile", "package-manager", "wasm32-wasip1"],
+  "tags": ["aube", "lockfile", "package-manager", "terrarium"],
   "expected_verdict": "reproduced",
-  "expected_runtime": "rust-wasi",
+  "expected_runtime": "terrarium",
   "upstream": {
     "registry": "github",
     "repository": "aubepkg/aube",
     "version": "v2.6.1",
     "commit": "bd94e42f54d3b5e3dd102716b7197f316cb5f4ed"
-  },
-  "fix_candidate": {
-    "repository": "JamBalaya56562/aube",
-    "branch": "fix-local-dep-versions",
-    "commit": "ac51f946a1765ead1344a2fcc481f5ea688f2573"
   }
 }

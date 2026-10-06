@@ -167,6 +167,7 @@ the gallery are:
 | `"ruby.wasm"` | Ruby over WebAssembly |
 | `"php-wasm"` | PHP over WebAssembly |
 | `"rust-wasi"` | Rust compiled to `wasm32-wasip1` |
+| `"terrarium"` | a CLI compiled to WebAssembly by [terrarium](https://github.com/aletheia-works/terrarium), driven through its terminal |
 | `"docker-snapshot"` | Layer 2 / Layer 3 page rendering a CI- or maintainer-captured `verdict.json` |
 
 External reproductions are free to add new values; downstream

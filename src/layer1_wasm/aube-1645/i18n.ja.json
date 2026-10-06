@@ -12,15 +12,15 @@
     "drawer.meta.k4": "ランタイム",
     "page.h1": "{0} の再現",
     "chip.bugContext": "{0} bug の背景",
-    "section.script.h2": "再現スクリプト (Rust)",
+    "section.script.h2": "ターミナルのセッション",
     "section.baseline.h2": "baseline の出力",
     "output.pending": "(待機中)",
     "section.fix.h2": "fix 候補の出力",
     "output.waitingBaseline": "(baseline を待機中)",
     "page.title": "Vivarium · aubepkg/aube#1645 の再現",
-    "verdict.pending": "WASI shim 経由で Rust wasm32-wasip1 の成果物を読み込み中…",
+    "verdict.pending": "terrarium を読み込み中…",
     "drawer.body.p1": "{0} のような pnpm 形式の lockfile は、{1} や {2} の依存がどこにあるかは記録するが、version は記録しない。aube の lockfile reader はそこに {3} を補うため、resolve せずに lockfile を読むコマンド——{4}、{5}、{6}——はどれもそれらのパッケージを {7} と報告する。一方、新規の resolve ではそれぞれの {8} にある version が表示される。",
-    "drawer.body.p2": "スクリプトはインメモリの {0} に小さなプロジェクトを書き出し、{1} にコンパイルした aube 自身の lockfile reader に渡して、結果に入っている各ローカルパッケージの version を、そのパッケージの {2} にある version と比べる。baseline のペインは最新リリースの aube v2.6.1、fix 候補のペインはこの bug を直す pull request の head を実行する。",
-    "drawer.body.p3": "どちらのビルドも、パッチを 1 つ当てたうえで aube をソースからコンパイルする。このパッチは、wasm ではビルドできない aube-util のネットワークと非同期 I/O のコードをネイティブターゲットだけに残すもの。検証対象の lockfile reader には手を加えていない。"
+    "drawer.body.p2": "どちらのペインも terrarium のターミナルで、WebAssembly にコンパイルした aube CLI がこのタブの中で動いている。{0} には {1} と {2} の依存を 1 つずつ持つプロジェクトがある。ページは左のセッションを両方に打ち込み、{3} に出る各パッケージの version を、そのパッケージの {4} にある version と比べる。baseline のペインは最新リリースの aube v2.6.1、fix 候補のペインはこの bug を直す pull request の head を実行する。",
+    "drawer.body.p3": "どちらのビルドも aube のソースそのままで、手を加えていない。セッションが終わったあとは、ターミナルに自分でコマンドを打ち込める。"
   }
 }

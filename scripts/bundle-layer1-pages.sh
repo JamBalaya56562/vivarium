@@ -47,6 +47,9 @@ for recipe in src/layer1_wasm/*/; do
     echo "Bundling JA reproduction: ${slug} → ${ja_dest}/${rel}/"
     mkdir -p "$ja_dest/$rel"
     cp "${recipe}index.ja.html" "$ja_dest/$rel/index.html"
+    if [ -f "${recipe}coi-serviceworker.js" ]; then
+      cp "${recipe}coi-serviceworker.js" "$ja_dest/$rel/"
+    fi
     rm -f "$dest/$rel/index.ja.html"
   fi
 done

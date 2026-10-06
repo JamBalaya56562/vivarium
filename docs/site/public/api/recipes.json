@@ -10,17 +10,17 @@
       "title": "aubepkg/aube#1645",
       "page_url": "https://aletheia-works.github.io/vivarium/repro/aube/1645/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/aube-1645",
-      "language": "rust",
+      "language": "shellsession",
       "tags": [
         "aube",
         "lockfile",
         "package-manager",
-        "wasm32-wasip1"
+        "terrarium"
       ],
       "symptom": "wrong-lockfile-version",
       "severity": "bug",
       "expected_verdict": "reproduced",
-      "expected_runtime": "rust-wasi",
+      "expected_runtime": "terrarium",
       "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/aube/1645/"
     },
     {

@@ -7,6 +7,8 @@ import { REPO_ROOT, SITE_API_DIR } from './site-paths';
 
 const LAYER_DIRS = ['layer1_wasm', 'layer2_docker'] as const;
 
+export const SERVICE_WORKER = 'coi-serviceworker.js';
+
 const ALLOWED_TAGS = new Set([
   'code',
   'em',
@@ -317,6 +319,24 @@ function translateRecipe(
       start: valueStart,
       end: valueStart + (found[2]?.length ?? 0),
       text: resolved.pathname + resolved.search + resolved.hash,
+    });
+  }
+
+  for (const script of root.querySelectorAll(
+    `script[src="./${SERVICE_WORKER}"]`,
+  )) {
+    const [scriptStart] = script.range;
+    const openTag = script.outerHTML.slice(
+      0,
+      script.outerHTML.indexOf('>') + 1,
+    );
+    const found = /(src=")([^"]*)(")/.exec(openTag);
+    if (found === null) continue;
+    const valueStart = scriptStart + found.index + (found[1]?.length ?? 0);
+    splices.push({
+      start: valueStart,
+      end: valueStart + (found[2]?.length ?? 0),
+      text: `${jaPath}${SERVICE_WORKER}`,
     });
   }
 

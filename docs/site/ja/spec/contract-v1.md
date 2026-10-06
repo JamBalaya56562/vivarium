@@ -153,6 +153,7 @@ interface VivariumResultV1 {
 | `"ruby.wasm"` | WebAssembly 上の Ruby |
 | `"php-wasm"` | WebAssembly 上の PHP |
 | `"rust-wasi"` | `wasm32-wasip1` にコンパイルされた Rust |
+| `"terrarium"` | [terrarium](https://github.com/aletheia-works/terrarium) が WebAssembly にコンパイルした CLI を、そのターミナル経由で動かす |
 | `"docker-snapshot"` | CI またはメンテナーがキャプチャした `verdict.json` をレンダリングする Layer 2 / Layer 3 ページ |
 
 外部再現は新しい値を自由に追加できる。ダウンストリームツールは `runtime.name` を

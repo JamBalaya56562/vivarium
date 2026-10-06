@@ -249,7 +249,8 @@ one. Copy the block from
      `lark-1585` fetches and resolves its own manifest inline. Both
      install the resolved wheel into a Pyodide Web Worker.
   2. **A second artefact built from a fixed dependency version** —
-     e.g. a second `wasm32-wasip1` binary, or a different runtime build.
+     e.g. a second `wasm32-wasip1` binary, a different runtime build,
+     or a second terrarium terminal on the fix's build (`aube-1645`).
   3. **No candidate** — when no fixed build can be executed in the
      browser. Use `data-i18n="output.noFixCandidate"` plus the
      `vh-variant-output--note` class (which wraps prose instead of
@@ -271,7 +272,7 @@ one. Copy the block from
   to the `_shared/*_loader.ts` helper. Otherwise it knocks `#verdict`
   back to `pending` on entry, and a 404 on the second artefact flips a
   correct `reproduced` to `unreproduced`, reporting a fix nobody
-  observed. See `aube-1645/repro.ts`.
+  observed.
 
 **Output shape — the script prints, the page shows what it printed**:
 
@@ -317,11 +318,11 @@ go back to JSON:
   terminated. Its driver composes the pane text itself, using one
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
-- **A WASI command module has no globals to leave behind.** `aube-1645`
-  prints its table to stdout and one JSON line to stderr; the driver
-  shows stdout and parses the first stderr line starting with `{` for
-  the envelope. stderr is the machine channel there, the way a named
-  global is under Pyodide.
+- **A CLI runs as a terminal session.** `aube-1645` runs the aube CLI
+  in terrarium terminals, which are the panes themselves. The driver
+  types each command and reads back the `output` and exit `code` that
+  `terminal.run()` resolves with; that is the machine channel there,
+  the way a named global is under Pyodide.
 
 Every other Layer 1 recipe follows the shape above. There is no
 remaining recipe to copy the old JSON-pane handling from.
@@ -391,17 +392,20 @@ PRs 180 / 189 / 192.
   the connection is per-origin. `reproPreload.test.ts` holds both halves
   of that: pyodide preloads nothing, and every other runtime preloads
   only URLs its own loader imports at its own pinned version.
-- **A Rust recipe can compile an upstream application from source.**
-  `aube-1645` depends on aube's crates by path. Its `prepare.sh` fetches
-  the pinned commits into a gitignored `.aube/`, keeps only the crates
-  the reproduction needs, and applies `wasm-compat.patch`;
-  `repro:build:rust` and `rust:check` run every `*/prepare.sh` first and
-  skip `.aube/` in their crate scan. Depend on upstream crates with the
-  feature set upstream itself uses — aube pulls `aube-manifest` in with
-  `default-features = false`, and the default set adds tree-sitter, a C
-  build that has no compiler for `wasm32-wasip1`. A reproduction that
-  needs a filesystem passes `preopens: ["/tmp"]` to `loadVivariumRust`
-  and writes its fixture there.
+- **A CLI bug runs in terrarium.** When the bug is in a command-line
+  tool that [terrarium](https://github.com/aletheia-works/terrarium)
+  builds, the recipe uses `expected_runtime: "terrarium"` and
+  `loadTerrarium` from `_shared/terrarium_loader.ts`, which imports
+  `@aletheia-works/terrarium` from jsDelivr at a pinned version, and
+  mounts one `<terrarium-terminal>` per build with terrarium's `ref`
+  names (`v2.6.1`, `pr-1645`). terrarium must already publish a build
+  for each ref; its `builds.json` lists them. The tool uses threads, so
+  the page has to be cross-origin isolated: the recipe ships
+  `coi-serviceworker.js` next to its page, the runtime shell loads it,
+  and `generate-repro-i18n.ts` points the Japanese page at a copy in its
+  own `/ja/` directory, because a service worker only controls pages
+  under its own path. `bundle-layer1-pages.sh` and `serve-repro.ts`
+  place and serve that copy.
 - **Declare the upstream release the baseline pins.** When the baseline
   runs a released upstream version (a PyPI wheel, a GitHub release)
   rather than the copy a runtime bundles, put it in `recipe.json` as
@@ -424,7 +428,9 @@ PRs 180 / 189 / 192.
   workflow opens a pull request when the branch head moves, rewriting
   the commit and its first eight characters in the recipe's
   non-Markdown files. Without a pin, a fork wheel is built from the
-  branch head at deploy time and nothing tracks it.
+  branch head at deploy time and nothing tracks it. A terrarium recipe
+  pins neither: terrarium builds `pr-<number>` from the pull request's
+  head, and the envelope records the commit it reports.
 - **`lark-1585` keeps its own worker.** Its bug is an infinite loop, so
   the main thread times out and calls `terminate()`, and its harness
   wraps the visitor script in `time.perf_counter()` + `except

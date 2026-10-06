@@ -4,6 +4,7 @@ import {
   type ServerResponse,
 } from 'node:http';
 
+import { SERVICE_WORKER } from './generate-repro-i18n';
 import { setupReproDevMiddleware } from './repro-dev-middleware';
 import { SITE_BASE } from './site-paths';
 
@@ -28,7 +29,11 @@ setupReproDevMiddleware({
 // directory. Serving more here would hide a page whose <base> is wrong.
 function servedByPages(pathname: string): boolean {
   if (!pathname.startsWith(JA_PREFIX)) return true;
-  return pathname.endsWith('/') || pathname.endsWith('/index.html');
+  return (
+    pathname.endsWith('/') ||
+    pathname.endsWith('/index.html') ||
+    pathname.endsWith(`/${SERVICE_WORKER}`)
+  );
 }
 
 function notFound(res: ServerResponse, url: string): void {

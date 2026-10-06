@@ -1,4 +1,4 @@
-<template data-slot="script-heading">Reproduction script (Rust)</template>
+<template data-slot="script-heading">Terminal session</template>
 
 <template data-slot="upstream-url">https://github.com/aubepkg/aube/pull/1645</template>
 
@@ -15,29 +15,29 @@
       the version from their own <code>package.json</code>.
     </p>
     <p data-i18n="drawer.body.p2">
-      The script writes a small project into an in-memory
-      <code>/tmp</code>, hands it to aube's own lockfile reader
-      compiled to <code>wasm32-wasip1</code>, and compares each
-      local package's version in the result with the one in its
+      Each pane is a terrarium terminal: the aube CLI compiled to
+      WebAssembly and running in this tab, with a project that has
+      one <code>file:</code> and one <code>link:</code> dependency
+      in <code>/work</code>. The page types the session on the left
+      into both, then compares each package's version in
+      <code>aube list</code> with the one in its
       <code>package.json</code>. The baseline pane runs aube v2.6.1,
       the latest release; the fix-candidate pane runs the head of
       the pull request that fixes the bug.
     </p>
     <p data-i18n="drawer.body.p3">
-      Both builds compile aube from source with one patch, which
-      keeps aube-util's network and async I/O code on native targets
-      because it does not build for wasm. The lockfile reader under
-      test is unchanged.
+      Both builds are aube's own source, unchanged. Once the session
+      has run, the terminals take your commands too.
     </p>
 </template>
 
-<template data-slot="runtime-label">Rust wasm32-wasip1</template>
+<template data-slot="runtime-label">terrarium</template>
 
 <template data-slot="fix-pane">
-<pre
+<div
     id="output-fix"
-    class="vh-variant-output"
+    class="vh-variant-output vh-variant-output--terminal"
     data-fix-status="pending"
     data-i18n="output.waitingBaseline"
-  >(waiting for baseline)</pre>
+  >(waiting for baseline)</div>
 </template>

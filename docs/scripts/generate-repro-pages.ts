@@ -63,6 +63,10 @@ const RUNTIME_VERSIONS: Record<string, string> = {
     'ruby_loader.ts',
     'DEFAULT_WASI_SHIM_VERSION',
   ),
+  TERRARIUM_VERSION: loaderConstant(
+    'terrarium_loader.ts',
+    'DEFAULT_TERRARIUM_VERSION',
+  ),
 };
 
 export function runtimeShells(): Record<string, RuntimeShell> {
@@ -70,6 +74,7 @@ export function runtimeShells(): Record<string, RuntimeShell> {
   const ruby = RUNTIME_VERSIONS.RUBY_WASM_VERSION as string;
   const wasi = RUNTIME_VERSIONS.WASI_SHIM_VERSION as string;
   const rubyWasi = RUNTIME_VERSIONS.RUBY_WASI_SHIM_VERSION as string;
+  const terrarium = RUNTIME_VERSIONS.TERRARIUM_VERSION as string;
   return {
     pyodide: {
       preconnect: CDN_PRECONNECT,
@@ -105,6 +110,17 @@ export function runtimeShells(): Record<string, RuntimeShell> {
       ),
       kicker: 'L1 · Rust wasm32-wasip1',
       verdictPending: 'Loading Rust wasm32-wasip1 artefact via WASI shim…',
+    },
+    terrarium: {
+      preconnect: [
+        CDN_PRECONNECT,
+        '    <script src="./coi-serviceworker.js"></script>',
+      ].join('\n'),
+      preload: modulePreload(
+        `https://cdn.jsdelivr.net/npm/@aletheia-works/terrarium@${terrarium}/+esm`,
+      ),
+      kicker: 'L1 · terrarium',
+      verdictPending: 'Loading terrarium…',
     },
   };
 }

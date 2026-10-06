@@ -11,6 +11,7 @@ const SUPPORTED_RUNTIMES = [
   "ruby.wasm",
   "php-wasm",
   "rust-wasi",
+  "terrarium",
 ] as const;
 
 type ExpectedRuntimeName = (typeof SUPPORTED_RUNTIMES)[number];

@@ -11,6 +11,7 @@ const SUPPORTED_RUNTIMES = [
   'ruby.wasm',
   'php-wasm',
   'rust-wasi',
+  'terrarium',
 ] as const;
 
 type ExpectedVerdict = (typeof SUPPORTED_VERDICTS)[number];
@@ -121,7 +122,16 @@ for (const c of cases) {
     await expect
       .soft(fixPane, '#output-fix settled (not left pending)')
       .not.toHaveAttribute('data-fix-status', 'pending', { timeout: 60_000 });
-    const fixText = ((await fixPane.textContent()) ?? '').trim();
+    const fixText = (
+      await fixPane.evaluate(
+        (el) =>
+          el.querySelector<HTMLElement & { transcript: string }>(
+            'terrarium-terminal',
+          )?.transcript ??
+          el.textContent ??
+          '',
+      )
+    ).trim();
     expect.soft(fixText.length, '#output-fix is non-empty').toBeGreaterThan(0);
 
     expect

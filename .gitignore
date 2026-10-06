@@ -63,10 +63,10 @@ src/layer1_wasm/**/index.html
 src/layer2_docker/**/index.html
 !src/layer1_wasm/_assets/
 !src/layer1_wasm/_assets/**
+!src/layer1_wasm/*/coi-serviceworker.js
 
 src/layer1_wasm/**/wheels/*.whl
 src/layer1_wasm/**/wheels/manifest.json
-src/layer1_wasm/**/.aube/
 
 src/layer1_wasm/playwright-report/
 src/layer1_wasm/test-results/

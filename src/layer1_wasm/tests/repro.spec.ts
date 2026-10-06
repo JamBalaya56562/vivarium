@@ -13,6 +13,7 @@ const SUPPORTED_RUNTIMES = [
   "ruby.wasm",
   "php-wasm",
   "rust-wasi",
+  "terrarium",
   "docker-snapshot",
 ] as const;
 
@@ -198,7 +199,16 @@ for (const c of cases) {
           timeout: 60_000,
         });
 
-      const fixText = ((await fixPane.textContent()) ?? "").trim();
+      const fixText = (
+        await fixPane.evaluate(
+          (el) =>
+            el.querySelector<HTMLElement & { transcript: string }>(
+              "terrarium-terminal",
+            )?.transcript ??
+            el.textContent ??
+            "",
+        )
+      ).trim();
       expect
         .soft(fixText.length, "#output-fix is non-empty")
         .toBeGreaterThan(0);

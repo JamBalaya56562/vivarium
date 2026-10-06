@@ -1,56 +1,44 @@
-import { loadVivariumRust } from "../_shared/rust_loader.js";
+import { loadTerrarium, type TerrariumTerminal } from "../_shared/terrarium_loader.js";
 import {
   setResult,
   setVerdict,
   type VivariumResultV1,
 } from "../_shared/verdict.js";
 
+const REPRO_SOURCE_HINT = `
+$ aube install
+$ rm -rf node_modules
+$ aube install --frozen-lockfile
+$ aube list
+$ cat filedep/package.json
+$ cat ../outside/linked/package.json
+`.trim();
+
+const SESSION = REPRO_SOURCE_HINT.split("\n").map((line) =>
+  line.replace(/^\$ /, ""),
+);
+
+const LOCAL_PACKAGES = [
+  { name: "filedep", manifest: "cat filedep/package.json" },
+  { name: "linked", manifest: "cat ../outside/linked/package.json" },
+];
+
+const BASELINE_REF = "v2.6.1";
+const FIX_REF = "pr-1645";
+
 interface PackageRow {
   name: string;
-  specifier: string;
-  lockfile_version: string;
-  package_json_version: string;
+  lockfile_version: string | null;
+  package_json_version: string | null;
 }
 
-interface ReproOutput {
-  aube: string;
+interface SessionResult {
+  ref: string;
+  commit: string | null;
   packages: PackageRow[];
   reproduced: boolean;
+  failed_command: string | null;
 }
-
-const REPRO_SOURCE_HINT = `
-// src/repro.rs (excerpt — compiled by both crates in this directory)
-const AUBE_LOCK_YAML: &str = "lockfileVersion: '9.0'
-
-importers:
-
-  .:
-    dependencies:
-      filedep:
-        specifier: file:./filedep
-        version: file:./filedep
-      linked:
-        specifier: link:../outside/linked
-        version: link:../outside/linked
-
-packages:
-
-  filedep@file:./filedep:
-    resolution: {directory: ./filedep, type: directory}
-...";
-
-// app/filedep/package.json         { "name": "filedep", "version": "1.0.0" }
-// outside/linked/package.json      { "name": "linked", "version": "2.0.0" }
-let app = project();
-let manifest =
-    PackageJson::from_path(&app.join("package.json")).expect("read app/package.json");
-let graph = aube_lockfile::parse_lockfile(&app, &manifest).expect("parse app/aube-lock.yaml");
-
-for pkg in graph.packages.values() {
-    // pkg.version for each file: / link: package, next to the
-    // version in that package's own package.json
-}
-`.trim();
 
 const outputEl = document.getElementById("output");
 const outputFixEl = document.getElementById("output-fix");
@@ -63,178 +51,154 @@ if (!outputEl || !outputFixEl || !metaEl || !reproCodeEl) {
   );
 }
 
-const BASELINE_AUBE = "v2.6.1";
-const FIX_AUBE = "#1645 (ac51f946)";
+if (!reproCodeEl.firstChild) {
+  reproCodeEl.textContent = REPRO_SOURCE_HINT;
+}
 
-// The reproduction writes its fixture project under /tmp before handing
-// it to aube's lockfile reader, so each run gets a fresh in-memory /tmp.
-const PREOPENS = ["/tmp"];
+function stripAnsi(text: string): string {
+  return text.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "");
+}
 
-function parseMachineLine(stderr: string): ReproOutput | null {
-  const line = stderr.split("\n").find((l) => l.startsWith("{"));
-  if (!line) return null;
+function listedVersions(output: string): Map<string, string> {
+  const versions = new Map<string, string>();
+  for (const m of stripAnsi(output).matchAll(/^[├└]── (\S+) (\S+)$/gm)) {
+    versions.set(m[1] as string, m[2] as string);
+  }
+  return versions;
+}
+
+function manifestVersion(output: string): string | null {
   try {
-    return JSON.parse(line) as ReproOutput;
+    const version = (JSON.parse(stripAnsi(output)) as { version?: unknown })
+      .version;
+    return typeof version === "string" ? version : null;
   } catch {
     return null;
   }
 }
 
-function setFixPane(
-  text: string,
-  status: "pending" | "ok" | "error",
-): void {
-  outputFixEl!.textContent = text;
-  outputFixEl!.dataset["fixStatus"] = status;
+async function runSession(terminal: TerrariumTerminal): Promise<SessionResult> {
+  const { ref, commit } = await terminal.ready;
+  const outputs = new Map<string, string>();
+  let failed: string | null = null;
+  for (const command of SESSION) {
+    const { code, output } = await terminal.run(command);
+    outputs.set(command, output);
+    if (code !== 0 && failed === null) failed = command;
+  }
+  const listed = listedVersions(outputs.get("aube list") ?? "");
+  const packages = LOCAL_PACKAGES.map(({ name, manifest }) => ({
+    name,
+    lockfile_version: listed.get(name) ?? null,
+    package_json_version: manifestVersion(outputs.get(manifest) ?? ""),
+  }));
+  const reproduced =
+    failed === null &&
+    packages.every((p) => p.lockfile_version && p.package_json_version) &&
+    packages.some((p) => p.lockfile_version !== p.package_json_version);
+  return { ref, commit, packages, reproduced, failed_command: failed };
 }
 
-if (!reproCodeEl.firstChild) {
-  reproCodeEl.textContent = REPRO_SOURCE_HINT;
-  fetch("./repro.highlighted.html")
-    .then((r) => (r.ok ? r.text() : null))
-    .then((html) => {
-      if (html) reproCodeEl.innerHTML = html;
-    })
-    .catch(() => {});
+function describe(session: SessionResult): string {
+  return session.commit
+    ? `${session.ref} (${session.commit.slice(0, 8)})`
+    : session.ref;
+}
+
+function setFixStatus(status: "pending" | "ok" | "error"): void {
+  outputFixEl!.dataset["fixStatus"] = status;
 }
 
 const startedAt = new Date();
 
 try {
-  const { rust, wasiShimVersion } = await loadVivariumRust({
-    wasmUrl: "./repro.wasm",
-    pendingText: "Loading Rust wasm32-wasip1 artefact via WASI shim…",
-    preopens: PREOPENS,
-  });
+  const { terrariumVersion, createTerminal } = await loadTerrarium();
 
-  setVerdict("pending", "Running reproduction script…");
-  const { exitCode, stdout, stderr } = await rust.run();
-  if (stdout.trim().length === 0) {
-    throw new Error(
-      `wasm produced no stdout (exitCode=${exitCode}, stderr=${stderr})`,
-    );
-  }
-  const result = parseMachineLine(stderr);
-  if (!result) {
-    throw new Error(
-      `wasm produced no machine-readable line on stderr (exitCode=${exitCode}, stderr=${stderr})`,
-    );
-  }
+  const baselineTerminal = createTerminal({ tool: "aube", ref: BASELINE_REF });
+  const fixTerminal = createTerminal({ tool: "aube", ref: FIX_REF });
+  outputEl.replaceChildren(baselineTerminal);
+  outputFixEl.replaceChildren(fixTerminal);
 
-  outputEl.textContent = stdout.trimEnd();
+  setVerdict("pending", "Running the aube session in terrarium…", "running");
+  const fixSession = runSession(fixTerminal);
+  fixSession.catch(() => {});
+  const baseline = await runSession(baselineTerminal);
 
-  if (result.reproduced && exitCode === 0) {
+  if (baseline.reproduced) {
     setVerdict(
       "reproduced",
-      "bug reproduced — file: and link: dependencies read from the lockfile carry version 0.0.0 instead of their package.json version.",
+      "bug reproduced — after a frozen-lockfile install, aube list reports file: and link: dependencies as a version other than their package.json's.",
     );
-  } else if (!result.reproduced && exitCode === 1) {
+  } else if (baseline.failed_command) {
     setVerdict(
       "unreproduced",
-      "bug not reproduced — the lockfile graph carries each local dependency's real version (likely fixed upstream).",
+      `bug not reproduced — \`${baseline.failed_command}\` failed in the baseline terminal.`,
     );
   } else {
     setVerdict(
       "unreproduced",
-      `bug not reproduced — unexpected outcome (exitCode=${exitCode}, reproduced=${result.reproduced}).`,
+      "bug not reproduced — aube list reports each local dependency's package.json version (likely fixed upstream).",
     );
   }
 
   const buildEnvelope = (
-    finishedAt: Date,
-    fix: ReproOutput | null,
-    fixExitCode: number | null,
-  ): VivariumResultV1 => ({
-    contract: "v1",
-    bug: {
-      project: "aube",
-      issue: 1645,
-      upstream_url: "https://github.com/aubepkg/aube/pull/1645",
-    },
-    runtime: {
-      name: "rust-wasi",
-      version: wasiShimVersion,
-      extras: {
-        aube: result.aube,
-        ...(fix ? { aube_fix_candidate: fix.aube } : {}),
-        wasi_target: "wasm32-wasip1",
+    fix: SessionResult | null,
+  ): VivariumResultV1 => {
+    const finishedAt = new Date();
+    return {
+      contract: "v1",
+      bug: {
+        project: "aube",
+        issue: 1645,
+        upstream_url: "https://github.com/aubepkg/aube/pull/1645",
       },
-    },
-    result: {
-      packages: result.packages,
-      reproduced: result.reproduced,
-      exit_code: exitCode,
-      baseline: {
-        spec: `aube ${BASELINE_AUBE}`,
-        packages: result.packages,
-        reproduced: result.reproduced,
-        exit_code: exitCode,
+      runtime: {
+        name: "terrarium",
+        version: terrariumVersion,
+        extras: {
+          aube: describe(baseline),
+          ...(fix ? { aube_fix_candidate: describe(fix) } : {}),
+        },
       },
-      fix_candidate: fix
-        ? {
-            spec: `aube ${FIX_AUBE}`,
-            packages: fix.packages,
-            reproduced: fix.reproduced,
-            exit_code: fixExitCode,
-          }
-        : null,
-    },
-    timing: {
-      started_at: startedAt.toISOString(),
-      finished_at: finishedAt.toISOString(),
-      duration_ms: finishedAt.getTime() - startedAt.getTime(),
-    },
-  });
+      result: {
+        packages: baseline.packages,
+        reproduced: baseline.reproduced,
+        baseline,
+        fix_candidate: fix,
+      },
+      timing: {
+        started_at: startedAt.toISOString(),
+        finished_at: finishedAt.toISOString(),
+        duration_ms: finishedAt.getTime() - startedAt.getTime(),
+      },
+    };
+  };
 
-  setResult(buildEnvelope(new Date(), null, null));
+  setResult(buildEnvelope(null));
 
-  setFixPane(`Loading aube ${FIX_AUBE} build…`, "pending");
-  let fixResult: ReproOutput | null = null;
-  let fixExitCode: number | null = null;
+  let fix: SessionResult | null = null;
   try {
-    const { rust: rustFix } = await loadVivariumRust({
-      wasmUrl: "./repro-fix.wasm",
-      announceVerdict: false,
-      preopens: PREOPENS,
-    });
-    const fixRun = await rustFix.run();
-    if (fixRun.stdout.trim().length === 0) {
-      throw new Error(
-        `fix-candidate wasm produced no stdout (exitCode=${fixRun.exitCode}, stderr=${fixRun.stderr})`,
-      );
-    }
-    fixResult = parseMachineLine(fixRun.stderr);
-    if (!fixResult) {
-      throw new Error(
-        `fix-candidate wasm produced no machine-readable line on stderr (exitCode=${fixRun.exitCode}, stderr=${fixRun.stderr})`,
-      );
-    }
-    fixExitCode = fixRun.exitCode;
-    setFixPane(fixRun.stdout.trimEnd(), "ok");
+    fix = await fixSession;
+    setFixStatus("ok");
   } catch (fixErr: unknown) {
-    const fixErrAny = fixErr as { message?: string } | null;
     console.error(fixErr);
-    setFixPane(
-      `Fix-candidate build unavailable: ${fixErrAny?.message ?? String(fixErr)}`,
-      "error",
-    );
+    setFixStatus("error");
   }
 
   metaEl.textContent =
-    `aube ${result.aube} (baseline)` +
-    (fixResult ? ` vs ${fixResult.aube} (fix candidate)` : "") +
-    ` on wasm32-wasip1 via @bjorn3/browser_wasi_shim v${wasiShimVersion}.`;
+    `aube ${describe(baseline)} (baseline)` +
+    (fix ? ` vs ${describe(fix)} (fix candidate)` : "") +
+    ` in terrarium v${terrariumVersion}.`;
 
-  setResult(buildEnvelope(new Date(), fixResult, fixExitCode));
+  setResult(buildEnvelope(fix));
 } catch (err: unknown) {
   console.error(err);
   const errAny = err as { stack?: string; message?: string } | null;
   outputEl.textContent =
     (errAny && (errAny.stack ?? errAny.message)) ?? String(err);
-  setFixPane(
-    "Not run — the baseline build failed, so there is nothing to compare against.",
-    "error",
-  );
+  outputFixEl.textContent =
+    "Not run — the baseline terminal failed, so there is nothing to compare against.";
+  setFixStatus("error");
   if (globalThis.__VIVARIUM_VERDICT__ !== "unreproduced") {
     setVerdict(
       "unreproduced",

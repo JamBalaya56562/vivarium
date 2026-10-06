@@ -31,6 +31,7 @@
 | Python   | [Pyodide](https://pyodide.org)  | Active |
 | SQLite   | Pyodide `sqlite3`               | Active |
 | Rust     | `wasm32-wasip1`                 | Active |
+| CLI      | [terrarium](https://github.com/aletheia-works/terrarium) | Active |
 | Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Active |
 | PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Active |
 
@@ -78,7 +79,8 @@ How the pane gets filled is not prescribed. Three shapes exist today:
 | Shape | Mechanism | Recipes |
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
-| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | `aube-1645` |
+| Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | none today |
+| Second terminal | a second `<terrarium-terminal>` running terrarium's build of the fix, such as `pr-<number>` | `aube-1645` |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`

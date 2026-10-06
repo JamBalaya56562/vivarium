@@ -2,9 +2,6 @@
 #MISE description="Run every src/layer1_wasm/*/Cargo.toml baseline crate against the host Rust toolchain (auto-discovered)"
 set -euo pipefail
 shopt -s nullglob
-for prepare in src/layer1_wasm/*/prepare.sh; do
-  bash "$prepare"
-done
 matched=0
 failed=()
 for cargo_toml in src/layer1_wasm/*/Cargo.toml; do
