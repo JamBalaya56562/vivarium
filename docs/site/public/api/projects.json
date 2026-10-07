@@ -2,21 +2,6 @@
   "index": "v1",
   "projects": [
     {
-      "project": "aube",
-      "display_name": "aube",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/aube/",
-      "tagline": "A Node.js package manager written in Rust.",
-      "tagline_ja": "Rust で書かれた Node.js のパッケージマネージャ。",
-      "description": "The aube CLI compiled to WebAssembly by terrarium, run as a terminal session against a fixture project. Each page runs aube's latest main next to the fixing pull request, so the verdict flips once the fix lands on main.",
-      "description_ja": "terrarium が WebAssembly にコンパイルした aube CLI を、フィクスチャのプロジェクトに対するターミナルのセッションとして動かす。各ページは aube の最新の main と、それを直す pull request を並べて実行するため、fix が main に入ると verdict が反転する。",
-      "homepage": "https://aube.sh/",
-      "github": "https://github.com/aubepkg/aube"
-    },
-    {
       "project": "bash",
       "display_name": "bash",
       "recipe_count": 1,

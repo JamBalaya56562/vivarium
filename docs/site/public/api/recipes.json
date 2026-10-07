@@ -3,27 +3,6 @@
   "contract": "v1",
   "recipes": [
     {
-      "slug": "aube-1645",
-      "layer": 1,
-      "project": "aube",
-      "issue": 1645,
-      "title": "aubepkg/aube#1645",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/aube/1645/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/aube-1645",
-      "language": "shellsession",
-      "tags": [
-        "aube",
-        "lockfile",
-        "package-manager",
-        "terrarium"
-      ],
-      "symptom": "wrong-lockfile-version",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "terrarium",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/aube/1645/"
-    },
-    {
       "slug": "cpython-137205",
       "layer": 1,
       "project": "cpython",
