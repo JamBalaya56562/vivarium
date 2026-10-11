@@ -8,7 +8,7 @@ formatter's behaviour without an explicit user choice.
 ## Source comparison
 
 - Before: [biomejs/biome at 2405c7620169bd0719166af09a8d89cc76fb37fb](https://github.com/biomejs/biome/commit/2405c7620169bd0719166af09a8d89cc76fb37fb).
-- After: [JamBalaya56562/biome at 45ea808a0f3ce2a7cf9e420e2d4397f730bc9f7e](https://github.com/JamBalaya56562/biome/commit/45ea808a0f3ce2a7cf9e420e2d4397f730bc9f7e),
+- After: [JamBalaya56562/biome at 374751ab0abab3f23ffb3f698392c0847421f0ec](https://github.com/JamBalaya56562/biome/commit/374751ab0abab3f23ffb3f698392c0847421f0ec),
   on [fix/migrate-prettier-default-semi-quotes](https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-default-semi-quotes).
 
 The before commit is the after commit's direct parent. GitHub's upstream
@@ -22,7 +22,7 @@ existing `fix_candidate` metadata. Branch advances receive a reviewed pin bump;
 an unexpected deployed candidate fails the source-identity check.
 
 The fix changes the two defaults and adds an empty-configuration regression
-test. See the [source diff](https://github.com/JamBalaya56562/biome/compare/2405c7620169bd0719166af09a8d89cc76fb37fb...45ea808a0f3ce2a7cf9e420e2d4397f730bc9f7e).
+test. See the [source diff](https://github.com/JamBalaya56562/biome/compare/2405c7620169bd0719166af09a8d89cc76fb37fb...374751ab0abab3f23ffb3f698392c0847421f0ec).
 Upstream issue: [biomejs/biome#12265](https://github.com/biomejs/biome/issues/12265).
 The recipe and its Contract v1 envelope use that issue number.
 
@@ -58,8 +58,7 @@ caches but is not an immutable source pin. The driver checks the compiled
 guest's full source commit before running either session, so a moving branch
 cannot silently replace the comparison.
 
-On 2026-10-11, [Pages run 38109046245](https://github.com/aletheia-works/terrarium/actions/runs/38109046245)
-succeeded and [the public catalogue](https://aletheia-works.github.io/terrarium/web/dist/builds.json)
+On 2026-10-11, [the public catalogue](https://aletheia-works.github.io/terrarium/web/dist/builds.json)
 contained both selections at the commits above and the shared fixture.
 The recipe tests check both English and Japanese in Chromium, Firefox and WebKit.
 The independent Terrarium acceptance also covers Node execution.

@@ -253,7 +253,7 @@ one. Copy the block from
      install the resolved wheel into a Pyodide Web Worker.
   2. **A second artefact built from a fixed dependency version** —
      e.g. a second `wasm32-wasip1` binary, a different runtime build,
-     or a second terrarium terminal on the fix's build (`aube-1645`).
+     or a second terrarium terminal on the fix's build (`biome-12265`).
   3. **No candidate** — when no fixed build can be executed in the
      browser. Use `data-i18n="output.noFixCandidate"` plus the
      `vh-variant-output--note` class (which wraps prose instead of

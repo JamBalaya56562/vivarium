@@ -41,7 +41,7 @@ here.
 ## Catalogue
 
 Layer 1 recipes are immediate subdirectories such as
-[`pandas-56679/`](./pandas-56679/), [`aube-1645/`](./aube-1645/), and
+[`pandas-56679/`](./pandas-56679/), [`biome-12265/`](./biome-12265/), and
 [`ruby-21709/`](./ruby-21709/). They are static browser pages published
 under `/vivarium/repro/<project>/<issue_path>/` by the `deploy-docs`
 workflow.
@@ -78,13 +78,13 @@ fix candidate on the right, with no script column.
 [`scripts/validate-page-slots.ts`](./scripts/validate-page-slots.ts)
 requires those slots at build time.
 
-How the pane gets filled is not prescribed. Three shapes exist today:
+How the pane gets filled is not prescribed. The following shapes are supported:
 
 | Shape | Mechanism | Recipes |
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
 | Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | none today |
-| Second terminal | a second `<terrarium-terminal>` running terrarium's build of the fix, such as `pr-<number>` | `aube-1645` |
+| Second terminal | a second `<terrarium-terminal>` running a named fix build, with its full source commit checked before execution | `biome-12265` |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`

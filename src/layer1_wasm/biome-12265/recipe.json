@@ -9,6 +9,6 @@
   "fix_candidate": {
     "repository": "JamBalaya56562/biome",
     "branch": "fix/migrate-prettier-default-semi-quotes",
-    "commit": "45ea808a0f3ce2a7cf9e420e2d4397f730bc9f7e"
+    "commit": "374751ab0abab3f23ffb3f698392c0847421f0ec"
   }
 }

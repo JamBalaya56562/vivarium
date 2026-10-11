@@ -14,7 +14,7 @@
     "chip.bugContext": "{0} bug の背景",
     "section.baseline.h2": "修正前 · 2405c762",
     "output.pending": "(待機中)",
-    "section.fix.h2": "fix 候補 · 45ea808a",
+    "section.fix.h2": "fix 候補 · 374751ab",
     "page.title": "Vivarium · biomejs/biome#12265 の再現",
     "verdict.pending": "terrarium を読み込み中…",
     "drawer.body.p1": "Prettier 設定で {0} と {1} を省略すると、Prettier は既定値として {2} と {3} を使う。Biome の移行処理は代わりに {4} と {5} を使い、セミコロンと引用符の設定を意図せず変更する。",

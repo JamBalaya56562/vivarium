@@ -64,10 +64,6 @@ const RUNTIME_VERSIONS: Record<string, string> = {
     'ruby_loader.ts',
     'DEFAULT_WASI_SHIM_VERSION',
   ),
-  TERRARIUM_VERSION: loaderConstant(
-    'terrarium_loader.ts',
-    'DEFAULT_TERRARIUM_VERSION',
-  ),
 };
 
 export function runtimeShells(): Record<string, RuntimeShell> {
@@ -112,10 +108,7 @@ export function runtimeShells(): Record<string, RuntimeShell> {
       verdictPending: 'Loading Rust wasm32-wasip1 artefact via WASI shim…',
     },
     terrarium: {
-      preconnect: [
-        CDN_PRECONNECT,
-        '    <script src="./coi-serviceworker.js"></script>',
-      ].join('\n'),
+      preconnect: '    <script src="./coi-serviceworker.js"></script>',
       preload: modulePreload(
         loaderConstant('terrarium_loader.ts', 'TERRARIUM_MODULE_URL'),
       ),
