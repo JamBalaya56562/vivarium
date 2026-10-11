@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "language": "shell",
+  "symptom": "incorrect-migration-defaults",
+  "severity": "bug",
+  "tags": ["biome", "prettier", "migration", "formatter", "defaults"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "terrarium",
+  "fix_candidate": {
+    "repository": "JamBalaya56562/biome",
+    "branch": "fix/migrate-prettier-default-semi-quotes",
+    "commit": "45ea808a0f3ce2a7cf9e420e2d4397f730bc9f7e"
+  }
+}

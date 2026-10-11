@@ -14,7 +14,7 @@ const LOADER_FOR_RUNTIME: Record<string, string> = {
   terrarium: 'terrarium_loader.ts',
 };
 
-function resolvedCdnUrls(loaderFile: string): string[] {
+function resolvedModuleUrls(loaderFile: string): string[] {
   const source = readFileSync(path.join(SHARED_DIR, loaderFile), 'utf-8');
 
   const values = new Map<string, string>();
@@ -29,7 +29,7 @@ function resolvedCdnUrls(loaderFile: string): string[] {
   }
 
   const urls: string[] = [];
-  for (const m of source.matchAll(/https:\/\/cdn\.jsdelivr\.net\/[^\s"'`]+/g)) {
+  for (const m of source.matchAll(/https:\/\/[^\s"'`]+/g)) {
     const resolved = (m[0] as string).replaceAll(
       /\$\{(\w+)\}/g,
       (whole, name: string) => values.get(name) ?? whole,
@@ -55,7 +55,7 @@ describe('runtime shells — preloaded modules come from the backing loader', ()
     });
 
     if (!loaderFile) continue;
-    const imported = resolvedCdnUrls(loaderFile);
+    const imported = resolvedModuleUrls(loaderFile);
 
     for (const href of hrefs) {
       test(`${runtime} preloads ${href}, which ${loaderFile} imports at that version`, () => {

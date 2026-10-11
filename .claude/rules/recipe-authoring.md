@@ -399,7 +399,7 @@ PRs 180 / 189 / 192.
   tool that [terrarium](https://github.com/aletheia-works/terrarium)
   builds, the recipe uses `expected_runtime: "terrarium"` and
   `loadTerrarium` from `_shared/terrarium_loader.ts`, which imports
-  `@aletheia-works/terrarium` from jsDelivr at a pinned version, and
+  the native-capable Pages module at `TERRARIUM_MODULE_URL`, and
   mounts one `<terrarium-terminal>` per build with terrarium's `ref`
   names (`main`, `pr-1645`). The page renders from
   `_shared/page.terminal.template.html` instead of the script template:
@@ -412,7 +412,11 @@ PRs 180 / 189 / 192.
   A baseline on `main` declares no `upstream` in `recipe.json`: there is
   no release to pin, and terrarium rebuilds `main` daily on its own.
   terrarium must already publish a build
-  for each ref; its `builds.json` lists them. The tool uses threads, so
+  for each ref; its `builds.json` lists them. For named source comparisons,
+  check `terminal.ready` against each full expected commit: a deployment
+  URL's cache query does not pin the module, and a branch selection can move.
+  Name a parent-commit baseline as such rather than labelling it current main.
+  The tool uses threads, so
   the page has to be cross-origin isolated: the recipe ships
   `coi-serviceworker.js` next to its page, the runtime shell loads it,
   and `generate-repro-i18n.ts` points the Japanese page at a copy in its
@@ -442,8 +446,10 @@ PRs 180 / 189 / 192.
   the commit and its first eight characters in the recipe's
   non-Markdown files. Without a pin, a fork wheel is built from the
   branch head at deploy time and nothing tracks it. A terrarium recipe
-  pins neither: terrarium builds `pr-<number>` from the pull request's
-  head, and the envelope records the commit it reports.
+  using `pr-<number>` pins neither: terrarium builds from the pull request's
+  head, and the envelope records the commit it reports. A named fork-branch
+  selection instead declares `fix_candidate` and verifies its compiled commit
+  before execution, so branch updates still receive a reviewed pin bump.
 - **Name the pull request that fixes the bug.** Put it in `recipe.json`
   as `upstream_pr` (a fork wheel already carries it in
   `fix-candidate.json`). The daily `retire-merged` workflow checks it

@@ -15,6 +15,7 @@ const S = pick(
 );
 
 export const DEFAULT_TERRARIUM_VERSION = "0.1.0";
+export const TERRARIUM_MODULE_URL = "https://aletheia-works.github.io/terrarium/web/terrarium.mjs?v=d28c908e1f495138934e2294ee06e5803efc66eb";
 
 export interface ReadyDetail {
   tool: string;
@@ -48,9 +49,9 @@ export interface LoadResult {
 }
 
 export async function loadTerrarium(
-  options: { terrariumVersion?: string; pendingText?: string } = {},
+  options: { pendingText?: string } = {},
 ): Promise<LoadResult> {
-  const terrariumVersion = options.terrariumVersion ?? DEFAULT_TERRARIUM_VERSION;
+  const terrariumVersion = DEFAULT_TERRARIUM_VERSION;
   setVerdict("pending", options.pendingText ?? S.pending, "loading");
 
   await waitForIsolatingReload();
@@ -58,8 +59,7 @@ export async function loadTerrarium(
     throw new Error(S.notIsolated);
   }
 
-  const moduleUrl = `https://cdn.jsdelivr.net/npm/@aletheia-works/terrarium@${terrariumVersion}/+esm`;
-  await import(/* @vite-ignore */ moduleUrl);
+  await import(/* @vite-ignore */ TERRARIUM_MODULE_URL);
   await customElements.whenDefined("terrarium-terminal");
 
   return {
@@ -70,6 +70,7 @@ export async function loadTerrarium(
       ) as TerrariumTerminal;
       terminal.setAttribute("tool", tool);
       terminal.setAttribute("ref", ref);
+      terminal.setAttribute("base", new URL("/terrarium/web/", location.origin).href);
       if (fixture !== undefined) terminal.setAttribute("fixture", fixture);
       if (cwd !== undefined) terminal.setAttribute("cwd", cwd);
       return terminal;

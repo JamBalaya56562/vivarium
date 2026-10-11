@@ -29,7 +29,7 @@ export default defineConfig({
 
   webServer: [
     {
-      command: `uv run --no-project python -m http.server ${LAYER1_PORT}`,
+      command: `bun run scripts/serve.ts ${LAYER1_PORT}`,
       url: `${LAYER1_BASE}/`,
       reuseExistingServer: !process.env["CI"],
       timeout: 30_000,

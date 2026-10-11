@@ -33,7 +33,7 @@ and runner — `bun install`, `bun run build`, `bun run typecheck`.
 | `php_loader.ts` | `php_loader.js` | `loadVivariumPhp()` — php-wasm bootstrap. |
 | `ruby_loader.ts` | `ruby_loader.js` | `loadVivariumRuby()` — builds the WASI shim, installs a `consolePrinter` that captures stdout, and instantiates the Ruby VM. |
 | `rust_loader.ts` | `rust_loader.js` | `loadVivariumRust()` — WASI shim + a `wasm32-wasip1` artefact, one fresh instance per `run()`. |
-| `terrarium_loader.ts` | `terrarium_loader.js` | `loadTerrarium()` — imports `@aletheia-works/terrarium` at `DEFAULT_TERRARIUM_VERSION` and creates `<terrarium-terminal>` elements for a tool and a build. |
+| `terrarium_loader.ts` | `terrarium_loader.js` | `loadTerrarium()` — imports the native-capable Terrarium Pages module at `TERRARIUM_MODULE_URL` and creates `<terrarium-terminal>` elements for a tool and a build. |
 | `fix-candidate.ts` | `fix-candidate.js` | `fetchWheelManifest()` / `resolveFixCandidateSpec()` + `WheelManifest` interface — resolves the CI-built wheel a recipe renders beside its baseline; installing it is the recipe's own job. `dateutil-1478` is the only consumer — `lark-1585` fetches and resolves its manifest inline instead. |
 | `runner.ts` | `runner.js` | `enableRunner()` — Edit/Run/Reset buttons that hand the (possibly edited) source back to the recipe's `captureRun`. |
 | `path_a.ts` | `path_a.js` | `PathACapturedRun` type + the Path A "fix URL?" UI panel. |

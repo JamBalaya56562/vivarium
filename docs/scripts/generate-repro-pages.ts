@@ -75,7 +75,6 @@ export function runtimeShells(): Record<string, RuntimeShell> {
   const ruby = RUNTIME_VERSIONS.RUBY_WASM_VERSION as string;
   const wasi = RUNTIME_VERSIONS.WASI_SHIM_VERSION as string;
   const rubyWasi = RUNTIME_VERSIONS.RUBY_WASI_SHIM_VERSION as string;
-  const terrarium = RUNTIME_VERSIONS.TERRARIUM_VERSION as string;
   return {
     pyodide: {
       preconnect: CDN_PRECONNECT,
@@ -118,7 +117,7 @@ export function runtimeShells(): Record<string, RuntimeShell> {
         '    <script src="./coi-serviceworker.js"></script>',
       ].join('\n'),
       preload: modulePreload(
-        `https://cdn.jsdelivr.net/npm/@aletheia-works/terrarium@${terrarium}/+esm`,
+        loaderConstant('terrarium_loader.ts', 'TERRARIUM_MODULE_URL'),
       ),
       kicker: 'L1 · terrarium',
       verdictPending: 'Loading terrarium…',
