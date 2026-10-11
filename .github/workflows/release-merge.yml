@@ -1,0 +1,53 @@
+name: Merge release PR
+
+on:
+  schedule:
+    - cron: '23 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Enable release PR auto-merge
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Get an aletheia-works-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Enable auto-merge for the pending release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          candidates=$(gh pr list --repo "$REPO" --state open --base main \
+            --head release-please--branches--main--components--vivarium \
+            --label 'autorelease: pending' \
+            --json number,author,isDraft,isCrossRepository,headRefOid \
+            --jq '[.[] | select(.author.login == "app/aletheia-works-bot" and
+              .isDraft == false and .isCrossRepository == false)]')
+          count=$(jq 'length' <<< "$candidates")
+          if [ "$count" -eq 0 ]; then
+            echo '::notice::No eligible release PR is pending.'
+            exit 0
+          fi
+          if [ "$count" -ne 1 ]; then
+            echo '::error::Expected exactly one release PR; refusing to select one.'
+            exit 1
+          fi
+          number=$(jq -r '.[0].number' <<< "$candidates")
+          head=$(jq -r '.[0].headRefOid' <<< "$candidates")
+          gh pr merge "$number" --repo "$REPO" --squash --auto --match-head-commit "$head"
