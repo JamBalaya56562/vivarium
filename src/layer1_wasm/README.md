@@ -89,6 +89,8 @@ How the pane gets filled is not prescribed. The following shapes are supported:
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`
 workflow opens a pull request when the branch head moves past the pin.
+Terrarium candidates follow the latest published build of that branch, so an
+unbuilt branch commit cannot become the recipe's expected guest.
 
 A recipe whose fixing pull request is known retires itself: the daily
 `retire-merged` workflow checks `upstream_pr` (in `recipe.json`, or in

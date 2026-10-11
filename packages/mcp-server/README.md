@@ -72,3 +72,21 @@ at `index = "v1"` — see
 ## License
 
 Apache-2.0 — see [LICENSE](./LICENSE).
+
+## Releasing
+
+Keep `package.json` and `jsr.json` names and versions identical. The MCP
+handshake reads its version from `jsr.json`; `bun run check:version` checks
+both manifests, and runs before tests and builds.
+
+Create a `mcp-server-v<version>` tag on the intended release commit to trigger
+`publish-mcp`. The workflow checks out that tag and rejects mismatched
+versions before publishing. To resume a partial release, run the same
+workflow manually with the existing tag. It checks both registries first,
+skips versions already published, and stops on registry or network errors.
+Only a registry HTTP 404 is treated as an unpublished version.
+
+This workflow uses OIDC trusted publishing. Keep its filename
+`publish-mcp.yml` aligned with the npm trusted publisher configuration.
+Version updates and tag creation remain manual until release automation is
+introduced separately.

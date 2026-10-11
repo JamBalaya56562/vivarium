@@ -17,7 +17,7 @@ const BASELINE = {
 };
 const FIX = {
   ref: 'migrate-prettier-after',
-  commit: '374751ab0abab3f23ffb3f698392c0847421f0ec',
+  commit: 'f79f85d58ae499647c127f1e90a4931e3dbbb206',
 };
 const UPSTREAM_URL = 'https://github.com/biomejs/biome/issues/12265';
 const S = pick(

@@ -14,6 +14,7 @@ type Upstream =
   | { registry: 'github'; repository: string; version: string; commit: string };
 
 interface RecipeMeta {
+  expected_runtime?: string;
   upstream?: Upstream;
   fix_candidate?: { repository: string; branch: string; commit: string };
 }
@@ -164,10 +165,55 @@ async function bumpUpstream(slug: string): Promise<void> {
   console.log(summary(`Moves the \`${slug}\` baseline to the latest ${source} release.`, changed, result));
 }
 
-function bumpFix(slug: string): void {
+export function publishedFixCommit(
+  catalogue: unknown,
+  fix: { url: string; branch: string },
+): string {
+  const builds = (
+    catalogue as {
+      builds?: Record<
+        string,
+        Record<
+          string,
+          {
+            source?: {
+              type?: string;
+              url?: string;
+              ref?: string;
+              commit?: string;
+            };
+          }
+        >
+      >;
+    } | null
+  )?.builds;
+  const matches = Object.values(builds ?? {})
+    .flatMap((selections) => Object.values(selections))
+    .filter(
+      (build) =>
+        build.source?.url === fix.url && build.source.ref === fix.branch,
+    );
+  const source = matches[0]?.source;
+  if (
+    matches.length !== 1 ||
+    source?.type !== 'git-unmodified' ||
+    !source.commit ||
+    !/^[0-9a-f]{40}$/.test(source.commit)
+  ) {
+    throw new Error(
+      `Expected one published Terrarium build for ${fix.url} ${fix.branch}`,
+    );
+  }
+  return source.commit;
+}
+
+async function bumpFix(slug: string): Promise<void> {
   const fix = fixCandidateOf(slug);
   if (!fix) throw new Error(`${slug} has no pinned fix candidate`);
-  const head = branchHead(fix.url, fix.branch);
+  const terrarium = recipeOf(slug)?.expected_runtime === 'terrarium';
+  const head = terrarium
+    ? publishedFixCommit(await getJson('https://aletheia-works.github.io/terrarium/web/dist/builds.json'), fix)
+    : branchHead(fix.url, fix.branch);
   if (!head) {
     console.error(`${slug}: ${fix.branch} no longer exists in ${fix.url}; leaving the fix candidate at ${fix.commit}.`);
     return;
@@ -179,7 +225,7 @@ function bumpFix(slug: string): void {
   ]);
   console.log(
     summary(
-      `Moves the \`${slug}\` fix candidate to the head of \`${fix.branch}\` in ${fix.url}.`,
+      `Moves the \`${slug}\` fix candidate to the ${terrarium ? 'latest published Terrarium build' : 'head'} of \`${fix.branch}\` in ${fix.url}.`,
       [['Commit', fix.commit, head]],
       result,
     ),
@@ -198,8 +244,10 @@ function list(): void {
   console.log(lines.join('\n'));
 }
 
-const [arg, kind = 'upstream'] = process.argv.slice(2) as [string | undefined, Kind | undefined];
-if (arg === '--list') list();
-else if (arg && kind === 'upstream') await bumpUpstream(arg);
-else if (arg && kind === 'fix') bumpFix(arg);
-else throw new Error('usage: bump-upstream.ts --list | bump-upstream.ts <slug> [upstream|fix]');
+if (import.meta.main) {
+  const [arg, kind = 'upstream'] = process.argv.slice(2) as [string | undefined, Kind | undefined];
+  if (arg === '--list') list();
+  else if (arg && kind === 'upstream') await bumpUpstream(arg);
+  else if (arg && kind === 'fix') await bumpFix(arg);
+  else throw new Error('usage: bump-upstream.ts --list | bump-upstream.ts <slug> [upstream|fix]');
+}

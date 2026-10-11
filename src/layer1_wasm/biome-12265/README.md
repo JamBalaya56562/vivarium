@@ -8,21 +8,27 @@ formatter's behaviour without an explicit user choice.
 ## Source comparison
 
 - Before: [biomejs/biome at 2405c7620169bd0719166af09a8d89cc76fb37fb](https://github.com/biomejs/biome/commit/2405c7620169bd0719166af09a8d89cc76fb37fb).
-- After: [JamBalaya56562/biome at 374751ab0abab3f23ffb3f698392c0847421f0ec](https://github.com/JamBalaya56562/biome/commit/374751ab0abab3f23ffb3f698392c0847421f0ec),
-  on [fix/migrate-prettier-default-semi-quotes](https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-default-semi-quotes).
+- After: the latest published Terrarium build of
+  [JamBalaya56562/biome's fix/migrate-prettier-default-semi-quotes branch](https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-default-semi-quotes).
+  The accepted full commit appears in `recipe.json` and the page.
 
-The before commit is the after commit's direct parent. GitHub's upstream
-`main` resolved to that same before commit on 2026-10-11. The baseline is
-pinned to the parent, not a moving `main`; if main advances, recheck its
-migration behaviour and request a separate Terrarium build when needed.
-No additional main build is needed while the SHAs match.
+The baseline is the parent of the original fixing commit
+`374751ab0abab3f23ffb3f698392c0847421f0ec`. Later candidate commits are
+verified independently against that same baseline.
+The baseline stays pinned so upstream main advancing cannot silently change
+the bug being reproduced.
 
-The recipe records the candidate branch and commit in `recipe.json` using the
-existing `fix_candidate` metadata. Branch advances receive a reviewed pin bump;
-an unexpected deployed candidate fails the source-identity check.
+The daily `upstream-bump` workflow follows the candidate branch by selecting
+its latest **published Terrarium build**, rather than an unbuilt GitHub branch
+head. It opens a pin-update PR, whose regression tests verify the actual
+migration result before merging. The recipe records the exact accepted commit
+in `recipe.json`; the driver checks it before executing either terminal.
+Deployment and pin-update merging are separate operations, so the source check
+can still fail between them. Following a branch does not guarantee a passing
+comparison if that branch stops fixing the bug.
 
 The fix changes the two defaults and adds an empty-configuration regression
-test. See the [source diff](https://github.com/JamBalaya56562/biome/compare/2405c7620169bd0719166af09a8d89cc76fb37fb...374751ab0abab3f23ffb3f698392c0847421f0ec).
+test. See the [source diff](https://github.com/JamBalaya56562/biome/compare/2405c7620169bd0719166af09a8d89cc76fb37fb...fix/migrate-prettier-default-semi-quotes).
 Upstream issue: [biomejs/biome#12265](https://github.com/biomejs/biome/issues/12265).
 The recipe and its Contract v1 envelope use that issue number.
 

@@ -1,3 +1,4 @@
+import metadata from '../jsr.json' with { type: 'json' };
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -52,7 +53,7 @@ import {
 } from './tools/verify_branch_fix.js';
 
 const SERVER_NAME = 'vivarium-mcp';
-const SERVER_VERSION = '0.2.1';
+const SERVER_VERSION = metadata.version;
 
 export function createServer(): Server {
   const server = new Server(

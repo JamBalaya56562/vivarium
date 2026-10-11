@@ -7,16 +7,24 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag-style label, informational only (e.g. mcp-server-v0.1.0). Version is read from package.json.'
-        required: false
+        description: 'Existing release tag to publish or resume (e.g. mcp-server-v0.2.2)'
+        required: true
+        type: string
 
 permissions:
   contents: read
-  id-token: write   # OIDC for both npm provenance and JSR
+  id-token: write
+
+concurrency:
+  group: publish-mcp-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   publish:
     name: Publish to JSR + npm
+    if: github.repository == 'aletheia-works/vivarium'
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -25,75 +33,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
 
-      - name: Setup mise (bun, jq)
+      - name: Setup mise (bun)
         uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
           install: true
           cache: true
           experimental: true
-          install_args: bun jq
+          install_args: bun
 
       - name: Install + build + test
         run: |
-          bun install
+          bun install --frozen-lockfile
           bun run build
           bun run test
 
-      - name: Read package version
-        id: pkg
-        run: |
-          version=$(jq -r .version package.json)
-          name=$(jq -r .name package.json)
-          jsr_name=$(jq -r .name jsr.json)
-          {
-            echo "version=$version"
-            echo "npm_name=$name"
-            echo "jsr_name=$jsr_name"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Check if npm version is already published
-        id: npm-check
-        run: |
-          if curl -fsSL -o /dev/null \
-            "https://registry.npmjs.org/${{ steps.pkg.outputs.npm_name }}/${{ steps.pkg.outputs.version }}"; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::npm ${{ steps.pkg.outputs.version }} already published — skipping npm step"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Validate release and check both registries
+        id: release
+        run: bun run check:version --registries
 
       - name: Publish to npm (provenance via OIDC trusted publishing, npm CLI run through bunx)
-        if: steps.npm-check.outputs.skip == 'false'
+        if: steps.release.outputs.npm_skip == 'false'
         # Bun cannot publish over OIDC (oven-sh/bun#15601), and older npm
         # minors mask trusted-publishing failures as ENEEDAUTH (npm/cli#9088).
         run: bunx npm@latest publish --provenance --access public
         env:
           NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/'
 
-      - name: Check if JSR version is already published
-        id: jsr-check
-        run: |
-          if curl -fsSL "https://jsr.io/${{ steps.pkg.outputs.jsr_name }}/meta.json" \
-            | jq -e --arg v "${{ steps.pkg.outputs.version }}" '.versions[$v]' >/dev/null; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::JSR ${{ steps.pkg.outputs.version }} already published — skipping JSR step"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish to JSR (provenance via OIDC)
-        if: steps.jsr-check.outputs.skip == 'false'
+        if: steps.release.outputs.jsr_skip == 'false'
         run: bunx jsr publish
 
       - name: Summary
         run: |
           {
-            echo "## Published"
+            echo "## Release $RELEASE_TAG"
             echo ""
             echo "* **npm**: https://www.npmjs.com/package/@aletheia-works/vivarium-mcp"
             echo "* **JSR**: https://jsr.io/@aletheia-works/vivarium-mcp"
             echo ""
-            echo "Provenance is recorded in the public Sigstore Rekor"
-            echo "transparency log for both registries."
+            echo "npm already published: ${{ steps.release.outputs.npm_skip }}"
+            echo "JSR already published: ${{ steps.release.outputs.jsr_skip }}"
           } >> "$GITHUB_STEP_SUMMARY"

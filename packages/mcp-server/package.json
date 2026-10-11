@@ -22,13 +22,15 @@
     "dist",
     "src/bundled",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "jsr.json"
   ],
   "scripts": {
     "sync:bundled": "mkdir -p src/bundled && cp ../../docs/site/public/api/recipes.json src/bundled/recipes.json",
-    "build": "bun run sync:bundled && tsc",
-    "test": "bun run sync:bundled && bun test",
-    "prepublishOnly": "bun run build"
+    "build": "bun run check:version && bun run sync:bundled && tsc",
+    "test": "bun run check:version && bun run sync:bundled && bun test",
+    "prepublishOnly": "bun run build",
+    "check:version": "bun scripts/release.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"
