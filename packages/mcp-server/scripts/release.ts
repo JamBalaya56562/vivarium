@@ -33,8 +33,8 @@ export function validateVersion(
       'package.json and jsr.json must have identical names and versions',
     );
   }
-  if (tag !== undefined && tag !== `mcp-server-v${version}`) {
-    throw new Error(`Expected tag mcp-server-v${version}, received ${tag}`);
+  if (tag !== undefined && tag !== `v${version}`) {
+    throw new Error(`Expected tag v${version}, received ${tag}`);
   }
   return version;
 }

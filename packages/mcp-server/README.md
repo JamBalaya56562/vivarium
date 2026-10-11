@@ -75,18 +75,21 @@ Apache-2.0 — see [LICENSE](./LICENSE).
 
 ## Releasing
 
-Keep `package.json` and `jsr.json` names and versions identical. The MCP
-handshake reads its version from `jsr.json`; `bun run check:version` checks
-both manifests, and runs before tests and builds.
+All first-party packages use the version in the root `package.json`.
+Release Please updates every package's `package.json`, the MCP `jsr.json`,
+and the root `CHANGELOG.md` in one release PR from Conventional Commits
+merged into `main`. The MCP handshake reads its version from `jsr.json`;
+`bun run check:version` checks the MCP manifests before tests and builds.
 
-Create a `mcp-server-v<version>` tag on the intended release commit to trigger
-`publish-mcp`. The workflow checks out that tag and rejects mismatched
-versions before publishing. To resume a partial release, run the same
-workflow manually with the existing tag. It checks both registries first,
-skips versions already published, and stops on registry or network errors.
-Only a registry HTTP 404 is treated as an unpublished version.
+Merge the release PR after its required checks pass to create one shared
+`v<version>` tag and GitHub release. That tag triggers `publish-mcp`, which
+checks out the tag and rejects mismatched versions before publishing to
+npm and JSR. To resume a partial publication, run the same workflow manually
+with the existing `v<version>` tag. It checks both registries, skips versions
+already published, and stops on HTTP or network errors. Only HTTP 404 means
+unpublished.
 
 This workflow uses OIDC trusted publishing. Keep its filename
 `publish-mcp.yml` aligned with the npm trusted publisher configuration.
-Version updates and tag creation remain manual until release automation is
-introduced separately.
+See [release automation](../../docs/releases.md) for version rules,
+repository-wide releases, and recovery.

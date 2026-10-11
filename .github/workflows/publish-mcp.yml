@@ -3,11 +3,11 @@ name: publish-mcp
 on:
   push:
     tags:
-      - 'mcp-server-v*.*.*'
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag to publish or resume (e.g. mcp-server-v0.2.2)'
+        description: 'Existing release tag to publish or resume (e.g. v0.2.2)'
         required: true
         type: string
 

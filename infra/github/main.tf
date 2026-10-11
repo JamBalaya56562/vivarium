@@ -201,6 +201,15 @@ locals {
       description = "Auto-filed when Terraform Apply fails on main; auto-closed on recovery"
     }
 
+    "autorelease: pending" = {
+      color       = "ededed"
+      description = "Release Please is preparing or awaiting release of this PR"
+    }
+    "autorelease: tagged" = {
+      color       = "28a745"
+      description = "Release Please has created the tags and GitHub releases"
+    }
+
     "ai: approved" = {
       color       = "0969da"
       description = "Repository owner has authorised AI agents to process this PR"

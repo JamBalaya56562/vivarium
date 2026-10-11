@@ -2,57 +2,52 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g. v0.1.0 or v0.1.0-rc1)'
-        required: true
-        type: string
+  workflow_run:
+    workflows: ['Terraform Apply']
+    types: [completed]
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
 
 jobs:
   release:
-    name: Create GitHub release
+    name: Update release PR or create release
+    if: >-
+      github.repository == 'aletheia-works/vivarium' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name != 'workflow_run' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ inputs.version || github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get an aletheia-works-bot token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          persist-credentials: false
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
 
-      - name: Validate version format
+      - name: Require the IaC-managed release labels
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
-            echo "::error::Version must match vMAJOR.MINOR.PATCH[-prerelease] — got: '$VERSION'"
-            exit 1
-          fi
+          gh api "repos/$GITHUB_REPOSITORY/labels/autorelease%3A%20pending" > /dev/null
+          gh api "repos/$GITHUB_REPOSITORY/labels/autorelease%3A%20tagged" > /dev/null
 
-      - name: Check if release already exists
-        id: exists
-        run: |
-          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create release
-        if: steps.exists.outputs.exists == 'false'
-        run: |
-          PRERELEASE_FLAG=""
-          if [[ "$VERSION" == *-* ]]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-          gh release create "$VERSION" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$VERSION" \
-            --generate-notes \
-            $PRERELEASE_FLAG
+      - name: Update release PR or create tag and GitHub release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          target-branch: main
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json

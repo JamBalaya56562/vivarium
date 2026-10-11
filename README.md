@@ -58,6 +58,9 @@ overlays, generated site-only modules, and public assets).
 See [`infra/github/README.md`](infra/github/README.md) for how to manage
 repository settings via OpenTofu.
 
+See [`docs/releases.md`](docs/releases.md) for automated version updates,
+release PRs, tags, and MCP publication to npm and JSR.
+
 ### For Contributors
 
 External contributions land most naturally as **Vivarium-runnable

@@ -1,6 +1,6 @@
 {
   "name": "@aletheia-works/vivarium-docs",
-  "version": "0.0.0",
+  "version": "0.2.2",
   "private": true,
   "description": "Documentation site for Vivarium, built with rspress.",
   "type": "module",
@@ -29,7 +29,8 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "jszip": "^3.10.2",
-    "node-html-parser": "^9.0.4"
+    "node-html-parser": "^9.0.4",
+    "release-please": "17.6.0"
   },
   "dependencies": {
     "lucide-react": "^1.52.0"

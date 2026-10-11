@@ -71,6 +71,7 @@ vivarium/
 ├── AGENTS.md              # this file — standing AI instructions
 ├── README.md              # public project overview
 ├── LICENSE                # Apache-2.0
+├── package.json           # shared repository and package version (private root metadata)
 ├── mise.toml              # mise-en-place tool versions (bun, opentofu, etc.) + TOML tasks
 ├── mise-tasks/            # mise file tasks — one script per task, namespaced by directory
 ├── .claude/                # Claude Code config (team-shared)
@@ -263,8 +264,11 @@ feature-detect new optional surface.
 Runtime artefacts (Vivarium MCP today, future CLI / SDK) dual-
 publish to JSR (canonical) and npm (npx ergonomics) with OIDC
 trusted publishing + Sigstore provenance — no long-lived registry
-tokens. Tag form: `<package-name>-v<semver>`
-(e.g. `mcp-server-v0.1.0`).
+tokens. The repository and all first-party packages share the version in
+the root `package.json`. Release Please updates all package manifests in
+one release PR and creates one `v<semver>` tag and GitHub release.
+That tag triggers MCP publication; packages do not have independent versions
+or release tags.
 
 ### 4.11 Pre-PR local validation
 

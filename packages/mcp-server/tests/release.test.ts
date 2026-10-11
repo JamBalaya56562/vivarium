@@ -10,7 +10,7 @@ const metadata = { name: '@aletheia-works/vivarium-mcp', version: '0.2.2' };
 
 describe('release validation', () => {
   test('accepts matching metadata and tag', () => {
-    expect(validateVersion(metadata, metadata, 'mcp-server-v0.2.2')).toBe(
+    expect(validateVersion(metadata, metadata, 'v0.2.2')).toBe(
       '0.2.2',
     );
   });
@@ -21,7 +21,7 @@ describe('release validation', () => {
     expect(() =>
       validateVersion(metadata, { ...metadata, name: 'other' }),
     ).toThrow();
-    for (const tag of ['', 'v0.2.2', 'mcp-server-v0.2.1']) {
+    for (const tag of ['', 'mcp-server-v0.2.2', 'v0.2.1']) {
       expect(() => validateVersion(metadata, metadata, tag)).toThrow();
     }
   });
