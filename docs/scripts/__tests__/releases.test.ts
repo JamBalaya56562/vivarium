@@ -93,7 +93,7 @@ describe('shared release version', () => {
               message.startsWith('fix(docs)')
                 ? 'docs/site/en/index.mdx'
                 : message.startsWith('fix(wasm)')
-                  ? 'src/layer1_wasm/biome-12265/recipe.json'
+                  ? 'src/layer1_wasm/pandas-56679/recipe.json'
                   : commits[0].files[0],
             ],
           },

@@ -41,7 +41,7 @@ here.
 ## Catalogue
 
 Layer 1 recipes are immediate subdirectories such as
-[`pandas-56679/`](./pandas-56679/), [`biome-12265/`](./biome-12265/), and
+[`pandas-56679/`](./pandas-56679/) and
 [`ruby-21709/`](./ruby-21709/). They are static browser pages published
 under `/vivarium/repro/<project>/<issue_path>/` by the `deploy-docs`
 workflow.
@@ -84,7 +84,7 @@ How the pane gets filled is not prescribed. The following shapes are supported:
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
 | Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | none today |
-| Second terminal | a second `<terrarium-terminal>` running a named fix build, with its full source commit checked before execution | `biome-12265` |
+| Second terminal | a second `<terrarium-terminal>` running a named fix build, with its full source commit checked before execution | none today |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`

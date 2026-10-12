@@ -3,28 +3,6 @@
   "contract": "v1",
   "recipes": [
     {
-      "slug": "biome-12265",
-      "layer": 1,
-      "project": "biome",
-      "issue": 12265,
-      "title": "biomejs/biome#12265 — Prettier migration changes omitted defaults",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/biome/12265/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/biome-12265",
-      "language": "shell",
-      "tags": [
-        "biome",
-        "prettier",
-        "migration",
-        "formatter",
-        "defaults"
-      ],
-      "symptom": "incorrect-migration-defaults",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "terrarium",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/biome/12265/"
-    },
-    {
       "slug": "cpython-137205",
       "layer": 1,
       "project": "cpython",
