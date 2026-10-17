@@ -4,8 +4,8 @@
   "purpose": "fix-candidate verification for lark-parser/lark#1585",
   "source": {
     "type": "git",
-    "url": "https://github.com/JamBalaya56562/lark",
-    "ref": "claude/fix-lark-1585-QLVa7",
+    "url": "https://github.com/lark-parser/lark",
+    "ref": "refs/pull/1594/head",
     "commit": "d7c5cae1a98a45d0f2fd918c01494b47d4655a32"
   },
   "upstream_pr": ""

@@ -10,7 +10,7 @@
     {
       "name": "vivarium-layer1",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "--no-project", "--python", "3.13", "python", "-m", "http.server", "8767", "--directory", "src/layer1_wasm"],
+      "runtimeArgs": ["run", "--no-project", "--python", "3.15", "python", "-m", "http.server", "8767", "--directory", "src/layer1_wasm"],
       "port": 8767
     }
   ]
