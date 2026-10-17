@@ -5,6 +5,14 @@ expected_rustc=$1
 expected_cargo=$2
 shift 2
 
+restore_owner() {
+  if [ -n "${FGB_OWNER:-}" ]; then
+    chown -R "$FGB_OWNER" /work /cargo
+    if [ -d /mbx ]; then chown -R "$FGB_OWNER" /mbx; fi
+  fi
+}
+trap restore_owner EXIT
+
 if [ "$(rustc --version)" != "$expected_rustc" ]; then
   echo "rustc in the image differs from the key input" >&2
   exit 90
@@ -27,7 +35,8 @@ if [ -n "${FGB_MBX_ARCHIVE:-}" ]; then
     echo "mbx archive does not contain an mbx binary" >&2
     exit 91
   fi
-  exec "$mbx" "$@"
+  "$mbx" "$@"
+  exit
 fi
 
-exec cargo "$@"
+cargo "$@"

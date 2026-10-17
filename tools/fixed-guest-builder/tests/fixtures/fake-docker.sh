@@ -28,6 +28,9 @@ case "$1" in
 esac
 
 case "$*" in
+  *"find /tree -mindepth 1 -delete"*)
+    exit "${FAKE_REMOVE_CODE:-0}"
+    ;;
   *"rustc -vV"*)
     printf 'rustc %s (x 2026-09-01)\nrelease: %s\n---\nrustc %s (x 2026-09-01)\ncargo %s (y 2026-08-05)\n' \
       "$FAKE_RUST" "$FAKE_RUST" "$FAKE_RUST" "$FAKE_RUST"

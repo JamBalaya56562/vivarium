@@ -162,6 +162,10 @@ describe('runBuild', () => {
     expect(verified.elfSha256).toBe(receipt.elfSha256);
     expect(receipt.sizes.sourceBytes).toBeGreaterThan(0);
     expect(receipt.sizes.dependencyBytes).toBe(100);
+    const info = JSON.parse(new TextDecoder().decode(set.buildInfo));
+    expect(info.reference.builder.environment.RUSTUP_TOOLCHAIN).toBe('1.98.1');
+    const calls = await readFile(log, 'utf8');
+    expect(calls.match(/RUSTUP_TOOLCHAIN=1\.98\.1/g)?.length).toBe(2);
   });
 
   test('reuses a published set without fetching dependencies or compiling', async () => {

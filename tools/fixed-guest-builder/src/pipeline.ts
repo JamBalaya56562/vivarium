@@ -16,6 +16,7 @@ import {
   parseToolsConfig,
   prepareExtras,
   readToolchainChannel,
+  removeTree,
 } from './build.ts';
 import { BUILD_DEADLINE_MS, withDeadline } from './deadline.ts';
 import { type Allowlist, validateDeclaration } from './declaration.ts';
@@ -165,6 +166,7 @@ export async function runBuild(
     mbxCache: request.mbxCache,
   };
 
+  let pulledImage: string | undefined;
   return withDeadline(
     async (signal) => {
       await mkdir(request.workDirectory, { recursive: true });
@@ -197,6 +199,10 @@ export async function runBuild(
         inspectImage(deps.run, deps.docker, image, signal),
       );
       checkToolchain(toolchain.rustcVerbose, channel);
+      pulledImage = image;
+      // The source's rust-toolchain file would otherwise make rustup fetch a
+      // toolchain from the network inside the containers.
+      const environment = { ...tool.environment, RUSTUP_TOOLCHAIN: channel };
       const patches = request.sourcePatches ?? [];
       await applyPatches(sourceDir, patches, deps.run, request.patchDirectory);
       const lock = await checkCargoSources(sourceDir, request.allowlist);
@@ -221,7 +227,7 @@ export async function runBuild(
         rustcVerbose: toolchain.rustcVerbose,
         cargo: toolchain.cargo,
         command,
-        environment: tool.environment,
+        environment,
       };
       const sourcePatches = patches.map((patch) => ({
         name: patch.name,
@@ -302,6 +308,7 @@ export async function runBuild(
           image,
           paths,
           target: tool.target,
+          environment,
           signal,
           ...(deps.dependencyLimitBytes === undefined
             ? {}
@@ -321,6 +328,7 @@ export async function runBuild(
           rustc: toolchain.rustc,
           cargo: toolchain.cargo,
           command,
+          environment,
           mbx,
           signal,
         }),
@@ -406,7 +414,12 @@ export async function runBuild(
       deadlineMs: deps.deadlineMs ?? BUILD_DEADLINE_MS,
       ...(deps.signal === undefined ? {} : { signal: deps.signal }),
       cleanup: async () => {
-        await rm(request.workDirectory, { recursive: true, force: true });
+        await removeTree(
+          request.workDirectory,
+          pulledImage === undefined
+            ? null
+            : { run: deps.run, docker: deps.docker, image: pulledImage },
+        );
         for (const name of await readdir(request.outputDirectory).catch(
           () => [] as string[],
         ))

@@ -227,6 +227,21 @@ export interface ContainerPaths {
   mbxCache: string | null;
 }
 
+// The containers run as root, so they hand what they wrote back to the
+// runner's user; otherwise the runner cannot remove its own work directory.
+export function hostOwner(): string {
+  return `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`;
+}
+
+function environmentArgs(
+  environment: Readonly<Record<string, string>>,
+): string[] {
+  return Object.entries(environment).flatMap(([key, value]) => [
+    '-e',
+    `${key}=${value}`,
+  ]);
+}
+
 async function removeContainer(
   run: Runner,
   docker: string,
@@ -241,6 +256,8 @@ export async function fetchDependencies(options: {
   image: string;
   paths: ContainerPaths;
   target: string;
+  environment: Readonly<Record<string, string>>;
+  owner?: string;
   limitBytes?: number;
   intervalMs?: number;
   signal?: AbortSignal;
@@ -260,13 +277,16 @@ export async function fetchDependencies(options: {
         `${options.paths.cargoHome}:/cargo`,
         '-e',
         'CARGO_HOME=/cargo',
+        ...environmentArgs(options.environment),
+        '-e',
+        `FGB_OWNER=${options.owner ?? hostOwner()}`,
         '-w',
         '/work',
         options.image,
-        'cargo',
+        'sh',
+        '-c',
+        'cargo fetch --locked --target "$1"; status=$?; chown -R "$FGB_OWNER" /cargo; exit "$status"',
         'fetch',
-        '--locked',
-        '--target',
         options.target,
       ],
       {
@@ -297,13 +317,17 @@ export async function compile(options: {
   rustc: string;
   cargo: string;
   command: readonly string[];
+  environment: Readonly<Record<string, string>>;
+  owner?: string;
   mbx: MbxConfig | null;
   signal?: AbortSignal;
 }): Promise<string> {
   const name = `fgb-build-${randomUUID()}`;
-  const env = Object.entries(options.tool.environment).flatMap(
-    ([key, value]) => ['-e', `${key}=${value}`],
-  );
+  const env = [
+    ...environmentArgs(options.environment),
+    '-e',
+    `FGB_OWNER=${options.owner ?? hostOwner()}`,
+  ];
   const mbx =
     options.mbx === null || options.paths.mbxCache === null
       ? []
@@ -365,6 +389,37 @@ export async function compile(options: {
     'release',
     options.tool.binary,
   );
+}
+
+// Removes a tree the containers may have left owned by root: a plain removal
+// first, then one through the pinned image when the runner's user cannot.
+export async function removeTree(
+  path: string,
+  fallback: { run: Runner; docker: string; image: string } | null,
+  remove: (path: string) => Promise<void> = (target) =>
+    rm(target, { recursive: true, force: true }),
+): Promise<void> {
+  try {
+    await remove(path);
+    return;
+  } catch (error) {
+    if (fallback === null) throw error;
+  }
+  const result = await fallback.run(fallback.docker, [
+    'run',
+    '--rm',
+    '--network',
+    'none',
+    '-v',
+    `${path}:/tree`,
+    fallback.image,
+    'sh',
+    '-c',
+    'find /tree -mindepth 1 -delete',
+  ]);
+  if (result.code !== 0)
+    fail('EXTERNAL', `could not remove ${path} through the container`);
+  await remove(path);
 }
 
 export async function checkElf(

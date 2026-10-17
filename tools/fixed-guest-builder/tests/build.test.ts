@@ -13,12 +13,14 @@ import {
   parseToolsConfig,
   prepareExtras,
   readToolchainChannel,
+  removeTree,
   type ToolConfig,
 } from '../src/build.ts';
 import { BuildError } from '../src/errors.ts';
 import { runProcess } from '../src/process.ts';
 import { tempDir } from './helpers/git.ts';
 
+const ENV = { CARGO_INCREMENTAL: '0', RUSTUP_TOOLCHAIN: '1.98.1' };
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const IMAGE = `docker.io/library/rust@${DIGEST}`;
 const DOCKER = new URL('./fixtures/fake-docker.sh', import.meta.url).pathname;
@@ -151,6 +153,8 @@ describe('fetchDependencies and compile', () => {
         image: IMAGE,
         paths: p,
         target: tool.target,
+        environment: ENV,
+        owner: '1001:118',
         limitBytes: 100,
         intervalMs: 10,
       }),
@@ -173,6 +177,8 @@ describe('fetchDependencies and compile', () => {
         '--package',
         tool.package,
       ],
+      environment: ENV,
+      owner: '1001:118',
       mbx: {
         version: '1.24.1',
         url: 'https://example.invalid/mbx.tgz',
@@ -188,6 +194,12 @@ describe('fetchDependencies and compile', () => {
     expect(build).toContain('MBX_CACHE_DIR=/mbx');
     expect(build).toContain('MBX_GC_MAX_TOTAL_SIZE=1GiB');
     expect(build).toContain('--offline');
+    const fetch = calls.find((line) => line.includes('cargo fetch')) ?? '';
+    for (const line of [fetch, build]) {
+      expect(line).toContain('RUSTUP_TOOLCHAIN=1.98.1');
+      expect(line).toContain('FGB_OWNER=1001:118');
+    }
+    expect(fetch).toContain('chown -R "$FGB_OWNER" /cargo');
     expect(calls.filter((line) => line.startsWith('rm --force'))).toHaveLength(
       2,
     );
@@ -204,6 +216,7 @@ describe('fetchDependencies and compile', () => {
           image: IMAGE,
           paths: p,
           target: tool.target,
+          environment: ENV,
           limitBytes: 100,
           intervalMs: 10,
         }),
@@ -223,6 +236,7 @@ describe('fetchDependencies and compile', () => {
       tool,
       rustc: 'r',
       cargo: 'c',
+      environment: ENV,
       command: ['build', '--locked'],
       mbx: null,
     });
@@ -366,5 +380,42 @@ describe('parseToolsConfig', () => {
         tools: { x: { ...tool, binary: '../evil' } },
       }),
     ).toThrow(BuildError);
+  });
+});
+
+describe('removeTree', () => {
+  test('removes a plain tree without the container', async () => {
+    const root = await tempDir();
+    await writeFile(join(root, 'x'), 'x');
+    await removeTree(root, null);
+    expect(await readdir(root).catch(() => null)).toBeNull();
+  });
+
+  test('falls back to removing through the pinned image when the runner cannot', async () => {
+    const root = await tempDir();
+    let attempts = 0;
+    const remove = async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error('EACCES: permission denied');
+    };
+    await removeTree(
+      root,
+      { run: runProcess, docker: DOCKER, image: IMAGE },
+      remove,
+    );
+    expect(attempts).toBe(2);
+    const call = (await readFile(log, 'utf8')).trim().split('\n').pop() ?? '';
+    expect(call).toContain('--network none');
+    expect(call).toContain(`${root}:/tree`);
+    expect(call).toContain('find /tree -mindepth 1 -delete');
+  });
+
+  test('reports a failed removal when there is no image to fall back to', async () => {
+    const failing = async () => {
+      throw new Error('EACCES: permission denied');
+    };
+    await expect(removeTree('/nonexistent', null, failing)).rejects.toThrow(
+      'EACCES',
+    );
   });
 });

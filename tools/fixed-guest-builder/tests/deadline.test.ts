@@ -108,4 +108,45 @@ describe('withDeadline', () => {
       await errorCode(withDeadline(async () => 1, { deadlineMs: 0 })),
     ).toBe('INVALID_INPUT');
   });
+
+  test('keeps the original cause when cleanup also fails', async () => {
+    const run = withDeadline(
+      async () => {
+        throw new BuildError('EXTERNAL', 'build failed with exit code 1');
+      },
+      {
+        deadlineMs: 1000,
+        cleanup: async () => {
+          throw new Error('EACCES: permission denied');
+        },
+      },
+    );
+    const error = await run.catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(BuildError);
+    expect((error as BuildError).code).toBe('EXTERNAL');
+    expect((error as BuildError).message).toContain(
+      'build failed with exit code 1',
+    );
+    expect((error as BuildError).message).toContain(
+      'cleanup also failed: EACCES',
+    );
+  });
+
+  test('keeps TIMEOUT as the cause when cleanup after it fails', async () => {
+    const run = withDeadline(
+      (signal) =>
+        new Promise<void>((resolve) =>
+          signal.addEventListener('abort', () => resolve()),
+        ),
+      {
+        deadlineMs: 20,
+        cleanup: async () => {
+          throw new Error('EACCES');
+        },
+      },
+    );
+    const error = (await run.catch((caught: unknown) => caught)) as BuildError;
+    expect(error.code).toBe('TIMEOUT');
+    expect(error.message).toContain('cleanup also failed');
+  });
 });

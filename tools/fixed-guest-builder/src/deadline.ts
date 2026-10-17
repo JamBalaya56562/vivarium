@@ -37,15 +37,35 @@ export async function withDeadline<T>(
     clearTimeout(timer);
     options.signal?.removeEventListener('abort', onParentAbort);
   }
-  if (options.cleanup !== undefined && (cause !== undefined || !outcome.ok))
-    await options.cleanup();
+  let cleanupFailure: string | undefined;
+  if (options.cleanup !== undefined && (cause !== undefined || !outcome.ok)) {
+    try {
+      await options.cleanup();
+    } catch (error) {
+      // Cleanup runs only after a failure, so its error must not replace that cause.
+      cleanupFailure = error instanceof Error ? error.message : String(error);
+    }
+  }
+  const withCleanup = (message: string) =>
+    cleanupFailure === undefined
+      ? message
+      : `${message}; cleanup also failed: ${cleanupFailure}`;
   if (cause === 'TIMEOUT')
     throw new BuildError(
       'TIMEOUT',
-      `build exceeded the deadline of ${options.deadlineMs} ms`,
+      withCleanup(`build exceeded the deadline of ${options.deadlineMs} ms`),
     );
   if (cause === 'ABORTED')
-    throw new BuildError('ABORTED', 'build was cancelled');
-  if (!outcome.ok) throw outcome.error;
+    throw new BuildError('ABORTED', withCleanup('build was cancelled'));
+  if (!outcome.ok) {
+    if (cleanupFailure === undefined) throw outcome.error;
+    const error = outcome.error;
+    if (error instanceof BuildError)
+      throw new BuildError(error.code, withCleanup(error.message));
+    throw new BuildError(
+      'EXTERNAL',
+      withCleanup(error instanceof Error ? error.message : String(error)),
+    );
+  }
   return outcome.value;
 }
