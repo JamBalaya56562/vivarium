@@ -47,9 +47,15 @@ case "$*" in
       sleep "$FAKE_BUILD_SLEEP"
     fi
     if [ "${FAKE_BUILD_CODE:-0}" != 0 ]; then
+      echo "error: could not compile" >&2
       exit "$FAKE_BUILD_CODE"
     fi
     source=$(mount_for /work "$@")
+    echo "compiling with fake cargo"
+    if [ -n "${FAKE_BUILD_SYMLINK:-}" ]; then
+      ln -s /mbx/targets/v1/fake "$source/target"
+      exit 0
+    fi
     mkdir -p "$source/target/$FAKE_TARGET/release"
     printf '\177ELFfake-binary' > "$source/target/$FAKE_TARGET/release/$FAKE_BINARY"
     exit 0

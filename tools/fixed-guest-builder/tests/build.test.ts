@@ -10,6 +10,7 @@ import {
   fetchDependencies,
   finalizeArtifacts,
   inspectImage,
+  outputTail,
   parseToolsConfig,
   prepareExtras,
   readToolchainChannel,
@@ -380,6 +381,52 @@ describe('parseToolsConfig', () => {
         tools: { x: { ...tool, binary: '../evil' } },
       }),
     ).toThrow(BuildError);
+  });
+});
+
+describe('missing build output', () => {
+  const base = async () => ({
+    run: runProcess,
+    docker: DOCKER,
+    image: IMAGE,
+    paths: await paths(),
+    tool,
+    rustc: 'r',
+    cargo: 'c',
+    command: ['build', '--locked'],
+    environment: ENV,
+    mbx: null,
+  });
+
+  test('names an unreachable symlinked target and shows the build output', async () => {
+    process.env.FAKE_BUILD_SYMLINK = '1';
+    const logged: string[] = [];
+    const error = await compile({
+      ...(await base()),
+      log: (text) => logged.push(text),
+    }).catch((caught: unknown) => caught);
+    expect((error as BuildError).code).toBe('VERIFY_FAILED');
+    expect((error as BuildError).message).toContain(
+      'target is a symlink to /mbx/targets/v1/fake',
+    );
+    expect(logged.join('')).toContain('compiling with fake cargo');
+  });
+
+  test('shows the end of the build output when the build fails', async () => {
+    process.env.FAKE_BUILD_CODE = '101';
+    const logged: string[] = [];
+    await compile({
+      ...(await base()),
+      log: (text) => logged.push(text),
+    }).catch(() => undefined);
+    expect(logged.join('')).toContain('error: could not compile');
+    expect(logged.join('')).toContain('--- end of build output ---');
+  });
+
+  test('keeps only the last part of a long output', () => {
+    const tail = outputTail('x'.repeat(40_000), 'END');
+    expect(tail).toContain('END');
+    expect(tail.length).toBeLessThan(33_000);
   });
 });
 

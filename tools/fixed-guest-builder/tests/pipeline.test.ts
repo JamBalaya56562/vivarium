@@ -166,6 +166,10 @@ describe('runBuild', () => {
     expect(info.reference.builder.environment.RUSTUP_TOOLCHAIN).toBe('1.98.1');
     const calls = await readFile(log, 'utf8');
     expect(calls.match(/RUSTUP_TOOLCHAIN=1\.98\.1/g)?.length).toBe(2);
+    const build =
+      calls.split('\n').find((line) => line.includes('/builder/build.sh')) ??
+      '';
+    expect(build).toContain('CARGO_TARGET_DIR=/work/target');
   });
 
   test('reuses a published set without fetching dependencies or compiling', async () => {

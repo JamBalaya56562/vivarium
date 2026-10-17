@@ -202,7 +202,13 @@ export async function runBuild(
       pulledImage = image;
       // The source's rust-toolchain file would otherwise make rustup fetch a
       // toolchain from the network inside the containers.
-      const environment = { ...tool.environment, RUSTUP_TOOLCHAIN: channel };
+      // mbx moves a default target directory into its own cache and leaves a
+      // symlink the runner cannot follow; an explicit one stays in the source.
+      const environment = {
+        ...tool.environment,
+        RUSTUP_TOOLCHAIN: channel,
+        CARGO_TARGET_DIR: '/work/target',
+      };
       const patches = request.sourcePatches ?? [];
       await applyPatches(sourceDir, patches, deps.run, request.patchDirectory);
       const lock = await checkCargoSources(sourceDir, request.allowlist);

@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import {
   copyFile,
+  lstat,
   mkdir,
   open,
   readFile,
+  readlink,
   rename,
   rm,
   statfs,
@@ -15,7 +17,7 @@ import { fail } from './errors.ts';
 import { type Fetcher, fetchLimited } from './http.ts';
 import type { ExtraPackage } from './key.ts';
 import { DEPENDENCY_LIMIT_BYTES, runMonitored } from './monitor.ts';
-import type { Runner } from './process.ts';
+import type { Runner, RunResult } from './process.ts';
 import { sha256File } from './source.ts';
 
 export const MIN_FREE_DISK_BYTES = 20 * 1024 ** 3;
@@ -229,6 +231,19 @@ export interface ContainerPaths {
 
 // The containers run as root, so they hand what they wrote back to the
 // runner's user; otherwise the runner cannot remove its own work directory.
+const OUTPUT_TAIL_BYTES = 32 * 1024;
+
+const writeStderr = (text: string) => {
+  process.stderr.write(text);
+};
+
+export function outputTail(stdout: string, stderr: string): string {
+  const text = `${stdout}${stderr}`;
+  const tail =
+    text.length > OUTPUT_TAIL_BYTES ? text.slice(-OUTPUT_TAIL_BYTES) : text;
+  return `--- last ${tail.length} characters of the build output ---\n${tail}\n--- end of build output ---\n`;
+}
+
 export function hostOwner(): string {
   return `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`;
 }
@@ -321,8 +336,10 @@ export async function compile(options: {
   owner?: string;
   mbx: MbxConfig | null;
   signal?: AbortSignal;
+  log?: (text: string) => void;
 }): Promise<string> {
   const name = `fgb-build-${randomUUID()}`;
+  let output: RunResult = { code: 0, stdout: '', stderr: '' };
   const env = [
     ...environmentArgs(options.environment),
     '-e',
@@ -377,18 +394,33 @@ export async function compile(options: {
       options.signal === undefined ? {} : { signal: options.signal },
     );
     if (options.signal?.aborted) fail('ABORTED', 'build was stopped');
-    if (result.code !== 0)
+    if (result.code !== 0) {
+      (options.log ?? writeStderr)(outputTail(result.stdout, result.stderr));
       fail('EXTERNAL', `build failed with exit code ${result.code}`);
+    }
+    output = result;
   } finally {
     await removeContainer(options.run, options.docker, name);
   }
-  return join(
+  const elf = join(
     options.paths.source,
     'target',
     options.tool.target,
     'release',
     options.tool.binary,
   );
+  if ((await lstat(elf).catch(() => undefined)) === undefined) {
+    (options.log ?? writeStderr)(outputTail(output.stdout, output.stderr));
+    const target = join(options.paths.source, 'target');
+    const link = await readlink(target).catch(() => undefined);
+    fail(
+      'VERIFY_FAILED',
+      link === undefined
+        ? 'build produced no binary'
+        : `build produced no binary the runner can reach: target is a symlink to ${link}`,
+    );
+  }
+  return elf;
 }
 
 // Removes a tree the containers may have left owned by root: a plain removal
