@@ -1,0 +1,8 @@
+[install]
+exact = false
+
+[test]
+root = "tests"
+coverageThreshold = { lines = 0.8 }
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["tests/**"]

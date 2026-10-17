@@ -108,11 +108,14 @@ vivarium/
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
 │   ├── layer3_thirdway/   # Layer 3 catalogue — declared, no recipes yet
 │   └── external_examples/ # reference Manifest v1 fixtures, one per shipping layer
+└── tools/
+    └── fixed-guest-builder/ # Bun/TypeScript builder the fixed-guest-* workflows run (CI only, not published)
 ```
 
 `src/` is reserved for reproduction recipes; runtime artefacts the
 project publishes (npm / JSR packages, future CLI, etc.) live under
-`packages/`.
+`packages/`. Tools that only CI runs, and that the project does not
+publish, live under `tools/`, each as its own Bun package.
 
 ### 4.2 `docs/` directory
 
@@ -286,6 +289,7 @@ the ruleset requires them; the matching tasks in
 | `ci:repro`          | `repro-regression.yml`    |
 | `lint:all`          | `test-lint-check.yml`     |
 | `ci:mcp`            | `test-mcp.yml`            |
+| `ci:fixed-guest-builder` | `test-fixed-guest-builder.yml` |
 | `ci:all`            | union of the above        |
 
 The Bun install step in local `ci:*` tasks is supplied by the automatic

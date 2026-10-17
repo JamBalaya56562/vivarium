@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "images": {
+    "1.98.1": "docker.io/library/rust@sha256:6d9066cf04ed2cc9d1a406016f4c9b2574bafda23f9e88bcad8e5d24fa6aec8e"
+  },
+  "mbx": {
+    "version": "1.24.1",
+    "url": "https://github.com/jdx/mr-boxington/releases/download/v1.24.1/mbx-x86_64-unknown-linux-musl.tar.gz",
+    "sha256": "0e4b1594871625e9da2f7bedebceac0573ec19ebae90e05b759227f59cc0fcc4",
+    "maxTotalSize": "1GiB"
+  },
+  "tools": {
+    "biome": {
+      "package": "biome_cli",
+      "binary": "biome",
+      "target": "x86_64-unknown-linux-musl",
+      "environment": {
+        "CARGO_INCREMENTAL": "0"
+      },
+      "extraPackages": [
+        {
+          "name": "make",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/make-4.4.1-r4.apk",
+          "sha256": "a916626a876f64c6b6fb32a6bf0fa93351d09fae0aa7684135642390da647e60",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "9368161bd37f74fb11747ba79197f8480aaca7dc"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,370 @@
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { chmod, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import {
+  type ContainerPaths,
+  checkDiskFree,
+  checkElf,
+  checkToolchain,
+  compile,
+  fetchDependencies,
+  finalizeArtifacts,
+  inspectImage,
+  parseToolsConfig,
+  prepareExtras,
+  readToolchainChannel,
+  type ToolConfig,
+} from '../src/build.ts';
+import { BuildError } from '../src/errors.ts';
+import { runProcess } from '../src/process.ts';
+import { tempDir } from './helpers/git.ts';
+
+const DIGEST = `sha256:${'a'.repeat(64)}`;
+const IMAGE = `docker.io/library/rust@${DIGEST}`;
+const DOCKER = new URL('./fixtures/fake-docker.sh', import.meta.url).pathname;
+const tool: ToolConfig = {
+  package: 'biome_cli',
+  binary: 'biome',
+  target: 'x86_64-unknown-linux-musl',
+  environment: { CARGO_INCREMENTAL: '0' },
+  extraPackages: [],
+};
+
+async function errorCode(
+  promise: Promise<unknown>,
+): Promise<string | undefined> {
+  try {
+    await promise;
+  } catch (error) {
+    if (error instanceof BuildError) return error.code;
+    throw error;
+  }
+  return undefined;
+}
+
+let log: string;
+const saved = { ...process.env };
+
+beforeEach(async () => {
+  await chmod(DOCKER, 0o755);
+  log = join(await tempDir(), 'docker.log');
+  Object.assign(process.env, {
+    FAKE_DOCKER_LOG: log,
+    FAKE_REPO_DIGEST: DIGEST,
+    FAKE_RUST: '1.98.1',
+    FAKE_TARGET: tool.target,
+    FAKE_BINARY: tool.binary,
+  });
+});
+
+afterEach(() => {
+  for (const name of Object.keys(process.env))
+    if (name.startsWith('FAKE_')) delete process.env[name];
+  Object.assign(process.env, saved);
+});
+
+async function paths(): Promise<ContainerPaths> {
+  const root = await tempDir('fgb-build-');
+  const result = {
+    source: join(root, 'src'),
+    cargoHome: join(root, 'cargo'),
+    builderDir: join(root, 'builder'),
+    dependencyDir: join(root, 'dependency'),
+    mbxCache: join(root, 'mbx'),
+  };
+  for (const path of Object.values(result))
+    await mkdir(path, { recursive: true });
+  return result;
+}
+
+describe('toolchain', () => {
+  test('reads the channel from rust-toolchain.toml or the plain file and refuses neither', async () => {
+    const toml = await tempDir();
+    await writeFile(
+      join(toml, 'rust-toolchain.toml'),
+      '[toolchain]\nchannel = "1.98.1"\n',
+    );
+    expect(await readToolchainChannel(toml)).toBe('1.98.1');
+    const plain = await tempDir();
+    await writeFile(join(plain, 'rust-toolchain'), '1.97.0\n');
+    expect(await readToolchainChannel(plain)).toBe('1.97.0');
+    expect(await errorCode(readToolchainChannel(await tempDir()))).toBe(
+      'INVALID_INPUT',
+    );
+  });
+
+  test('checkToolchain refuses an image whose Rust differs from the upstream pin', () => {
+    expect(() =>
+      checkToolchain('rustc 1.98.1\nrelease: 1.98.1\n', '1.98.1'),
+    ).not.toThrow();
+    expect(() =>
+      checkToolchain('rustc 1.99.0\nrelease: 1.99.0\n', '1.98.1'),
+    ).toThrow(BuildError);
+  });
+});
+
+describe('inspectImage', () => {
+  test('records the toolchain when the pulled digest matches', async () => {
+    const result = await inspectImage(runProcess, DOCKER, IMAGE);
+    expect(result.rustc).toBe('rustc 1.98.1 (x 2026-09-01)');
+    expect(result.cargo).toBe('cargo 1.98.1 (y 2026-08-05)');
+    checkToolchain(result.rustcVerbose, '1.98.1');
+    expect(await readFile(log, 'utf8')).toContain('--network none');
+  });
+
+  test('refuses a pulled digest that differs, a failed pull and an unpinned image', async () => {
+    process.env.FAKE_REPO_DIGEST = `sha256:${'b'.repeat(64)}`;
+    expect(await errorCode(inspectImage(runProcess, DOCKER, IMAGE))).toBe(
+      'VERIFY_FAILED',
+    );
+    process.env.FAKE_PULL_CODE = '1';
+    expect(await errorCode(inspectImage(runProcess, DOCKER, IMAGE))).toBe(
+      'EXTERNAL',
+    );
+    expect(
+      await errorCode(inspectImage(runProcess, DOCKER, 'rust:1.98.1')),
+    ).toBe('INVALID_INPUT');
+  });
+});
+
+describe('checkDiskFree', () => {
+  test('accepts exactly the minimum and refuses one byte less', async () => {
+    expect(
+      await checkDiskFree('/', 4096, async () => ({ bavail: 1, bsize: 4096 })),
+    ).toBe(4096);
+    expect(
+      await errorCode(
+        checkDiskFree('/', 4097, async () => ({ bavail: 1, bsize: 4096 })),
+      ),
+    ).toBe('LIMIT_EXCEEDED');
+  });
+});
+
+describe('fetchDependencies and compile', () => {
+  test('fetches under the size limit, builds offline, and always removes the containers', async () => {
+    const p = await paths();
+    process.env.FAKE_FETCH_BYTES = '100';
+    expect(
+      await fetchDependencies({
+        run: runProcess,
+        docker: DOCKER,
+        image: IMAGE,
+        paths: p,
+        target: tool.target,
+        limitBytes: 100,
+        intervalMs: 10,
+      }),
+    ).toBe(100);
+    const elf = await compile({
+      run: runProcess,
+      docker: DOCKER,
+      image: IMAGE,
+      paths: p,
+      tool,
+      rustc: 'rustc 1.98.1 (x 2026-09-01)',
+      cargo: 'cargo 1.98.1 (y 2026-08-05)',
+      command: [
+        'build',
+        '--locked',
+        '--offline',
+        '--release',
+        '--target',
+        tool.target,
+        '--package',
+        tool.package,
+      ],
+      mbx: {
+        version: '1.24.1',
+        url: 'https://example.invalid/mbx.tgz',
+        sha256: 'c'.repeat(64),
+        maxTotalSize: '1GiB',
+      },
+    });
+    expect((await checkElf(elf)).bytes).toBe(15);
+    const calls = (await readFile(log, 'utf8')).trim().split('\n');
+    const build =
+      calls.find((line) => line.includes('/builder/build.sh')) ?? '';
+    expect(build).toContain('--network none');
+    expect(build).toContain('MBX_CACHE_DIR=/mbx');
+    expect(build).toContain('MBX_GC_MAX_TOTAL_SIZE=1GiB');
+    expect(build).toContain('--offline');
+    expect(calls.filter((line) => line.startsWith('rm --force'))).toHaveLength(
+      2,
+    );
+  });
+
+  test('refuses dependencies one byte over the limit', async () => {
+    const p = await paths();
+    process.env.FAKE_FETCH_BYTES = '101';
+    expect(
+      await errorCode(
+        fetchDependencies({
+          run: runProcess,
+          docker: DOCKER,
+          image: IMAGE,
+          paths: p,
+          target: tool.target,
+          limitBytes: 100,
+          intervalMs: 10,
+        }),
+      ),
+    ).toBe('LIMIT_EXCEEDED');
+    expect(await readFile(log, 'utf8')).toContain('rm --force fgb-fetch-');
+  });
+
+  test('reports a failed build and leaves no ELF', async () => {
+    const p = await paths();
+    process.env.FAKE_BUILD_CODE = '101';
+    const run = compile({
+      run: runProcess,
+      docker: DOCKER,
+      image: IMAGE,
+      paths: p,
+      tool,
+      rustc: 'r',
+      cargo: 'c',
+      command: ['build', '--locked'],
+      mbx: null,
+    });
+    expect(await errorCode(run)).toBe('EXTERNAL');
+    expect(await readFile(log, 'utf8')).not.toContain('MBX_CACHE_DIR');
+  });
+});
+
+describe('prepareExtras', () => {
+  test('stores packages whose SHA256 matches and refuses one that differs', async () => {
+    const bytes = new TextEncoder().encode('apk-bytes');
+    const sha256 = new Bun.CryptoHasher('sha256').update(bytes).digest('hex');
+    const fetcher = async () => new Response(bytes);
+    const directory = await tempDir();
+    await prepareExtras(
+      directory,
+      [
+        {
+          name: 'make',
+          url: 'https://example.invalid/make.apk',
+          sha256,
+          repository: 'https://example.invalid/aports',
+          commit: 'b'.repeat(40),
+        },
+      ],
+      null,
+      fetcher,
+    );
+    expect(await readdir(join(directory, 'apk'))).toEqual(['make.apk']);
+    const other = await tempDir();
+    expect(
+      await errorCode(
+        prepareExtras(
+          other,
+          [
+            {
+              name: 'make',
+              url: 'https://example.invalid/make.apk',
+              sha256: '0'.repeat(64),
+              repository: 'https://example.invalid/aports',
+              commit: 'b'.repeat(40),
+            },
+          ],
+          null,
+          fetcher,
+        ),
+      ),
+    ).toBe('VERIFY_FAILED');
+  });
+});
+
+describe('finalizeArtifacts', () => {
+  async function elf(): Promise<string> {
+    const path = join(await tempDir(), 'biome');
+    await writeFile(path, '\x7fELFbinary');
+    return path;
+  }
+
+  test('moves a verified ELF and build-info into the key directory', async () => {
+    const root = await tempDir();
+    const path = await elf();
+    const { sha256 } = await checkElf(path);
+    const result = await finalizeArtifacts({
+      root,
+      key: 'k'.repeat(64),
+      elfPath: path,
+      binary: 'biome',
+      buildInfo: new TextEncoder().encode('{}'),
+      expectedElfSha256: sha256,
+    });
+    expect((await readdir(result.directory)).sort()).toEqual([
+      'biome',
+      'build-info.json',
+    ]);
+    expect(
+      (await readdir(root)).filter((name) => name.startsWith('.staging')),
+    ).toEqual([]);
+  });
+
+  test('leaves no staging behind when verification fails or the key already exists', async () => {
+    const root = await tempDir();
+    const path = await elf();
+    expect(
+      await errorCode(
+        finalizeArtifacts({
+          root,
+          key: 'k',
+          elfPath: path,
+          binary: 'biome',
+          buildInfo: new Uint8Array(),
+          expectedElfSha256: '0'.repeat(64),
+        }),
+      ),
+    ).toBe('VERIFY_FAILED');
+    const { sha256 } = await checkElf(path);
+    await finalizeArtifacts({
+      root,
+      key: 'k',
+      elfPath: path,
+      binary: 'biome',
+      buildInfo: new Uint8Array(),
+      expectedElfSha256: sha256,
+    });
+    expect(
+      await errorCode(
+        finalizeArtifacts({
+          root,
+          key: 'k',
+          elfPath: path,
+          binary: 'biome',
+          buildInfo: new Uint8Array(),
+          expectedElfSha256: sha256,
+        }),
+      ),
+    ).toBe('VERIFY_FAILED');
+    expect((await readdir(root)).sort()).toEqual(['k']);
+  });
+
+  test('checkElf refuses a file that is not ELF and a missing file', async () => {
+    const path = join(await tempDir(), 'x');
+    await writeFile(path, '#!/bin/sh\n');
+    expect(await errorCode(checkElf(path))).toBe('VERIFY_FAILED');
+    expect(await errorCode(checkElf(join(await tempDir(), 'missing')))).toBe(
+      'VERIFY_FAILED',
+    );
+  });
+});
+
+describe('parseToolsConfig', () => {
+  test('accepts the shipped config and refuses unpinned images or unsafe names', async () => {
+    const shipped = await Bun.file(
+      new URL('../tools.json', import.meta.url),
+    ).json();
+    expect(parseToolsConfig(shipped).tools.biome?.binary).toBe('biome');
+    expect(() =>
+      parseToolsConfig({ ...shipped, images: { '1.98.1': 'rust:1.98.1' } }),
+    ).toThrow(BuildError);
+    expect(() =>
+      parseToolsConfig({
+        ...shipped,
+        tools: { x: { ...tool, binary: '../evil' } },
+      }),
+    ).toThrow(BuildError);
+  });
+});

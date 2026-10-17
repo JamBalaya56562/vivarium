@@ -28,6 +28,11 @@
           "type": "json",
           "path": "packages/mcp-server/jsr.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "tools/fixed-guest-builder/package.json",
+          "jsonpath": "$.version"
         }
       ]
     }

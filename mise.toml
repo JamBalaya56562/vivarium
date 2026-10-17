@@ -37,6 +37,13 @@ outputs = ["node_modules"]
 run = "bun install --frozen-lockfile"
 dir = "src/layer1_wasm"
 
+[deps.bun-fixed-guest-builder]
+auto = true
+sources = ["package.json", "bun.lock"]
+outputs = ["node_modules"]
+run = "bun install --frozen-lockfile"
+dir = "tools/fixed-guest-builder"
+
 [deps.tofu]
 sources = ["versions.tf", "providers.tf", ".terraform.lock.hcl"]
 outputs = [".terraform/providers"]
@@ -160,6 +167,21 @@ description = "Test the MCP server package"
 dir = "packages/mcp-server"
 run = "bun run test"
 
+[tasks."fixed-guest-builder:check"]
+description = "Biome check of the fixed guest builder (read-only)"
+dir = "tools/fixed-guest-builder"
+run = "bunx --bun biome check ."
+
+[tasks."fixed-guest-builder:check:fix"]
+description = "Biome check + apply safe + unsafe auto-fixes for the fixed guest builder"
+dir = "tools/fixed-guest-builder"
+run = "bunx --bun biome check --write --unsafe ."
+
+[tasks."fixed-guest-builder:typecheck"]
+description = "TypeScript type-check of the fixed guest builder"
+dir = "tools/fixed-guest-builder"
+run = "bun run typecheck"
+
 [tasks."infra:init"]
 description = "Initialise OpenTofu working directory for infra/github"
 dir = "infra/github"
@@ -216,9 +238,14 @@ run = [
   "bun run test:e2e",
 ]
 
+[tasks."ci:fixed-guest-builder"]
+description = "Local equivalent of test-fixed-guest-builder.yml"
+dir = "tools/fixed-guest-builder"
+run = "bun run typecheck && bun run test"
+
 [tasks."ci:all"]
 description = "Run all local CI tasks (docs + lint + mcp + repro + docs-unit + docs-e2e)"
-depends = ["ci:docs", "lint:all", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e"]
+depends = ["ci:docs", "lint:all", "ci:mcp", "ci:repro", "ci:docs-unit", "ci:docs-e2e", "ci:fixed-guest-builder"]
 
 [tasks."php:check"]
 description = "Mago — PHP format check + lint (read-only)"
@@ -254,7 +281,7 @@ run = "rumdl fmt ."
 
 [tasks."lint:all"]
 description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint"
-depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check"]
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check", "fixed-guest-builder:check"]
 
 [tasks."lint:all:fix"]
 description = "Apply all autofixes (in-place) across every language"
@@ -265,4 +292,5 @@ depends = [
   "toml:check:fix",
   "markdown:check:fix",
   "rust:check:fix",
+  "fixed-guest-builder:check:fix",
 ]

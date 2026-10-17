@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "repositories": [
+    "https://github.com/biomejs/biome",
+    "https://github.com/jambalaya56562/biome"
+  ],
+  "dependencyRepositories": ["https://github.com/react/react"]
+}

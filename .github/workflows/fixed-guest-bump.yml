@@ -1,0 +1,124 @@
+name: fixed-guest-bump
+
+run-name: bump ${{ inputs.tool }} in ${{ inputs.recipe }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe:
+        description: Path of the recipe.json under src/layer1_wasm
+        required: true
+        type: string
+      tool:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fixed-guest-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: bump ${{ inputs.tool }}
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RECIPE: ${{ inputs.recipe }}
+      TOOL: ${{ inputs.tool }}
+    steps:
+      - name: Refuse a recipe path outside src/layer1_wasm
+        run: |
+          set -euo pipefail
+          case "${RECIPE}" in
+            *..*) echo "recipe path must not contain .." >&2; exit 1 ;;
+          esac
+          if ! printf '%s' "${RECIPE}" | grep -Eq '^src/layer1_wasm/[A-Za-z0-9_./-]+/recipe\.json$'; then
+            echo "recipe path must be src/layer1_wasm/.../recipe.json" >&2
+            exit 1
+          fi
+          if ! printf '%s' "${TOOL}" | grep -Eq '^[a-z0-9][a-z0-9._-]{0,63}$'; then
+            echo "tool must be a lowercase name" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install the builder's locked dependencies
+        working-directory: tools/fixed-guest-builder
+        run: bun install --frozen-lockfile
+
+      - name: Move the guest to the branch tip
+        id: bump
+        working-directory: tools/fixed-guest-builder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bun run src/cli.ts bump \
+            --workflow fixed-guest-bump.yml \
+            --recipe "${GITHUB_WORKSPACE}/${RECIPE}" \
+            --tool "${TOOL}" \
+            --work "${RUNNER_TEMP}/fgb-bump" > "${RUNNER_TEMP}/bump.json"
+          changed=$(bun -e 'console.log((await Bun.file(process.argv[1]).json()).changed)' "${RUNNER_TEMP}/bump.json")
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+          slug=$(printf '%s' "${RECIPE}" | tr '/.' '--')
+          echo "branch=fixed-guest-bump/${TOOL}-${slug}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "Moves ${TOOL} in \`${RECIPE}\` to the tip of the branch its declaration names."
+            echo
+            echo "The commit was resolved with \`git ls-remote\` against the declared repository and"
+            echo "checked to be reachable from that repository's own refs. PR pages were not used."
+            echo
+            echo '```json'
+            cat "${RUNNER_TEMP}/bump.json"
+            echo '```'
+            echo
+            echo "A person merges this pull request. The fixed build for the new key runs separately."
+          } > "${RUNNER_TEMP}/body.md"
+
+      - name: Get an aletheia-works-bot token
+        if: steps.bump.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open or update the pull request
+        if: steps.bump.outputs.changed == 'true'
+        uses: ./.github/actions/bot-pull-request
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: ${{ steps.bump.outputs.branch }}
+          title: 'fixed-guest: bump ${{ inputs.tool }} in ${{ inputs.recipe }}'
+          body-path: ${{ runner.temp }}/body.md
+
+      # bot-pull-request always enables auto-merge; a person merges these.
+      - name: Leave the merge to a person
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BRANCH: ${{ steps.bump.outputs.branch }}
+        run: |
+          set -euo pipefail
+          number=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
+          if [ -n "${number}" ]; then
+            gh pr merge --disable-auto "${number}"
+          fi

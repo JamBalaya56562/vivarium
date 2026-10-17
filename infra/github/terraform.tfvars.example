@@ -34,3 +34,7 @@ github_owner = "aletheia-works"
 # Upstream `aletheia-works/vivarium` overrides this to `true`:
 #
 # create_phase_milestones = true
+#
+# GitHub user IDs who approve fixed guest Release writes (gh api users/<login> --jq .id).
+# While empty, the fixed-guest-release environment is not created.
+# fixed_guest_release_reviewer_ids = [123456]

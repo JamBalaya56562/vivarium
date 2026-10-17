@@ -1,0 +1,126 @@
+name: fixed-guest-build
+
+run-name: build ${{ inputs.tool }} ${{ inputs.commit }} (mbx ${{ inputs.mbx }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      tool:
+        description: Guest tool, as configured in tools/fixed-guest-builder/tools.json
+        required: true
+        type: string
+      repository:
+        description: Allowlisted repository, https://github.com/<owner>/<repo>
+        required: true
+        type: string
+      commit:
+        description: Full 40-character commit
+        required: true
+        type: string
+      fixture:
+        description: Recipe-owned fixture ID (recorded only)
+        required: true
+        type: string
+      mbx:
+        description: Use the mbx compile cache
+        required: true
+        type: choice
+        options: ['on', 'off']
+        default: 'on'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: fixed-guest-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build ${{ inputs.tool }}
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # A 4-hour build deadline plus time for cleanup and upload.
+    timeout-minutes: 255
+    env:
+      TOOL: ${{ inputs.tool }}
+      REPOSITORY: ${{ inputs.repository }}
+      COMMIT: ${{ inputs.commit }}
+      FIXTURE: ${{ inputs.fixture }}
+      MBX: ${{ inputs.mbx }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install the builder's locked dependencies
+        working-directory: tools/fixed-guest-builder
+        run: bun install --frozen-lockfile
+
+      - name: Write the declaration
+        run: |
+          set -euo pipefail
+          bun -e 'await Bun.write(process.argv[1], JSON.stringify({ tool: process.env.TOOL, repository: process.env.REPOSITORY, commit: process.env.COMMIT, fixture: process.env.FIXTURE }))' "${RUNNER_TEMP}/declaration.json"
+          mkdir -p "${RUNNER_TEMP}/mbx"
+
+      # One entry per builder: a key per run would add up to 1 GiB on every
+      # build to a cache other workflows share.
+      - name: Restore the mbx cache
+        id: mbx-cache
+        if: env.MBX == 'on'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/mbx
+          key: mbx-x86_64-unknown-linux-musl-${{ hashFiles('tools/fixed-guest-builder/container/build.sh', 'tools/fixed-guest-builder/tools.json') }}
+
+      - name: Build or reuse
+        working-directory: tools/fixed-guest-builder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cache=none
+          if [ "${MBX}" = on ]; then cache="${RUNNER_TEMP}/mbx"; fi
+          mkdir -p "${RUNNER_TEMP}/fgb-out"
+          bun run src/cli.ts build \
+            --workflow fixed-guest-build.yml \
+            --declaration "${RUNNER_TEMP}/declaration.json" \
+            --work "${RUNNER_TEMP}/fgb-work" \
+            --out "${RUNNER_TEMP}/fgb-out" \
+            --mbx-cache "${cache}" \
+            --receipt "${RUNNER_TEMP}/fgb-out/receipt.json"
+
+      - name: Record sizes
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "### fixed-guest-build"
+            echo "- free disk after build: $(df -B1 --output=avail "${RUNNER_TEMP}" | tail -n 1) bytes"
+            echo "- mbx cache: $(du -sb "${RUNNER_TEMP}/mbx" | cut -f1) bytes"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save the mbx cache
+        if: success() && env.MBX == 'on' && steps.mbx-cache.outputs.cache-hit != 'true' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/mbx
+          key: mbx-x86_64-unknown-linux-musl-${{ hashFiles('tools/fixed-guest-builder/container/build.sh', 'tools/fixed-guest-builder/tools.json') }}
+
+      - name: Keep the verified set and the receipt
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixed-guest-${{ github.run_id }}
+          path: ${{ runner.temp }}/fgb-out
+          if-no-files-found: error
+          retention-days: 7
