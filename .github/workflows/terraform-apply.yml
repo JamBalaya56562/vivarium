@@ -22,4 +22,5 @@ jobs:
       working_directory: infra/github
       tfvar_assignments: |
         create_phase_milestones=true
+        fixed_guest_release_reviewer_ids=[88115388]
     secrets: inherit
