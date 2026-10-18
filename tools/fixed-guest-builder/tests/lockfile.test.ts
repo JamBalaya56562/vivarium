@@ -140,4 +140,18 @@ describe('checkCargoSources', () => {
       ),
     ).toBe('INVALID_INPUT');
   });
+
+  test('lists each allowlisted git dependency once, normalized', async () => {
+    const directory = await source({
+      'Cargo.lock': lock(
+        `git+https://github.com/react/react?rev=${COMMIT}#${COMMIT}`,
+        `git+https://github.com/React/react.git?rev=${COMMIT}#${COMMIT}`,
+        'registry+https://github.com/rust-lang/crates.io-index',
+      ),
+    });
+    const result = await checkCargoSources(directory, allowlist);
+    expect(result.gitDependencies).toEqual([
+      { repository: 'https://github.com/react/react', commit: COMMIT },
+    ]);
+  });
 });

@@ -52,6 +52,10 @@ case "$*" in
     fi
     source=$(mount_for /work "$@")
     echo "compiling with fake cargo"
+    if [ -n "${FAKE_MBX_WRITE:-}" ]; then
+      cache=$(mount_for /mbx "$@")
+      echo stored > "$cache/written-by-build"
+    fi
     if [ -n "${FAKE_BUILD_SYMLINK:-}" ]; then
       ln -s /mbx/targets/v1/fake "$source/target"
       exit 0

@@ -75,6 +75,7 @@ function checkPatchTables(
 export interface LockfileCheck {
   cargoLockSha256: string;
   packages: number;
+  gitDependencies: { repository: string; commit: string }[];
 }
 
 export async function checkCargoSources(
@@ -89,6 +90,10 @@ export async function checkCargoSources(
   const packages = lock.package;
   if (!Array.isArray(packages) || packages.length === 0)
     fail('INVALID_INPUT', 'Cargo.lock lists no packages');
+  const gitDependencies = new Map<
+    string,
+    { repository: string; commit: string }
+  >();
   for (const entry of packages as Record<string, unknown>[]) {
     const source = entry.source;
     if (source === undefined) continue;
@@ -96,8 +101,18 @@ export async function checkCargoSources(
       fail('INVALID_INPUT', 'Cargo.lock source must be a string');
     if (CRATES_IO.has(source)) continue;
     const git = GIT_SOURCE.exec(source);
-    if (git?.[1] !== undefined && allowedGitRepository(git[1], allowlist))
+    if (
+      git?.[1] !== undefined &&
+      git[2] !== undefined &&
+      allowedGitRepository(git[1], allowlist)
+    ) {
+      const repository = normalizeRepositoryUrl(git[1]);
+      gitDependencies.set(`${repository}#${git[2]}`, {
+        repository,
+        commit: git[2],
+      });
       continue;
+    }
     fail(
       'INVALID_INPUT',
       `Cargo.lock uses a source outside the allowlist: ${String(entry.name)}`,
@@ -126,5 +141,6 @@ export async function checkCargoSources(
   return {
     cargoLockSha256: await sha256File(lockPath),
     packages: packages.length,
+    gitDependencies: [...gitDependencies.values()],
   };
 }

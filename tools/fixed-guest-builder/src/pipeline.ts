@@ -46,6 +46,7 @@ import {
   fetchSource,
   type SourcePatch,
   sha256File,
+  verifyDependencyReachable,
 } from './source.ts';
 
 export interface BuildRequest {
@@ -58,6 +59,8 @@ export interface BuildRequest {
   builderDirectory: string;
   patchDirectory: string;
   mbxCache: string | null;
+  // The keys the workflow asked actions/cache to restore and the one it matched.
+  mbxCacheKeys?: { requested: string | null; matched: string | null };
   runUrl: string;
   runnerInfo: Record<string, string>;
 }
@@ -169,6 +172,11 @@ export async function runBuild(
   let pulledImage: string | undefined;
   return withDeadline(
     async (signal) => {
+      // Counted before any container can write into the cache directory.
+      const mbxCacheRestored =
+        request.mbxCache === null
+          ? null
+          : (await readdir(request.mbxCache).catch(() => [])).length > 0;
       await mkdir(request.workDirectory, { recursive: true });
       await mkdir(request.outputDirectory, { recursive: true });
       const freeDisk = await checkDiskFree(
@@ -300,6 +308,27 @@ export async function runBuild(
           null,
         );
 
+      await timed('dependency-sources', async () => {
+        for (const [index, dependency] of lock.gitDependencies.entries()) {
+          const directory = join(
+            request.workDirectory,
+            'git-dependencies',
+            String(index),
+          );
+          await verifyDependencyReachable({
+            ...dependency,
+            directory,
+            run: watchedGit(
+              deps.run,
+              directory,
+              deps.sourceLimitBytes ?? SOURCE_LIMIT_BYTES,
+              deps.monitorIntervalMs,
+            ),
+            signal,
+            ...(deps.cloneUrl === undefined ? {} : { cloneUrl: deps.cloneUrl }),
+          });
+        }
+      });
       await prepareExtras(
         paths.dependencyDir,
         tool.extraPackages,
@@ -363,10 +392,9 @@ export async function runBuild(
               request.builderDirectory,
             ),
           },
-          mbxCacheRestored:
-            request.mbxCache === null
-              ? null
-              : (await readdir(request.mbxCache).catch(() => [])).length > 0,
+          mbxCacheRestored,
+          mbxCacheKeys:
+            request.mbxCache === null ? null : (request.mbxCacheKeys ?? null),
           ciRunUrl: request.runUrl,
         },
       };

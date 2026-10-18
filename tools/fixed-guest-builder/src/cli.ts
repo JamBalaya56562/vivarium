@@ -138,6 +138,10 @@ async function command(
             flags['mbx-cache'] === undefined || flags['mbx-cache'] === 'none'
               ? null
               : resolve(flags['mbx-cache']),
+          mbxCacheKeys: {
+            requested: io.env.MBX_CACHE_REQUESTED_KEY || null,
+            matched: io.env.MBX_CACHE_MATCHED_KEY || null,
+          },
           runUrl: `${io.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${environment(io, 'GITHUB_REPOSITORY')}/actions/runs/${id}`,
           runnerInfo: {
             bun: Bun.version,

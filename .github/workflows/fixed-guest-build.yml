@@ -86,6 +86,8 @@ jobs:
         working-directory: tools/fixed-guest-builder
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MBX_CACHE_REQUESTED_KEY: ${{ steps.mbx-cache.outputs.cache-primary-key }}
+          MBX_CACHE_MATCHED_KEY: ${{ steps.mbx-cache.outputs.cache-matched-key }}
         run: |
           set -euo pipefail
           cache=none

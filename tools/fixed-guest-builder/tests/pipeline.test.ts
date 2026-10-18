@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { chmod, cp, readdir, readFile, stat } from 'node:fs/promises';
+import {
+  chmod,
+  cp,
+  mkdir,
+  readdir,
+  readFile,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import { join } from 'node:path';
 import { verifyArtifactSet } from '../src/artifact.ts';
 import { parseAllowlist } from '../src/declaration.ts';
@@ -7,7 +15,7 @@ import { BuildError } from '../src/errors.ts';
 import type { Fetcher } from '../src/http.ts';
 import { type BuildRequest, runBuild } from '../src/pipeline.ts';
 import { runProcess } from '../src/process.ts';
-import { createUpstream, tempDir } from './helpers/git.ts';
+import { createUpstream, git, tempDir } from './helpers/git.ts';
 
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const IMAGE = `docker.io/library/rust@${DIGEST}`;
@@ -329,5 +337,127 @@ describe('runBuild edges', () => {
         ),
       ),
     ).toBe('INVALID_INPUT');
+  });
+});
+
+describe('mbx cache record', () => {
+  async function built(prefill: boolean) {
+    const upstream = await createUpstream(files);
+    const req = await request(upstream.main);
+    await mkdir(req.mbxCache as string, { recursive: true });
+    if (prefill)
+      await writeFile(join(req.mbxCache as string, 'restored-entry'), 'x');
+    process.env.FAKE_MBX_WRITE = '1';
+    const receipt = await runBuild(
+      {
+        ...req,
+        mbxCacheKeys: {
+          requested: 'mbx-key',
+          matched: prefill ? 'mbx-key' : null,
+        },
+      },
+      deps(upstream.url, fetcherFor()),
+    );
+    const info = JSON.parse(
+      await readFile(
+        join(receipt.artifactDirectory as string, 'build-info.json'),
+        'utf8',
+      ),
+    );
+    return info.reference;
+  }
+
+  test('counts an empty cache as not restored even though the build writes into it', async () => {
+    const reference = await built(false);
+    expect(reference.mbxCacheRestored).toBe(false);
+    expect(reference.mbxCacheKeys).toEqual({
+      requested: 'mbx-key',
+      matched: null,
+    });
+  });
+
+  test('counts a cache restored before the build as restored and records the matched key', async () => {
+    const reference = await built(true);
+    expect(reference.mbxCacheRestored).toBe(true);
+    expect(reference.mbxCacheKeys).toEqual({
+      requested: 'mbx-key',
+      matched: 'mbx-key',
+    });
+  });
+});
+
+describe('git dependencies and a broken cache', () => {
+  const withGitDependency = (commit: string) => ({
+    ...files,
+    'Cargo.lock': `version = 4\n[[package]]\nname = "x"\nversion = "1.0.0"\nsource = "git+https://github.com/biomejs/biome?rev=${commit}#${commit}"\n`,
+  });
+
+  test('builds when the git dependency commit is reachable from its repository', async () => {
+    const upstream = await createUpstream(files);
+    const work = join(await tempDir(), 'work');
+    await git(
+      await tempDir(),
+      'clone',
+      '--quiet',
+      '--branch',
+      'main',
+      upstream.url,
+      work,
+    );
+    await writeFile(
+      join(work, 'Cargo.lock'),
+      withGitDependency(upstream.tagged)['Cargo.lock'],
+    );
+    await git(work, 'add', 'Cargo.lock');
+    await git(
+      work,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@e.invalid',
+      'commit',
+      '--quiet',
+      '-m',
+      'lock',
+    );
+    await git(work, 'push', '--quiet', 'origin', 'HEAD:main');
+    const head = await git(work, 'rev-parse', 'HEAD');
+    const receipt = await runBuild(
+      await request(head),
+      deps(upstream.url, fetcherFor()),
+    );
+    expect(receipt.compiled).toBe(true);
+    expect(receipt.durationsMs['dependency-sources']).toBeGreaterThanOrEqual(0);
+  });
+
+  test('refuses a git dependency commit its repository does not reach, before fetching', async () => {
+    const elsewhere = (await createUpstream()).dangling;
+    const declared = await createUpstream(withGitDependency(elsewhere));
+    await Bun.write(log, '');
+    expect(
+      await errorCode(
+        runBuild(
+          await request(declared.main),
+          deps(declared.url, fetcherFor()),
+        ),
+      ),
+    ).toBe('SOURCE_UNREACHABLE');
+    expect(await readFile(log, 'utf8')).not.toContain('cargo fetch');
+  });
+
+  test('a cache that breaks the build fails it without leaving an artifact', async () => {
+    const upstream = await createUpstream(files);
+    const req = await request(upstream.main);
+    await mkdir(req.mbxCache as string, { recursive: true });
+    await writeFile(
+      join(req.mbxCache as string, 'garbage'),
+      'not a cache object',
+    );
+    process.env.FAKE_BUILD_CODE = '101';
+    expect(
+      await errorCode(runBuild(req, deps(upstream.url, fetcherFor()))),
+    ).toBe('EXTERNAL');
+    expect(await readdir(req.outputDirectory).catch(() => [])).toEqual([]);
+    expect(await stat(req.workDirectory).catch(() => null)).toBeNull();
   });
 });

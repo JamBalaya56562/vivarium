@@ -51,12 +51,31 @@ function signalGroup(pid: number, signal: NodeJS.Signals): void {
   }
 }
 
+// Children (git, docker, the container) never need the workflow's tokens, so
+// they are not inherited; a caller that needs one passes it explicitly.
+const WITHHELD =
+  /^(ACTIONS_.*|GITHUB_TOKEN|GH_TOKEN|.*_TOKEN|.*_SECRET|.*_PASSWORD)$/;
+
+export function inheritedEnvironment(
+  base: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(base).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== undefined && !WITHHELD.test(entry[0]),
+    ),
+  );
+}
+
 export function spawnGroup(
   command: string,
   args: readonly string[],
   options: RunOptions = {},
 ): ProcessGroup {
-  const env = { ...process.env, ...options.env } as Record<string, string>;
+  const env = { ...inheritedEnvironment(), ...options.env } as Record<
+    string,
+    string
+  >;
   const child = Bun.spawn([command, ...args], {
     ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
     env,

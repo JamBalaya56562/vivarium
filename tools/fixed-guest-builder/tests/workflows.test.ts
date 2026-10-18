@@ -155,4 +155,18 @@ describe('builder workflows', () => {
       'permission-pull-requests': 'write',
     });
   });
+
+  test('passes the requested and matched mbx cache keys to the build', async () => {
+    const { flow } = await load('fixed-guest-build.yml');
+    const steps = Object.values(flow.jobs)[0]?.steps ?? [];
+    const build = steps.find(
+      (step) => step.name === 'Build or reuse',
+    ) as Step & { env?: Record<string, string> };
+    expect(build.env?.MBX_CACHE_REQUESTED_KEY).toContain(
+      'steps.mbx-cache.outputs.cache-primary-key',
+    );
+    expect(build.env?.MBX_CACHE_MATCHED_KEY).toContain(
+      'steps.mbx-cache.outputs.cache-matched-key',
+    );
+  });
 });

@@ -109,6 +109,55 @@ export async function fetchSource(options: FetchSourceOptions): Promise<void> {
     );
 }
 
+// Same check for a git dependency, which is never checked out: a bare clone
+// of commits only is enough and stays small even for large repositories.
+export async function verifyDependencyReachable(
+  options: FetchSourceOptions,
+): Promise<void> {
+  const url = (options.cloneUrl ?? ((repository) => repository))(
+    options.repository,
+  );
+  const clone = await options.run(
+    'git',
+    [
+      'clone',
+      '--bare',
+      '--filter=tree:0',
+      '--no-recurse-submodules',
+      '--',
+      url,
+      options.directory,
+    ],
+    {
+      env: NO_LAZY_FETCH,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    },
+  );
+  if (clone.code !== 0)
+    fail(
+      'SOURCE_UNREACHABLE',
+      `clone of the dependency repository failed: ${options.repository}`,
+    );
+  const present = await git(options, [
+    'cat-file',
+    '-e',
+    `${options.commit}^{commit}`,
+  ]);
+  const refs = await git(options, [
+    'for-each-ref',
+    '--contains',
+    options.commit,
+    '--format=%(refname)',
+    'refs/heads',
+    'refs/tags',
+  ]);
+  if (present.code !== 0 || refs.code !== 0 || refs.stdout.trim() === '')
+    fail(
+      'SOURCE_UNREACHABLE',
+      `dependency commit is not reachable from ${options.repository}'s own branches or tags: ${options.commit}`,
+    );
+}
+
 export async function sha256File(path: string): Promise<string> {
   return createHash('sha256')
     .update(await readFile(path))

@@ -3,7 +3,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BuildError } from '../src/errors.ts';
 import { runProcess } from '../src/process.ts';
-import { applyPatches, fetchSource, sha256File } from '../src/source.ts';
+import {
+  applyPatches,
+  fetchSource,
+  sha256File,
+  verifyDependencyReachable,
+} from '../src/source.ts';
 import { createUpstream, git, tempDir } from './helpers/git.ts';
 
 async function errorCode(
@@ -154,5 +159,53 @@ describe('applyPatches', () => {
         ),
       ),
     ).toBe('INVALID_INPUT');
+  });
+});
+
+describe('verifyDependencyReachable', () => {
+  test('accepts a dependency commit on a branch of its repository', async () => {
+    const upstream = await createUpstream();
+    await verifyDependencyReachable({
+      repository: 'https://github.com/react/react',
+      commit: upstream.main,
+      directory: join(await tempDir(), 'dep'),
+      run: runProcess,
+      cloneUrl: () => upstream.url,
+    });
+  });
+
+  test('refuses a dependency commit that only another fork reaches', async () => {
+    const upstream = await createUpstream();
+    expect(
+      await errorCode(
+        verifyDependencyReachable({
+          repository: 'https://github.com/react/react',
+          commit: upstream.dangling,
+          directory: join(await tempDir(), 'dep'),
+          run: runProcess,
+          cloneUrl: () => upstream.url,
+        }),
+      ),
+    ).toBe('SOURCE_UNREACHABLE');
+  });
+
+  test('uses the repository itself as the URL by default and refuses a failed clone', async () => {
+    const upstream = await createUpstream();
+    await verifyDependencyReachable({
+      repository: upstream.url,
+      commit: upstream.main,
+      directory: join(await tempDir(), 'dep'),
+      run: runProcess,
+    });
+    expect(
+      await errorCode(
+        verifyDependencyReachable({
+          repository: 'file:///nonexistent/dependency',
+          commit: upstream.main,
+          directory: join(await tempDir(), 'dep'),
+          run: runProcess,
+        }),
+      ),
+    ).toBe('SOURCE_UNREACHABLE');
   });
 });
