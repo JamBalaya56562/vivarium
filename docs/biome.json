@@ -19,7 +19,8 @@
       "!**/public/spec",
       "!**/bun.lock",
       "!**/_generated",
-      "!**/test-results"
+      "!**/test-results",
+      "!**/scripts/__tests__/fixtures"
     ]
   },
   "formatter": {

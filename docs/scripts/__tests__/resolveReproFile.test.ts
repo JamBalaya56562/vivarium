@@ -1,5 +1,11 @@
-import { describe, expect, test } from 'bun:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { resolveReproFile } from '../repro-dev-middleware';
 
@@ -129,5 +135,49 @@ describe('resolveReproFile — single-segment project routes', () => {
 
   test('project landing single-segment (/repro/<project>/) → null (rspress handles it)', () => {
     expect(resolveReproFile(`${LAYER1_RECIPE.project}/`)).toBe(null);
+  });
+});
+
+describe('resolveReproFile — staged formicarium assets (P1, S8 candidate 2)', () => {
+  const recipeDir = path.join(LAYER1, 'biome-migrate-override-bracket-spacing');
+  const probe = `resolve-probe-${process.pid}.json`;
+  const staged = [
+    path.join(recipeDir, '_formicarium', probe),
+    path.join(recipeDir, 'guests', 'baseline', probe),
+  ];
+  const created: string[] = [];
+  beforeAll(() => {
+    for (const file of staged) {
+      for (const dir of [path.dirname(file), path.dirname(path.dirname(file))])
+        if (!existsSync(dir)) created.push(dir);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, '{}');
+    }
+  });
+  afterAll(() => {
+    for (const file of staged) rmSync(file, { force: true });
+    for (const dir of created.reverse())
+      rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('maps the recipe’s _formicarium/ and guests/ to the staged files', () => {
+    const url = 'biome/migrate-override-bracket-spacing';
+    expect(resolveReproFile(`${url}/_formicarium/${probe}`)).toBe(staged[0]);
+    expect(resolveReproFile(`${url}/guests/baseline/${probe}`)).toBe(staged[1]);
+  });
+
+  test('serves the same _formicarium file to the Japanese page', () => {
+    const url = 'biome/migrate-override-bracket-spacing';
+    expect(resolveReproFile(`${url}/_formicarium/${probe}`, 'ja')).toBe(
+      staged[0],
+    );
+  });
+
+  test('a missing staged file is null, not another recipe’s', () => {
+    expect(
+      resolveReproFile(
+        'biome/migrate-override-bracket-spacing/_formicarium/absent.json',
+      ),
+    ).toBe(null);
   });
 });

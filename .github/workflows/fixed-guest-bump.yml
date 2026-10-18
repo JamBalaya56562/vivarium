@@ -1,6 +1,6 @@
 name: fixed-guest-bump
 
-run-name: bump ${{ inputs.tool }} in ${{ inputs.recipe }}
+run-name: bump ${{ inputs.role }} in ${{ inputs.recipe }}
 
 on:
   workflow_dispatch:
@@ -9,9 +9,13 @@ on:
         description: Path of the recipe.json under src/layer1_wasm
         required: true
         type: string
-      tool:
+      role:
+        description: Which guest of the recipe to move
         required: true
-        type: string
+        type: choice
+        options:
+          - baseline
+          - fix
 
 permissions:
   contents: read
@@ -23,13 +27,13 @@ concurrency:
 
 jobs:
   bump:
-    name: bump ${{ inputs.tool }}
+    name: bump ${{ inputs.role }}
     if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       RECIPE: ${{ inputs.recipe }}
-      TOOL: ${{ inputs.tool }}
+      ROLE: ${{ inputs.role }}
     steps:
       - name: Refuse a recipe path outside src/layer1_wasm
         run: |
@@ -41,10 +45,10 @@ jobs:
             echo "recipe path must be src/layer1_wasm/.../recipe.json" >&2
             exit 1
           fi
-          if ! printf '%s' "${TOOL}" | grep -Eq '^[a-z0-9][a-z0-9._-]{0,63}$'; then
-            echo "tool must be a lowercase name" >&2
-            exit 1
-          fi
+          case "${ROLE}" in
+            baseline|fix) ;;
+            *) echo "role must be baseline or fix" >&2; exit 1 ;;
+          esac
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -72,14 +76,15 @@ jobs:
           bun run src/cli.ts bump \
             --workflow fixed-guest-bump.yml \
             --recipe "${GITHUB_WORKSPACE}/${RECIPE}" \
-            --tool "${TOOL}" \
+            --role "${ROLE}" \
             --work "${RUNNER_TEMP}/fgb-bump" > "${RUNNER_TEMP}/bump.json"
           changed=$(bun -e 'console.log((await Bun.file(process.argv[1]).json()).changed)' "${RUNNER_TEMP}/bump.json")
           echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
-          slug=$(printf '%s' "${RECIPE}" | tr '/.' '--')
-          echo "branch=fixed-guest-bump/${TOOL}-${slug}" >> "${GITHUB_OUTPUT}"
+          slug=$(basename "$(dirname "${RECIPE}")")
+          echo "branch=fixed-guest-bump/${slug}-${ROLE}" >> "${GITHUB_OUTPUT}"
           {
-            echo "Moves ${TOOL} in \`${RECIPE}\` to the tip of the branch its declaration names."
+            echo "Moves the ${ROLE} guest in \`${RECIPE}\` to the tip of the branch its declaration names."
+            echo "Only its commit moves; its accepted build stays until a person accepts the new build."
             echo
             echo "The commit was resolved with \`git ls-remote\` against the declared repository and"
             echo "checked to be reachable from that repository's own refs. PR pages were not used."
@@ -107,7 +112,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           branch: ${{ steps.bump.outputs.branch }}
-          title: 'fixed-guest: bump ${{ inputs.tool }} in ${{ inputs.recipe }}'
+          title: 'fixed-guest: bump ${{ inputs.role }} in ${{ inputs.recipe }}'
           body-path: ${{ runner.temp }}/body.md
 
       # bot-pull-request always enables auto-merge; a person merges these.

@@ -66,7 +66,7 @@ docs/site/_data/projects.json           ← add a row keyed by <project> (only i
 `index.html` is **generated** and gitignored:
 `docs/scripts/generate-repro-pages.ts` renders it from the layer's
 page template plus the recipe's `page.en.html`. Layer 1 has two —
-`page.template.html`, and `page.terminal.template.html` for terrarium
+`page.template.html`, and `page.terminal.template.html` for formicarium
 recipes — chosen by runtime in `src/layer1_wasm/scripts/page-templates.ts`;
 a change to the shared shell goes into both. You edit
 `page.en.html` — the slots only your recipe knows — and run
@@ -253,7 +253,7 @@ one. Copy the block from
      install the resolved wheel into a Pyodide Web Worker.
   2. **A second artefact built from a fixed dependency version** —
      e.g. a second `wasm32-wasip1` binary, a different runtime build,
-     or a second terrarium terminal on the fix's build.
+     or a second formicarium terminal on the fix's accepted build.
   3. **No candidate** — when no fixed build can be executed in the
      browser. Use `data-i18n="output.noFixCandidate"` plus the
      `vh-variant-output--note` class (which wraps prose instead of
@@ -321,8 +321,9 @@ go back to JSON:
   terminated. Its driver composes the pane text itself, using one
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
-- **A CLI runs as a terminal session.** `aube-1645` runs the aube CLI
-  in terrarium terminals, which are the panes themselves. The driver
+- **A CLI runs as a terminal session.**
+  `biome-migrate-override-bracket-spacing` runs Biome in formicarium
+  terminals, which are the panes themselves. The driver
   types each command and reads back the `output` and exit `code` that
   `terminal.run()` resolves with; that is the machine channel there,
   the way a named global is under Pyodide.
@@ -393,36 +394,52 @@ PRs 180 / 189 / 192.
   runs in the worker, so `generate-repro-pages.ts` emits no preload for
   that runtime at all; `preconnect` stays for everyone, since warming
   the connection is per-origin. `reproPreload.test.ts` holds both halves
-  of that: pyodide preloads nothing, and every other runtime preloads
-  only URLs its own loader imports at its own pinned version.
-- **A CLI bug runs in terrarium.** When the bug is in a command-line
-  tool that [terrarium](https://github.com/aletheia-works/terrarium)
-  builds, the recipe uses `expected_runtime: "terrarium"` and
-  `loadTerrarium` from `_shared/terrarium_loader.ts`, which imports
-  the native-capable Pages module at `TERRARIUM_MODULE_URL`, and
-  mounts one `<terrarium-terminal>` per build with terrarium's `ref`
-  names (`main`, `pr-1645`). The page renders from
+  of that: pyodide preloads nothing, formicarium preloads nothing (its
+  version comes from the staged `assets.json`), and every other runtime
+  preloads only URLs its own loader imports at its own pinned version.
+- **A CLI bug runs in formicarium.** When the bug is in a command-line
+  tool the fixed-guest builder (`tools/fixed-guest-builder`) builds, the
+  recipe uses `expected_runtime: "formicarium"` and declares its guests in
+  `recipe.json` `guests` (one `baseline`, at most one `fix`: `tool`,
+  lowercase `repository` from the builder's allowlist, 40-character
+  `commit`, `fixture`, an optional `reference.branch`). It declares no
+  `fix_candidate`. `commit` is what the builder builds and
+  `fixed-guest-bump` moves; `accepted` (`commit`, `versionOrName`,
+  `buildKey`, `elfSha256`, `buildInfoSha256` — all five or none) is the
+  build a person accepted from its `guest-<tool>-<buildKey>` Release, and
+  only `accepted` runs. Until every guest is accepted and
+  `src/layer1_wasm/formicarium.pin.json` pins the npm package, the recipe
+  is **pending**: `generate-recipes-index.ts` leaves it out of
+  `recipes.json`, so it is not on the site and not in the regression
+  suite, while its local page still renders for development.
+  `docs/scripts/stage-formicarium-assets.ts` stages the pinned package
+  (`_formicarium/`) and the accepted guests (`guests/<role>/`) into the
+  recipe directory after checking every digest; both are gitignored. Use
+  `--mode local` with a local tarball and guest directories to work on a
+  pending recipe. The page renders from
   `_shared/page.terminal.template.html` instead of the script template:
   two terminals of equal width, the baseline on the left and the fix
   candidate on the right, with no script column — the terminals are the
-  reproduction, and a visitor can type into them. Its slots are
+  reproduction, and a visitor can type into them once the recorded
+  commands finish. Its slots are
   `drawer-body`, `runtime-label`, `baseline-heading` and `fix-heading`;
   `src/layer1_wasm/scripts/page-templates.ts` maps the runtime to the
   template for the generator, the slot validator and the highlighter.
-  A baseline on `main` declares no `upstream` in `recipe.json`: there is
-  no release to pin, and terrarium rebuilds `main` daily on its own.
-  terrarium must already publish a build
-  for each ref; its `builds.json` lists them. For named source comparisons,
-  check `terminal.ready` against each full expected commit: a deployment
-  URL's cache query does not pin the module, and a branch selection can move.
-  Name a parent-commit baseline as such rather than labelling it current main.
-  The tool uses threads, so
-  the page has to be cross-origin isolated: the recipe ships
-  `coi-serviceworker.js` next to its page, the runtime shell loads it,
-  and `generate-repro-i18n.ts` points the Japanese page at a copy in its
-  own `/ja/` directory, because a service worker only controls pages
-  under its own path. `bundle-layer1-pages.sh` and `serve-repro.ts`
-  place and serve that copy.
+  The driver mounts one `<formicarium-terminal>` per guest with
+  `createFormicariumTerminal` from `_shared/formicarium_terminal_element.ts`;
+  each terminal checks its ELF and build-info against `accepted` before it
+  runs anything. The tool uses threads, so the page has to be cross-origin
+  isolated: the recipe ships `coi-serviceworker.js` (0.1.7, digest-pinned in
+  `docs/scripts/coi-serviceworker-pin.ts`) next to its page, and the runtime
+  shell sets `window.coi = { coepCredentialless: () => false }` before
+  loading it, because WebKit does not isolate the Worker under
+  `credentialless`; a cross-origin request without
+  `Cross-Origin-Resource-Policy` therefore fails on these pages.
+  `generate-repro-i18n.ts` points the Japanese page at a copy of the
+  service worker in its own `/ja/` directory, because a service worker
+  only controls pages under its own path, and the Worker must sit inside
+  that scope too, so `bundle-layer1-pages.sh` also copies the recipe's
+  `_formicarium/` there and `serve-repro.ts` serves exactly those paths.
 - **Declare the upstream release the baseline pins.** When the baseline
   runs a released upstream version (a PyPI wheel, a GitHub release)
   rather than the copy a runtime bundles, put it in `recipe.json` as
@@ -445,11 +462,9 @@ PRs 180 / 189 / 192.
   workflow opens a pull request when the branch head moves, rewriting
   the commit and its first eight characters in the recipe's
   non-Markdown files. Without a pin, a fork wheel is built from the
-  branch head at deploy time and nothing tracks it. A terrarium recipe
-  using `pr-<number>` pins neither: terrarium builds from the pull request's
-  head, and the envelope records the commit it reports. A named fork-branch
-  selection instead declares `fix_candidate` and verifies its compiled commit
-  before execution, so branch updates still receive a reviewed pin bump.
+  branch head at deploy time and nothing tracks it. A formicarium recipe
+  pins its fix as the `fix` guest instead, and `fixed-guest-bump` (started
+  by hand with the recipe and the role) moves that guest's `commit` only.
 - **Name the pull request that fixes the bug.** Put it in `recipe.json`
   as `upstream_pr` (a fork wheel already carries it in
   `fix-candidate.json`). The daily `retire-merged` workflow checks it

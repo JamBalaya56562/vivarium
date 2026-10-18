@@ -7,7 +7,11 @@ import { verifyReachable } from './source.ts';
 
 const BRANCH = /^(?!-)(?!.*\.\.)[A-Za-z0-9._/-]{1,255}$/;
 
+export const GUEST_ROLES = ['baseline', 'fix'] as const;
+export type GuestRole = (typeof GUEST_ROLES)[number];
+
 export interface BumpRecord {
+  role: GuestRole;
   tool: string;
   repository: string;
   branch: string;
@@ -57,20 +61,23 @@ export async function resolveBranch(options: {
 
 export async function bumpGuest(options: {
   recipePath: string;
-  tool: string;
+  role: string;
   allowlist: Allowlist;
   run: Runner;
   workDirectory: string;
   cloneUrl?: (repository: string) => string;
   now?: () => Date;
 }): Promise<BumpRecord | null> {
+  if (!(GUEST_ROLES as readonly string[]).includes(options.role))
+    fail('INVALID_INPUT', 'role must be baseline or fix');
+  const role = options.role as GuestRole;
   const text = await readFile(options.recipePath, 'utf8');
   const recipe = JSON.parse(text) as { guests?: Record<string, unknown>[] };
   if (!Array.isArray(recipe.guests))
     fail('INVALID_INPUT', 'recipe has no guests');
-  const matches = recipe.guests.filter((guest) => guest.tool === options.tool);
+  const matches = recipe.guests.filter((guest) => guest.role === role);
   if (matches.length !== 1)
-    fail('INVALID_INPUT', `recipe must declare ${options.tool} exactly once`);
+    fail('INVALID_INPUT', `recipe must declare the ${role} guest exactly once`);
   const guest = matches[0] as Record<string, unknown>;
   const declaration = validateDeclaration(guest, options.allowlist);
   const branch = declaration.reference?.branch;
@@ -94,18 +101,17 @@ export async function bumpGuest(options: {
     ...(options.cloneUrl === undefined ? {} : { cloneUrl: options.cloneUrl }),
   });
   const record: BumpRecord = {
-    tool: options.tool,
+    role,
+    tool: declaration.tool,
     repository: declaration.repository,
     branch,
     previousCommit: declaration.commit,
     commit,
     resolvedAt: (options.now ?? (() => new Date()))().toISOString(),
   };
+  // accepted stays: the site keeps running the accepted build until a person
+  // accepts the build of the new commit.
   guest.commit = commit;
-  // The pinned digests belong to the old commit; a fixed build of the new
-  // key supplies the new ones.
-  delete guest.elfSha256;
-  delete guest.buildInfoSha256;
   const temporary = `${options.recipePath}.bump-${process.pid}`;
   await writeFile(temporary, `${JSON.stringify(recipe, null, 2)}\n`, {
     flag: 'wx',

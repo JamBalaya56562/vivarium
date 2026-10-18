@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { parse } from 'node-html-parser';
 import { pageTemplateFor } from '../../src/layer1_wasm/scripts/page-templates';
 import { extractReproSource } from '../../src/layer1_wasm/scripts/repro-source';
+import { pendingRecipeEntries } from './generate-recipes-index';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
 const LAYER1_DIR = join(REPO_ROOT, 'src', 'layer1_wasm');
@@ -107,13 +108,16 @@ export function runtimeShells(): Record<string, RuntimeShell> {
       kicker: 'L1 · Rust wasm32-wasip1',
       verdictPending: 'Loading Rust wasm32-wasip1 artefact via WASI shim…',
     },
-    terrarium: {
-      preconnect: '    <script src="./coi-serviceworker.js"></script>',
-      preload: modulePreload(
-        loaderConstant('terrarium_loader.ts', 'TERRARIUM_MODULE_URL'),
-      ),
-      kicker: 'L1 · terrarium',
-      verdictPending: 'Loading terrarium…',
+    formicarium: {
+      preconnect: [
+        '    <script>',
+        '      window.coi = { coepCredentialless: () => false };',
+        '    </script>',
+        '    <script src="./coi-serviceworker.js"></script>',
+      ].join('\n'),
+      preload: '',
+      kicker: 'L1 · formicarium',
+      verdictPending: 'Loading formicarium…',
     },
   };
 }
@@ -251,6 +255,8 @@ const recipeIndex = JSON.parse(
   readFileSync(join(SITE_API_DIR, 'recipes.json'), 'utf-8'),
 ) as { recipes: RecipeIndexEntry[] };
 const bySlug = new Map(recipeIndex.recipes.map((r) => [r.slug, r]));
+for (const [slug, entry] of await pendingRecipeEntries())
+  bySlug.set(slug, entry);
 
 const projects = (
   JSON.parse(readFileSync(join(SITE_DATA_DIR, 'projects.json'), 'utf-8')) as {

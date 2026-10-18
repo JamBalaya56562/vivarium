@@ -1534,7 +1534,7 @@ body.vh-drawer-open:has(#path-a-mount) {
   overflow-wrap: anywhere;
 }
 
-.vh-variant-output:has(> terrarium-terminal) {
+.vh-variant-output:has(> formicarium-terminal) {
   padding: 0;
   overflow: hidden;
 }
@@ -1555,8 +1555,39 @@ body.vh-drawer-open:has(#path-a-mount) {
   border: 1px solid var(--vh-terminal-border);
 }
 
-.vh-main__cols--terminals terrarium-terminal {
+.vh-main__cols--terminals formicarium-terminal {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+}
+
+.vh-terminal__output {
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.vh-terminal__status,
+.vh-terminal__progress,
+.vh-terminal__notice {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+}
+
+.vh-terminal__progress:empty,
+.vh-terminal__notice:empty {
+  display: none;
+}
+
+.vh-terminal__input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 .vh-main__col--output.vh-output-multi {

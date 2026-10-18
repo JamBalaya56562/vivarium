@@ -59,8 +59,8 @@
       "display_name": "aube",
       "tagline": "A Node.js package manager written in Rust.",
       "tagline_ja": "Rust で書かれた Node.js のパッケージマネージャ。",
-      "description": "The aube CLI compiled to WebAssembly by terrarium, run as a terminal session against a fixture project. Each page runs aube's latest main next to the fixing pull request, so the verdict flips once the fix lands on main.",
-      "description_ja": "terrarium が WebAssembly にコンパイルした aube CLI を、フィクスチャのプロジェクトに対するターミナルのセッションとして動かす。各ページは aube の最新の main と、それを直す pull request を並べて実行するため、fix が main に入ると verdict が反転する。",
+      "description": "CLI reproductions run fixed static Linux builds of aube in formicarium, as terminal sessions against a fixture project, with the baseline and the fix side by side.",
+      "description_ja": "aube の固定した静的 Linux ビルドを formicarium で、fixture のプロジェクトに対するターミナルのセッションとして動かす。baseline と fix を並べて実行する。",
       "homepage": "https://aube.sh/",
       "github": "https://github.com/aubepkg/aube"
     },
@@ -104,8 +104,8 @@
       "display_name": "Biome",
       "tagline": "A toolchain for formatting and linting web projects.",
       "tagline_ja": "Web プロジェクトのフォーマットと lint を行うツールチェーン。",
-      "description": "Side-by-side CLI reproductions use unmodified Biome source builds in terrarium, with the same fixture and exact source commits recorded for both terminals.",
-      "description_ja": "terrarium で変更を加えていない Biome のソースビルドを並べて実行する。両方のターミナルで同じ fixture を使い、正確なソースコミットを記録する。",
+      "description": "Side-by-side CLI reproductions run accepted static builds of unmodified Biome commits in formicarium, with the same fixture and the exact source commits recorded for both terminals.",
+      "description_ja": "変更を加えていない Biome のコミットの受入済みの静的ビルドを formicarium で並べて実行する。両方のターミナルで同じ fixture を使い、正確なソースコミットを記録する。",
       "homepage": "https://biomejs.dev/",
       "github": "https://github.com/biomejs/biome"
     }

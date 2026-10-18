@@ -29,6 +29,7 @@
     "node_modules",
     "**/*.mjs",
     "**/*.js",
+    "**/*.test.ts",
     "scripts/**",
     "tests/**",
     "playwright.config.ts"

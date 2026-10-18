@@ -167,7 +167,7 @@ the gallery are:
 | `"ruby.wasm"` | Ruby over WebAssembly |
 | `"php-wasm"` | PHP over WebAssembly |
 | `"rust-wasi"` | Rust compiled to `wasm32-wasip1` |
-| `"terrarium"` | a CLI compiled to WebAssembly by [terrarium](https://github.com/aletheia-works/terrarium), driven through its terminal |
+| `"formicarium"` | a static Linux build of a CLI run by [formicarium](https://www.npmjs.com/package/@aletheia-works/formicarium) in a Worker of the page, driven through its terminal; `runtime.version` is the pinned npm version |
 | `"docker-snapshot"` | Layer 2 / Layer 3 page rendering a CI- or maintainer-captured `verdict.json` |
 
 External reproductions are free to add new values; downstream
@@ -315,6 +315,7 @@ pages stay conformant unchanged.
 | 1 | 2026-04-28 (locked) | Initial published surface: `<meta>`, `#verdict[data-verdict]`, JS globals, `VivariumResultV1` envelope, Layer 2/3 `verdict.json` snapshot. |
 | 2 | 2026-04-30 | Optional `#evidence` DOM container with `[data-evidence]` children (`stdout`, `stderr`, `exit-code`, `duration-ms`) and matching `__VIVARIUM_RESULT__.evidence` envelope field. Layer 2/3 lift renames `verdict.json#stderr_tail` → `evidence.stderr` at the lift boundary; `verdict.schema.json` is unchanged. |
 | 3 | 2026-05-05 | Verdict enum values renamed: `"pass"` → `"reproduced"`, `"fail"` → `"unreproduced"` (`"pending"` unchanged). The contract version literal stays `v1`. `verdict.schema.json` enum is updated; old snapshots that still carry `"pass"` / `"fail"` no longer validate. CSS class names on `#verdict` and the `data-verdict` attribute follow the same rename. |
+| 4 | 2026-10-19 | The `runtime.name` table lists `"formicarium"`. `"terrarium"` is no longer a value in use: no recipe ran on it when it was retired, and no compatibility shim keeps it. `runtime.name` stays free-form, so the surface and the version literal are unchanged. |
 
 ## References
 

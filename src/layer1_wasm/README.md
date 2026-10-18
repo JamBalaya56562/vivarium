@@ -31,7 +31,7 @@
 | Python   | [Pyodide](https://pyodide.org)  | Active |
 | SQLite   | Pyodide `sqlite3`               | Active |
 | Rust     | `wasm32-wasip1`                 | Active |
-| CLI      | [terrarium](https://github.com/aletheia-works/terrarium) | Active |
+| CLI      | [formicarium](https://www.npmjs.com/package/@aletheia-works/formicarium) | Active |
 | Ruby     | [Ruby.wasm](https://github.com/ruby/ruby.wasm) | Active |
 | PHP      | [php-wasm](https://github.com/WordPress/wordpress-playground) | Active |
 
@@ -71,7 +71,7 @@ Vivarium reproduces, it does not assert.
 The markup is shared: it lives once in
 [`_shared/page.template.html`](./_shared/page.template.html), and each
 recipe supplies only its own slots in `page.en.html`. A CLI recipe run
-in terrarium uses
+in formicarium uses
 [`_shared/page.terminal.template.html`](./_shared/page.terminal.template.html)
 instead: two terminals of equal width, the baseline on the left and the
 fix candidate on the right, with no script column.
@@ -84,13 +84,15 @@ How the pane gets filled is not prescribed. The following shapes are supported:
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
 | Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | none today |
-| Second terminal | a second `<terrarium-terminal>` running a named fix build, with its full source commit checked before execution | none today |
+| Second terminal | a second `<formicarium-terminal>` running the accepted fix guest declared in `recipe.json` `guests`, its ELF and build-info checked against `accepted` before execution | `biome-migrate-override-bracket-spacing` (pending) |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`
 workflow opens a pull request when the branch head moves past the pin.
-Terrarium candidates follow the latest published build of that branch, so an
-unbuilt branch commit cannot become the recipe's expected guest.
+A formicarium guest moves by hand instead: `fixed-guest-bump` moves only its
+`commit`, and the page keeps running the `accepted` build until a person
+accepts the build of the new commit, so an unbuilt commit cannot become the
+guest the page runs.
 
 A recipe whose fixing pull request is known retires itself: the daily
 `retire-merged` workflow checks `upstream_pr` (in `recipe.json`, or in

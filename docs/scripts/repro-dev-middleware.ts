@@ -2,7 +2,6 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
 import { REPO_ROOT, SITE_BASE } from './site-paths';
-import { proxyTerrarium } from './terrarium-proxy';
 
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
@@ -104,17 +103,8 @@ export function setupReproDevMiddleware(
   server: MiddlewareHost | null | undefined,
 ): void {
   if (server == null) return;
-  server.middlewares.use(async (req, res, next) => {
+  server.middlewares.use((req, res, next) => {
     const url = req.url ?? '';
-    const proxied = await proxyTerrarium(new URL(url, 'http://localhost'));
-    if (proxied) {
-      res.statusCode = proxied.status;
-      proxied.headers.forEach((value, key) => {
-        res.setHeader(key, value);
-      });
-      res.end(Buffer.from(await proxied.arrayBuffer()));
-      return;
-    }
     const match = url.match(REPRO_URL_RE);
     if (!match) return next();
     const lang = match[1] === 'ja' ? 'ja' : 'en';

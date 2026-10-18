@@ -136,6 +136,31 @@ describe('builder workflows', () => {
     );
   });
 
+  test('bump one guest by role and name its branch and title by role', async () => {
+    const { flow, text } = await load('fixed-guest-bump.yml');
+    const inputs = (
+      flow.on.workflow_dispatch as {
+        inputs: Record<string, { type: string; options?: string[] }>;
+      }
+    ).inputs;
+    expect(Object.keys(inputs).sort()).toEqual(['recipe', 'role']);
+    expect(inputs.role).toMatchObject({
+      type: 'choice',
+      options: ['baseline', 'fix'],
+    });
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+    expect(text).toContain('--role "${ROLE}"');
+    expect(text).toContain(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+      'echo "branch=fixed-guest-bump/${slug}-${ROLE}" >> "${GITHUB_OUTPUT}"',
+    );
+    expect(text).toContain(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
+      "title: 'fixed-guest: bump ${{ inputs.role }} in ${{ inputs.recipe }}'",
+    );
+    expect(text).not.toContain('inputs.tool');
+  });
+
   test('open bump PRs with the bot and leave the merge to a person', async () => {
     const { flow } = await load('fixed-guest-bump.yml');
     const steps = Object.values(flow.jobs)[0]?.steps ?? [];

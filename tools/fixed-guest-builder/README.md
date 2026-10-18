@@ -61,11 +61,15 @@ verifies it; a different ELF for the same key is reported as
 
 ## Moving a guest to a newer commit
 
-Start **fixed-guest-bump** with the recipe path and tool. The guest must
-name a branch in `reference.branch`. The branch tip is read with
-`git ls-remote`; PR pages are never used. The run opens a pull request with
-auto-merge turned off, so a person merges it, and the fixed build of the new
-key runs separately.
+Start **fixed-guest-bump** with the recipe path and the guest's role
+(`baseline` or `fix`). The guest must name a branch in `reference.branch`:
+`main` of the upstream for the baseline, the fix branch of the fork for the
+fix. The branch tip is read with `git ls-remote`; PR pages are never used.
+Only the guest's `commit` moves; its `accepted` build stays, so the site keeps
+running it until a person accepts the build of the new commit. The run opens
+a pull request on `fixed-guest-bump/<recipe>-<role>` with auto-merge turned
+off, so a person merges it, and the fixed build of the new key runs
+separately.
 
 ## Changing what may be built
 

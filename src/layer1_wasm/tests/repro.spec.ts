@@ -13,7 +13,7 @@ const SUPPORTED_RUNTIMES = [
   "ruby.wasm",
   "php-wasm",
   "rust-wasi",
-  "terrarium",
+  "formicarium",
   "docker-snapshot",
 ] as const;
 
@@ -203,7 +203,7 @@ for (const c of cases) {
         await fixPane.evaluate(
           (el) =>
             el.querySelector<HTMLElement & { transcript: string }>(
-              "terrarium-terminal",
+              "formicarium-terminal",
             )?.transcript ??
             el.textContent ??
             "",

@@ -64,6 +64,8 @@ src/layer2_docker/**/index.html
 !src/layer1_wasm/_assets/
 !src/layer1_wasm/_assets/**
 !src/layer1_wasm/*/coi-serviceworker.js
+src/layer1_wasm/*/_formicarium/
+src/layer1_wasm/*/guests/
 
 src/layer1_wasm/**/wheels/*.whl
 src/layer1_wasm/**/wheels/manifest.json

@@ -11,8 +11,10 @@ const LOADER_FOR_RUNTIME: Record<string, string> = {
   'php-wasm': 'php_loader.ts',
   'ruby.wasm': 'ruby_loader.ts',
   'rust-wasi': 'rust_loader.ts',
-  terrarium: 'terrarium_loader.ts',
+  formicarium: 'formicarium_terminal.ts',
 };
+
+const RUNTIME_LOADED = new Set(['pyodide', 'formicarium']);
 
 function resolvedModuleUrls(loaderFile: string): string[] {
   const source = readFileSync(path.join(SHARED_DIR, loaderFile), 'utf-8');
@@ -70,9 +72,22 @@ test('pyodide preloads nothing, because it runs in a worker', () => {
   expect(shell?.preload).toBe('');
 });
 
-test('every runtime that is not pyodide preloads at least one module', () => {
+test('formicarium preloads nothing, because its version comes from the staged assets.json', () => {
+  expect(runtimeShells().formicarium?.preload).toBe('');
+});
+
+test('formicarium pins require-corp before coi-serviceworker loads', () => {
+  const head = runtimeShells().formicarium?.preconnect ?? '';
+  const coi = head.indexOf('window.coi = { coepCredentialless: () => false };');
+  expect(coi).toBeGreaterThan(-1);
+  expect(
+    head.indexOf('<script src="./coi-serviceworker.js"></script>'),
+  ).toBeGreaterThan(coi);
+});
+
+test('every runtime loaded in the page preloads at least one module', () => {
   for (const [runtime, shell] of Object.entries(runtimeShells())) {
-    if (runtime === 'pyodide') continue;
+    if (RUNTIME_LOADED.has(runtime)) continue;
     expect(modulePreloadHrefs(shell.preload).length).toBeGreaterThan(0);
   }
 });

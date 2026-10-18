@@ -35,6 +35,11 @@ for recipe in src/layer1_wasm/*/; do
     '.recipes[] | select(.slug == $s) | .page_url' \
     docs/site/public/api/recipes.json)"
   if [ -z "$page_url" ] || [ "$page_url" = "null" ]; then
+    if [ -f "${recipe}recipe.json" ] &&
+      [ "$(jq -r '.expected_runtime // ""' "${recipe}recipe.json")" = "formicarium" ]; then
+      echo "Skipping pending formicarium recipe ${slug} (not in the index)"
+      continue
+    fi
     echo "ERROR: ${slug} not found in docs/site/public/api/recipes.json"
     exit 1
   fi
@@ -49,6 +54,10 @@ for recipe in src/layer1_wasm/*/; do
     cp "${recipe}index.ja.html" "$ja_dest/$rel/index.html"
     if [ -f "${recipe}coi-serviceworker.js" ]; then
       cp "${recipe}coi-serviceworker.js" "$ja_dest/$rel/"
+    fi
+    if [ -d "${recipe}_formicarium" ]; then
+      echo "Bundling JA formicarium assets: ${slug} → ${ja_dest}/${rel}/_formicarium/"
+      cp -R "${recipe}_formicarium" "$ja_dest/$rel/_formicarium"
     fi
     rm -f "$dest/$rel/index.ja.html"
   fi

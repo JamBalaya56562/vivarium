@@ -1,0 +1,10 @@
+<template data-slot="upstream-url">https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-override-bracket-spacing</template>
+<template data-slot="baseline-heading">Baseline · biomejs/biome main</template>
+<template data-slot="fix-heading">Fix · JamBalaya56562/biome</template>
+<template data-slot="runtime-label">formicarium · native Biome in WebAssembly</template>
+<template data-slot="drawer-body">
+  <p data-i18n="drawer.body.p1">A Prettier configuration that sets <code>bracketSpacing: false</code> only for <code>*.js</code> files is migrated into a Biome override for <code>*.js</code>. The baseline drops the option, so the override no longer turns bracket spacing off.</p>
+  <p data-i18n="drawer.body.p2">Both terminals start from the same fixture: <code>.prettierrc</code> holds the override and <code>biome.json</code> holds <code>{}</code>. Both run <code>cat .prettierrc</code>, <code>cat biome.json</code>, <code>biome migrate prettier --write</code>, then <code>cat biome.json</code>.</p>
+  <p data-i18n="drawer.body.p3">The page reads the migrated override for <code>*.js</code>: <code>bracketSpacing: false</code> in its <code>formatter</code> or <code>javascript.formatter</code> is corrected, neither is reproduced. The verdict reports only the baseline; the fix is checked separately. After the recorded commands you can type your own.</p>
+  <p data-i18n="drawer.body.p4">formicarium runs the accepted static musl builds of both commits in this tab, after checking each ELF and its build-info against the accepted digests.</p>
+</template>

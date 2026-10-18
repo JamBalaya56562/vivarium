@@ -211,7 +211,7 @@ async function command(
       await mkdir(work, { recursive: true });
       const record = await bumpGuest({
         recipePath: required(flags, 'recipe'),
-        tool: required(flags, 'tool'),
+        role: required(flags, 'role'),
         allowlist: parseAllowlist(
           await readJson(join(PACKAGE_ROOT, 'allowlist.json')),
         ),

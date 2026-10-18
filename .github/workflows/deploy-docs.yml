@@ -34,6 +34,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # for `lastUpdated` timestamps
+          persist-credentials: false
 
       - name: Setup mise (bun, uv, jq, jsonschema)
         uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
@@ -57,6 +58,11 @@ jobs:
       - name: Regenerate Japanese reproduction pages (mise run repro:i18n)
         working-directory: ${{ github.workspace }}
         run: mise run repro:i18n
+
+      - name: Stage formicarium assets (pin mode)
+        working-directory: ${{ github.workspace }}
+        timeout-minutes: 7
+        run: bun docs/scripts/stage-formicarium-assets.ts --mode pin
 
       - name: Drop Rust build artefacts before bundling
         working-directory: ${{ github.workspace }}
@@ -98,6 +104,10 @@ jobs:
       - name: Bundle Layer 2 reproductions alongside docs
         working-directory: ${{ github.workspace }}
         run: bash scripts/bundle-layer2-pages.sh
+
+      - name: Check the site size, coi-serviceworker copies and formicarium bundles
+        working-directory: ${{ github.workspace }}
+        run: bun docs/scripts/stage-formicarium-assets.ts --mode check-site --site docs/doc_build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

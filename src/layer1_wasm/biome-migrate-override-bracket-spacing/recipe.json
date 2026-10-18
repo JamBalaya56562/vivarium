@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "language": "shell",
+  "symptom": "migration-option-dropped",
+  "severity": "bug",
+  "tags": ["biome", "prettier", "migration", "formatter", "overrides"],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "formicarium",
+  "guests": [
+    {
+      "role": "baseline",
+      "tool": "biome",
+      "repository": "https://github.com/biomejs/biome",
+      "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+      "fixture": "biome-migrate-prettier-override",
+      "reference": { "branch": "main" }
+    },
+    {
+      "role": "fix",
+      "tool": "biome",
+      "repository": "https://github.com/jambalaya56562/biome",
+      "commit": "a5bd0ce883a22980be20dfc87ba62006a43c3de8",
+      "fixture": "biome-migrate-prettier-override",
+      "reference": { "branch": "fix/migrate-prettier-override-bracket-spacing" }
+    }
+  ]
+}

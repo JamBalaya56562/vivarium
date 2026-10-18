@@ -1,11 +1,281 @@
 #!/usr/bin/env bun
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import {
+  type Allowlist,
+  parseAllowlist,
+  validateDeclaration,
+} from '../../tools/fixed-guest-builder/src/declaration.ts';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
 const RECIPE_META_FILE = 'recipe.json';
+
+export const FORMICARIUM_RUNTIME = 'formicarium';
+export const FORMICARIUM_PIN_PATH = join(
+  REPO_ROOT,
+  'src',
+  'layer1_wasm',
+  'formicarium.pin.json',
+);
+export const GUEST_ALLOWLIST_PATH = join(
+  REPO_ROOT,
+  'tools',
+  'fixed-guest-builder',
+  'allowlist.json',
+);
+
+export type GuestRole = 'baseline' | 'fix';
+
+export interface AcceptedGuest {
+  commit: string;
+  versionOrName: string;
+  buildKey: string;
+  elfSha256: string;
+  buildInfoSha256: string;
+}
+
+export interface RecipeGuest {
+  role: GuestRole;
+  tool: string;
+  repository: string;
+  commit: string;
+  fixture: string;
+  reference?: { branch?: string; pr?: string };
+  accepted?: AcceptedGuest;
+}
+
+export type PendingReason = 'accepted-missing' | 'pin-missing';
+
+export type RecipeState =
+  | { state: 'active' }
+  | { state: 'pending'; reasons: PendingReason[] };
+
+export class RecipeDeclarationError extends Error {
+  constructor(slug: string, message: string) {
+    super(`${slug}: ${message}`);
+    this.name = 'RecipeDeclarationError';
+  }
+}
+
+const GUEST_ROLES: readonly GuestRole[] = ['baseline', 'fix'];
+const GUEST_FIELDS = new Set([
+  'role',
+  'tool',
+  'repository',
+  'commit',
+  'fixture',
+  'reference',
+  'accepted',
+]);
+const ACCEPTED_FIELDS = [
+  'commit',
+  'versionOrName',
+  'buildKey',
+  'elfSha256',
+  'buildInfoSha256',
+] as const;
+const COMMIT = /^[0-9a-f]{40}$/;
+const SHA256 = /^[0-9a-f]{64}$/;
+const VERSION_OR_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const MAX_VERSION_OR_NAME_BYTES = 128;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function validateAccepted(
+  slug: string,
+  label: string,
+  value: unknown,
+): AcceptedGuest {
+  if (!isRecord(value))
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.accepted must be an object`,
+    );
+  const keys = Object.keys(value);
+  const missing = ACCEPTED_FIELDS.filter((field) => !(field in value));
+  if (missing.length > 0)
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.accepted is partial (missing ${missing.join(', ')}); write all five fields or none`,
+    );
+  const unknown = keys.filter(
+    (key) => !(ACCEPTED_FIELDS as readonly string[]).includes(key),
+  );
+  if (unknown.length > 0)
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.accepted has unknown fields: ${unknown.join(', ')}`,
+    );
+  const { commit, versionOrName, buildKey, elfSha256, buildInfoSha256 } = value;
+  if (typeof commit !== 'string' || !COMMIT.test(commit))
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.accepted.commit must be 40 lowercase hexadecimal characters`,
+    );
+  if (
+    typeof versionOrName !== 'string' ||
+    !VERSION_OR_NAME.test(versionOrName) ||
+    new TextEncoder().encode(versionOrName).length > MAX_VERSION_OR_NAME_BYTES
+  )
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.accepted.versionOrName is not a valid identifier`,
+    );
+  for (const [field, digest] of [
+    ['buildKey', buildKey],
+    ['elfSha256', elfSha256],
+    ['buildInfoSha256', buildInfoSha256],
+  ] as const) {
+    if (typeof digest !== 'string' || !SHA256.test(digest))
+      throw new RecipeDeclarationError(
+        slug,
+        `${label}.accepted.${field} must be 64 lowercase hexadecimal characters`,
+      );
+  }
+  return {
+    commit,
+    versionOrName,
+    buildKey: buildKey as string,
+    elfSha256: elfSha256 as string,
+    buildInfoSha256: buildInfoSha256 as string,
+  };
+}
+
+function validateGuest(
+  slug: string,
+  index: number,
+  value: unknown,
+  allowlist: Allowlist,
+): RecipeGuest {
+  const label = `guests[${index}]`;
+  if (!isRecord(value))
+    throw new RecipeDeclarationError(slug, `${label} must be an object`);
+  const unknown = Object.keys(value).filter((key) => !GUEST_FIELDS.has(key));
+  if (unknown.length > 0)
+    throw new RecipeDeclarationError(
+      slug,
+      `${label} has unknown fields: ${unknown.join(', ')}`,
+    );
+  const role = value.role;
+  if (typeof role !== 'string' || !GUEST_ROLES.includes(role as GuestRole))
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.role must be baseline or fix`,
+    );
+  let declaration: ReturnType<typeof validateDeclaration>;
+  try {
+    declaration = validateDeclaration(value, allowlist);
+  } catch (error) {
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (declaration.repository !== value.repository)
+    throw new RecipeDeclarationError(
+      slug,
+      `${label}.repository must be written in its normalized form ${declaration.repository}`,
+    );
+  const guest: RecipeGuest = {
+    role: role as GuestRole,
+    tool: declaration.tool,
+    repository: declaration.repository,
+    commit: declaration.commit,
+    fixture: declaration.fixture,
+  };
+  if (declaration.reference) guest.reference = declaration.reference;
+  if (value.accepted !== undefined)
+    guest.accepted = validateAccepted(slug, label, value.accepted);
+  return guest;
+}
+
+export function validateRecipeGuests(
+  slug: string,
+  meta: Record<string, unknown>,
+  allowlist: Allowlist,
+): RecipeGuest[] | undefined {
+  const isFormicarium = meta.expected_runtime === FORMICARIUM_RUNTIME;
+  if (!isFormicarium) {
+    if (meta.guests !== undefined)
+      throw new RecipeDeclarationError(
+        slug,
+        `guests is only for expected_runtime "${FORMICARIUM_RUNTIME}"`,
+      );
+    return undefined;
+  }
+  if (meta.fix_candidate !== undefined)
+    throw new RecipeDeclarationError(
+      slug,
+      `a "${FORMICARIUM_RUNTIME}" recipe declares its fix in guests, not fix_candidate`,
+    );
+  if (!Array.isArray(meta.guests) || meta.guests.length === 0)
+    throw new RecipeDeclarationError(
+      slug,
+      `a "${FORMICARIUM_RUNTIME}" recipe needs a non-empty guests array`,
+    );
+  const guests = meta.guests.map((guest, index) =>
+    validateGuest(slug, index, guest, allowlist),
+  );
+  for (const role of GUEST_ROLES) {
+    const count = guests.filter((guest) => guest.role === role).length;
+    if (count > 1)
+      throw new RecipeDeclarationError(
+        slug,
+        `guests declares role ${role} ${count} times`,
+      );
+  }
+  if (!guests.some((guest) => guest.role === 'baseline'))
+    throw new RecipeDeclarationError(slug, 'guests has no baseline');
+  return guests;
+}
+
+export function recipeState(
+  guests: readonly RecipeGuest[],
+  hasPin: boolean,
+): RecipeState {
+  const reasons: PendingReason[] = [];
+  if (guests.some((guest) => guest.accepted === undefined))
+    reasons.push('accepted-missing');
+  if (!hasPin) reasons.push('pin-missing');
+  return reasons.length === 0
+    ? { state: 'active' }
+    : { state: 'pending', reasons };
+}
+
+export function loadGuestAllowlist(path = GUEST_ALLOWLIST_PATH): Allowlist {
+  return parseAllowlist(JSON.parse(readFileSync(path, 'utf-8')));
+}
+
+export interface FormicariumRecipe {
+  slug: string;
+  dir: string;
+  guests: RecipeGuest[];
+  state: RecipeState;
+}
+
+export function readFormicariumRecipe(
+  slug: string,
+  recipeDir: string,
+  allowlist: Allowlist,
+  hasPin: boolean,
+): FormicariumRecipe | undefined {
+  const path = join(recipeDir, RECIPE_META_FILE);
+  if (!existsSync(path)) return undefined;
+  let meta: unknown;
+  try {
+    meta = JSON.parse(readFileSync(path, 'utf-8'));
+  } catch {
+    return undefined;
+  }
+  if (!isRecord(meta)) return undefined;
+  const guests = validateRecipeGuests(slug, meta, allowlist);
+  if (guests === undefined) return undefined;
+  return { slug, dir: recipeDir, guests, state: recipeState(guests, hasPin) };
+}
 
 const OWNER = process.env.GITHUB_REPOSITORY_OWNER ?? 'aletheia-works';
 const REPO_NAME = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vivarium';
@@ -36,7 +306,7 @@ interface RoundtripState {
   notes?: string[];
 }
 
-interface RecipeEntry {
+export interface RecipeEntry {
   slug: string;
   layer: Layer;
   project: string;
@@ -362,15 +632,53 @@ async function buildEntry(
   return entry;
 }
 
+export async function pendingRecipeEntries(
+  repoRoot = REPO_ROOT,
+): Promise<Map<string, RecipeEntry>> {
+  const allowlist = loadGuestAllowlist();
+  const hasPin = existsSync(FORMICARIUM_PIN_PATH);
+  const entries = new Map<string, RecipeEntry>();
+  for (const { layer, dir } of LAYERS) {
+    const layerDir = join(repoRoot, dir);
+    if (!existsSync(layerDir)) continue;
+    for (const slug of await listRecipeSlugs(layerDir)) {
+      const recipeDir = join(layerDir, slug);
+      const recipe = readFormicariumRecipe(slug, recipeDir, allowlist, hasPin);
+      if (recipe?.state.state === 'pending')
+        entries.set(slug, await buildEntry(layer, slug, recipeDir));
+    }
+  }
+  return entries;
+}
+
 async function main(): Promise<void> {
   const projectsOverlay = await loadProjectsOverlay();
+  const allowlist = loadGuestAllowlist();
+  const hasPin = existsSync(FORMICARIUM_PIN_PATH);
   const recipes: RecipeEntry[] = [];
+  const pending: string[] = [];
   for (const { layer, dir } of LAYERS) {
     const layerDir = join(REPO_ROOT, dir);
     const slugs = await listRecipeSlugs(layerDir);
     for (const slug of slugs) {
-      recipes.push(await buildEntry(layer, slug, join(layerDir, slug)));
+      const recipeDir = join(layerDir, slug);
+      const formicarium = readFormicariumRecipe(
+        slug,
+        recipeDir,
+        allowlist,
+        hasPin,
+      );
+      if (formicarium?.state.state === 'pending') {
+        pending.push(`${slug} (${formicarium.state.reasons.join(', ')})`);
+        continue;
+      }
+      recipes.push(await buildEntry(layer, slug, recipeDir));
     }
+  }
+  if (pending.length > 0) {
+    console.error(
+      `PENDING: ${pending.length} recipe(s) left out of the index, the site and the regression suite: ${pending.join(', ')}`,
+    );
   }
   const missingMeta = recipes
     .filter((r) => r.language === 'unknown')
@@ -428,7 +736,9 @@ async function main(): Promise<void> {
   console.error(`Wrote ${projects.length} project(s) to ${projectsPath}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

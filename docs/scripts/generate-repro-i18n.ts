@@ -3,6 +3,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type HTMLElement, NodeType, parse } from 'node-html-parser';
+import { pendingRecipeEntries } from './generate-recipes-index';
 import { REPO_ROOT, SITE_API_DIR } from './site-paths';
 
 const LAYER_DIRS = ['layer1_wasm', 'layer2_docker'] as const;
@@ -367,16 +368,19 @@ function translateRecipe(
   return out;
 }
 
-function loadRecipeIndex(): Map<string, RecipeIndexEntry> {
+async function loadRecipeIndex(): Promise<Map<string, RecipeIndexEntry>> {
   const p = join(SITE_API_DIR, 'recipes.json');
   const parsed = JSON.parse(readFileSync(p, 'utf-8')) as {
     recipes: RecipeIndexEntry[];
   };
-  return new Map(parsed.recipes.map((r) => [r.slug, r]));
+  const index = new Map(parsed.recipes.map((r) => [r.slug, r]));
+  for (const [slug, entry] of await pendingRecipeEntries())
+    index.set(slug, entry);
+  return index;
 }
 
-function main(): void {
-  const index = loadRecipeIndex();
+async function main(): Promise<void> {
+  const index = await loadRecipeIndex();
   let written = 0;
   let skipped = 0;
   void skipped;
@@ -431,6 +435,6 @@ function main(): void {
   console.error(`Wrote ${written} Japanese reproduction page(s).`);
 }
 
-if (import.meta.main) main();
+if (import.meta.main) await main();
 
 export { jaPagePath, pagePath, translateRecipe };

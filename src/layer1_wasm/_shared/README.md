@@ -33,12 +33,13 @@ and runner — `bun install`, `bun run build`, `bun run typecheck`.
 | `php_loader.ts` | `php_loader.js` | `loadVivariumPhp()` — php-wasm bootstrap. |
 | `ruby_loader.ts` | `ruby_loader.js` | `loadVivariumRuby()` — builds the WASI shim, installs a `consolePrinter` that captures stdout, and instantiates the Ruby VM. |
 | `rust_loader.ts` | `rust_loader.js` | `loadVivariumRust()` — WASI shim + a `wasm32-wasip1` artefact, one fresh instance per `run()`. |
-| `terrarium_loader.ts` | `terrarium_loader.js` | `loadTerrarium()` — imports the native-capable Terrarium Pages module at `TERRARIUM_MODULE_URL` and creates `<terrarium-terminal>` elements for a tool and a build. |
+| `formicarium_terminal.ts` | `formicarium_terminal.js` | DOM-free terminal logic for formicarium recipes: `waitForIsolation()`, `loadFormicarium()` (reads the page's staged `_formicarium/assets.json` and imports formicarium's browser modules from the same origin at run time), and `TerminalController` (fetches the guest's ELF, build-info and catalog, checks them against `accepted`, registers the guest, runs commands one at a time, keeps a 1 MiB / 10000-line transcript). Declares only the formicarium API it uses. |
+| `formicarium_terminal_element.ts` | `formicarium_terminal_element.js` | `createFormicariumTerminal()` — the `<formicarium-terminal>` element (`ready`, `run`, `transcript`, `enableInput`) that renders a `TerminalController` with `textContent` only and disposes it when removed. |
 | `fix-candidate.ts` | `fix-candidate.js` | `fetchWheelManifest()` / `resolveFixCandidateSpec()` + `WheelManifest` interface — resolves the CI-built wheel a recipe renders beside its baseline; installing it is the recipe's own job. `dateutil-1478` is the only consumer — `lark-1585` fetches and resolves its manifest inline instead. |
 | `runner.ts` | `runner.js` | `enableRunner()` — Edit/Run/Reset buttons that hand the (possibly edited) source back to the recipe's `captureRun`. |
 | `path_a.ts` | `path_a.js` | `PathACapturedRun` type + the Path A "fix URL?" UI panel. |
 | `page.template.html` | — | Layer 1 page shell the generator fills; see `docs/scripts/generate-repro-pages.ts`. |
-| `page.terminal.template.html` | — | Layer 1 page shell for CLI recipes run in terrarium: two terminals side by side, no script column. `scripts/page-templates.ts` picks it by runtime. |
+| `page.terminal.template.html` | — | Layer 1 page shell for CLI recipes run in formicarium: two terminals side by side, no script column. `scripts/page-templates.ts` picks it by runtime. |
 | `_test/repro.ts` | `_test/repro.js` | Smoke test validating the contract-v1 surface (no Pyodide). |
 | `style.css` | — | Shared CSS for the gallery's visual presentation. |
 | `_test/index.html` | — | Smoke test entrypoint. References `./repro.js`. |
