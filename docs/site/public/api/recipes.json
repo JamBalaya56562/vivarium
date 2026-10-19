@@ -3,6 +3,28 @@
   "contract": "v1",
   "recipes": [
     {
+      "slug": "biome-migrate-override-bracket-spacing",
+      "layer": 1,
+      "project": "biome",
+      "issue": 0,
+      "title": "biomejs/biome — Prettier migration drops bracketSpacing from a *.js override",
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/biome/migrate-override-bracket-spacing/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/biome-migrate-override-bracket-spacing",
+      "language": "shell",
+      "tags": [
+        "biome",
+        "prettier",
+        "migration",
+        "formatter",
+        "overrides"
+      ],
+      "symptom": "migration-option-dropped",
+      "severity": "bug",
+      "expected_verdict": "reproduced",
+      "expected_runtime": "formicarium",
+      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/biome/migrate-override-bracket-spacing/"
+    },
+    {
       "slug": "cpython-137205",
       "layer": 1,
       "project": "cpython",

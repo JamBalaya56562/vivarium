@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "package": "@aletheia-works/formicarium",
+  "packageVersion": "0.3.0",
+  "tarballSha256": "29cb0656241daf224b32390f22cc2c1abd17f10dd8bcf37aed107463d711398b",
+  "sourceCommit": "0af7b2396eebd2444a6e6f1d9b8d9f6c376cc7e7",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "README.md",
+      "sha256": "64c9a2913f0ad8d2db57fe61fc32684af11c7fcfb06d2d90b836760612ea485f"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "sha256": "d32c992ea64eceb5112ddb82669f57a2545dabe2b8e8fa0fe0ec1e7a1f14a840"
+    },
+    {
+      "path": "assets/blink.mjs",
+      "sha256": "b0ad291e35d9b36e0e3dce2402a70cbb84b7da6697d36d02ae2c39cc2a0fde53"
+    },
+    {
+      "path": "assets/blink.wasm",
+      "sha256": "fa19e28c9d1ae7dd8534c2f4b73796724013b9fc85997683809574d98a2457fc"
+    },
+    {
+      "path": "assets/build-info.json",
+      "sha256": "8d904ed5b1a6400ef80147e1971037099be104e35b889c4945404f07b408cd1b"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c343c6feefbfb537d3adebf1376127e359d6bbcecc340bad03d2d82b701f9a8a"
+    },
+    {
+      "path": "runtime/command-parse.js",
+      "sha256": "21b77505efba3d19f90a04b4c5d57fb8e34acde29ccbd21c2477796a3c982f8d"
+    },
+    {
+      "path": "runtime/command.js",
+      "sha256": "4873dbe6f0c148a1fce38e51aebf734aa44aeb86f306faf369fafc793092c403"
+    },
+    {
+      "path": "runtime/contracts.js",
+      "sha256": "763c6dfb7acc0aa00b7bc707b55594c70d183f56a20b1a4be9fef97a6e7f8272"
+    },
+    {
+      "path": "runtime/core.js",
+      "sha256": "cd91c45957336a982ff075b7726c6acd6e955cad457e9a449dec60fc824b1eac"
+    },
+    {
+      "path": "runtime/errors.js",
+      "sha256": "931dbc6f0567388505b81160402523928cd588588f5943687412e761c55822f9"
+    },
+    {
+      "path": "runtime/guest-io.js",
+      "sha256": "05667db5c3db93b906b1cdeb93a2545474585d97ee0d624d3a6ceaa446b4796d"
+    },
+    {
+      "path": "runtime/guest-validation.js",
+      "sha256": "b5b6b78d61bab0e1502309bf6e911f9ad72adde58b5b3e2b88b0fd3d98a2d364"
+    },
+    {
+      "path": "runtime/install-archive.js",
+      "sha256": "6b1249e8f261a31fdbce38ccbf4716f11dda36b89b11161ed7339f48660352ee"
+    },
+    {
+      "path": "runtime/install-catalog.js",
+      "sha256": "bdf1cf5d26958893e20d387d08cc72eb5e4854ce829a39cdf4069d456223cc09"
+    },
+    {
+      "path": "runtime/install-lifecycle.js",
+      "sha256": "e63c4bbacafcd6af175a16a6f6d5899c13e4b4e350019da221e0536b039da1f9"
+    },
+    {
+      "path": "runtime/install-transfer.js",
+      "sha256": "9c74add843398aba176a159e276e57e4bea322dd7cd13677dae5d343c65bc33a"
+    },
+    {
+      "path": "runtime/install.js",
+      "sha256": "a4b919551b32f1fce2a1f61b071929ac1b21bd09835648ea8bcb7776cf83b995"
+    },
+    {
+      "path": "runtime/lifecycle.js",
+      "sha256": "623a8a04958b7731187418cd7d9175e96114bb35b0eaf4d63a18c5cd1eb81b7e"
+    },
+    {
+      "path": "runtime/node/api.js",
+      "sha256": "39e18102fc201b9ddff1b6bad1aee14f78b67a6c0e78941498c68b1aeb949148"
+    },
+    {
+      "path": "runtime/node/package-worker.js",
+      "sha256": "9be11c0516949a98b62b74fe787f14aabe459a7a3011c18ba3d2c90bf8c925c1"
+    },
+    {
+      "path": "runtime/protocol.js",
+      "sha256": "b27f34d8b2b09a445c5e0a90248ac685ca5fa273a6d396acc6363930f3817eca"
+    },
+    {
+      "path": "runtime/public.js",
+      "sha256": "7c0772ae3fb57a341ecb6153d1a0212fab5c60413ee36f13940773fb59e205c0"
+    },
+    {
+      "path": "runtime/session-port.js",
+      "sha256": "be44adc1763f315fb761d9cb8b21b7186174011b7972d52ce72fb1f95680c4c4"
+    },
+    {
+      "path": "runtime/state.js",
+      "sha256": "58e79c0e5077377675cb15cfe395a43e0ef541cf9d42e2ba44ecce3f738f2f08"
+    },
+    {
+      "path": "runtime/validation.js",
+      "sha256": "c06e80d288d9c7552193764a158d59d5f97341fab03282daaea71bc46f745ba0"
+    },
+    {
+      "path": "runtime/web/api.js",
+      "sha256": "0f5aa5de585584921b6bd16fdca3c630d0eb7c23699db1a67ace2f8f4aa5e2b1"
+    },
+    {
+      "path": "runtime/web/package-worker.bundle.js",
+      "sha256": "8cc5f46890d469bd8516ffbf9dd3f81bde91c38bb00f97e79d2c70c15772ee98"
+    },
+    {
+      "path": "runtime/web/package-worker.js",
+      "sha256": "12e72d9ba65d12cde39922f1ebf38cad711efc4e42e053f0eb9851447ce540f3"
+    },
+    {
+      "path": "runtime/worker-execution.js",
+      "sha256": "53fbe0d3d45f9474db1f52168346920cbf8bb084c98d92b8e4de9bfc3d9d4be8"
+    },
+    {
+      "path": "types/browser.d.ts",
+      "sha256": "eb4d20af4024dd1df109896d469076e209ee125d3d9b91f72c0f92f1481b97ba"
+    },
+    {
+      "path": "types/index.d.ts",
+      "sha256": "33238c8fc1407940675195913899eb58bac5896dad25955ae91f27b40214c5f1"
+    },
+    {
+      "path": "types/node.d.ts",
+      "sha256": "eb4d20af4024dd1df109896d469076e209ee125d3d9b91f72c0f92f1481b97ba"
+    }
+  ]
+}

@@ -17,6 +17,21 @@
       "github": "https://git.savannah.gnu.org/cgit/bash.git/"
     },
     {
+      "project": "biome",
+      "display_name": "Biome",
+      "recipe_count": 1,
+      "layers": [
+        1
+      ],
+      "page_url": "https://aletheia-works.github.io/vivarium/repro/biome/",
+      "tagline": "A toolchain for formatting and linting web projects.",
+      "tagline_ja": "Web プロジェクトのフォーマットと lint を行うツールチェーン。",
+      "description": "Side-by-side CLI reproductions run accepted static builds of unmodified Biome commits in formicarium, with the same fixture and the exact source commits recorded for both terminals.",
+      "description_ja": "変更を加えていない Biome のコミットの受入済みの静的ビルドを formicarium で並べて実行する。両方のターミナルで同じ fixture を使い、正確なソースコミットを記録する。",
+      "homepage": "https://biomejs.dev/",
+      "github": "https://github.com/biomejs/biome"
+    },
+    {
       "project": "cpython",
       "display_name": "CPython",
       "recipe_count": 1,

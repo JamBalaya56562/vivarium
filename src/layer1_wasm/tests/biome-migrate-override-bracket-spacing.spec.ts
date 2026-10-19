@@ -49,7 +49,7 @@ test.describe.configure({ retries: 0, mode: 'serial' });
 
 test.skip(
   !existsSync(STAGED),
-  `${SLUG} is not staged: it is pending until its guests are accepted and the formicarium pin exists; stage it with stage-formicarium-assets.ts to run this spec`,
+  `${SLUG} is not staged: stage it with stage-formicarium-assets.ts to run this spec`,
 );
 
 async function observe(page: Page): Promise<Observed> {

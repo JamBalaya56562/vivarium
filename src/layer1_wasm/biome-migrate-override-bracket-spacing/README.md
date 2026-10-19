@@ -25,9 +25,9 @@ maintainer accepted from its Release, and only `accepted` runs on the site.
 | baseline | `guest-biome-086287f859011917208c205bd00239373027ed52fffdc7d07f9526129268322c` | `97c88a1cb957ecb557ddf9eb9299c8a515d4b7f2c0dd50c60ed91e19ffdeb7a6` |
 | fix | `guest-biome-dabb518b1731e82752bf6f26471df6ba9ad41947b7a31352cdc45638e746c24d` | `364ef17da79a6eadb508e93cceb3c1c33d7619e80a94bb9846db2cd57712ff84` |
 
-Both guests are accepted. The recipe stays **pending** — out of the site and
-the regression suite — until the formicarium pin
-(`src/layer1_wasm/formicarium.pin.json`) exists.
+Both guests are accepted, and `src/layer1_wasm/formicarium.pin.json` pins
+formicarium 0.3.0, so the recipe is **active**: it is on the site and in the
+regression suite.
 
 ## The input
 
