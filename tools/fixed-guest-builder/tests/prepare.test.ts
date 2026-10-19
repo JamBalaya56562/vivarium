@@ -166,7 +166,12 @@ describe('deriveSet and the plan', () => {
     }
     const { root, api } = await buildArtifact();
     api.jobs.set(BUILD_RUN, [
-      { name: 'build biome', status: 'completed', conclusion: 'failure' },
+      {
+        name: 'build biome',
+        status: 'completed',
+        conclusion: 'failure',
+        steps: [],
+      },
     ]);
     expect(await errorCode(derive(api, root))).toBe('VERIFY_FAILED');
   });
@@ -179,6 +184,7 @@ describe('deriveSet and the plan', () => {
       name: 'release / prepare',
       status: 'in_progress',
       conclusion: null,
+      steps: [],
     });
     const prepared = await derive(api, root, { currentRunId: BUILD_RUN });
     expect(prepared.identity.tool).toBe('biome');

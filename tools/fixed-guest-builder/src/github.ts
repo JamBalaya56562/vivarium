@@ -30,10 +30,17 @@ export interface WorkflowRunDetail {
   htmlUrl: string;
 }
 
+export interface RunStep {
+  name: string;
+  status: string;
+  conclusion: string | null;
+}
+
 export interface RunJob {
   name: string;
   status: string;
   conclusion: string | null;
+  steps: RunStep[];
 }
 
 export interface RunArtifact {
@@ -239,14 +246,24 @@ export function createGitHubApi(options: {
     async runJobs(id) {
       const result = await json<{
         total_count: number;
-        jobs: { name: string; status: string; conclusion: string | null }[];
+        jobs: {
+          name: string;
+          status: string;
+          conclusion: string | null;
+          steps?: RunStep[];
+        }[];
       }>(`${api}/actions/runs/${id}/jobs?filter=latest&per_page=100`);
       if (result.total_count > result.jobs.length)
-        fail('EXTERNAL', 'the build run has more jobs than one page');
+        fail('EXTERNAL', 'the run has more jobs than one page');
       return result.jobs.map((job) => ({
         name: job.name,
         status: job.status,
         conclusion: job.conclusion,
+        steps: (job.steps ?? []).map((step) => ({
+          name: step.name,
+          status: step.status,
+          conclusion: step.conclusion,
+        })),
       }));
     },
     async runArtifacts(id) {

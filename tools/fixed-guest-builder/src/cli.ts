@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { bumpGuest } from './bump.ts';
-import { checkNotBusy } from './busy.ts';
+import { checkNotBusy, isBuildJob } from './busy.ts';
 import { parseAllowlist } from './declaration.ts';
 import { BuildError } from './errors.ts';
 import { createGitHubApi, type GitHubApi } from './github.ts';
@@ -10,6 +10,7 @@ import { type BuildDeps, runBuild } from './pipeline.ts';
 import { deriveSet, preparePlan, renderSummary } from './prepare.ts';
 import { runProcess } from './process.ts';
 import { checkApprovalGate, publishSet } from './release.ts';
+import { type TurnTiming, waitForPublishTurn } from './turn.ts';
 
 export interface CliIo {
   stdout: (text: string) => void;
@@ -21,6 +22,7 @@ export interface CliDeps {
   api?: (repository: string, token: string) => GitHubApi;
   build?: Partial<BuildDeps>;
   fetcher?: Fetcher;
+  turnTiming?: TurnTiming;
 }
 
 const PACKAGE_ROOT = resolve(import.meta.dir, '..');
@@ -104,7 +106,7 @@ async function command(
   switch (name) {
     case 'build': {
       const id = runId(environment(io, 'GITHUB_RUN_ID'));
-      await checkNotBusy(api(), required(flags, 'workflow'), id);
+      await checkNotBusy(api(), required(flags, 'workflow'), id, isBuildJob);
       const declaration = (await readJson(
         required(flags, 'declaration'),
       )) as Record<string, unknown>;
@@ -178,10 +180,15 @@ async function command(
         compiled: prepared.compiled,
       };
     }
+    case 'publish-turn':
+      return waitForPublishTurn(
+        api(),
+        runId(environment(io, 'GITHUB_RUN_ID')),
+        deps.turnTiming,
+      );
     case 'release': {
       const github = api();
       const currentRunId = runId(environment(io, 'GITHUB_RUN_ID'));
-      await checkNotBusy(github, required(flags, 'workflow'), currentRunId);
       await checkApprovalGate(github);
       const prepared = await deriveFrom(
         flags,
@@ -196,6 +203,9 @@ async function command(
         files: prepared.files,
         planBytes: new Uint8Array(await readFile(required(flags, 'plan'))),
         approvedPlanSha256: required(flags, 'plan-sha256'),
+        allowlist: parseAllowlist(
+          await readJson(join(PACKAGE_ROOT, 'allowlist.json')),
+        ),
       }).then((outcome) => ({
         status: outcome.status,
         tag: outcome.tag,
@@ -224,7 +234,7 @@ async function command(
     default:
       throw new BuildError(
         'INVALID_INPUT',
-        'usage: cli.ts <build|prepare|release|bump> [--flag value]...',
+        'usage: cli.ts <build|prepare|publish-turn|release|bump> [--flag value]...',
       );
   }
 }

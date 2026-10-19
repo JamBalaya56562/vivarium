@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { verifyArtifactSet } from '../src/artifact.ts';
+import { parseAllowlist } from '../src/declaration.ts';
 import { BuildError } from '../src/errors.ts';
 import { createGitHubApi } from '../src/github.ts';
 import {
@@ -23,6 +24,11 @@ async function errorCode(
   }
   return undefined;
 }
+
+const ALLOW = parseAllowlist({
+  schemaVersion: 1,
+  repositories: [SOURCE.repository],
+});
 
 function setup(elf?: string) {
   const set = sampleSet(elf);
@@ -53,6 +59,7 @@ describe('publishSet', () => {
       files: set.files,
       planBytes: plan.bytes,
       approvedPlanSha256: plan.sha256,
+      allowlist: ALLOW,
     });
     expect(result.status).toBe('published');
     expect(api.writes).toEqual([
@@ -76,6 +83,7 @@ describe('publishSet', () => {
           files: set.files,
           planBytes: plan.bytes,
           approvedPlanSha256: '0'.repeat(64),
+          allowlist: ALLOW,
         }),
       ),
     ).toBe('VERIFY_FAILED');
@@ -88,10 +96,41 @@ describe('publishSet', () => {
           files: other.set.files,
           planBytes: plan.bytes,
           approvedPlanSha256: plan.sha256,
+          allowlist: ALLOW,
         }),
       ),
     ).toBe('VERIFY_FAILED');
     expect(api.writes).toEqual([]);
+  });
+
+  test('writes nothing when the repository has left allowlist.json since the build', async () => {
+    const { set, identity, plan, tag } = setup();
+    const removed = parseAllowlist({
+      schemaVersion: 1,
+      repositories: ['https://github.com/jambalaya56562/biome'],
+    });
+    for (const published of [false, true]) {
+      const api = new FakeGitHub();
+      if (published)
+        api.addPublished(tag, {
+          biome: set.files.elf,
+          'build-info.json': set.files.buildInfo,
+          'catalog.json': set.files.catalog,
+        });
+      expect(
+        await errorCode(
+          publishSet({
+            api,
+            identity,
+            files: set.files,
+            planBytes: plan.bytes,
+            approvedPlanSha256: plan.sha256,
+            allowlist: removed,
+          }),
+        ),
+      ).toBe('INVALID_INPUT');
+      expect(api.writes).toEqual([]);
+    }
   });
 
   test('only verifies when the key is already published with the same ELF', async () => {
@@ -108,6 +147,7 @@ describe('publishSet', () => {
       files: set.files,
       planBytes: plan.bytes,
       approvedPlanSha256: plan.sha256,
+      allowlist: ALLOW,
     });
     expect(result.status).toBe('already-published');
     expect(api.writes).toEqual([]);
@@ -133,6 +173,7 @@ describe('publishSet', () => {
           files: set.files,
           planBytes: plan.bytes,
           approvedPlanSha256: plan.sha256,
+          allowlist: ALLOW,
         }),
       ),
     ).toBe('NOT_REPRODUCIBLE');
@@ -156,6 +197,7 @@ describe('publishSet', () => {
           files: set.files,
           planBytes: plan.bytes,
           approvedPlanSha256: plan.sha256,
+          allowlist: ALLOW,
         }),
       ),
     ).toBe('UNUSABLE_KEY');
@@ -177,6 +219,7 @@ describe('publishSet', () => {
           files: set.files,
           planBytes: plan.bytes,
           approvedPlanSha256: plan.sha256,
+          allowlist: ALLOW,
         }),
       ),
     ).toBe('UNUSABLE_KEY');
@@ -194,6 +237,7 @@ describe('publishSet', () => {
       files: set.files,
       planBytes: plan.bytes,
       approvedPlanSha256: plan.sha256,
+      allowlist: ALLOW,
     });
     expect(result.status).toBe('published');
     expect(api.writes[0]).toBe(`delete ${tag}`);
@@ -214,6 +258,7 @@ describe('publishSet', () => {
             files: set.files,
             planBytes: plan.bytes,
             approvedPlanSha256: plan.sha256,
+            allowlist: ALLOW,
           }),
         ),
       ).toBeDefined();
@@ -353,7 +398,7 @@ describe('createGitHubApi requests', () => {
 
   test('reads a run, its latest jobs and its artifacts, and refuses a list longer than one page', async () => {
     const urls: string[] = [];
-    const pages = { jobs: 1, artifacts: 1 };
+    const pages = { jobs: 2, artifacts: 1 };
     const api = createGitHubApi({
       repository: 'aletheia-works/vivarium',
       token: 'ghs_test_token_value',
@@ -368,6 +413,20 @@ describe('createGitHubApi requests', () => {
                 status: 'completed',
                 conclusion: 'success',
                 id: 3,
+                steps: [
+                  {
+                    name: 'Build or reuse',
+                    status: 'completed',
+                    conclusion: 'success',
+                    number: 5,
+                  },
+                ],
+              },
+              {
+                name: 'release / prepare',
+                status: 'queued',
+                conclusion: null,
+                id: 4,
               },
             ],
           });
@@ -402,7 +461,24 @@ describe('createGitHubApi requests', () => {
       htmlUrl: 'https://github.com/aletheia-works/vivarium/actions/runs/9',
     });
     expect(await api.runJobs(9)).toEqual([
-      { name: 'build biome', status: 'completed', conclusion: 'success' },
+      {
+        name: 'build biome',
+        status: 'completed',
+        conclusion: 'success',
+        steps: [
+          {
+            name: 'Build or reuse',
+            status: 'completed',
+            conclusion: 'success',
+          },
+        ],
+      },
+      {
+        name: 'release / prepare',
+        status: 'queued',
+        conclusion: null,
+        steps: [],
+      },
     ]);
     expect(await api.runArtifacts(9)).toEqual([
       { name: 'fixed-guest-9', expired: false },

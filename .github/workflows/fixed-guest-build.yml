@@ -40,11 +40,8 @@ jobs:
     permissions:
       contents: read
       actions: read
-    # On the job, not the workflow: a release waiting for approval in this
-    # run must not hold back the next build.
-    concurrency:
-      group: fixed-guest-build
-      cancel-in-progress: false
+    # No concurrency group: a group keeps one pending run and cancels the one
+    # before it. A build that starts while another builds stops as BUSY.
     env:
       TOOL: ${{ inputs.tool }}
       REPOSITORY: ${{ inputs.repository }}

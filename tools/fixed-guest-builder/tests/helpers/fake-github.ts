@@ -91,8 +91,10 @@ export class FakeGitHub implements GitHubApi {
     return this.reviewers;
   }
 
-  async activeRuns() {
-    return this.runs;
+  runsByWorkflow = new Map<string, WorkflowRun[]>();
+
+  async activeRuns(workflowFile: string) {
+    return this.runsByWorkflow.get(workflowFile) ?? this.runs;
   }
 
   runDetails = new Map<number, WorkflowRunDetail>();
@@ -113,7 +115,12 @@ export class FakeGitHub implements GitHubApi {
     };
     this.runDetails.set(id, run);
     this.jobs.set(id, [
-      { name: `build ${tool}`, status: 'completed', conclusion: 'success' },
+      {
+        name: `build ${tool}`,
+        status: 'completed',
+        conclusion: 'success',
+        steps: [],
+      },
     ]);
     this.artifacts.set(id, [{ name: `fixed-guest-${id}`, expired: false }]);
     return run;

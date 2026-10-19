@@ -230,6 +230,49 @@ describe('main', () => {
     expect(JSON.parse(terminal.err.join('')).error.code).toBe('BUSY');
   });
 
+  test('publish-turn prints the wait, and exits 2 while another publish stays ahead', async () => {
+    const timing = {
+      waitMs: 0,
+      firstDelayMs: 1,
+      maxDelayMs: 1,
+      settleMs: 0,
+      now: () => 0,
+      sleep: async () => undefined,
+    };
+    const api = new FakeGitHub();
+    const free = io(GITHUB_ENV);
+    expect(
+      await main(['publish-turn'], free, {
+        api: () => api,
+        turnTiming: timing,
+      }),
+    ).toBe(0);
+    expect(JSON.parse(free.out.join(''))).toEqual({ waitedMs: 0 });
+    api.runs = [{ id: 3, status: 'in_progress' }];
+    api.jobs.set(3, [
+      {
+        name: 'publish 0123',
+        status: 'in_progress',
+        conclusion: null,
+        steps: [
+          {
+            name: 'Wait for the publish turn',
+            status: 'completed',
+            conclusion: 'success',
+          },
+        ],
+      },
+    ]);
+    const busy = io(GITHUB_ENV);
+    expect(
+      await main(['publish-turn'], busy, {
+        api: () => api,
+        turnTiming: timing,
+      }),
+    ).toBe(2);
+    expect(JSON.parse(busy.err.join('')).error.code).toBe('BUSY');
+  });
+
   test('requires the GitHub environment for commands that talk to GitHub', async () => {
     const terminal = io();
     expect(await main(['release', '--workflow', 'x.yml'], terminal)).toBe(1);

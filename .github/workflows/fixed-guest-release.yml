@@ -17,9 +17,8 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: fixed-guest-release
-  cancel-in-progress: false
+# No concurrency group: a group keeps one pending run and cancels the one
+# before it. The publish job waits for its turn instead.
 
 jobs:
   prepare:
@@ -86,7 +85,8 @@ jobs:
           retention-days: 7
 
   publish:
-    name: publish
+    # Shown where the environment approval is given, next to the summary.
+    name: publish ${{ needs.prepare.outputs.plan_sha256 }}
     needs: prepare
     if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -129,6 +129,12 @@ jobs:
           name: fixed-guest-plan
           path: ${{ runner.temp }}/fgb-plan
 
+      - name: Wait for the publish turn
+        working-directory: tools/fixed-guest-builder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun run src/cli.ts publish-turn
+
       - name: Publish under the approved plan
         working-directory: tools/fixed-guest-builder
         env:
@@ -136,7 +142,6 @@ jobs:
         run: |
           set -euo pipefail
           bun run src/cli.ts release \
-            --workflow fixed-guest-release.yml \
             --build-run-id "${BUILD_RUN_ID}" \
             --artifacts "${RUNNER_TEMP}/fgb-in" \
             --plan "${RUNNER_TEMP}/fgb-plan/plan.json" \

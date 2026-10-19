@@ -16,6 +16,7 @@ type Step = {
   name?: string;
 };
 type Job = {
+  name?: string;
   if?: string;
   'timeout-minutes'?: number;
   environment?: string;
@@ -91,21 +92,29 @@ describe('builder workflows', () => {
     }
   });
 
-  test('queue in their own group without cancelling a run in progress', async () => {
-    for (const name of NAMES) {
+  // A concurrency group keeps one pending run and cancels the one before it,
+  // so builds and releases take turns in the builder instead.
+  test('never park a build or a release in a concurrency group', async () => {
+    for (const name of ['fixed-guest-build.yml', 'fixed-guest-release.yml']) {
       const { flow } = await load(name);
-      const group = {
-        group: name.replace('.yml', ''),
-        'cancel-in-progress': false,
-      };
-      if (name !== 'fixed-guest-build.yml') {
-        expect(flow.concurrency).toEqual(group);
-        continue;
-      }
       expect(flow.concurrency).toBeUndefined();
-      expect(flow.jobs.build?.concurrency).toEqual(group);
-      expect(flow.jobs.release?.concurrency).toBeUndefined();
+      for (const job of Object.values(flow.jobs))
+        expect(job.concurrency).toBeUndefined();
     }
+    const { flow } = await load('fixed-guest-bump.yml');
+    expect(flow.concurrency).toEqual({
+      group: 'fixed-guest-bump',
+      'cancel-in-progress': false,
+    });
+  });
+
+  test('show the plan SHA256 in the name of the job waiting for approval', async () => {
+    const { flow } = await load('fixed-guest-release.yml');
+    const { publish } = flow.jobs;
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
+    const sha = '${{ needs.prepare.outputs.plan_sha256 }}';
+    expect(publish?.name).toBe(`publish ${sha}`);
+    expect(publish?.env?.PLAN_SHA256).toBe(sha);
   });
 
   test('pin every external action to a full SHA with a version comment', async () => {

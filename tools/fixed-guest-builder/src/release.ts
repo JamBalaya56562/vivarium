@@ -7,6 +7,7 @@ import {
   type VerifiedSet,
   verifyArtifactSet,
 } from './artifact.ts';
+import type { Allowlist } from './declaration.ts';
 import { BuildError, fail } from './errors.ts';
 import type { GitHubApi, Release } from './github.ts';
 import { canonicalJson, sha256Hex } from './key.ts';
@@ -154,8 +155,16 @@ export async function publishSet(options: {
   files: ArtifactSet;
   planBytes: Uint8Array;
   approvedPlanSha256: string;
+  // Read at publish time: a repository taken off the list after the build
+  // must not be published from an artifact that is still around.
+  allowlist: Allowlist;
 }): Promise<PublishOutcome> {
   const { api, identity } = options;
+  if (!options.allowlist.repositories.includes(identity.repository))
+    fail(
+      'INVALID_INPUT',
+      `repository is no longer in allowlist.json: ${identity.repository}; nothing is written`,
+    );
   const expected = {
     buildKey: identity.key,
     tool: identity.tool,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { checkNotBusy } from '../src/busy.ts';
+import { checkNotBusy, isBuildJob } from '../src/busy.ts';
 import { BuildError } from '../src/errors.ts';
 import { createGitHubApi } from '../src/github.ts';
 import { FakeGitHub } from './helpers/fake-github.ts';
@@ -45,6 +45,56 @@ describe('checkNotBusy', () => {
         await errorCode(checkNotBusy(api, 'fixed-guest-release.yml', 10)),
       ).toBeUndefined();
     }
+  });
+
+  test('counts only the other runs whose matching job is in progress', async () => {
+    const api = new FakeGitHub();
+    api.runs = [
+      { id: 10, status: 'in_progress' },
+      { id: 11, status: 'in_progress' },
+    ];
+    const buildJob = (job: { name: string }) => job.name.startsWith('build ');
+    // Run 11 has built and is now only releasing.
+    api.jobs.set(11, [
+      {
+        name: 'build biome',
+        status: 'completed',
+        conclusion: 'success',
+        steps: [],
+      },
+      {
+        name: 'release / publish',
+        status: 'in_progress',
+        conclusion: null,
+        steps: [],
+      },
+    ]);
+    expect(
+      await errorCode(checkNotBusy(api, 'fixed-guest-build.yml', 10, buildJob)),
+    ).toBeUndefined();
+    api.jobs.set(11, [
+      {
+        name: 'build biome',
+        status: 'in_progress',
+        conclusion: null,
+        steps: [],
+      },
+    ]);
+    expect(
+      await errorCode(checkNotBusy(api, 'fixed-guest-build.yml', 10, buildJob)),
+    ).toBe('BUSY');
+  });
+
+  test('a build counts only build jobs, not the release stage it calls', () => {
+    const job = (name: string) => ({
+      name,
+      status: 'in_progress',
+      conclusion: null,
+      steps: [],
+    });
+    expect(isBuildJob(job('build biome'))).toBe(true);
+    expect(isBuildJob(job('release / prepare'))).toBe(false);
+    expect(isBuildJob(job('release / publish 0123'))).toBe(false);
   });
 
   test('passes when nothing else runs and refuses a missing run id', async () => {

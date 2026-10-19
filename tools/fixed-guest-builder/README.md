@@ -13,8 +13,11 @@ downloads the published set, verifies it, and records `compiled: false`.
 
 Start **fixed-guest-build** from `main` (Actions → Run workflow) with the
 guest's `tool`, `repository`, 40-character `commit` and `fixture`. The run
-refuses to start while another build is active (exit code 2, `BUSY`); start
-it again once that run ends.
+refuses to start while another run's build job is in progress (exit code 2,
+`BUSY`); start it again once that build ends. A run that has finished its
+build and is only releasing does not count. Builds are not queued in a
+concurrency group, because GitHub keeps only one pending run in a group and
+cancels the one before it.
 
 The run checks, in order:
 
@@ -49,16 +52,27 @@ starts the build and approves the environment; nothing else is typed in.
    `tools.json`, which gives the binary. Any disagreement stops the run. It
    writes the plan and shows the plan JSON, its SHA256, the tag and every
    digest in the job summary.
-3. The approver reads that summary and approves the `fixed-guest-release`
+3. The job waiting for approval is named `publish <plan SHA256>`. Before
+   approving, the approver checks that this SHA256 is the one in the
+   summary, reads the plan, and approves the `fixed-guest-release`
    environment only for that plan.
-4. The `publish` job takes the plan file, checks that its SHA256 equals the
-   one `prepare` reported and that it still matches the set, and publishes.
-   It refuses to write anything while that environment has no required
-   reviewers.
+4. The `publish` job waits for its turn (below), takes the plan file, checks
+   that its SHA256 equals the one `prepare` reported and that it still
+   matches the set, checks that the repository is still in
+   `allowlist.json`, and publishes. It refuses to write anything while that
+   environment has no required reviewers.
 
 To release a build later, or to try again, start **fixed-guest-release**
-with only the build run ID. Release runs queue one after another; a run
-that waits for its turn or for approval does not block the one in progress.
+with only the build run ID.
+
+Release runs are not queued in a concurrency group, so a release waiting
+for approval is never cancelled by a later one and does not hold any other
+release back. After approval, a publish job waits while another run's
+publish job is writing, whether that run is a release run or a build run
+that called the release. When two wait at once, the smaller run ID goes
+first. A job checks again with a growing delay (5 s up to 60 s) and, if it
+is still not its turn after 20 minutes, fails as `BUSY` without writing;
+start the release again with the build run ID.
 
 When the build reused a published Release (`compiled: false`), the release
 run checks that Release and writes nothing.
