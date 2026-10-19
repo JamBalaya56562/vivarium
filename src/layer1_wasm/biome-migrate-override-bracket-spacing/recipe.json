@@ -13,7 +13,14 @@
       "repository": "https://github.com/biomejs/biome",
       "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
       "fixture": "biome-migrate-prettier-override",
-      "reference": { "branch": "main" }
+      "reference": { "branch": "main" },
+      "accepted": {
+        "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+        "versionOrName": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+        "buildKey": "086287f859011917208c205bd00239373027ed52fffdc7d07f9526129268322c",
+        "elfSha256": "97c88a1cb957ecb557ddf9eb9299c8a515d4b7f2c0dd50c60ed91e19ffdeb7a6",
+        "buildInfoSha256": "80f07338112d59145fddaffae25f57b58692cf2710900a2dc6ced9345392f0d5"
+      }
     },
     {
       "role": "fix",
@@ -21,7 +28,16 @@
       "repository": "https://github.com/jambalaya56562/biome",
       "commit": "a5bd0ce883a22980be20dfc87ba62006a43c3de8",
       "fixture": "biome-migrate-prettier-override",
-      "reference": { "branch": "fix/migrate-prettier-override-bracket-spacing" }
+      "reference": {
+        "branch": "fix/migrate-prettier-override-bracket-spacing"
+      },
+      "accepted": {
+        "commit": "a5bd0ce883a22980be20dfc87ba62006a43c3de8",
+        "versionOrName": "a5bd0ce883a22980be20dfc87ba62006a43c3de8",
+        "buildKey": "dabb518b1731e82752bf6f26471df6ba9ad41947b7a31352cdc45638e746c24d",
+        "elfSha256": "364ef17da79a6eadb508e93cceb3c1c33d7619e80a94bb9846db2cd57712ff84",
+        "buildInfoSha256": "00bb12d690d48023f9df7233413dbae1aac05110dc7aa374d00e0c973922f357"
+      }
     }
   ]
 }
