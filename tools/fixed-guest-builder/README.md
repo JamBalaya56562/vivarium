@@ -35,23 +35,33 @@ and free disk are in the run's receipt.
 
 ## Publishing a set
 
-Publishing needs a person's approval of one operation plan.
+Publishing needs a person's approval of one operation plan. A person only
+starts the build and approves the environment; nothing else is typed in.
 
-1. Download the build run's artifact and create the plan:
+1. When the build job succeeds, the same run calls **fixed-guest-release**
+   with its own run ID.
+2. The `prepare` job (read-only token, no environment) checks through the
+   GitHub API that the run is a `workflow_dispatch` of
+   `fixed-guest-build.yml` on `main` in this repository, that its build job
+   succeeded, and that it holds the artifact `fixed-guest-<run id>`. It then
+   takes the tool, key, repository and commit from the receipt and checks
+   them against `build-info.json`, the catalog, the files' digests and
+   `tools.json`, which gives the binary. Any disagreement stops the run. It
+   writes the plan and shows the plan JSON, its SHA256, the tag and every
+   digest in the job summary.
+3. The approver reads that summary and approves the `fixed-guest-release`
+   environment only for that plan.
+4. The `publish` job takes the plan file, checks that its SHA256 equals the
+   one `prepare` reported and that it still matches the set, and publishes.
+   It refuses to write anything while that environment has no required
+   reviewers.
 
-   ```sh
-   bun run src/cli.ts plan --tool <tool> --binary <binary> --key <key> \
-     --repository <repository> --commit <commit> --artifacts <dir>/<key> \
-     --build-run-id <run id> --rollback "<rollback text>" \
-     --approval-reference "<where it was approved>" --plan-out plan.json
-   ```
+To release a build later, or to try again, start **fixed-guest-release**
+with only the build run ID. Release runs queue one after another; a run
+that waits for its turn or for approval does not block the one in progress.
 
-2. The approver checks the printed `planSha256` and the plan's targets and
-   digests, and approves that SHA256.
-3. Start **fixed-guest-release** with the build run ID, the identity, the
-   plan JSON and its SHA256. The run name shows the SHA256; approve the
-   `fixed-guest-release` environment only if it matches. The run refuses
-   to write anything while that environment has no required reviewers.
+When the build reused a published Release (`compiled: false`), the release
+run checks that Release and writes nothing.
 
 The release run uploads to a draft, downloads the files again and checks
 every digest, and only then publishes. A published Release is never

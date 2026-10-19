@@ -28,25 +28,69 @@ function io(
   };
 }
 
+const BUILD_RUN = 42;
+
 async function artifacts() {
-  const set = sampleSet();
+  const runUrl = `https://github.com/aletheia-works/vivarium/actions/runs/${BUILD_RUN}`;
+  const set = sampleSet('\x7fELF-sample', { reference: { ciRunUrl: runUrl } });
   const directory = await tempDir();
-  await writeFile(join(directory, 'biome'), set.files.elf);
-  await writeFile(join(directory, 'build-info.json'), set.files.buildInfo);
-  await writeFile(join(directory, 'catalog.json'), set.files.catalog);
-  const identity = [
-    '--tool',
-    'biome',
-    '--binary',
-    'biome',
-    '--key',
-    set.key,
-    '--repository',
-    SOURCE.repository,
-    '--commit',
-    SOURCE.commit,
-  ];
-  return { set, directory, identity };
+  const sha = (bytes: Uint8Array) =>
+    new Bun.CryptoHasher('sha256').update(bytes).digest('hex');
+  await writeFile(
+    join(directory, 'receipt.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      buildKey: set.key,
+      tag: `guest-biome-${set.key}`,
+      compiled: true,
+      elfSha256: sha(set.files.elf),
+      buildInfoSha256: sha(set.files.buildInfo),
+      catalogSha256: sha(set.files.catalog),
+      source: SOURCE,
+      ciRunUrl: runUrl,
+    }),
+  );
+  await mkdir(join(directory, set.key));
+  await writeFile(join(directory, set.key, 'biome'), set.files.elf);
+  await writeFile(
+    join(directory, set.key, 'build-info.json'),
+    set.files.buildInfo,
+  );
+  await writeFile(join(directory, set.key, 'catalog.json'), set.files.catalog);
+  const api = new FakeGitHub();
+  api.addBuildRun(BUILD_RUN);
+  return { set, directory, api };
+}
+
+const GITHUB_ENV = {
+  GITHUB_TOKEN: 'ghs_test_token_value',
+  GITHUB_REPOSITORY: 'aletheia-works/vivarium',
+  GITHUB_RUN_ID: '7',
+};
+
+async function prepare(directory: string, api: FakeGitHub) {
+  const out = await tempDir();
+  const paths = {
+    plan: join(out, 'plan.json'),
+    summary: join(out, 'summary.md'),
+  };
+  const terminal = io(GITHUB_ENV);
+  const code = await main(
+    [
+      'prepare',
+      '--build-run-id',
+      String(BUILD_RUN),
+      '--artifacts',
+      directory,
+      '--plan-out',
+      paths.plan,
+      '--summary',
+      paths.summary,
+    ],
+    terminal,
+    { api: () => api },
+  );
+  return { code, terminal, paths };
 }
 
 describe('parseFlags', () => {
@@ -86,87 +130,79 @@ describe('main', () => {
     expect(terminal.err.join('')).toContain('***');
   });
 
-  test('plan writes the operation plan and prints its SHA256', async () => {
-    const { directory, identity } = await artifacts();
-    const planPath = join(await tempDir(), 'plan.json');
-    const terminal = io();
-    const code = await main(
-      [
-        'plan',
-        ...identity,
-        '--artifacts',
-        directory,
-        '--build-run-id',
-        '42',
-        '--rollback',
-        'point the recipe back',
-        '--approval-reference',
-        'chat',
-        '--plan-out',
-        planPath,
-      ],
-      terminal,
-    );
+  test('prepare writes the plan and the summary and prints the plan SHA256', async () => {
+    const { set, directory, api } = await artifacts();
+    const { code, terminal, paths } = await prepare(directory, api);
     expect(code).toBe(0);
     const printed = JSON.parse(terminal.out.join(''));
-    const bytes = await readFile(planPath);
+    const bytes = await readFile(paths.plan);
     expect(printed.planSha256).toBe(
       new Bun.CryptoHasher('sha256').update(bytes).digest('hex'),
     );
     expect(printed.plan.action).toBe('publish');
+    expect(printed.identity).toMatchObject({ tool: 'biome', key: set.key });
+    expect(await readFile(paths.summary, 'utf8')).toContain(printed.planSha256);
+    expect(api.writes).toEqual([]);
   });
 
-  test('release publishes with the approved plan and exits 0', async () => {
-    const { directory, identity } = await artifacts();
-    const planPath = join(await tempDir(), 'plan.json');
-    const planned = io();
-    await main(
-      [
-        'plan',
-        ...identity,
-        '--artifacts',
-        directory,
-        '--build-run-id',
-        '42',
-        '--rollback',
-        'r',
-        '--approval-reference',
-        'chat',
-        '--plan-out',
-        planPath,
-      ],
-      planned,
-    );
-    const sha = JSON.parse(planned.out.join('')).planSha256 as string;
-    const api = new FakeGitHub();
-    const terminal = io({
-      GITHUB_TOKEN: 'ghs_test_token_value',
-      GITHUB_REPOSITORY: 'aletheia-works/vivarium',
-      GITHUB_RUN_ID: '7',
-    });
+  async function release(
+    directory: string,
+    api: FakeGitHub,
+    plan: string,
+    sha: string,
+  ) {
+    const terminal = io(GITHUB_ENV);
     const code = await main(
       [
         'release',
         '--workflow',
         'fixed-guest-release.yml',
-        ...identity,
+        '--build-run-id',
+        String(BUILD_RUN),
         '--artifacts',
         directory,
         '--plan',
-        planPath,
+        plan,
         '--plan-sha256',
         sha,
       ],
       terminal,
       { api: () => api },
     );
+    return { code, terminal };
+  }
+
+  test('release publishes under the prepared plan and exits 0', async () => {
+    const { directory, api } = await artifacts();
+    const prepared = await prepare(directory, api);
+    const sha = JSON.parse(prepared.terminal.out.join('')).planSha256 as string;
+    const { code, terminal } = await release(
+      directory,
+      api,
+      prepared.paths.plan,
+      sha,
+    );
     expect(code).toBe(0);
     expect(JSON.parse(terminal.out.join('')).status).toBe('published');
   });
 
+  test('release writes nothing when the plan SHA256 is not the prepared one', async () => {
+    const { directory, api } = await artifacts();
+    const prepared = await prepare(directory, api);
+    const { code, terminal } = await release(
+      directory,
+      api,
+      prepared.paths.plan,
+      'e'.repeat(64),
+    );
+    expect(code).toBe(1);
+    expect(JSON.parse(terminal.err.join('')).error.code).toBe('VERIFY_FAILED');
+    expect(api.writes).toEqual([]);
+  });
+
   test('exits 2 when another run of the workflow is active', async () => {
     const api = new FakeGitHub();
-    api.runs = [{ id: 99, status: 'queued' }];
+    api.runs = [{ id: 99, status: 'in_progress' }];
     const terminal = io({
       GITHUB_TOKEN: 'ghs_test_token_value',
       GITHUB_REPOSITORY: 'aletheia-works/vivarium',

@@ -28,13 +28,7 @@ on:
         options: ['on', 'off']
         default: 'on'
 
-permissions:
-  contents: read
-  actions: read
-
-concurrency:
-  group: fixed-guest-build
-  cancel-in-progress: false
+permissions: {}
 
 jobs:
   build:
@@ -43,6 +37,14 @@ jobs:
     runs-on: ubuntu-latest
     # A 4-hour build deadline plus time for cleanup and upload.
     timeout-minutes: 255
+    permissions:
+      contents: read
+      actions: read
+    # On the job, not the workflow: a release waiting for approval in this
+    # run must not hold back the next build.
+    concurrency:
+      group: fixed-guest-build
+      cancel-in-progress: false
     env:
       TOOL: ${{ inputs.tool }}
       REPOSITORY: ${{ inputs.repository }}
@@ -126,3 +128,14 @@ jobs:
           path: ${{ runner.temp }}/fgb-out
           if-no-files-found: error
           retention-days: 7
+
+  release:
+    name: release
+    needs: build
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      actions: read
+    uses: ./.github/workflows/fixed-guest-release.yml
+    with:
+      build_run_id: ${{ github.run_id }}

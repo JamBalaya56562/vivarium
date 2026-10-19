@@ -23,16 +23,27 @@ describe('checkNotBusy', () => {
     await checkNotBusy(api, 'fixed-guest-build.yml', 10);
   });
 
-  test('fails BUSY when another run is active or queued', async () => {
-    for (const status of ['in_progress', 'queued', 'waiting']) {
+  test('fails BUSY when another run is in progress', async () => {
+    const api = new FakeGitHub();
+    api.runs = [
+      { id: 10, status: 'in_progress' },
+      { id: 11, status: 'in_progress' },
+    ];
+    expect(
+      await errorCode(checkNotBusy(api, 'fixed-guest-build.yml', 10)),
+    ).toBe('BUSY');
+  });
+
+  test('does not count runs that wait for their turn or for approval', async () => {
+    for (const status of ['queued', 'waiting', 'pending']) {
       const api = new FakeGitHub();
       api.runs = [
         { id: 10, status: 'in_progress' },
         { id: 11, status },
       ];
       expect(
-        await errorCode(checkNotBusy(api, 'fixed-guest-build.yml', 10)),
-      ).toBe('BUSY');
+        await errorCode(checkNotBusy(api, 'fixed-guest-release.yml', 10)),
+      ).toBeUndefined();
     }
   });
 
@@ -53,8 +64,8 @@ describe('checkNotBusy', () => {
       fetcher: async (url) => {
         urls.push(url);
         return Response.json({
-          workflow_runs: url.includes('status=queued')
-            ? [{ id: 5, status: 'queued' }]
+          workflow_runs: url.includes('status=in_progress')
+            ? [{ id: 5, status: 'in_progress' }]
             : [],
         });
       },

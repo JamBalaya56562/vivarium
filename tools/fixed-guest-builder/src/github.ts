@@ -18,6 +18,29 @@ export interface WorkflowRun {
   status: string;
 }
 
+export interface WorkflowRunDetail {
+  id: number;
+  repository: string;
+  headRepository: string | null;
+  path: string;
+  headBranch: string | null;
+  event: string;
+  status: string;
+  conclusion: string | null;
+  htmlUrl: string;
+}
+
+export interface RunJob {
+  name: string;
+  status: string;
+  conclusion: string | null;
+}
+
+export interface RunArtifact {
+  name: string;
+  expired: boolean;
+}
+
 export interface GitHubApi {
   // Includes drafts, which only an authenticated listing shows.
   findRelease(tag: string): Promise<Release | null>;
@@ -32,6 +55,9 @@ export interface GitHubApi {
   deleteDraft(release: Release): Promise<void>;
   activeRuns(workflowFile: string): Promise<WorkflowRun[]>;
   environmentReviewers(name: string): Promise<number>;
+  workflowRun(id: number): Promise<WorkflowRunDetail>;
+  runJobs(id: number): Promise<RunJob[]>;
+  runArtifacts(id: number): Promise<RunArtifact[]>;
 }
 
 const ACTIVE = ['in_progress', 'queued', 'waiting', 'pending', 'requested'];
@@ -185,6 +211,55 @@ export function createGitHubApi(options: {
       return (environment.protection_rules ?? [])
         .filter((rule) => rule.type === 'required_reviewers')
         .reduce((total, rule) => total + (rule.reviewers?.length ?? 0), 0);
+    },
+    async workflowRun(id) {
+      const run = await json<{
+        id: number;
+        repository?: { full_name?: string };
+        head_repository?: { full_name?: string } | null;
+        path: string;
+        head_branch: string | null;
+        event: string;
+        status: string;
+        conclusion: string | null;
+        html_url: string;
+      }>(`${api}/actions/runs/${id}`);
+      return {
+        id: run.id,
+        repository: run.repository?.full_name ?? '',
+        headRepository: run.head_repository?.full_name ?? null,
+        path: run.path,
+        headBranch: run.head_branch,
+        event: run.event,
+        status: run.status,
+        conclusion: run.conclusion,
+        htmlUrl: run.html_url,
+      };
+    },
+    async runJobs(id) {
+      const result = await json<{
+        total_count: number;
+        jobs: { name: string; status: string; conclusion: string | null }[];
+      }>(`${api}/actions/runs/${id}/jobs?filter=latest&per_page=100`);
+      if (result.total_count > result.jobs.length)
+        fail('EXTERNAL', 'the build run has more jobs than one page');
+      return result.jobs.map((job) => ({
+        name: job.name,
+        status: job.status,
+        conclusion: job.conclusion,
+      }));
+    },
+    async runArtifacts(id) {
+      const result = await json<{
+        total_count: number;
+        artifacts: { name: string; expired: boolean }[];
+      }>(`${api}/actions/runs/${id}/artifacts?per_page=100`);
+      if (result.total_count > result.artifacts.length)
+        fail('EXTERNAL', 'the build run has more artifacts than one page');
+      return result.artifacts.map((artifact) => ({
+        name: artifact.name,
+        expired: artifact.expired,
+      }));
     },
   };
 }

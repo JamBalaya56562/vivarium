@@ -20,12 +20,18 @@ type Job = {
   'timeout-minutes'?: number;
   environment?: string;
   permissions?: unknown;
-  steps: Step[];
+  needs?: string;
+  uses?: string;
+  with?: Record<string, unknown>;
+  outputs?: Record<string, string>;
+  env?: Record<string, string>;
+  concurrency?: { group: string; 'cancel-in-progress': boolean };
+  steps?: Step[];
 };
 type Workflow = {
   on: Record<string, unknown>;
   permissions: Record<string, string>;
-  concurrency: { group: string; 'cancel-in-progress': boolean };
+  concurrency?: { group: string; 'cancel-in-progress': boolean };
   jobs: Record<string, Job>;
 };
 
@@ -34,43 +40,71 @@ async function load(name: string): Promise<{ text: string; flow: Workflow }> {
   return { text, flow: Bun.YAML.parse(text) as Workflow };
 }
 
-const PERMISSIONS: Record<(typeof NAMES)[number], Record<string, string>> = {
-  'fixed-guest-build.yml': { contents: 'read', actions: 'read' },
-  'fixed-guest-release.yml': { contents: 'write', actions: 'read' },
-  'fixed-guest-bump.yml': { contents: 'read', actions: 'read' },
+const TRIGGERS: Record<(typeof NAMES)[number], string[]> = {
+  'fixed-guest-build.yml': ['workflow_dispatch'],
+  'fixed-guest-release.yml': ['workflow_dispatch', 'workflow_call'],
+  'fixed-guest-bump.yml': ['workflow_dispatch'],
+};
+
+const READ = { contents: 'read', actions: 'read' };
+const WRITE = { contents: 'write', actions: 'read' };
+const PERMISSIONS: Record<
+  (typeof NAMES)[number],
+  { workflow: Record<string, string>; jobs: Record<string, unknown> }
+> = {
+  'fixed-guest-build.yml': {
+    workflow: {},
+    jobs: { build: READ, release: WRITE },
+  },
+  'fixed-guest-release.yml': {
+    workflow: {},
+    jobs: { prepare: READ, publish: WRITE },
+  },
+  'fixed-guest-bump.yml': { workflow: READ, jobs: { bump: undefined } },
 };
 
 describe('builder workflows', () => {
-  test('start only by hand, on main, in the upstream repository', async () => {
+  test('start only by hand or from the build, on main, in the upstream repository', async () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
-      expect(Object.keys(flow.on)).toEqual(['workflow_dispatch']);
+      expect(Object.keys(flow.on)).toEqual(TRIGGERS[name]);
       for (const job of Object.values(flow.jobs)) {
         expect(job.if).toContain(
           "github.repository == 'aletheia-works/vivarium'",
         );
         expect(job.if).toContain("github.ref == 'refs/heads/main'");
-        expect(job['timeout-minutes']).toBeGreaterThan(0);
+        if (job.uses === undefined)
+          expect(job['timeout-minutes']).toBeGreaterThan(0);
       }
     }
   });
 
-  test('grant exactly the permissions in the infrastructure design', async () => {
+  test('grant each job exactly the permissions it needs', async () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
-      expect(flow.permissions).toEqual(PERMISSIONS[name]);
-      for (const job of Object.values(flow.jobs))
-        expect(job.permissions).toBeUndefined();
+      expect(flow.permissions).toEqual(PERMISSIONS[name].workflow);
+      expect(
+        Object.fromEntries(
+          Object.entries(flow.jobs).map(([id, job]) => [id, job.permissions]),
+        ),
+      ).toEqual(PERMISSIONS[name].jobs);
     }
   });
 
   test('queue in their own group without cancelling a run in progress', async () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
-      expect(flow.concurrency).toEqual({
+      const group = {
         group: name.replace('.yml', ''),
         'cancel-in-progress': false,
-      });
+      };
+      if (name !== 'fixed-guest-build.yml') {
+        expect(flow.concurrency).toEqual(group);
+        continue;
+      }
+      expect(flow.concurrency).toBeUndefined();
+      expect(flow.jobs.build?.concurrency).toEqual(group);
+      expect(flow.jobs.release?.concurrency).toBeUndefined();
     }
   });
 
@@ -92,7 +126,7 @@ describe('builder workflows', () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
       for (const job of Object.values(flow.jobs))
-        for (const step of job.steps) {
+        for (const step of job.steps ?? []) {
           if (step.run !== undefined) expect(step.run).not.toContain('${{');
           if (step.uses?.startsWith('actions/checkout@'))
             expect(step.with?.['persist-credentials']).toBe(false);
@@ -104,7 +138,7 @@ describe('builder workflows', () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
       const saves = Object.values(flow.jobs).flatMap((job) =>
-        job.steps.filter((step) =>
+        (job.steps ?? []).filter((step) =>
           step.uses?.startsWith('actions/cache/save@'),
         ),
       );
@@ -124,16 +158,58 @@ describe('builder workflows', () => {
     }
   });
 
-  test('write the Release only behind the approval environment', async () => {
+  test('take only the build run ID, from a person or from the build', async () => {
     const { flow } = await load('fixed-guest-release.yml');
-    const jobs = Object.values(flow.jobs);
-    expect(jobs).toHaveLength(1);
-    expect(jobs[0]?.environment).toBe('fixed-guest-release');
-    const { text } = await load('fixed-guest-release.yml');
-    expect(text).toContain(
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
-      'run-name: release ${{ inputs.tool }} plan ${{ inputs.plan_sha256 }}',
+    const on = flow.on as Record<string, { inputs: Record<string, unknown> }>;
+    expect(Object.keys(on.workflow_dispatch?.inputs ?? {})).toEqual([
+      'build_run_id',
+    ]);
+    expect(Object.keys(on.workflow_call?.inputs ?? {})).toEqual([
+      'build_run_id',
+    ]);
+  });
+
+  test('plan without write access and write the Release only behind the approval environment', async () => {
+    const { flow } = await load('fixed-guest-release.yml');
+    const { prepare, publish } = flow.jobs;
+    expect(Object.keys(flow.jobs)).toEqual(['prepare', 'publish']);
+    expect(prepare?.environment).toBeUndefined();
+    const plan = prepare?.steps?.find((step) => step.name === 'Make the plan');
+    expect(plan?.run).toContain('src/cli.ts prepare');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+    expect(plan?.run).toContain('--summary "${GITHUB_STEP_SUMMARY}"');
+    expect(plan?.run).toContain('plan_sha256=');
+    expect(prepare?.outputs?.plan_sha256).toContain(
+      'steps.plan.outputs.plan_sha256',
     );
+    expect(publish?.needs).toBe('prepare');
+    expect(publish?.environment).toBe('fixed-guest-release');
+    expect(publish?.env?.PLAN_SHA256).toContain(
+      'needs.prepare.outputs.plan_sha256',
+    );
+    const write = publish?.steps?.find((step) =>
+      step.run?.includes('src/cli.ts release'),
+    );
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+    expect(write?.run).toContain('--plan-sha256 "${PLAN_SHA256}"');
+    const uploaded = prepare?.steps?.find((step) =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    const fetched = publish?.steps?.filter((step) =>
+      step.uses?.startsWith('actions/download-artifact@'),
+    );
+    expect(fetched?.map((step) => step.with?.name)).toContain(
+      uploaded?.with?.name,
+    );
+  });
+
+  test('the build calls the release after a successful build of its own run', async () => {
+    const { flow } = await load('fixed-guest-build.yml');
+    const { release } = flow.jobs;
+    expect(release?.needs).toBe('build');
+    expect(release?.uses).toBe('./.github/workflows/fixed-guest-release.yml');
+    expect(release?.with?.build_run_id).toContain('github.run_id');
+    expect(release?.if).not.toContain('always()');
   });
 
   test('bump one guest by role and name its branch and title by role', async () => {

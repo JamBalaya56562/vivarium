@@ -1,8 +1,6 @@
 name: fixed-guest-release
 
-# The plan SHA256 is in the run name so the approver can match it against the
-# one approved in chat before approving the environment.
-run-name: release ${{ inputs.tool }} plan ${{ inputs.plan_sha256 }}
+run-name: release build run ${{ inputs.build_run_id }}
 
 on:
   workflow_dispatch:
@@ -11,55 +9,31 @@ on:
         description: Run ID of the fixed-guest-build run that holds the set
         required: true
         type: string
-      tool:
-        required: true
-        type: string
-      binary:
-        required: true
-        type: string
-      key:
-        description: Full 64-character build key
-        required: true
-        type: string
-      repository:
-        required: true
-        type: string
-      commit:
-        required: true
-        type: string
-      plan:
-        description: The C12 operation plan JSON, exactly as approved
-        required: true
-        type: string
-      plan_sha256:
-        description: SHA256 of the plan, as approved in chat
+  workflow_call:
+    inputs:
+      build_run_id:
         required: true
         type: string
 
-permissions:
-  contents: write
-  actions: read
+permissions: {}
 
 concurrency:
   group: fixed-guest-release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: release ${{ inputs.tool }}
+  prepare:
+    name: prepare
     if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: fixed-guest-release
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      plan_sha256: ${{ steps.plan.outputs.plan_sha256 }}
     env:
       BUILD_RUN_ID: ${{ inputs.build_run_id }}
-      TOOL: ${{ inputs.tool }}
-      BINARY: ${{ inputs.binary }}
-      KEY: ${{ inputs.key }}
-      REPOSITORY: ${{ inputs.repository }}
-      COMMIT: ${{ inputs.commit }}
-      PLAN: ${{ inputs.plan }}
-      PLAN_SHA256: ${{ inputs.plan_sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,17 +59,85 @@ jobs:
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/fgb-in
 
+      - name: Make the plan
+        id: plan
+        working-directory: tools/fixed-guest-builder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/fgb-plan"
+          bun run src/cli.ts prepare \
+            --build-run-id "${BUILD_RUN_ID}" \
+            --artifacts "${RUNNER_TEMP}/fgb-in" \
+            --plan-out "${RUNNER_TEMP}/fgb-plan/plan.json" \
+            --summary "${GITHUB_STEP_SUMMARY}" \
+            > "${RUNNER_TEMP}/prepare.json"
+          sha="$(jq -r .planSha256 "${RUNNER_TEMP}/prepare.json")"
+          echo "plan_sha256=${sha}" >> "${GITHUB_OUTPUT}"
+
+      - name: Keep the plan
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixed-guest-plan
+          path: ${{ runner.temp }}/fgb-plan/plan.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  publish:
+    name: publish
+    needs: prepare
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: fixed-guest-release
+    permissions:
+      contents: write
+      actions: read
+    env:
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      PLAN_SHA256: ${{ needs.prepare.outputs.plan_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install the builder's locked dependencies
+        working-directory: tools/fixed-guest-builder
+        run: bun install --frozen-lockfile
+
+      - name: Fetch the build run's set
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: fixed-guest-${{ inputs.build_run_id }}
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/fgb-in
+
+      - name: Fetch the plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: fixed-guest-plan
+          path: ${{ runner.temp }}/fgb-plan
+
       - name: Publish under the approved plan
         working-directory: tools/fixed-guest-builder
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          printf '%s' "${PLAN}" > "${RUNNER_TEMP}/plan.json"
           bun run src/cli.ts release \
             --workflow fixed-guest-release.yml \
-            --tool "${TOOL}" --binary "${BINARY}" --key "${KEY}" \
-            --repository "${REPOSITORY}" --commit "${COMMIT}" \
-            --artifacts "${RUNNER_TEMP}/fgb-in/${KEY}" \
-            --plan "${RUNNER_TEMP}/plan.json" \
+            --build-run-id "${BUILD_RUN_ID}" \
+            --artifacts "${RUNNER_TEMP}/fgb-in" \
+            --plan "${RUNNER_TEMP}/fgb-plan/plan.json" \
             --plan-sha256 "${PLAN_SHA256}"

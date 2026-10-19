@@ -1,20 +1,15 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { verifyArtifactSet } from './artifact.ts';
 import { bumpGuest } from './bump.ts';
 import { checkNotBusy } from './busy.ts';
 import { parseAllowlist } from './declaration.ts';
 import { BuildError } from './errors.ts';
 import { createGitHubApi, type GitHubApi } from './github.ts';
+import type { Fetcher } from './http.ts';
 import { type BuildDeps, runBuild } from './pipeline.ts';
+import { deriveSet, preparePlan, renderSummary } from './prepare.ts';
 import { runProcess } from './process.ts';
-import {
-  checkApprovalGate,
-  makePublishPlan,
-  publishSet,
-  type SetIdentity,
-} from './release.ts';
-import { BUILD_INFO_ASSET, CATALOG_ASSET } from './reuse.ts';
+import { checkApprovalGate, publishSet } from './release.ts';
 
 export interface CliIo {
   stdout: (text: string) => void;
@@ -25,6 +20,7 @@ export interface CliIo {
 export interface CliDeps {
   api?: (repository: string, token: string) => GitHubApi;
   build?: Partial<BuildDeps>;
+  fetcher?: Fetcher;
 }
 
 const PACKAGE_ROOT = resolve(import.meta.dir, '..');
@@ -76,24 +72,21 @@ function environment(io: CliIo, name: string): string {
   return value;
 }
 
-async function readSet(directory: string, binary: string) {
-  return {
-    elf: new Uint8Array(await readFile(join(directory, binary))),
-    buildInfo: new Uint8Array(
-      await readFile(join(directory, BUILD_INFO_ASSET)),
-    ),
-    catalog: new Uint8Array(await readFile(join(directory, CATALOG_ASSET))),
-  };
-}
-
-function identityFrom(flags: Record<string, string>): SetIdentity {
-  return {
-    tool: required(flags, 'tool'),
-    binary: required(flags, 'binary'),
-    key: required(flags, 'key'),
-    repository: required(flags, 'repository'),
-    commit: required(flags, 'commit'),
-  };
+async function deriveFrom(
+  flags: Record<string, string>,
+  api: GitHubApi,
+  buildRunId: number,
+  currentRunId: number,
+  deps: CliDeps,
+) {
+  return deriveSet({
+    api,
+    buildRunId,
+    currentRunId,
+    artifactDirectory: resolve(required(flags, 'artifacts')),
+    toolsConfig: await readJson(join(PACKAGE_ROOT, 'tools.json')),
+    ...(deps.fetcher === undefined ? {} : { fetcher: deps.fetcher }),
+  });
 }
 
 async function command(
@@ -159,40 +152,48 @@ async function command(
         );
       return receipt;
     }
-    case 'plan': {
-      const identity = identityFrom(flags);
-      const verified = verifyArtifactSet(
-        await readSet(required(flags, 'artifacts'), identity.binary),
+    case 'prepare': {
+      const currentRunId = runId(environment(io, 'GITHUB_RUN_ID'));
+      const buildRunId = runId(required(flags, 'build-run-id'));
+      const prepared = await deriveFrom(
+        flags,
+        api(),
+        buildRunId,
+        currentRunId,
+        deps,
+      );
+      const plan = preparePlan(prepared, buildRunId, currentRunId);
+      await writeFile(required(flags, 'plan-out'), plan.bytes, { flag: 'wx' });
+      await writeFile(
+        required(flags, 'summary'),
+        renderSummary(prepared, plan),
         {
-          buildKey: identity.key,
-          tool: identity.tool,
-          repository: identity.repository,
-          commit: identity.commit,
+          flag: 'a',
         },
       );
-      const plan = makePublishPlan({
-        identity,
-        verified,
-        buildRunId: runId(required(flags, 'build-run-id')),
-        rollbackPlan: required(flags, 'rollback'),
-        approvalReference: required(flags, 'approval-reference'),
-      });
-      await writeFile(required(flags, 'plan-out'), plan.bytes, { flag: 'wx' });
-      return { planSha256: plan.sha256, plan: plan.plan };
+      return {
+        planSha256: plan.sha256,
+        plan: plan.plan,
+        identity: prepared.identity,
+        compiled: prepared.compiled,
+      };
     }
     case 'release': {
       const github = api();
-      await checkNotBusy(
-        github,
-        required(flags, 'workflow'),
-        runId(environment(io, 'GITHUB_RUN_ID')),
-      );
+      const currentRunId = runId(environment(io, 'GITHUB_RUN_ID'));
+      await checkNotBusy(github, required(flags, 'workflow'), currentRunId);
       await checkApprovalGate(github);
-      const identity = identityFrom(flags);
+      const prepared = await deriveFrom(
+        flags,
+        github,
+        runId(required(flags, 'build-run-id')),
+        currentRunId,
+        deps,
+      );
       return publishSet({
         api: github,
-        identity,
-        files: await readSet(required(flags, 'artifacts'), identity.binary),
+        identity: prepared.identity,
+        files: prepared.files,
         planBytes: new Uint8Array(await readFile(required(flags, 'plan'))),
         approvedPlanSha256: required(flags, 'plan-sha256'),
       }).then((outcome) => ({
@@ -223,7 +224,7 @@ async function command(
     default:
       throw new BuildError(
         'INVALID_INPUT',
-        'usage: cli.ts <build|plan|release|bump> [--flag value]...',
+        'usage: cli.ts <build|prepare|release|bump> [--flag value]...',
       );
   }
 }

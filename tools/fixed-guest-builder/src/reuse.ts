@@ -1,4 +1,5 @@
 import {
+  type ArtifactSet,
   MAX_CATALOG_BYTES,
   MAX_ELF_BYTES,
   MAX_METADATA_BYTES,
@@ -39,6 +40,7 @@ export interface ReuseOptions {
 export interface ReuseResult extends VerifiedSet {
   compiled: false;
   tag: string;
+  files: ArtifactSet;
 }
 
 // Looked up without a token, which sees only published Releases, so a draft
@@ -89,17 +91,23 @@ export async function findPublished(
     await get(BUILD_INFO_ASSET, MAX_METADATA_BYTES),
     await get(CATALOG_ASSET, MAX_CATALOG_BYTES),
   ];
+  const files = {
+    elf: elf.bytes,
+    buildInfo: buildInfo.bytes,
+    catalog: catalog.bytes,
+  };
   let verified: VerifiedSet;
   try {
-    verified = verifyArtifactSet(
-      { elf: elf.bytes, buildInfo: buildInfo.bytes, catalog: catalog.bytes },
-      { buildKey: options.key, tool: options.tool, ...options.source },
-    );
+    verified = verifyArtifactSet(files, {
+      buildKey: options.key,
+      tool: options.tool,
+      ...options.source,
+    });
   } catch (error) {
     fail(
       'UNUSABLE_KEY',
       `the published set for this key fails verification: ${error instanceof Error ? error.message : ''}`,
     );
   }
-  return { ...verified, compiled: false, tag };
+  return { ...verified, compiled: false, tag, files };
 }

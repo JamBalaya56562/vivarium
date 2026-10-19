@@ -350,6 +350,69 @@ describe('createGitHubApi requests', () => {
     });
     expect(await errorCode(offline.findRelease('t'))).toBe('EXTERNAL');
   });
+
+  test('reads a run, its latest jobs and its artifacts, and refuses a list longer than one page', async () => {
+    const urls: string[] = [];
+    const pages = { jobs: 1, artifacts: 1 };
+    const api = createGitHubApi({
+      repository: 'aletheia-works/vivarium',
+      token: 'ghs_test_token_value',
+      fetcher: async (url) => {
+        urls.push(url);
+        if (url.includes('/jobs'))
+          return Response.json({
+            total_count: pages.jobs,
+            jobs: [
+              {
+                name: 'build biome',
+                status: 'completed',
+                conclusion: 'success',
+                id: 3,
+              },
+            ],
+          });
+        if (url.includes('/artifacts'))
+          return Response.json({
+            total_count: pages.artifacts,
+            artifacts: [{ name: 'fixed-guest-9', expired: false, id: 4 }],
+          });
+        return Response.json({
+          id: 9,
+          repository: { full_name: 'aletheia-works/vivarium' },
+          head_repository: null,
+          path: '.github/workflows/fixed-guest-build.yml',
+          head_branch: 'main',
+          event: 'workflow_dispatch',
+          status: 'completed',
+          conclusion: 'success',
+          html_url: 'https://github.com/aletheia-works/vivarium/actions/runs/9',
+          inputs: null,
+        });
+      },
+    });
+    expect(await api.workflowRun(9)).toEqual({
+      id: 9,
+      repository: 'aletheia-works/vivarium',
+      headRepository: null,
+      path: '.github/workflows/fixed-guest-build.yml',
+      headBranch: 'main',
+      event: 'workflow_dispatch',
+      status: 'completed',
+      conclusion: 'success',
+      htmlUrl: 'https://github.com/aletheia-works/vivarium/actions/runs/9',
+    });
+    expect(await api.runJobs(9)).toEqual([
+      { name: 'build biome', status: 'completed', conclusion: 'success' },
+    ]);
+    expect(await api.runArtifacts(9)).toEqual([
+      { name: 'fixed-guest-9', expired: false },
+    ]);
+    expect(urls[1]).toContain('/actions/runs/9/jobs?filter=latest');
+    pages.jobs = 101;
+    pages.artifacts = 101;
+    expect(await errorCode(api.runJobs(9))).toBe('EXTERNAL');
+    expect(await errorCode(api.runArtifacts(9))).toBe('EXTERNAL');
+  });
 });
 
 describe('checkApprovalGate', () => {

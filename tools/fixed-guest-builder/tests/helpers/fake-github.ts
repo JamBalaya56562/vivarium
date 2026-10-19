@@ -3,7 +3,10 @@ import type {
   GitHubApi,
   Release,
   ReleaseAsset,
+  RunArtifact,
+  RunJob,
   WorkflowRun,
+  WorkflowRunDetail,
 } from '../../src/github.ts';
 
 export class FakeGitHub implements GitHubApi {
@@ -90,5 +93,43 @@ export class FakeGitHub implements GitHubApi {
 
   async activeRuns() {
     return this.runs;
+  }
+
+  runDetails = new Map<number, WorkflowRunDetail>();
+  jobs = new Map<number, RunJob[]>();
+  artifacts = new Map<number, RunArtifact[]>();
+
+  addBuildRun(id: number, tool = 'biome'): WorkflowRunDetail {
+    const run: WorkflowRunDetail = {
+      id,
+      repository: 'aletheia-works/vivarium',
+      headRepository: 'aletheia-works/vivarium',
+      path: '.github/workflows/fixed-guest-build.yml',
+      headBranch: 'main',
+      event: 'workflow_dispatch',
+      status: 'completed',
+      conclusion: 'success',
+      htmlUrl: `https://github.com/aletheia-works/vivarium/actions/runs/${id}`,
+    };
+    this.runDetails.set(id, run);
+    this.jobs.set(id, [
+      { name: `build ${tool}`, status: 'completed', conclusion: 'success' },
+    ]);
+    this.artifacts.set(id, [{ name: `fixed-guest-${id}`, expired: false }]);
+    return run;
+  }
+
+  async workflowRun(id: number) {
+    const run = this.runDetails.get(id);
+    if (run === undefined) fail('EXTERNAL', 'GitHub API returned HTTP 404');
+    return { ...run };
+  }
+
+  async runJobs(id: number) {
+    return [...(this.jobs.get(id) ?? [])];
+  }
+
+  async runArtifacts(id: number) {
+    return [...(this.artifacts.get(id) ?? [])];
   }
 }
