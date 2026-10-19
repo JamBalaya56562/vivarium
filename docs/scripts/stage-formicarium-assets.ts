@@ -985,6 +985,61 @@ export interface SiteReport {
   bytes: number;
   coiCopies: number;
   bundles: number;
+  hiddenFiles: string[];
+}
+
+export const DEPLOY_WORKFLOW_PATH = join(
+  REPO_ROOT,
+  '.github',
+  'workflows',
+  'deploy-docs.yml',
+);
+const UPLOAD_PAGES_ACTION = 'actions/upload-pages-artifact@';
+// actions/upload-pages-artifact always passes --exclude=.git and
+// --exclude=.github to tar, whatever include-hidden-files says.
+const ALWAYS_EXCLUDED = new Set(['.git', '.github']);
+
+export interface UploadSettings {
+  includeHiddenFiles: boolean;
+}
+
+// check-site runs before the upload, so it reads the upload step's own
+// setting instead of a flag that could drift from the workflow.
+export function readUploadSettings(
+  workflowPath = DEPLOY_WORKFLOW_PATH,
+): UploadSettings {
+  const flow = Bun.YAML.parse(readFileSync(workflowPath, 'utf-8')) as {
+    jobs?: Record<
+      string,
+      { steps?: { uses?: string; with?: Record<string, unknown> }[] }
+    >;
+  };
+  const uploads = Object.values(flow.jobs ?? {}).flatMap((job) =>
+    (job.steps ?? []).filter((step) =>
+      step.uses?.startsWith(UPLOAD_PAGES_ACTION),
+    ),
+  );
+  if (uploads.length !== 1)
+    fail(
+      'INVALID_INPUT',
+      `${workflowPath} has ${uploads.length} ${UPLOAD_PAGES_ACTION} steps; expected 1`,
+    );
+  // The action compares the input as the string 'true'.
+  const value = uploads[0]?.with?.['include-hidden-files'];
+  return { includeHiddenFiles: value === true || value === 'true' };
+}
+
+export function uploadDropsPath(
+  relativePath: string,
+  settings: UploadSettings,
+): boolean {
+  return relativePath
+    .split(/[\\/]/)
+    .some(
+      (part) =>
+        ALWAYS_EXCLUDED.has(part) ||
+        (!settings.includeHiddenFiles && part.startsWith('.')),
+    );
 }
 
 async function walk(
@@ -1003,9 +1058,15 @@ async function walk(
 export async function checkSite(
   siteDir = SITE_DIR,
   summaryPath?: string,
+  upload: UploadSettings = readUploadSettings(),
 ): Promise<SiteReport> {
   if (!existsSync(siteDir)) fail('INVALID_INPUT', `${siteDir} does not exist`);
-  const report: SiteReport = { bytes: 0, coiCopies: 0, bundles: 0 };
+  const report: SiteReport = {
+    bytes: 0,
+    coiCopies: 0,
+    bundles: 0,
+    hiddenFiles: [],
+  };
   const manifests: string[] = [];
   await walk(siteDir, async (path, size) => {
     report.bytes = checkedAdd(
@@ -1014,6 +1075,9 @@ export async function checkSite(
       PAGES_SITE_LIMIT_BYTES,
       `site ${siteDir}`,
     );
+    const rel = relative(siteDir, path);
+    if (rel.split(sep).some((part) => part.startsWith('.')))
+      report.hiddenFiles.push(rel.split(sep).join('/'));
     if (path.endsWith(`${sep}${COI_SERVICEWORKER_FILE}`)) {
       const problem = coiServiceWorkerProblem(path);
       if (problem) fail('VERIFY_FAILED', problem);
@@ -1050,10 +1114,19 @@ export async function checkSite(
     }
     report.bundles += 1;
   }
+  report.hiddenFiles.sort();
+  const dropped = report.hiddenFiles.filter((rel) =>
+    uploadDropsPath(rel, upload),
+  );
+  if (dropped.length > 0)
+    fail(
+      'VERIFY_FAILED',
+      `the Pages upload (include-hidden-files: ${upload.includeHiddenFiles}) would drop ${dropped.join(', ')}`,
+    );
   if (summaryPath)
     await appendFile(
       summaryPath,
-      `### site size\n\n${report.bytes} bytes of ${PAGES_SITE_LIMIT_BYTES}; ${report.coiCopies} coi-serviceworker copies and ${report.bundles} formicarium bundles verified.\n`,
+      `### site size\n\n${report.bytes} bytes of ${PAGES_SITE_LIMIT_BYTES}; ${report.coiCopies} coi-serviceworker copies and ${report.bundles} formicarium bundles verified. Hidden files kept by the upload: ${report.hiddenFiles.length === 0 ? 'none' : report.hiddenFiles.map((rel) => `\`${rel}\``).join(', ')}.\n`,
     );
   return report;
 }
@@ -1077,6 +1150,9 @@ async function main(): Promise<void> {
     );
     console.error(
       `Site: ${report.bytes} bytes, ${report.coiCopies} coi-serviceworker copies, ${report.bundles} formicarium bundles.`,
+    );
+    console.error(
+      `Hidden files: ${report.hiddenFiles.length === 0 ? 'none' : report.hiddenFiles.join(', ')}.`,
     );
     return;
   }

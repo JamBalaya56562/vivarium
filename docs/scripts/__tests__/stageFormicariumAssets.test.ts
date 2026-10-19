@@ -20,6 +20,7 @@ import {
   type FormicariumPin,
   parsePin,
   readNpmTarball,
+  readUploadSettings,
   SITE_DIR,
   STAGE_DEADLINE_MS,
   StageError,
@@ -893,5 +894,76 @@ describe('checkSite (NFR6.4, S4, S9)', () => {
     await writeFile(path.join(ja, COI_SERVICEWORKER_FILE), 'x');
     error = await stageError(() => checkSite(site));
     expect(error.message).toContain('is not coi-serviceworker');
+  });
+});
+
+describe('checkSite against the Pages upload of hidden files (Step 18a)', () => {
+  const KEEP = { includeHiddenFiles: true };
+  const DROP = { includeHiddenFiles: false };
+
+  async function siteWith(files: string[]): Promise<string> {
+    const site = path.join(root, 'site');
+    for (const file of files) {
+      await mkdir(path.dirname(path.join(site, file)), { recursive: true });
+      await writeFile(path.join(site, file), '{}');
+    }
+    return site;
+  }
+
+  test('lists the hidden files and passes when the upload keeps them', async () => {
+    const site = await siteWith([
+      'repro/demo/fixture/.prettierrc',
+      'repro/demo/.cache/a.json',
+      'repro/demo/fixture/biome.json',
+    ]);
+    const report = await checkSite(site, undefined, KEEP);
+    expect(report.hiddenFiles).toEqual([
+      'repro/demo/.cache/a.json',
+      'repro/demo/fixture/.prettierrc',
+    ]);
+  });
+
+  test('fails and names the file when the upload would drop a hidden file', async () => {
+    const site = await siteWith(['repro/demo/fixture/.prettierrc']);
+    const error = await stageError(() => checkSite(site, undefined, DROP));
+    expect(error.code).toBe('VERIFY_FAILED');
+    expect(error.message).toContain('repro/demo/fixture/.prettierrc');
+    expect(error.message).toContain('include-hidden-files: false');
+  });
+
+  test('fails on .git and .github even when hidden files are kept', async () => {
+    for (const dir of ['.git', '.github']) {
+      rmSync(path.join(root, 'site'), { recursive: true, force: true });
+      const site = await siteWith([`repro/${dir}/x.json`]);
+      const error = await stageError(() => checkSite(site, undefined, KEEP));
+      expect(error.message).toContain(`repro/${dir}/x.json`);
+    }
+  });
+
+  test('passes a site without hidden files whatever the setting', async () => {
+    const site = await siteWith(['repro/demo/fixture/biome.json']);
+    expect((await checkSite(site, undefined, DROP)).hiddenFiles).toEqual([]);
+  });
+
+  test('reads include-hidden-files from the single upload step of a workflow', async () => {
+    const workflow = path.join(root, 'flow.yml');
+    const flow = (value: string) =>
+      `jobs:\n  build:\n    steps:\n      - uses: actions/upload-pages-artifact@abc\n        with:\n          path: docs/doc_build\n${value}`;
+    await writeFile(workflow, flow(''));
+    expect(readUploadSettings(workflow)).toEqual(DROP);
+    await writeFile(workflow, flow('          include-hidden-files: true\n'));
+    expect(readUploadSettings(workflow)).toEqual(KEEP);
+    await writeFile(workflow, flow("          include-hidden-files: 'true'\n"));
+    expect(readUploadSettings(workflow)).toEqual(KEEP);
+    await writeFile(workflow, 'jobs:\n  build:\n    steps: []\n');
+    expect(() => readUploadSettings(workflow)).toThrow(StageError);
+  });
+
+  test('a site with a fixture dotfile passes under the deploy-docs upload setting', async () => {
+    const site = await siteWith([
+      'repro/biome/migrate-override-bracket-spacing/fixture/.prettierrc',
+    ]);
+    const report = await checkSite(site, undefined, readUploadSettings());
+    expect(report.hiddenFiles).toHaveLength(1);
   });
 });

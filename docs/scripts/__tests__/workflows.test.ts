@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { REPO_ROOT } from '../site-paths';
 
@@ -86,6 +86,26 @@ describe('deploy-docs stages formicarium assets in pin mode only (S2, NFR8.4)', 
     expect(check).toBe(layer2 + 1);
     expect(upload).toBe(check + 1);
     expectNoSecrets(steps[check] as Step);
+  });
+
+  test('uploads the hidden files the site ships, such as the recipe fixture .prettierrc (Step 18a)', () => {
+    // The action drops every dot-named path unless include-hidden-files is
+    // true; the recipe's fixture/.prettierrc then 404s on Pages.
+    expect(
+      readdirSync(
+        path.join(
+          REPO_ROOT,
+          'src',
+          'layer1_wasm',
+          'biome-migrate-override-bracket-spacing',
+          'fixture',
+        ),
+      ),
+    ).toContain('.prettierrc');
+    const upload = steps.find(
+      (s) => s.uses?.startsWith('actions/upload-pages-artifact@') ?? false,
+    );
+    expect(upload?.with?.['include-hidden-files']).toBe(true);
   });
 
   test('uses no local mode and no other stager command', () => {
