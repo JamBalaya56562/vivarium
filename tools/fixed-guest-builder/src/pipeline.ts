@@ -76,6 +76,7 @@ export interface BuildDeps {
   dependencyLimitBytes?: number;
   minFreeDiskBytes?: number;
   monitorIntervalMs?: number;
+  killGraceMs?: number;
   signal?: AbortSignal;
   now?: () => Date;
 }
@@ -105,6 +106,7 @@ function watchedGit(
   directory: string,
   limitBytes: number,
   intervalMs: number | undefined,
+  killGraceMs: number | undefined,
 ): Runner {
   return async (command, args, options = {}) => {
     if (command !== 'git' || (args[0] !== 'clone' && args[0] !== 'checkout'))
@@ -114,6 +116,7 @@ function watchedGit(
       watch: [directory],
       limitBytes,
       ...(intervalMs === undefined ? {} : { intervalMs }),
+      ...(killGraceMs === undefined ? {} : { killGraceMs }),
     });
     return { code: result.code, stdout: result.stdout, stderr: result.stderr };
   };
@@ -193,6 +196,7 @@ export async function runBuild(
             sourceDir,
             deps.sourceLimitBytes ?? SOURCE_LIMIT_BYTES,
             deps.monitorIntervalMs,
+            deps.killGraceMs,
           ),
           signal,
           ...(deps.cloneUrl === undefined ? {} : { cloneUrl: deps.cloneUrl }),
@@ -323,6 +327,7 @@ export async function runBuild(
               directory,
               deps.sourceLimitBytes ?? SOURCE_LIMIT_BYTES,
               deps.monitorIntervalMs,
+              deps.killGraceMs,
             ),
             signal,
             ...(deps.cloneUrl === undefined ? {} : { cloneUrl: deps.cloneUrl }),

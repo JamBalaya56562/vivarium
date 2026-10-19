@@ -20,6 +20,7 @@ import { createUpstream, git, tempDir } from './helpers/git.ts';
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const IMAGE = `docker.io/library/rust@${DIGEST}`;
 const DOCKER = new URL('./fixtures/fake-docker.sh', import.meta.url).pathname;
+const STUCK_GIT = new URL('./fixtures/stuck-git.sh', import.meta.url).pathname;
 const BUILDER = new URL('../container', import.meta.url).pathname;
 const apk = new TextEncoder().encode('apk');
 const apkSha = new Bun.CryptoHasher('sha256').update(apk).digest('hex');
@@ -139,6 +140,7 @@ const deps = (url: string, fetcher: Fetcher) => ({
   cloneUrl: () => url,
   minFreeDiskBytes: 0,
   monitorIntervalMs: 10,
+  killGraceMs: 200,
 });
 
 describe('runBuild', () => {
@@ -240,6 +242,27 @@ describe('runBuild', () => {
   test('stops a source above the size limit before building', async () => {
     const upstream = await createUpstream(files);
     const req = await request(upstream.main);
+    expect(
+      await errorCode(
+        runBuild(req, {
+          ...deps(upstream.url, fetcherFor()),
+          sourceLimitBytes: 10,
+        }),
+      ),
+    ).toBe('LIMIT_EXCEEDED');
+    expect(await readFile(log, 'utf8').catch(() => '')).not.toContain(
+      '/builder/build.sh',
+    );
+  });
+
+  test('stops a clone that ignores SIGTERM above the size limit within the kill grace', async () => {
+    const upstream = await createUpstream(files);
+    const req = await request(upstream.main);
+    const bin = await tempDir('fgb-git-');
+    await cp(STUCK_GIT, join(bin, 'git'));
+    await chmod(join(bin, 'git'), 0o755);
+    process.env.FAKE_REAL_GIT = Bun.which('git') ?? 'git';
+    process.env.PATH = `${bin}:${process.env.PATH}`;
     expect(
       await errorCode(
         runBuild(req, {
