@@ -277,7 +277,7 @@ CI はこれらの条項を機械的に強制する——
 | 1 | 2026-04-28（ロック） | 初回公開サーフェス: `<meta>`、`#verdict[data-verdict]`、JS グローバル、`VivariumResultV1` エンベロープ、Layer 2/3 `verdict.json` スナップショット。 |
 | 2 | 2026-04-30 | オプションの `#evidence` DOM コンテナ（`stdout`、`stderr`、`exit-code`、`duration-ms` の `[data-evidence]` 子要素）と対応する `__VIVARIUM_RESULT__.evidence` エンベロープフィールド。Layer 2/3 リフトはリフト境界で `verdict.json#stderr_tail` → `evidence.stderr` にリネーム。`verdict.schema.json` は変更なし。 |
 | 3 | 2026-05-05 | Verdict enum 値をリネーム: `"pass"` → `"reproduced"`、`"fail"` → `"unreproduced"`（`"pending"` は不変）。Contract バージョンリテラルは `v1` のまま。`verdict.schema.json` の enum も更新され、旧値（`"pass"` / `"fail"`）を持つスナップショットはバリデーションを通らなくなる。`#verdict` の CSS クラス名と `data-verdict` 属性値も同じくリネーム。 |
-| 4 | 2026-10-19 | `runtime.name` の表に `"formicarium"` を載せた。`"terrarium"` は使われている値から外した（退役の時点で使う recipe は無く、互換の仕組みも残さない）。`runtime.name` は自由形式のままなので、surface とバージョンリテラルは変わらない。 |
+| 4 | 2026-10-19 | `runtime.name` の表に `"formicarium"` を載せた。`runtime.name` は自由形式のままなので、surface とバージョンリテラルは変わらない。 |
 
 ## 参照
 
