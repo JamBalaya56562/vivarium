@@ -30,11 +30,12 @@ After the first unified release, Release Please uses its tag as the next
 release boundary and updates the manifest automatically. Existing historical
 tags and registry versions retain their original contents.
 
-The docs unit suite tests the release configuration with Release Please
-`17.6.0`, matching the engine bundled in `release-please-action` v5.0.0.
-When upgrading that action, update the test dependency to its bundled engine
-version as well. When adding a package, register its manifest in the root
-release configuration's `extra-files` list so its version is updated too.
+The docs unit suite tests the release configuration with the
+`release-please` package in `docs/package.json`. Keep it at the engine
+version that the pinned `release-please-action` bundles (its
+`package-lock.json` records it). When adding a package, register its
+manifest in the root release configuration's `extra-files` list so its
+version is updated too.
 
 ## Weekly merge
 
