@@ -298,8 +298,9 @@ the tasks start. GitHub Actions jobs install dependencies directly.
 
 For one-off autofix passes use the matching per-language `*:check:fix`
 tasks (`docs:check:fix`, `python:check:fix`, etc.); CI's
-`lint-autofix.yml` runs the same set on each PR and commits any
-residual fixes back to the branch.
+`lint-autofix.yml` runs the same set on each PR, and aletheia-works-bot
+commits any residual fixes back to the branch as a signed commit (a PR
+from a fork needs "Allow edits by maintainers").
 
 If a `ci:*` task is missing for the workflow you triggered, transcribe
 its `run:` steps from the YAML and execute them by hand. **When CI
