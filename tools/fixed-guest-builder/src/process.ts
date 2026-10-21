@@ -53,6 +53,8 @@ function signalGroup(pid: number, signal: NodeJS.Signals): void {
 
 // Children (git, docker, the container) never need the workflow's tokens, so
 // they are not inherited; a caller that needs one passes it explicitly.
+// The match is by name only: a secret such as `*_KEY` or `SSH_AUTH_SOCK` still
+// passes, so a workflow that adds one adds it here too.
 const WITHHELD =
   /^(ACTIONS_.*|GITHUB_TOKEN|GH_TOKEN|.*_TOKEN|.*_SECRET|.*_PASSWORD)$/;
 
