@@ -737,6 +737,14 @@ describe('stageAssets pin mode (S2)', () => {
     });
     const report = await stageAssets(ok.options);
     expect(report.rows[0]?.source).toBe(final);
+    // A signed redirect target is logged without its short-lived query.
+    const signed = `${final}?sig=secret&jwt=token`;
+    const queried = await pinOptions(tarball, {
+      ...chain(1, signed),
+      [signed]: () => new Response(tarball),
+    });
+    const signedReport = await stageAssets(queried.options);
+    expect(signedReport.rows[0]?.source).toBe(final);
     for (const [override, message] of [
       [
         { ...chain(6, final), [final]: () => new Response(tarball) },
@@ -894,6 +902,17 @@ describe('checkSite (NFR6.4, S4, S9)', () => {
     await writeFile(path.join(ja, COI_SERVICEWORKER_FILE), 'x');
     error = await stageError(() => checkSite(site));
     expect(error.message).toContain('is not coi-serviceworker');
+  });
+
+  test('refuses a local-staging accepted.json in the site', async () => {
+    const site = path.join(root, 'site-accepted');
+    const guests = path.join(site, 'repro', 'demo', 'guests', 'baseline');
+    await mkdir(guests, { recursive: true });
+    expect(await checkSite(site)).toMatchObject({ bundles: 0 });
+    await writeFile(path.join(guests, 'accepted.json'), '{}');
+    const error = await stageError(() => checkSite(site));
+    expect(error.code).toBe('VERIFY_FAILED');
+    expect(error.message).toContain('accepted.json');
   });
 });
 

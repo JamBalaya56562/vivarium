@@ -288,8 +288,16 @@ export async function loadFormicarium(options: {
       `assets.json returned HTTP ${response.status}`,
     );
   const manifest = parseAssetsManifest(await response.json());
-  const url = (name: keyof AssetsManifest['entries']) =>
-    new URL(manifest.entries[name], root).href;
+  const url = (name: keyof AssetsManifest['entries']) => {
+    const resolved = new URL(manifest.entries[name], root).href;
+    // A scheme such as data: passes the path check but leaves _formicarium/.
+    if (!resolved.startsWith(root.href))
+      throw new TerminalError(
+        'ASSET_LOAD',
+        `assets.json ${name} is not under _formicarium/`,
+      );
+    return resolved;
+  };
   const [publicModule, browserModule] = await Promise.all([
     importModule(url('public')),
     importModule(url('browser')),
@@ -610,6 +618,10 @@ export class TerminalController {
       return detail;
     } catch (error) {
       const failure = error instanceof Error ? error : new Error(String(error));
+      // A session made before the failure is not reachable by run(); free it.
+      const session = this.#session;
+      this.#session = null;
+      if (session) await session.dispose().catch(() => undefined);
       if (this.#abort.signal.aborted) {
         this.#rejectReady(
           new TerminalError('ABORTED', 'the terminal was removed'),

@@ -512,6 +512,11 @@ function checkDeadline(ctx: RunContext): void {
     fail('TIMEOUT', `staging passed its ${STAGE_DEADLINE_MS} ms cap`);
 }
 
+function withoutQuery(url: string): string {
+  const parsed = new URL(url);
+  return `${parsed.origin}${parsed.pathname}`;
+}
+
 async function fetchAsset(
   ctx: RunContext,
   item: string,
@@ -530,7 +535,9 @@ async function fetchAsset(
     });
     ctx.rows.push({
       item,
-      source: result.finalUrl,
+      // The final URL of a Release asset is signed and short-lived; log
+      // where it came from without the query.
+      source: withoutQuery(result.finalUrl),
       bytes: result.bytes.byteLength,
       sha256: result.sha256,
       ms: Math.round(ctx.now() - started),
@@ -1076,6 +1083,13 @@ export async function checkSite(
       `site ${siteDir}`,
     );
     const rel = relative(siteDir, path);
+    // The local-staging copy of an accepted build must never be published.
+    const parts = rel.split(sep);
+    if (parts.at(-1) === LOCAL_ACCEPTED_ASSET && parts.at(-3) === 'guests')
+      fail(
+        'VERIFY_FAILED',
+        `${rel} is a local-staging ${LOCAL_ACCEPTED_ASSET}`,
+      );
     if (rel.split(sep).some((part) => part.startsWith('.')))
       report.hiddenFiles.push(rel.split(sep).join('/'));
     if (path.endsWith(`${sep}${COI_SERVICEWORKER_FILE}`)) {

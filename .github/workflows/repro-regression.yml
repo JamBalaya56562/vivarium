@@ -143,6 +143,23 @@ jobs:
         timeout-minutes: 7
         run: bun docs/scripts/stage-formicarium-assets.ts --mode pin
 
+      # The type check needs the pinned tarball itself; without it the test
+      # skips as NOT MEASURED, so fetch the pinned version and check its digest.
+      - name: Check the formicarium types against the pinned tarball
+        working-directory: ${{ github.workspace }}
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          pin=src/layer1_wasm/formicarium.pin.json
+          version="$(jq -r .packageVersion "$pin")"
+          expected="$(jq -r .tarballSha256 "$pin")"
+          dir="${RUNNER_TEMP}/formicarium-tarball"
+          mkdir -p "$dir"
+          npm pack "@aletheia-works/formicarium@${version}" --pack-destination "$dir" --silent
+          tarball="${dir}/aletheia-works-formicarium-${version}.tgz"
+          echo "${expected}  ${tarball}" | sha256sum --check --strict
+          FORMICARIUM_LOCAL_TARBALL="$tarball" bun test docs/scripts/__tests__/formicariumTypes.test.ts
+
       - name: Build, run, and snapshot Layer 2 Docker reproductions (no push)
         working-directory: ${{ github.workspace }}
         run: |

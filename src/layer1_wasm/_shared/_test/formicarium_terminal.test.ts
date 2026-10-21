@@ -255,6 +255,19 @@ describe('TerminalController boot (BR3.2, BR3.3, BR3.6)', () => {
     expect(recorded.texts.at(-1)).toBe('Failed: ELF SHA256 does not match');
   });
 
+  test('disposes the session when registering the guest fails', async () => {
+    const { api, calls } = fakeApi({});
+    api.registerValidatedGuest = async () => {
+      throw new Error('register failed');
+    };
+    const { fetcher } = guestFetch();
+    const { terminal } = controller({ api, fetch: fetcher });
+    await expect(terminal.boot()).rejects.toThrow('register failed');
+    expect(calls).toContain('dispose');
+    await terminal.dispose();
+    expect(calls.filter((call) => call === 'dispose')).toHaveLength(1);
+  });
+
   test('fails on HTTP errors and on a response over its limit', async () => {
     const { api } = fakeApi({});
     const missing = controller({
@@ -587,6 +600,28 @@ describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
         importModule: async () => api,
       }),
     ).rejects.toThrow('worker is not a relative path');
+    // A scheme in the entry would make new URL() leave _formicarium/.
+    const imports: string[] = [];
+    await expect(
+      loadFormicarium({
+        pageURL: page,
+        fetch: (async () =>
+          new Response(
+            JSON.stringify({
+              ...manifest,
+              entries: {
+                ...manifest.entries,
+                public: 'data:text/javascript,export%20default%201',
+              },
+            }),
+          )) as unknown as typeof fetch,
+        importModule: async (url) => {
+          imports.push(url);
+          return api;
+        },
+      }),
+    ).rejects.toThrow('public is not under _formicarium/');
+    expect(imports).toEqual([]);
   });
 
   test('lays the fixture out inside the cwd persistence root /work/app', () => {

@@ -153,6 +153,21 @@ describe('repro-regression stages before Playwright and measures U6 coverage (R-
     expect(text).not.toContain('--mode local');
   });
 
+  test('checks the formicarium types against the pinned tarball, not skipped', () => {
+    const stage = index(steps, (s) => s.run === `${STAGER} --mode pin`);
+    const types = index(
+      steps,
+      (s) => s.run?.includes('formicariumTypes.test.ts') ?? false,
+    );
+    expect(types).toBe(stage + 1);
+    const run = steps[types]?.run ?? '';
+    expect(run).toContain('formicarium.pin.json');
+    expect(run).toContain('sha256sum --check --strict');
+    expect(run).toContain('FORMICARIUM_LOCAL_TARBALL="$tarball"');
+    expect(steps[types]?.['timeout-minutes']).toBe(5);
+    expectNoSecrets(steps[types] as Step);
+  });
+
   test('runs the coverage step on Chromium after Playwright and keeps its report', () => {
     const playwright = index(
       steps,
