@@ -254,17 +254,16 @@ describe('builder workflows', () => {
     expect(text).not.toContain('inputs.tool');
   });
 
-  test('open bump PRs with the bot and leave the merge to a person', async () => {
-    const { flow } = await load('fixed-guest-bump.yml');
+  test('open bump PRs with the bot and let them merge themselves', async () => {
+    const { text, flow } = await load('fixed-guest-bump.yml');
     const steps = Object.values(flow.jobs)[0]?.steps ?? [];
     const pr = steps.findIndex(
       (step) => step.uses === './.github/actions/bot-pull-request',
     );
-    const disable = steps.findIndex((step) =>
-      step.run?.includes('gh pr merge --disable-auto'),
-    );
     expect(pr).toBeGreaterThan(-1);
-    expect(disable).toBeGreaterThan(pr);
+    // bot-pull-request enables auto-merge; nothing after it turns it off.
+    expect(pr).toBe(steps.length - 1);
+    expect(text).not.toContain('--disable-auto');
     const token = steps.find((step) =>
       step.uses?.startsWith('actions/create-github-app-token@'),
     );

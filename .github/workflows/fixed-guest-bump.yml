@@ -94,7 +94,7 @@ jobs:
             cat "${RUNNER_TEMP}/bump.json"
             echo '```'
             echo
-            echo "A person merges this pull request. The fixed build for the new key runs separately."
+            echo "It merges itself once the required checks pass. The fixed build for the new key runs separately."
           } > "${RUNNER_TEMP}/body.md"
 
       - name: Get an aletheia-works-bot token
@@ -115,16 +115,3 @@ jobs:
           branch: ${{ steps.bump.outputs.branch }}
           title: 'chore(layer1): bump the ${{ inputs.role }} guest of ${{ steps.bump.outputs.slug }}'
           body-path: ${{ runner.temp }}/body.md
-
-      # bot-pull-request always enables auto-merge; a person merges these.
-      - name: Leave the merge to a person
-        if: steps.bump.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          BRANCH: ${{ steps.bump.outputs.branch }}
-        run: |
-          set -euo pipefail
-          number=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
-          if [ -n "${number}" ]; then
-            gh pr merge --disable-auto "${number}"
-          fi

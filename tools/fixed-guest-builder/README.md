@@ -91,8 +91,8 @@ Start **fixed-guest-bump** with the recipe path and the guest's role
 fix. The branch tip is read with `git ls-remote`; PR pages are never used.
 Only the guest's `commit` moves; its `accepted` build stays, so the site keeps
 running it until a person accepts the build of the new commit. The run opens
-a pull request on `fixed-guest-bump/<recipe>-<role>` with auto-merge turned
-off, so a person merges it, and the fixed build of the new key runs
+a pull request on `fixed-guest-bump/<recipe>-<role>` that merges itself once
+the required checks pass, and the fixed build of the new key runs
 separately.
 
 ## Changing what may be built
