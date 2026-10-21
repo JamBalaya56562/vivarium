@@ -73,6 +73,9 @@ updates:
       docs-deps:
         patterns:
           - "*"
+    ignore:
+      # Matches the engine bundled in the pinned release-please-action.
+      - dependency-name: "release-please"
 
   - package-ecosystem: "bun"
     directory: "/src/layer1_wasm"
