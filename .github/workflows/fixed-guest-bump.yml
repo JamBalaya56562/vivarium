@@ -81,6 +81,7 @@ jobs:
           changed=$(bun -e 'console.log((await Bun.file(process.argv[1]).json()).changed)' "${RUNNER_TEMP}/bump.json")
           echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
           slug=$(basename "$(dirname "${RECIPE}")")
+          echo "slug=${slug}" >> "${GITHUB_OUTPUT}"
           echo "branch=fixed-guest-bump/${slug}-${ROLE}" >> "${GITHUB_OUTPUT}"
           {
             echo "Moves the ${ROLE} guest in \`${RECIPE}\` to the tip of the branch its declaration names."
@@ -112,7 +113,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           branch: ${{ steps.bump.outputs.branch }}
-          title: 'fixed-guest: bump ${{ inputs.role }} in ${{ inputs.recipe }}'
+          title: 'chore(layer1): bump the ${{ inputs.role }} guest of ${{ steps.bump.outputs.slug }}'
           body-path: ${{ runner.temp }}/body.md
 
       # bot-pull-request always enables auto-merge; a person merges these.

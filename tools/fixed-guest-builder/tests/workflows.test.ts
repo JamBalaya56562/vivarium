@@ -240,9 +240,17 @@ describe('builder workflows', () => {
       'echo "branch=fixed-guest-bump/${slug}-${ROLE}" >> "${GITHUB_OUTPUT}"',
     );
     expect(text).toContain(
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
-      "title: 'fixed-guest: bump ${{ inputs.role }} in ${{ inputs.recipe }}'",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+      'echo "slug=${slug}" >> "${GITHUB_OUTPUT}"',
     );
+    // The title is also the bot's commit message, which commitlint checks as
+    // a conventional commit header of at most 100 characters.
+    const title = /^ {10}title: '(.+)'$/m.exec(text)?.[1] ?? '';
+    expect(title).toBe(
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
+      'chore(layer1): bump the ${{ inputs.role }} guest of ${{ steps.bump.outputs.slug }}',
+    );
+    expect(title).toMatch(/^[a-z]+\([a-z0-9-]+\): [a-z]/);
     expect(text).not.toContain('inputs.tool');
   });
 
