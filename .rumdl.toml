@@ -19,7 +19,6 @@ exclude = [
   "target",
   "_context",
   "src/**/node_modules/**",
-  "**/CHANGELOG.md",
   "**/LICENSE.md",
   "**/node_modules/**",
 ]

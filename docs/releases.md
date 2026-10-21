@@ -8,10 +8,11 @@ MCP metadata. The docs and Layer 1 private packages use that version too.
 
 Every push to upstream `main` runs Release Please. Conventional Commits
 across the repository determine the next shared version. Release Please
-updates the root `CHANGELOG.md`, root `package.json`, every other package's
-`package.json`, and the MCP `jsr.json` in one release PR.
+updates the root `package.json`, every other package's `package.json`, and
+the MCP `jsr.json` in one release PR. The repository keeps no
+`CHANGELOG.md`; the release notes live only in the GitHub release.
 
-Review the release PR's changelog while its required checks run.
+Review the release notes in the release PR's body while its required checks run.
 Release Please creates one `v<version>` tag on the merge commit and one
 GitHub release. That same tag triggers `publish-mcp.yml`, which publishes
 MCP with the shared version to npm and JSR. A recipe or docs change can

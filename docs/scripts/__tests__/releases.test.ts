@@ -123,6 +123,9 @@ describe('shared release version', () => {
     const prs = await manifest.buildPullRequests();
     expect(prs).toHaveLength(1);
     const pr = prs[0];
+    expect(pr.updates.map((update) => update.path)).not.toContain(
+      'CHANGELOG.md',
+    );
     let content = JSON.stringify(versions);
     for (const update of pr.updates) {
       if (update.path === manifestPath) {
@@ -148,6 +151,7 @@ describe('shared release version', () => {
     expect(releases).toHaveLength(1);
     expect(releases[0].tag.toString()).toBe('v0.2.3');
     expect(releases[0].sha).toBe(merge);
+    expect(releases[0].notes).toContain('correct a response');
   });
 
   test('all first-party manifests are registered and share the root version', () => {

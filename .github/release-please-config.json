@@ -3,6 +3,7 @@
   "bootstrap-sha": "22a00ecb1d3c40730e25fb9fa5e5bd7be0d67ed8",
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
+  "skip-changelog": true,
   "pull-request-header": "Release Please calculated this shared version from Conventional Commits. Review the changes and merge this PR to create the Vivarium tag and GitHub release, then publish MCP to npm and JSR.",
   "packages": {
     ".": {
