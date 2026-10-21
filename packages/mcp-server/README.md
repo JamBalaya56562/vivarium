@@ -78,8 +78,9 @@ Apache-2.0 — see [LICENSE](./LICENSE).
 All first-party packages use the version in the root `package.json`.
 Release Please updates every package's `package.json` and the MCP
 `jsr.json` in one release PR from Conventional Commits merged into `main`;
-the release notes go to the GitHub release. The MCP handshake reads its version from `jsr.json`;
-`bun run check:version` checks the MCP manifests before tests and builds.
+the release notes go to the GitHub release. The MCP handshake reads its
+version from `jsr.json`; `bun run check:version` checks the MCP manifests
+before tests and builds.
 
 Merge the release PR after its required checks pass to create one shared
 `v<version>` tag and GitHub release. That tag triggers `publish-mcp`, which
