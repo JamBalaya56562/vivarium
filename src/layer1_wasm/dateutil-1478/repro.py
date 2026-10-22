@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.14"
 # dependencies = [
-#   "python-dateutil==2.9.0.post0",
+#   "python-dateutil==3.0.0",
 # ]
 # ///
 """Vivarium Layer 1 reproduction — dateutil/dateutil#1478, native variant.
@@ -13,7 +13,7 @@ contributor can re-verify the bug against a real CPython interpreter
     mise install                                                       # one-time
     mise exec uv -- uv run src/layer1_wasm/dateutil-1478/repro.py
 
-PEP 723 inline metadata pins python-dateutil to **2.9.0.post0** —
+PEP 723 inline metadata pins python-dateutil to **3.0.0** —
 the version reported as exhibiting the bug in the upstream issue
 thread (and the latest release at authoring time).
 

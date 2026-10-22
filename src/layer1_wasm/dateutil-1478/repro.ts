@@ -63,7 +63,7 @@ print(f"python-dateutil {dateutil.__version__} / Python {sys.version.split()[0]}
 const VERSION_QUERY =
   'import dateutil, sys; [dateutil.__version__, sys.version.split()[0]]';
 
-const BASELINE_SPEC = 'python-dateutil==2.9.0.post0';
+const BASELINE_SPEC = 'python-dateutil==3.0.0';
 
 interface CaseObservation {
   input: string;
