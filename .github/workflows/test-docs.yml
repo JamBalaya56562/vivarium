@@ -61,19 +61,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Read the Playwright version
-        id: playwright
-        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright system packages (${{ matrix.browser }})
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/vivarium-pw-apt
-          key: pw-apt-${{ runner.os }}-${{ env.ImageOS }}-${{ matrix.browser }}-${{ steps.playwright.outputs.version }}
-          restore-keys: pw-apt-${{ runner.os }}-${{ env.ImageOS }}-${{ matrix.browser }}-
-
       - name: Install Playwright browser (${{ matrix.browser }})
-        run: bash "$GITHUB_WORKSPACE/scripts/install-playwright-browser.sh" ${{ matrix.browser }}
+        uses: aletheia-works/.github/actions/install-playwright@237aeceec82d1ac86155fae871a80d4c1b436845 # v1.2.0
+        with:
+          browsers: ${{ matrix.browser }}
+          command: bunx playwright
+          working-directory: docs
 
       - name: Run Playwright suite (${{ matrix.browser }})
         run: bun run test:e2e -- --project=${{ matrix.browser }}
