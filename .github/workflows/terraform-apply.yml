@@ -20,6 +20,8 @@ jobs:
     uses: aletheia-works/.github/.github/workflows/terraform-apply.yml@4f9b6d6865f083952f13557c91eaf839045e55e1 # v1.0.0
     with:
       working_directory: infra/github
+      # No GitHub Environment gates this apply.
+      environment: ''
       tfvar_assignments: |
         create_phase_milestones=true
         fixed_guest_release_reviewer_ids=[88115388]
