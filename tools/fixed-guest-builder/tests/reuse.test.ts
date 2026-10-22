@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { BuildError } from '../src/errors.ts';
 import { type Fetcher, fetchLimited } from '../src/http.ts';
 import { findPublished, releaseTag } from '../src/reuse.ts';
-import { SOURCE, sampleSet } from './helpers/artifacts.ts';
+import { assetsOf, SOURCE, sampleSet } from './helpers/artifacts.ts';
 
 async function errorCode(
   promise: Promise<unknown>,
@@ -133,13 +133,16 @@ describe('findPublished', () => {
         () =>
           Response.json({
             draft,
-            assets: (
-              assets ?? ['biome', 'build-info.json', 'catalog.json']
-            ).map((name) => ({ name })),
+            assets: (assets ?? Object.keys(assetsOf(set.files))).map(
+              (name) => ({ name }),
+            ),
           }),
-      [`${base}/biome`]: () => new Response(set.files.elf),
-      [`${base}/build-info.json`]: () => new Response(set.files.buildInfo),
-      [`${base}/catalog.json`]: () => new Response(set.files.catalog),
+      ...Object.fromEntries(
+        Object.entries(assetsOf(set.files)).map(([name, bytes]) => [
+          `${base}/${name}`,
+          () => new Response(bytes as Uint8Array<ArrayBuffer>),
+        ]),
+      ),
     });
   }
 
@@ -196,6 +199,37 @@ describe('findPublished', () => {
           key: set.key,
           source: SOURCE,
           fetcher: incomplete.fetcher,
+        }),
+      ),
+    ).toBe('UNUSABLE_KEY');
+    const threeFiles = published(set, [
+      'biome',
+      'build-info.json',
+      'catalog.json',
+    ]);
+    expect(
+      await errorCode(
+        findPublished({
+          tool: 'biome',
+          binary: 'biome',
+          key: set.key,
+          source: SOURCE,
+          fetcher: threeFiles.fetcher,
+        }),
+      ),
+    ).toBe('UNUSABLE_KEY');
+    const otherNotices = published({
+      ...set,
+      files: { ...set.files, notices: new TextEncoder().encode('changed') },
+    });
+    expect(
+      await errorCode(
+        findPublished({
+          tool: 'biome',
+          binary: 'biome',
+          key: set.key,
+          source: SOURCE,
+          fetcher: otherNotices.fetcher,
         }),
       ),
     ).toBe('UNUSABLE_KEY');

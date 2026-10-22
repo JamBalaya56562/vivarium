@@ -9,7 +9,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { join } from 'node:path';
-import { verifyArtifactSet } from '../src/artifact.ts';
+import { verifyGuestSet } from '../src/artifact.ts';
 import { parseAllowlist } from '../src/declaration.ts';
 import { BuildError } from '../src/errors.ts';
 import type { Fetcher } from '../src/http.ts';
@@ -32,6 +32,11 @@ const toolsConfig = {
     url: 'https://example.invalid/mbx.tar.gz',
     sha256: apkSha,
     maxTotalSize: '1GiB',
+  },
+  cargoAbout: {
+    version: '0.9.2',
+    url: 'https://example.invalid/cargo-about.tar.gz',
+    sha256: apkSha,
   },
   tools: {
     biome: {
@@ -60,6 +65,7 @@ const files = {
   'Cargo.lock':
     'version = 4\n[[package]]\nname = "x"\nversion = "1.0.0"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n',
   'rust-toolchain.toml': '[toolchain]\nchannel = "1.98.1"\n',
+  LICENSE: 'MIT License\n\nCopyright (c) Biome Developers\n',
 };
 
 async function errorCode(
@@ -152,18 +158,22 @@ describe('runBuild', () => {
     expect(receipt.tag).toBe(`guest-biome-${receipt.buildKey}`);
     const directory = receipt.artifactDirectory as string;
     expect((await readdir(directory)).sort()).toEqual([
+      'LICENSE',
+      'THIRD_PARTY_NOTICES.md',
       'biome',
       'build-info.json',
       'catalog.json',
     ]);
+    const read = async (name: string) =>
+      new Uint8Array(await readFile(join(directory, name)));
     const set = {
-      elf: new Uint8Array(await readFile(join(directory, 'biome'))),
-      buildInfo: new Uint8Array(
-        await readFile(join(directory, 'build-info.json')),
-      ),
-      catalog: new Uint8Array(await readFile(join(directory, 'catalog.json'))),
+      elf: await read('biome'),
+      buildInfo: await read('build-info.json'),
+      catalog: await read('catalog.json'),
+      license: await read('LICENSE'),
+      notices: await read('THIRD_PARTY_NOTICES.md'),
     };
-    const verified = verifyArtifactSet(set, {
+    const verified = verifyGuestSet(set, {
       buildKey: receipt.buildKey,
       tool: 'biome',
       repository: 'https://github.com/biomejs/biome',
@@ -175,7 +185,15 @@ describe('runBuild', () => {
     const info = JSON.parse(new TextDecoder().decode(set.buildInfo));
     expect(info.reference.builder.environment.RUSTUP_TOOLCHAIN).toBe('1.98.1');
     const calls = await readFile(log, 'utf8');
-    expect(calls.match(/RUSTUP_TOOLCHAIN=1\.98\.1/g)?.length).toBe(2);
+    expect(calls.match(/RUSTUP_TOOLCHAIN=1\.98\.1/g)?.length).toBe(3);
+    expect(new TextDecoder().decode(set.license)).toContain(
+      'Copyright (c) Biome Developers',
+    );
+    expect(new TextDecoder().decode(set.notices)).toContain(
+      '- biome_cli 0.0.0',
+    );
+    expect(info.reference.builder.notices.cargoAbout.version).toBe('0.9.2');
+    expect(receipt.durationsMs.notices).toBeGreaterThanOrEqual(0);
     const build =
       calls.split('\n').find((line) => line.includes('/builder/build.sh')) ??
       '';
@@ -189,15 +207,9 @@ describe('runBuild', () => {
       deps(upstream.url, fetcherFor()),
     );
     const directory = first.artifactDirectory as string;
-    const published = {
-      biome: new Uint8Array(await readFile(join(directory, 'biome'))),
-      'build-info.json': new Uint8Array(
-        await readFile(join(directory, 'build-info.json')),
-      ),
-      'catalog.json': new Uint8Array(
-        await readFile(join(directory, 'catalog.json')),
-      ),
-    };
+    const published: Record<string, Uint8Array> = {};
+    for (const name of await readdir(directory))
+      published[name] = new Uint8Array(await readFile(join(directory, name)));
     await Bun.write(log, '');
     const second = await runBuild(
       await request(upstream.main),
@@ -209,6 +221,7 @@ describe('runBuild', () => {
     const calls = await readFile(log, 'utf8');
     expect(calls).not.toContain('cargo fetch');
     expect(calls).not.toContain('/builder/build.sh');
+    expect(calls).not.toContain('/builder/notices.sh');
   });
 
   test('gives a different key when mbx is off, and the same key for the same inputs', async () => {

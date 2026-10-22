@@ -4,7 +4,8 @@ Builds the Linux musl ELF a recipe guest runs in
 [formicarium](https://github.com/aletheia-works/formicarium), from a
 declared repository and full commit, and keeps one verified set per build
 key in this repository's GitHub Releases. A set is the ELF, its
-`build-info.json` and a one-entry `catalog.json`.
+`build-info.json`, a one-entry `catalog.json`, and the two license files the
+ELF is redistributed with: `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 
 The same key is never compiled twice: a later build of an unchanged key
 downloads the published set, verifies it, and records `compiled: false`.
@@ -32,6 +33,14 @@ The run checks, in order:
 5. If a Release for the key is already published, it is verified and
    reused. Otherwise dependencies are fetched (watched against a 4 GiB
    limit) and the ELF is built offline in the container.
+6. The license files are made offline in the same image. The pinned
+   cargo-about lists every crate the tool's package uses on its target,
+   with the license text each crate ships; any license not accepted in
+   `container/about.toml` stops the build. `THIRD_PARTY_NOTICES.md` holds
+   that listing. `LICENSE` holds the license files at the source's root and
+   in each of its own crates in the build, such as notices for code taken
+   from other projects. `build-info.json` records both files' SHA256 and
+   size in `licenseFiles`.
 
 The whole run has a 4-hour deadline. Source and dependency sizes, timings
 and free disk are in the run's receipt.
@@ -100,9 +109,12 @@ separately.
 - `allowlist.json`: `repositories` lists where a guest may be built from;
   `dependencyRepositories` lists git sources Cargo may fetch from. Entries
   must already be in `https://github.com/<owner>/<repo>` form, lowercase.
-- `tools.json`: the pinned image for each Rust version, the mbx archive,
-  and each tool's package, binary, target, environment and extra packages.
-  Changing anything here changes the build keys it affects.
+- `tools.json`: the pinned image for each Rust version, the mbx and
+  cargo-about archives, and each tool's package, binary, target,
+  environment and extra packages. Changing anything here changes the build
+  keys it affects.
+- `container/about.toml`: the licenses cargo-about accepts. Changing it,
+  `container/notices.sh` or the cargo-about archive changes every key.
 
 ## Limits
 
@@ -115,6 +127,8 @@ separately.
 | ELF | 128 MiB |
 | `build-info.json` | 1 MiB |
 | `catalog.json` | 4 MiB |
+| cargo-about listing | 64 MiB |
+| `LICENSE`, `THIRD_PARTY_NOTICES.md` | 4 MiB each |
 
 A limit value itself is accepted; one byte more is refused.
 

@@ -1,17 +1,25 @@
 import {
-  type ArtifactSet,
+  type GuestSet,
+  LICENSE_ASSET,
   MAX_CATALOG_BYTES,
   MAX_ELF_BYTES,
+  MAX_LICENSE_BYTES,
   MAX_METADATA_BYTES,
+  NOTICES_ASSET,
   parseUniqueJson,
-  type VerifiedSet,
-  verifyArtifactSet,
+  type VerifiedGuestSet,
+  verifyGuestSet,
 } from './artifact.ts';
 import type { Allowlist } from './declaration.ts';
 import { BuildError, fail } from './errors.ts';
 import type { GitHubApi, Release } from './github.ts';
 import { canonicalJson, sha256Hex } from './key.ts';
-import { BUILD_INFO_ASSET, CATALOG_ASSET, releaseTag } from './reuse.ts';
+import {
+  BUILD_INFO_ASSET,
+  CATALOG_ASSET,
+  releaseTag,
+  setAssets,
+} from './reuse.ts';
 
 export const MAX_PLAN_BYTES = 65_536;
 
@@ -41,25 +49,29 @@ function targetsFor(identity: SetIdentity): string[] {
     `${tag}/${identity.binary}`,
     `${tag}/${BUILD_INFO_ASSET}`,
     `${tag}/${CATALOG_ASSET}`,
+    `${tag}/${LICENSE_ASSET}`,
+    `${tag}/${NOTICES_ASSET}`,
   ];
 }
 
 function digestsFor(
   identity: SetIdentity,
-  verified: VerifiedSet,
+  verified: VerifiedGuestSet,
 ): Record<string, string> {
   return {
     buildKey: identity.key,
     elfSha256: verified.elfSha256,
     buildInfoSha256: verified.buildInfoSha256,
     catalogSha256: verified.catalogSha256,
+    licenseSha256: verified.licenseSha256,
+    noticesSha256: verified.noticesSha256,
   };
 }
 
 // The person approves this plan's SHA256; approvalReference alone approves nothing.
 export function makePublishPlan(options: {
   identity: SetIdentity;
-  verified: VerifiedSet;
+  verified: VerifiedGuestSet;
   buildRunId: number;
   rollbackPlan: string;
   approvalReference: string;
@@ -82,7 +94,7 @@ export function checkPlan(
   bytes: Uint8Array,
   approvedSha256: string,
   identity: SetIdentity,
-  verified: VerifiedSet,
+  verified: VerifiedGuestSet,
 ): ExternalOperation {
   if (sha256Hex(bytes) !== approvedSha256)
     fail('VERIFY_FAILED', 'the plan differs from the approved SHA256');
@@ -114,15 +126,15 @@ async function downloadSet(
   api: GitHubApi,
   release: Release,
   identity: SetIdentity,
-): Promise<ArtifactSet> {
+): Promise<GuestSet> {
   const asset = (name: string) => {
     const found = release.assets.filter((item) => item.name === name);
     if (found.length !== 1)
       fail('UNUSABLE_KEY', `the Release does not hold exactly one ${name}`);
     return found[0] as (typeof found)[0];
   };
-  if (release.assets.length !== 3)
-    fail('UNUSABLE_KEY', 'the Release does not hold exactly its three files');
+  if (release.assets.length !== setAssets(identity.binary).length)
+    fail('UNUSABLE_KEY', 'the Release does not hold exactly its five files');
   return {
     elf: await api.downloadAsset(asset(identity.binary), MAX_ELF_BYTES),
     buildInfo: await api.downloadAsset(
@@ -130,6 +142,8 @@ async function downloadSet(
       MAX_METADATA_BYTES,
     ),
     catalog: await api.downloadAsset(asset(CATALOG_ASSET), MAX_CATALOG_BYTES),
+    license: await api.downloadAsset(asset(LICENSE_ASSET), MAX_LICENSE_BYTES),
+    notices: await api.downloadAsset(asset(NOTICES_ASSET), MAX_LICENSE_BYTES),
   };
 }
 
@@ -146,13 +160,13 @@ export async function checkApprovalGate(api: GitHubApi): Promise<void> {
 }
 
 export type PublishOutcome =
-  | { status: 'published'; tag: string; verified: VerifiedSet }
-  | { status: 'already-published'; tag: string; verified: VerifiedSet };
+  | { status: 'published'; tag: string; verified: VerifiedGuestSet }
+  | { status: 'already-published'; tag: string; verified: VerifiedGuestSet };
 
 export async function publishSet(options: {
   api: GitHubApi;
   identity: SetIdentity;
-  files: ArtifactSet;
+  files: GuestSet;
   planBytes: Uint8Array;
   approvedPlanSha256: string;
   // Read at publish time: a repository taken off the list after the build
@@ -171,7 +185,7 @@ export async function publishSet(options: {
     repository: identity.repository,
     commit: identity.commit,
   };
-  const verified = verifyArtifactSet(options.files, expected);
+  const verified = verifyGuestSet(options.files, expected);
   const plan = checkPlan(
     options.planBytes,
     options.approvedPlanSha256,
@@ -182,9 +196,9 @@ export async function publishSet(options: {
 
   const existing = await api.findRelease(tag);
   if (existing !== null && !existing.draft) {
-    let published: VerifiedSet;
+    let published: VerifiedGuestSet;
     try {
-      published = verifyArtifactSet(
+      published = verifyGuestSet(
         await downloadSet(api, existing, identity),
         expected,
       );
@@ -221,14 +235,22 @@ export async function publishSet(options: {
     uploaded.assets.push(
       await api.uploadAsset(draft, CATALOG_ASSET, options.files.catalog),
     );
-    const back = verifyArtifactSet(
+    uploaded.assets.push(
+      await api.uploadAsset(draft, LICENSE_ASSET, options.files.license),
+    );
+    uploaded.assets.push(
+      await api.uploadAsset(draft, NOTICES_ASSET, options.files.notices),
+    );
+    const back = verifyGuestSet(
       await downloadSet(api, uploaded, identity),
       expected,
     );
     if (
       back.elfSha256 !== verified.elfSha256 ||
       back.buildInfoSha256 !== verified.buildInfoSha256 ||
-      back.catalogSha256 !== verified.catalogSha256
+      back.catalogSha256 !== verified.catalogSha256 ||
+      back.licenseSha256 !== verified.licenseSha256 ||
+      back.noticesSha256 !== verified.noticesSha256
     )
       fail('VERIFY_FAILED', 'uploaded files differ from the verified files');
     await api.publish(draft);

@@ -12,7 +12,7 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { join } from 'node:path';
-import { MAX_ELF_BYTES } from './artifact.ts';
+import { LICENSE_ASSET, MAX_ELF_BYTES, NOTICES_ASSET } from './artifact.ts';
 import { fail } from './errors.ts';
 import { type Fetcher, fetchLimited } from './http.ts';
 import type { ExtraPackage } from './key.ts';
@@ -38,10 +38,17 @@ export interface MbxConfig {
   maxTotalSize: string;
 }
 
+export interface CargoAboutConfig {
+  version: string;
+  url: string;
+  sha256: string;
+}
+
 export interface ToolsConfig {
   schemaVersion: 1;
   images: Record<string, string>;
   mbx: MbxConfig;
+  cargoAbout: CargoAboutConfig;
   tools: Record<string, ToolConfig>;
 }
 
@@ -65,6 +72,8 @@ export function parseToolsConfig(value: unknown): ToolsConfig {
       );
   if (!SHA256.test(config.mbx?.sha256 ?? ''))
     fail('INVALID_INPUT', 'mbx archive needs a SHA256');
+  if (!SHA256.test(config.cargoAbout?.sha256 ?? ''))
+    fail('INVALID_INPUT', 'cargo-about archive needs a SHA256');
   for (const [name, tool] of Object.entries(config.tools ?? {})) {
     if (
       !SAFE_NAME.test(tool.package) ||
@@ -196,6 +205,7 @@ export async function prepareExtras(
   directory: string,
   extras: readonly ExtraPackage[],
   mbx: MbxConfig | null,
+  cargoAbout: CargoAboutConfig,
   fetcher?: Fetcher,
 ): Promise<void> {
   await mkdir(join(directory, 'apk'), { recursive: true });
@@ -219,6 +229,14 @@ export async function prepareExtras(
       flag: 'wx',
     });
   }
+  const about = await fetchLimited(cargoAbout.url, {
+    limitBytes: MAX_EXTRA_PACKAGE_BYTES,
+    expectedSha256: cargoAbout.sha256,
+    ...(fetcher === undefined ? {} : { fetcher }),
+  });
+  await writeFile(join(directory, 'cargo-about.tar.gz'), about.bytes, {
+    flag: 'wx',
+  });
 }
 
 export interface ContainerPaths {
@@ -270,7 +288,6 @@ export async function fetchDependencies(options: {
   docker: string;
   image: string;
   paths: ContainerPaths;
-  target: string;
   environment: Readonly<Record<string, string>>;
   owner?: string;
   limitBytes?: number;
@@ -300,9 +317,9 @@ export async function fetchDependencies(options: {
         options.image,
         'sh',
         '-c',
-        'cargo fetch --locked --target "$1"; status=$?; chown -R "$FGB_OWNER" /cargo; exit "$status"',
-        'fetch',
-        options.target,
+        // Every platform's crates: cargo metadata, which cargo-about reads,
+        // needs them all even when the build needs one target's.
+        'cargo fetch --locked; status=$?; chown -R "$FGB_OWNER" /cargo; exit "$status"',
       ],
       {
         watch: [
@@ -423,6 +440,80 @@ export async function compile(options: {
   return elf;
 }
 
+export const MAX_ABOUT_BYTES = 67_108_864;
+
+export async function generateNotices(options: {
+  run: Runner;
+  docker: string;
+  image: string;
+  paths: ContainerPaths;
+  outDirectory: string;
+  package: string;
+  target: string;
+  environment: Readonly<Record<string, string>>;
+  owner?: string;
+  signal?: AbortSignal;
+  log?: (text: string) => void;
+}): Promise<Uint8Array> {
+  const name = `fgb-notices-${randomUUID()}`;
+  await mkdir(options.outDirectory, { recursive: true });
+  try {
+    const result = await options.run(
+      options.docker,
+      [
+        'run',
+        '--rm',
+        '--name',
+        name,
+        '--network',
+        'none',
+        '-v',
+        `${options.paths.source}:/work:ro`,
+        '-v',
+        `${options.paths.cargoHome}:/cargo`,
+        '-v',
+        `${options.paths.builderDir}:/builder:ro`,
+        '-v',
+        `${options.paths.dependencyDir}:/dependency:ro`,
+        '-v',
+        `${options.outDirectory}:/out`,
+        '-e',
+        'CARGO_HOME=/cargo',
+        ...environmentArgs(options.environment),
+        '-e',
+        `FGB_OWNER=${options.owner ?? hostOwner()}`,
+        '-w',
+        '/work',
+        options.image,
+        'sh',
+        '/builder/notices.sh',
+        options.package,
+        options.target,
+      ],
+      options.signal === undefined ? {} : { signal: options.signal },
+    );
+    if (options.signal?.aborted) fail('ABORTED', 'build was stopped');
+    if (result.code !== 0) {
+      (options.log ?? writeStderr)(outputTail(result.stdout, result.stderr));
+      fail('EXTERNAL', `license notices failed with exit code ${result.code}`);
+    }
+  } finally {
+    await removeContainer(options.run, options.docker, name);
+  }
+  const path = join(options.outDirectory, 'about.json');
+  const info = await lstat(path).catch(() =>
+    fail('VERIFY_FAILED', 'cargo-about wrote no license listing'),
+  );
+  if (!info.isFile())
+    fail('VERIFY_FAILED', 'the license listing is not a regular file');
+  if (info.size > MAX_ABOUT_BYTES)
+    fail(
+      'LIMIT_EXCEEDED',
+      `the license listing is larger than ${MAX_ABOUT_BYTES} bytes`,
+    );
+  return new Uint8Array(await readFile(path));
+}
+
 // Removes a tree the containers may have left owned by root: a plain removal
 // first, then one through the pinned image when the runner's user cannot.
 export async function removeTree(
@@ -487,6 +578,8 @@ export async function finalizeArtifacts(options: {
   elfPath: string;
   binary: string;
   buildInfo: Uint8Array;
+  license: Uint8Array;
+  notices: Uint8Array;
   expectedElfSha256: string;
 }): Promise<{ directory: string; buildInfoSha256: string }> {
   const staging = join(options.root, `.staging-${randomUUID()}`);
@@ -498,6 +591,12 @@ export async function finalizeArtifacts(options: {
   try {
     await copyFile(options.elfPath, join(staging, options.binary));
     await writeFile(join(staging, 'build-info.json'), options.buildInfo, {
+      flag: 'wx',
+    });
+    await writeFile(join(staging, LICENSE_ASSET), options.license, {
+      flag: 'wx',
+    });
+    await writeFile(join(staging, NOTICES_ASSET), options.notices, {
       flag: 'wx',
     });
     const elf = await checkElf(join(staging, options.binary));

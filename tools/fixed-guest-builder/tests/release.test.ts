@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { verifyArtifactSet } from '../src/artifact.ts';
+import { verifyGuestSet } from '../src/artifact.ts';
 import { parseAllowlist } from '../src/declaration.ts';
 import { BuildError } from '../src/errors.ts';
 import { createGitHubApi } from '../src/github.ts';
@@ -10,7 +10,7 @@ import {
   type SetIdentity,
 } from '../src/release.ts';
 import { releaseTag } from '../src/reuse.ts';
-import { SOURCE, sampleSet } from './helpers/artifacts.ts';
+import { assetsOf, SOURCE, sampleSet } from './helpers/artifacts.ts';
 import { FakeGitHub } from './helpers/fake-github.ts';
 
 async function errorCode(
@@ -38,7 +38,7 @@ function setup(elf?: string) {
     key: set.key,
     ...SOURCE,
   };
-  const verified = verifyArtifactSet(set.files, set.expected);
+  const verified = verifyGuestSet(set.files, set.expected);
   const plan = makePublishPlan({
     identity,
     verified,
@@ -67,6 +67,8 @@ describe('publishSet', () => {
       'upload biome',
       'upload build-info.json',
       'upload catalog.json',
+      'upload LICENSE',
+      'upload THIRD_PARTY_NOTICES.md',
       `publish ${tag}`,
     ]);
     expect(api.releases[0]?.draft).toBe(false);
@@ -111,12 +113,7 @@ describe('publishSet', () => {
     });
     for (const published of [false, true]) {
       const api = new FakeGitHub();
-      if (published)
-        api.addPublished(tag, {
-          biome: set.files.elf,
-          'build-info.json': set.files.buildInfo,
-          'catalog.json': set.files.catalog,
-        });
+      if (published) api.addPublished(tag, assetsOf(set.files));
       expect(
         await errorCode(
           publishSet({
@@ -136,11 +133,7 @@ describe('publishSet', () => {
   test('only verifies when the key is already published with the same ELF', async () => {
     const { set, identity, plan, tag } = setup();
     const api = new FakeGitHub();
-    api.addPublished(tag, {
-      biome: set.files.elf,
-      'build-info.json': set.files.buildInfo,
-      'catalog.json': set.files.catalog,
-    });
+    api.addPublished(tag, assetsOf(set.files));
     const result = await publishSet({
       api,
       identity,
@@ -160,11 +153,7 @@ describe('publishSet', () => {
     const earlier = sampleSet('\x7fELF-earlier');
     expect(earlier.key).toBe(set.key);
     const api = new FakeGitHub();
-    api.addPublished(tag, {
-      biome: earlier.files.elf,
-      'build-info.json': earlier.files.buildInfo,
-      'catalog.json': earlier.files.catalog,
-    });
+    api.addPublished(tag, assetsOf(earlier.files));
     expect(
       await errorCode(
         publishSet({
@@ -185,9 +174,8 @@ describe('publishSet', () => {
     const { set, identity, plan, tag } = setup();
     const api = new FakeGitHub();
     api.addPublished(tag, {
+      ...assetsOf(set.files),
       biome: new TextEncoder().encode('\x7fELF-tampered'),
-      'build-info.json': set.files.buildInfo,
-      'catalog.json': set.files.catalog,
     });
     expect(
       await errorCode(
@@ -207,10 +195,10 @@ describe('publishSet', () => {
   test('marks the key unusable when the published set is incomplete', async () => {
     const { set, identity, plan, tag } = setup();
     const api = new FakeGitHub();
-    api.addPublished(tag, {
-      biome: set.files.elf,
-      'build-info.json': set.files.buildInfo,
-    });
+    const { 'THIRD_PARTY_NOTICES.md': _, ...withoutNotices } = assetsOf(
+      set.files,
+    );
+    api.addPublished(tag, withoutNotices);
     expect(
       await errorCode(
         publishSet({
@@ -248,7 +236,7 @@ describe('publishSet', () => {
     for (const failure of ['upload', 'corrupt'] as const) {
       const { set, identity, plan, tag } = setup();
       const api = new FakeGitHub();
-      if (failure === 'upload') api.failUploadOf = 'catalog.json';
+      if (failure === 'upload') api.failUploadOf = 'THIRD_PARTY_NOTICES.md';
       else api.corruptDownloadOf = 'build-info.json';
       expect(
         await errorCode(

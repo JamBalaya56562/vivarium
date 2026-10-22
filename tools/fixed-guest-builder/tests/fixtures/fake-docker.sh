@@ -42,6 +42,19 @@ case "$*" in
     head -c "${FAKE_FETCH_BYTES:-100}" /dev/zero > "$home/registry/crates"
     exit "${FAKE_FETCH_CODE:-0}"
     ;;
+  *"/builder/notices.sh"*)
+    if [ "${FAKE_NOTICES_CODE:-0}" != 0 ]; then
+      echo "error: license not accepted" >&2
+      exit "$FAKE_NOTICES_CODE"
+    fi
+    out=$(mount_for /out "$@")
+    if [ -n "${FAKE_ABOUT_JSON:-}" ]; then
+      cp "$FAKE_ABOUT_JSON" "$out/about.json"
+    elif [ -z "${FAKE_ABOUT_MISSING:-}" ]; then
+      printf '%s' '{"overview":[],"licenses":[{"name":"MIT License","id":"MIT","text":"MIT License text","used_by":[{"crate":{"name":"biome_cli","version":"0.0.0"}}]}],"crates":[{"package":{"name":"biome_cli","version":"0.0.0","source":null,"manifest_path":"/work/Cargo.toml"},"license":"MIT"}]}' > "$out/about.json"
+    fi
+    exit 0
+    ;;
   *"/builder/build.sh"*)
     if [ -n "${FAKE_BUILD_SLEEP:-}" ]; then
       sleep "$FAKE_BUILD_SLEEP"

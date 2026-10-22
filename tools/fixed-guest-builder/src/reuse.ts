@@ -1,10 +1,13 @@
 import {
-  type ArtifactSet,
+  type GuestSet,
+  LICENSE_ASSET,
   MAX_CATALOG_BYTES,
   MAX_ELF_BYTES,
+  MAX_LICENSE_BYTES,
   MAX_METADATA_BYTES,
-  type VerifiedSet,
-  verifyArtifactSet,
+  NOTICES_ASSET,
+  type VerifiedGuestSet,
+  verifyGuestSet,
 } from './artifact.ts';
 import { fail } from './errors.ts';
 import { defaultFetcher, type Fetcher, fetchLimited } from './http.ts';
@@ -12,6 +15,16 @@ import { defaultFetcher, type Fetcher, fetchLimited } from './http.ts';
 export const RELEASE_REPOSITORY = 'aletheia-works/vivarium';
 export const BUILD_INFO_ASSET = 'build-info.json';
 export const CATALOG_ASSET = 'catalog.json';
+
+export function setAssets(binary: string): string[] {
+  return [
+    binary,
+    BUILD_INFO_ASSET,
+    CATALOG_ASSET,
+    LICENSE_ASSET,
+    NOTICES_ASSET,
+  ].sort();
+}
 
 export function releaseTag(tool: string, key: string): string {
   if (!/^[0-9a-f]{64}$/.test(key))
@@ -37,10 +50,10 @@ export interface ReuseOptions {
   signal?: AbortSignal;
 }
 
-export interface ReuseResult extends VerifiedSet {
+export interface ReuseResult extends VerifiedGuestSet {
   compiled: false;
   tag: string;
-  files: ArtifactSet;
+  files: GuestSet;
 }
 
 // Looked up without a token, which sees only published Releases, so a draft
@@ -74,11 +87,14 @@ export async function findPublished(
   };
   if (release.draft === true) return null;
   const names = (release.assets ?? []).map((asset) => asset.name).sort();
-  const wanted = [options.binary, BUILD_INFO_ASSET, CATALOG_ASSET].sort();
-  if (names.length !== 3 || names.some((name, index) => name !== wanted[index]))
+  const wanted = setAssets(options.binary);
+  if (
+    names.length !== wanted.length ||
+    names.some((name, index) => name !== wanted[index])
+  )
     fail(
       'UNUSABLE_KEY',
-      'the published Release for this key does not hold exactly its three files',
+      'the published Release for this key does not hold exactly its five files',
     );
   const get = (asset: string, limitBytes: number) =>
     fetchLimited(assetUrl(repository, tag, asset), {
@@ -86,19 +102,16 @@ export async function findPublished(
       ...(options.fetcher === undefined ? {} : { fetcher: options.fetcher }),
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
-  const [elf, buildInfo, catalog] = [
-    await get(options.binary, MAX_ELF_BYTES),
-    await get(BUILD_INFO_ASSET, MAX_METADATA_BYTES),
-    await get(CATALOG_ASSET, MAX_CATALOG_BYTES),
-  ];
-  const files = {
-    elf: elf.bytes,
-    buildInfo: buildInfo.bytes,
-    catalog: catalog.bytes,
+  const files: GuestSet = {
+    elf: (await get(options.binary, MAX_ELF_BYTES)).bytes,
+    buildInfo: (await get(BUILD_INFO_ASSET, MAX_METADATA_BYTES)).bytes,
+    catalog: (await get(CATALOG_ASSET, MAX_CATALOG_BYTES)).bytes,
+    license: (await get(LICENSE_ASSET, MAX_LICENSE_BYTES)).bytes,
+    notices: (await get(NOTICES_ASSET, MAX_LICENSE_BYTES)).bytes,
   };
-  let verified: VerifiedSet;
+  let verified: VerifiedGuestSet;
   try {
-    verified = verifyArtifactSet(files, {
+    verified = verifyGuestSet(files, {
       buildKey: options.key,
       tool: options.tool,
       ...options.source,

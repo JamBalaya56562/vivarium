@@ -14,6 +14,11 @@ const builder: BuilderIdentity = {
   containerScriptSha256: '1'.repeat(64),
   image: `docker.io/library/rust@sha256:${'2'.repeat(64)}`,
   mbx: { version: '1.24.1', sha256: '3'.repeat(64) },
+  notices: {
+    scriptSha256: '4'.repeat(64),
+    configSha256: '5'.repeat(64),
+    cargoAbout: { version: '0.9.2', sha256: '6'.repeat(64) },
+  },
   rustcVerbose: 'rustc 1.98.1 (48a229cea 2026-09-01)\nrelease: 1.98.1\n',
   cargo: 'cargo 1.98.1 (797e8a9bc 2026-08-05)',
   command: [
@@ -140,6 +145,23 @@ describe('buildKey', () => {
           image: `docker.io/library/rust@sha256:${'9'.repeat(64)}`,
         }),
       },
+      ...(['scriptSha256', 'configSha256'] as const).map((field) => ({
+        ...inputs,
+        builderHash: builderHash({
+          ...builder,
+          notices: { ...builder.notices, [field]: '7'.repeat(64) },
+        }),
+      })),
+      {
+        ...inputs,
+        builderHash: builderHash({
+          ...builder,
+          notices: {
+            ...builder.notices,
+            cargoAbout: { version: '0.9.3', sha256: '8'.repeat(64) },
+          },
+        }),
+      },
     ];
     for (const variant of variants)
       expect(buildKey(variant)).not.toBe(original);
@@ -188,6 +210,14 @@ describe('builderHash', () => {
     expect(code(() => builderHash({ ...builder, cargo: '1.98.1' }))).toBe(
       'INVALID_INPUT',
     );
+    expect(
+      code(() =>
+        builderHash({
+          ...builder,
+          notices: { ...builder.notices, configSha256: 'short' },
+        }),
+      ),
+    ).toBe('INVALID_INPUT');
   });
 
   test('has no runner-side field, so editing runner code cannot move keys', () => {
@@ -199,6 +229,7 @@ describe('builderHash', () => {
         'environment',
         'image',
         'mbx',
+        'notices',
         'rustcVerbose',
         'schemaVersion',
       ].sort(),

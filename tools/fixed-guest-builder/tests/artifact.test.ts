@@ -3,6 +3,7 @@ import {
   parseUniqueJson,
   validateBuildInfo,
   verifyArtifactSet,
+  verifyGuestSet,
 } from '../src/artifact.ts';
 import { BuildError } from '../src/errors.ts';
 import { sampleSet } from './helpers/artifacts.ts';
@@ -169,5 +170,57 @@ describe('verifyArtifactSet', () => {
         verifyArtifactSet({ ...files, catalog: other.files.catalog }, expected),
       ),
     ).toBe('VERIFY_FAILED');
+  });
+});
+
+describe('license files', () => {
+  test('verifyGuestSet accepts a set whose license files match build-info', () => {
+    const { files, expected } = sampleSet();
+    const verified = verifyGuestSet(files, expected);
+    expect(verified.licenseSha256).toBe(
+      verified.buildInfo.licenseFiles?.[0]?.sha256 as string,
+    );
+    expect(verified.noticesSha256).toBe(
+      verified.buildInfo.licenseFiles?.[1]?.sha256 as string,
+    );
+  });
+
+  test('verifyGuestSet refuses changed license files and a build-info without them', () => {
+    const { files, expected } = sampleSet();
+    for (const changed of [
+      { ...files, license: encoder.encode('other') },
+      { ...files, notices: encoder.encode('other') },
+    ])
+      expect(code(() => verifyGuestSet(changed, expected))).toBe(
+        'VERIFY_FAILED',
+      );
+    const legacy = sampleSet('\x7fELF-sample', { licenseFiles: undefined });
+    expect(
+      verifyArtifactSet(legacy.files, legacy.expected).buildInfo,
+    ).not.toHaveProperty('licenseFiles');
+    expect(code(() => verifyGuestSet(legacy.files, legacy.expected))).toBe(
+      'VERIFY_FAILED',
+    );
+    const big = { ...files, notices: new Uint8Array(4_194_305) };
+    expect(code(() => verifyGuestSet(big, expected))).toBe('LIMIT_EXCEEDED');
+  });
+
+  test('validateBuildInfo refuses malformed licenseFiles', () => {
+    const info = JSON.parse(
+      new TextDecoder().decode(sampleSet().files.buildInfo),
+    );
+    const [license, notices] = info.licenseFiles;
+    for (const licenseFiles of [
+      'LICENSE',
+      [license],
+      [notices, license],
+      [{ ...license, sha256: 'short' }, notices],
+      [{ ...license, bytes: 0 }, notices],
+      [license, { ...notices, bytes: 4_194_305 }],
+      [license, 'x'],
+    ])
+      expect(code(() => validateBuildInfo({ ...info, licenseFiles }))).toBe(
+        'INVALID_INPUT',
+      );
   });
 });

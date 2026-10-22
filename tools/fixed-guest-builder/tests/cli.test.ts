@@ -10,7 +10,7 @@ import {
 } from '../src/cli.ts';
 import { BuildError } from '../src/errors.ts';
 import { runProcess } from '../src/process.ts';
-import { SOURCE, sampleSet } from './helpers/artifacts.ts';
+import { assetsOf, SOURCE, sampleSet } from './helpers/artifacts.ts';
 import { FakeGitHub } from './helpers/fake-github.ts';
 import { createUpstream, tempDir } from './helpers/git.ts';
 
@@ -51,12 +51,8 @@ async function artifacts() {
     }),
   );
   await mkdir(join(directory, set.key));
-  await writeFile(join(directory, set.key, 'biome'), set.files.elf);
-  await writeFile(
-    join(directory, set.key, 'build-info.json'),
-    set.files.buildInfo,
-  );
-  await writeFile(join(directory, set.key, 'catalog.json'), set.files.catalog);
+  for (const [name, bytes] of Object.entries(assetsOf(set.files)))
+    await writeFile(join(directory, set.key, name), bytes);
   const api = new FakeGitHub();
   api.addBuildRun(BUILD_RUN);
   return { set, directory, api };

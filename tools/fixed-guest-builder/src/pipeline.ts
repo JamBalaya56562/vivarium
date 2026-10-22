@@ -2,8 +2,11 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   type GuestBuildInfo,
+  LICENSE_ASSET,
+  licenseFilesFor,
   makeCatalog,
-  verifyArtifactSet,
+  NOTICES_ASSET,
+  verifyGuestSet,
 } from './artifact.ts';
 import {
   checkDiskFree,
@@ -12,6 +15,7 @@ import {
   compile,
   fetchDependencies,
   finalizeArtifacts,
+  generateNotices,
   inspectImage,
   parseToolsConfig,
   prepareExtras,
@@ -32,6 +36,11 @@ import {
 } from './key.ts';
 import { checkCargoSources } from './lockfile.ts';
 import { directoryBytes, runMonitored, SOURCE_LIMIT_BYTES } from './monitor.ts';
+import {
+  collectSourceLicenses,
+  parseAboutListing,
+  renderNotices,
+} from './notices.ts';
 import type { Runner } from './process.ts';
 import {
   assetUrl,
@@ -242,6 +251,18 @@ export async function runBuild(
         ),
         image,
         mbx: mbx === null ? null : { version: mbx.version, sha256: mbx.sha256 },
+        notices: {
+          scriptSha256: await sha256File(
+            join(request.builderDirectory, 'notices.sh'),
+          ),
+          configSha256: await sha256File(
+            join(request.builderDirectory, 'about.toml'),
+          ),
+          cargoAbout: {
+            version: config.cargoAbout.version,
+            sha256: config.cargoAbout.sha256,
+          },
+        },
         rustcVerbose: toolchain.rustcVerbose,
         cargo: toolchain.cargo,
         command,
@@ -338,6 +359,7 @@ export async function runBuild(
         paths.dependencyDir,
         tool.extraPackages,
         mbx,
+        config.cargoAbout,
         deps.fetcher,
       );
       await mkdir(paths.cargoHome, { recursive: true });
@@ -347,7 +369,6 @@ export async function runBuild(
           docker: deps.docker,
           image,
           paths,
-          target: tool.target,
           environment,
           signal,
           ...(deps.dependencyLimitBytes === undefined
@@ -374,6 +395,26 @@ export async function runBuild(
         }),
       );
       const elf = await checkElf(elfPath);
+      const listing = parseAboutListing(
+        await timed('notices', () =>
+          generateNotices({
+            run: deps.run,
+            docker: deps.docker,
+            image,
+            paths,
+            outDirectory: join(request.workDirectory, 'notices'),
+            package: tool.package,
+            target: tool.target,
+            environment,
+            signal,
+          }),
+        ),
+      );
+      const notices = renderNotices(listing, {
+        tool: declaration.tool,
+        ...source,
+      });
+      const license = await collectSourceLicenses(sourceDir, listing, source);
       const buildInfo: GuestBuildInfo = {
         schemaVersion: 1,
         tool: declaration.tool,
@@ -386,6 +427,7 @@ export async function runBuild(
         builderHash: hash,
         buildKey: key,
         elfSha256: elf.sha256,
+        licenseFiles: licenseFilesFor(license, notices),
         // Reference only: not part of the key.
         reference: {
           builder,
@@ -411,6 +453,8 @@ export async function runBuild(
         elfPath,
         binary: tool.binary,
         buildInfo: buildInfoBytes,
+        license,
+        notices,
         expectedElfSha256: elf.sha256,
       });
       const elfBytes = new Uint8Array(
@@ -428,13 +472,15 @@ export async function runBuild(
       await writeFile(join(final.directory, CATALOG_ASSET), catalogBytes, {
         flag: 'wx',
       });
-      const verified = verifyArtifactSet(
+      const read = async (name: string) =>
+        new Uint8Array(await readFile(join(final.directory, name)));
+      const verified = verifyGuestSet(
         {
           elf: elfBytes,
-          buildInfo: new Uint8Array(
-            await readFile(join(final.directory, BUILD_INFO_ASSET)),
-          ),
+          buildInfo: await read(BUILD_INFO_ASSET),
           catalog: catalogBytes,
+          license: await read(LICENSE_ASSET),
+          notices: await read(NOTICES_ASSET),
         },
         { buildKey: key, tool: declaration.tool, ...source },
       );

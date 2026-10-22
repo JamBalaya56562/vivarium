@@ -10,6 +10,16 @@ import {
 export const MAX_ELF_BYTES = 134_217_728;
 export const MAX_METADATA_BYTES = 1_048_576;
 export const MAX_CATALOG_BYTES = 4_194_304;
+export const MAX_LICENSE_BYTES = 4_194_304;
+export const LICENSE_ASSET = 'LICENSE';
+export const NOTICES_ASSET = 'THIRD_PARTY_NOTICES.md';
+const LICENSE_ASSETS = [LICENSE_ASSET, NOTICES_ASSET] as const;
+
+export interface LicenseFile {
+  name: string;
+  sha256: string;
+  bytes: number;
+}
 
 export interface GuestBuildInfo {
   schemaVersion: 1;
@@ -23,6 +33,7 @@ export interface GuestBuildInfo {
   builderHash: string;
   buildKey: string;
   elfSha256: string;
+  licenseFiles?: readonly LicenseFile[];
   [extra: string]: unknown;
 }
 
@@ -229,6 +240,32 @@ export function validateBuildInfo(value: unknown): GuestBuildInfo {
   sha(info.builderHash, 'build-info builderHash');
   sha(info.buildKey, 'build-info buildKey');
   sha(info.elfSha256, 'build-info elfSha256');
+  if (info.licenseFiles !== undefined) {
+    if (
+      !Array.isArray(info.licenseFiles) ||
+      info.licenseFiles.length !== LICENSE_ASSETS.length
+    )
+      fail('INVALID_INPUT', 'build-info licenseFiles must list two files');
+    for (const [index, raw] of info.licenseFiles.entries()) {
+      const file = record(raw, 'build-info license file');
+      if (file.name !== LICENSE_ASSETS[index])
+        fail(
+          'INVALID_INPUT',
+          `build-info licenseFiles must be ${LICENSE_ASSETS.join(' and ')}`,
+        );
+      sha(file.sha256, 'build-info license file sha256');
+      if (
+        typeof file.bytes !== 'number' ||
+        !Number.isSafeInteger(file.bytes) ||
+        file.bytes <= 0 ||
+        file.bytes > MAX_LICENSE_BYTES
+      )
+        fail(
+          'INVALID_INPUT',
+          'build-info license file bytes must be within the limit',
+        );
+    }
+  }
   const typed = info as unknown as GuestBuildInfo;
   if (typed.rustc === null)
     fail('INVALID_INPUT', 'builder build-info records the actual rustc');
@@ -350,6 +387,57 @@ export function verifyArtifactSet(
     elfSha256,
     buildInfoSha256,
     catalogSha256: sha256Hex(files.catalog),
+  };
+}
+
+export interface GuestSet extends ArtifactSet {
+  license: Uint8Array;
+  notices: Uint8Array;
+}
+
+export interface VerifiedGuestSet extends VerifiedSet {
+  licenseSha256: string;
+  noticesSha256: string;
+}
+
+export function licenseFilesFor(
+  license: Uint8Array,
+  notices: Uint8Array,
+): LicenseFile[] {
+  return [
+    {
+      name: LICENSE_ASSET,
+      sha256: sha256Hex(license),
+      bytes: license.byteLength,
+    },
+    {
+      name: NOTICES_ASSET,
+      sha256: sha256Hex(notices),
+      bytes: notices.byteLength,
+    },
+  ];
+}
+
+export function verifyGuestSet(
+  files: GuestSet,
+  expected: Parameters<typeof verifyArtifactSet>[1],
+): VerifiedGuestSet {
+  const verified = verifyArtifactSet(files, expected);
+  const listed = verified.buildInfo.licenseFiles;
+  if (listed === undefined)
+    fail('VERIFY_FAILED', 'build-info lists no license files');
+  if (
+    files.license.byteLength > MAX_LICENSE_BYTES ||
+    files.notices.byteLength > MAX_LICENSE_BYTES
+  )
+    fail('LIMIT_EXCEEDED', 'a license file is larger than the limit');
+  const actual = licenseFilesFor(files.license, files.notices);
+  if (canonicalJson(listed) !== canonicalJson(actual))
+    fail('VERIFY_FAILED', 'license files differ from build-info');
+  return {
+    ...verified,
+    licenseSha256: actual[0]?.sha256 as string,
+    noticesSha256: actual[1]?.sha256 as string,
   };
 }
 

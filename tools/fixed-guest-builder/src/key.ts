@@ -28,6 +28,11 @@ export interface BuilderIdentity {
   containerScriptSha256: string;
   image: string;
   mbx: { version: string; sha256: string } | null;
+  notices: {
+    scriptSha256: string;
+    configSha256: string;
+    cargoAbout: { version: string; sha256: string };
+  };
   rustcVerbose: string;
   cargo: string;
   command: readonly string[];
@@ -80,6 +85,15 @@ export function builderHash(builder: BuilderIdentity): string {
     fail('INVALID_INPUT', 'builder needs the container script SHA256');
   if (builder.mbx !== null && !SHA256.test(builder.mbx.sha256))
     fail('INVALID_INPUT', 'mbx needs a SHA256');
+  if (
+    !SHA256.test(builder.notices?.scriptSha256 ?? '') ||
+    !SHA256.test(builder.notices.configSha256) ||
+    !SHA256.test(builder.notices.cargoAbout.sha256)
+  )
+    fail(
+      'INVALID_INPUT',
+      'builder needs the notices script, config and cargo-about SHA256',
+    );
   if (!builder.rustcVerbose.includes('release: '))
     fail('INVALID_INPUT', 'builder needs the rustc -vV output');
   if (!builder.cargo.startsWith('cargo '))

@@ -1,4 +1,9 @@
-import { type GuestBuildInfo, makeCatalog } from '../../src/artifact.ts';
+import {
+  type GuestBuildInfo,
+  type GuestSet,
+  licenseFilesFor,
+  makeCatalog,
+} from '../../src/artifact.ts';
 import { buildKey, canonicalJson, keyDependencies } from '../../src/key.ts';
 
 export const SOURCE = {
@@ -12,6 +17,8 @@ export function sampleSet(
   extra: Record<string, unknown> = {},
 ) {
   const elf = encoder.encode(elfText);
+  const license = encoder.encode('MIT License\n');
+  const notices = encoder.encode('# Third-party notices\n');
   const partial = {
     tool: 'biome',
     repository: SOURCE.repository,
@@ -39,6 +46,7 @@ export function sampleSet(
     builderHash: partial.builderHash,
     buildKey: key,
     elfSha256: new Bun.CryptoHasher('sha256').update(elf).digest('hex'),
+    licenseFiles: licenseFilesFor(license, notices),
     ...extra,
   };
   const buildInfoBytes = encoder.encode(canonicalJson(buildInfo));
@@ -54,7 +62,22 @@ export function sampleSet(
       elf,
       buildInfo: buildInfoBytes,
       catalog: encoder.encode(JSON.stringify(catalog)),
+      license,
+      notices,
     },
     expected: { buildKey: key, tool: 'biome', ...SOURCE },
+  };
+}
+
+export function assetsOf(
+  files: GuestSet,
+  binary = 'biome',
+): Record<string, Uint8Array> {
+  return {
+    [binary]: files.elf,
+    'build-info.json': files.buildInfo,
+    'catalog.json': files.catalog,
+    LICENSE: files.license,
+    'THIRD_PARTY_NOTICES.md': files.notices,
   };
 }

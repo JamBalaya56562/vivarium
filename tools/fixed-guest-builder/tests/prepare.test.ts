@@ -10,7 +10,7 @@ import {
   renderSummary,
 } from '../src/prepare.ts';
 import { checkPlan } from '../src/release.ts';
-import { SOURCE, sampleSet } from './helpers/artifacts.ts';
+import { assetsOf, SOURCE, sampleSet } from './helpers/artifacts.ts';
 import { FakeGitHub } from './helpers/fake-github.ts';
 import { tempDir } from './helpers/git.ts';
 
@@ -69,12 +69,8 @@ async function buildArtifact(
   await writeFile(join(root, 'receipt.json'), `${JSON.stringify(receipt)}\n`);
   if (options.compiled ?? true) {
     await mkdir(join(root, set.key));
-    await writeFile(join(root, set.key, 'biome'), set.files.elf);
-    await writeFile(
-      join(root, set.key, 'build-info.json'),
-      set.files.buildInfo,
-    );
-    await writeFile(join(root, set.key, 'catalog.json'), set.files.catalog);
+    for (const [name, bytes] of Object.entries(assetsOf(set.files)))
+      await writeFile(join(root, set.key, name), bytes);
   }
   const api = new FakeGitHub();
   api.addBuildRun(BUILD_RUN);
@@ -108,7 +104,21 @@ describe('deriveSet and the plan', () => {
     });
     expect(prepared.compiled).toBe(true);
     const plan = preparePlan(prepared, BUILD_RUN, RELEASE_RUN);
-    expect(plan.plan.targets[0]).toBe(`guest-biome-${set.key}`);
+    const tag = `guest-biome-${set.key}`;
+    expect(plan.plan.targets).toEqual([
+      tag,
+      `${tag}/biome`,
+      `${tag}/build-info.json`,
+      `${tag}/catalog.json`,
+      `${tag}/LICENSE`,
+      `${tag}/THIRD_PARTY_NOTICES.md`,
+    ]);
+    expect(plan.plan.inputDigests.licenseSha256).toBe(
+      sha256Hex(set.files.license),
+    );
+    expect(plan.plan.inputDigests.noticesSha256).toBe(
+      sha256Hex(set.files.notices),
+    );
     expect(plan.plan.acceptanceEvidenceIds).toEqual([
       `vivarium-run-${BUILD_RUN}`,
     ]);
@@ -130,6 +140,8 @@ describe('deriveSet and the plan', () => {
       prepared.verified.elfSha256,
       prepared.verified.buildInfoSha256,
       prepared.verified.catalogSha256,
+      prepared.verified.licenseSha256,
+      prepared.verified.noticesSha256,
       prepared.identity.key,
       RUN_URL,
       new TextDecoder().decode(plan.bytes),
@@ -255,11 +267,13 @@ describe('deriveSet and the plan', () => {
     expect(await errorCode(derive(noReceipt.api, noReceipt.root))).toBe(
       'VERIFY_FAILED',
     );
-    const noCatalog = await buildArtifact();
-    await rm(join(noCatalog.root, noCatalog.set.key, 'catalog.json'));
-    expect(await errorCode(derive(noCatalog.api, noCatalog.root))).toBe(
-      'VERIFY_FAILED',
-    );
+    for (const name of ['catalog.json', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) {
+      const missing = await buildArtifact();
+      await rm(join(missing.root, missing.set.key, name));
+      expect(await errorCode(derive(missing.api, missing.root))).toBe(
+        'VERIFY_FAILED',
+      );
+    }
     const stray = await buildArtifact();
     await writeFile(join(stray.root, 'extra.txt'), 'x');
     expect(await errorCode(derive(stray.api, stray.root))).toBe(
@@ -270,11 +284,10 @@ describe('deriveSet and the plan', () => {
   test('for a reused key, takes the published set and refuses an unpublished one', async () => {
     const { set, root, api } = await buildArtifact({ compiled: false });
     const tag = `guest-biome-${set.key}`;
-    const served: Record<string, Uint8Array<ArrayBuffer>> = {
-      biome: set.files.elf,
-      'build-info.json': set.files.buildInfo,
-      'catalog.json': set.files.catalog,
-    };
+    const served = assetsOf(set.files) as Record<
+      string,
+      Uint8Array<ArrayBuffer>
+    >;
     const published = async (url: string) => {
       if (url.endsWith(`/releases/tags/${tag}`))
         return Response.json({

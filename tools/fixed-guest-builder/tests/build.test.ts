@@ -9,6 +9,7 @@ import {
   compile,
   fetchDependencies,
   finalizeArtifacts,
+  generateNotices,
   inspectImage,
   outputTail,
   parseToolsConfig,
@@ -22,6 +23,8 @@ import { runProcess } from '../src/process.ts';
 import { tempDir } from './helpers/git.ts';
 
 const ENV = { CARGO_INCREMENTAL: '0', RUSTUP_TOOLCHAIN: '1.98.1' };
+const LICENSE_BYTES = new TextEncoder().encode('MIT License\n');
+const NOTICES_BYTES = new TextEncoder().encode('# Third-party notices\n');
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const IMAGE = `docker.io/library/rust@${DIGEST}`;
 const DOCKER = new URL('./fixtures/fake-docker.sh', import.meta.url).pathname;
@@ -153,7 +156,6 @@ describe('fetchDependencies and compile', () => {
         docker: DOCKER,
         image: IMAGE,
         paths: p,
-        target: tool.target,
         environment: ENV,
         owner: '1001:118',
         limitBytes: 100,
@@ -201,6 +203,7 @@ describe('fetchDependencies and compile', () => {
       expect(line).toContain('FGB_OWNER=1001:118');
     }
     expect(fetch).toContain('chown -R "$FGB_OWNER" /cargo');
+    expect(fetch).not.toContain('--target');
     expect(calls.filter((line) => line.startsWith('rm --force'))).toHaveLength(
       2,
     );
@@ -216,7 +219,6 @@ describe('fetchDependencies and compile', () => {
           docker: DOCKER,
           image: IMAGE,
           paths: p,
-          target: tool.target,
           environment: ENV,
           limitBytes: 100,
           intervalMs: 10,
@@ -246,6 +248,57 @@ describe('fetchDependencies and compile', () => {
   });
 });
 
+describe('generateNotices', () => {
+  const options = async () => ({
+    run: runProcess,
+    docker: DOCKER,
+    image: IMAGE,
+    paths: await paths(),
+    outDirectory: join(await tempDir(), 'notices'),
+    package: tool.package,
+    target: tool.target,
+    environment: ENV,
+    owner: '1001:118',
+  });
+
+  test('runs cargo-about offline with the source read-only and returns its listing', async () => {
+    const listing = await generateNotices(await options());
+    expect(JSON.parse(new TextDecoder().decode(listing)).licenses).toHaveLength(
+      1,
+    );
+    const call =
+      (await readFile(log, 'utf8'))
+        .split('\n')
+        .find((line) => line.includes('/builder/notices.sh')) ?? '';
+    expect(call).toContain('--network none');
+    expect(call).toMatch(/:\/work:ro /);
+    expect(call).toContain(
+      '/builder/notices.sh biome_cli x86_64-unknown-linux-musl',
+    );
+    expect(call).toContain('RUSTUP_TOOLCHAIN=1.98.1');
+    expect(await readFile(log, 'utf8')).toContain('rm --force fgb-notices-');
+  });
+
+  test('shows the output and refuses when cargo-about fails or writes nothing', async () => {
+    process.env.FAKE_NOTICES_CODE = '1';
+    const logged: string[] = [];
+    expect(
+      await errorCode(
+        generateNotices({
+          ...(await options()),
+          log: (text) => logged.push(text),
+        }),
+      ),
+    ).toBe('EXTERNAL');
+    expect(logged.join('')).toContain('license not accepted');
+    delete process.env.FAKE_NOTICES_CODE;
+    process.env.FAKE_ABOUT_MISSING = '1';
+    expect(await errorCode(generateNotices(await options()))).toBe(
+      'VERIFY_FAILED',
+    );
+  });
+});
+
 describe('prepareExtras', () => {
   test('stores packages whose SHA256 matches and refuses one that differs', async () => {
     const bytes = new TextEncoder().encode('apk-bytes');
@@ -264,9 +317,14 @@ describe('prepareExtras', () => {
         },
       ],
       null,
+      { version: '0.9.2', url: 'https://example.invalid/about.tgz', sha256 },
       fetcher,
     );
     expect(await readdir(join(directory, 'apk'))).toEqual(['make.apk']);
+    expect((await readdir(directory)).sort()).toEqual([
+      'apk',
+      'cargo-about.tar.gz',
+    ]);
     const other = await tempDir();
     expect(
       await errorCode(
@@ -282,6 +340,26 @@ describe('prepareExtras', () => {
             },
           ],
           null,
+          {
+            version: '0.9.2',
+            url: 'https://example.invalid/about.tgz',
+            sha256,
+          },
+          fetcher,
+        ),
+      ),
+    ).toBe('VERIFY_FAILED');
+    expect(
+      await errorCode(
+        prepareExtras(
+          await tempDir(),
+          [],
+          null,
+          {
+            version: '0.9.2',
+            url: 'https://example.invalid/about.tgz',
+            sha256: '0'.repeat(64),
+          },
           fetcher,
         ),
       ),
@@ -306,9 +384,13 @@ describe('finalizeArtifacts', () => {
       elfPath: path,
       binary: 'biome',
       buildInfo: new TextEncoder().encode('{}'),
+      license: LICENSE_BYTES,
+      notices: NOTICES_BYTES,
       expectedElfSha256: sha256,
     });
     expect((await readdir(result.directory)).sort()).toEqual([
+      'LICENSE',
+      'THIRD_PARTY_NOTICES.md',
       'biome',
       'build-info.json',
     ]);
@@ -328,6 +410,8 @@ describe('finalizeArtifacts', () => {
           elfPath: path,
           binary: 'biome',
           buildInfo: new Uint8Array(),
+          license: LICENSE_BYTES,
+          notices: NOTICES_BYTES,
           expectedElfSha256: '0'.repeat(64),
         }),
       ),
@@ -339,6 +423,8 @@ describe('finalizeArtifacts', () => {
       elfPath: path,
       binary: 'biome',
       buildInfo: new Uint8Array(),
+      license: LICENSE_BYTES,
+      notices: NOTICES_BYTES,
       expectedElfSha256: sha256,
     });
     expect(
@@ -349,6 +435,8 @@ describe('finalizeArtifacts', () => {
           elfPath: path,
           binary: 'biome',
           buildInfo: new Uint8Array(),
+          license: LICENSE_BYTES,
+          notices: NOTICES_BYTES,
           expectedElfSha256: sha256,
         }),
       ),
@@ -372,6 +460,12 @@ describe('parseToolsConfig', () => {
       new URL('../tools.json', import.meta.url),
     ).json();
     expect(parseToolsConfig(shipped).tools.biome?.binary).toBe('biome');
+    expect(() =>
+      parseToolsConfig({
+        ...shipped,
+        cargoAbout: { ...shipped.cargoAbout, sha256: 'short' },
+      }),
+    ).toThrow(BuildError);
     expect(() =>
       parseToolsConfig({ ...shipped, images: { '1.98.1': 'rust:1.98.1' } }),
     ).toThrow(BuildError);

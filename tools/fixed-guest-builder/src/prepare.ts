@@ -1,11 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  type ArtifactSet,
+  type GuestSet,
+  LICENSE_ASSET,
   MAX_METADATA_BYTES,
+  NOTICES_ASSET,
   parseUniqueJson,
-  type VerifiedSet,
-  verifyArtifactSet,
+  type VerifiedGuestSet,
+  verifyGuestSet,
 } from './artifact.ts';
 import { parseToolsConfig } from './build.ts';
 import { fail } from './errors.ts';
@@ -24,6 +26,7 @@ import {
   findPublished,
   RELEASE_REPOSITORY,
   releaseTag,
+  setAssets,
 } from './reuse.ts';
 
 export const BUILD_WORKFLOW_PATH = '.github/workflows/fixed-guest-build.yml';
@@ -50,8 +53,8 @@ export interface PreparedSet {
   identity: SetIdentity;
   compiled: boolean;
   runUrl: string;
-  files: ArtifactSet;
-  verified: VerifiedSet;
+  files: GuestSet;
+  verified: VerifiedGuestSet;
 }
 
 export function buildRunUrl(id: number): string {
@@ -173,7 +176,7 @@ async function readCompiledSet(
   root: string,
   key: string,
   binary: string,
-): Promise<ArtifactSet> {
+): Promise<GuestSet> {
   if (
     (await entries(root)).join('\n') !== [key, RECEIPT_FILE].sort().join('\n')
   )
@@ -182,11 +185,10 @@ async function readCompiledSet(
       'the artifact holds other files than the set and receipt',
     );
   const directory = join(root, key);
-  const wanted = [binary, BUILD_INFO_ASSET, CATALOG_ASSET].sort();
-  if ((await entries(directory)).join('\n') !== wanted.join('\n'))
+  if ((await entries(directory)).join('\n') !== setAssets(binary).join('\n'))
     fail(
       'VERIFY_FAILED',
-      'the artifact set does not hold exactly its three files',
+      'the artifact set does not hold exactly its five files',
     );
   const read = async (name: string) =>
     new Uint8Array(await readFile(join(directory, name)));
@@ -194,6 +196,8 @@ async function readCompiledSet(
     elf: await read(binary),
     buildInfo: await read(BUILD_INFO_ASSET),
     catalog: await read(CATALOG_ASSET),
+    license: await read(LICENSE_ASSET),
+    notices: await read(NOTICES_ASSET),
   };
 }
 
@@ -201,7 +205,7 @@ async function readReusedSet(
   root: string,
   identity: SetIdentity,
   fetcher: Fetcher | undefined,
-): Promise<ArtifactSet> {
+): Promise<GuestSet> {
   if ((await entries(root)).join('\n') !== RECEIPT_FILE)
     fail('VERIFY_FAILED', 'a reuse artifact holds only its receipt');
   const published = await findPublished({
@@ -218,7 +222,7 @@ async function readReusedSet(
 
 function crossCheck(
   receipt: BuildReceiptView,
-  verified: VerifiedSet,
+  verified: VerifiedGuestSet,
   identity: SetIdentity,
   runUrl: string,
 ): void {
@@ -275,7 +279,7 @@ export async function deriveSet(options: {
         identity.binary,
       )
     : await readReusedSet(options.artifactDirectory, identity, options.fetcher);
-  const verified = verifyArtifactSet(files, {
+  const verified = verifyGuestSet(files, {
     buildKey: identity.key,
     tool,
     repository: identity.repository,
@@ -326,6 +330,8 @@ export function renderSummary(
     `| ELF SHA256 | \`${verified.elfSha256}\` |`,
     `| build-info SHA256 | \`${verified.buildInfoSha256}\` |`,
     `| catalog SHA256 | \`${verified.catalogSha256}\` |`,
+    `| LICENSE SHA256 | \`${verified.licenseSha256}\` |`,
+    `| THIRD_PARTY_NOTICES.md SHA256 | \`${verified.noticesSha256}\` |`,
     `| Plan SHA256 | \`${plan.sha256}\` |`,
     '',
     '```json',
