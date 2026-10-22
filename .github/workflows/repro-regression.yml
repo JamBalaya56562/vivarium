@@ -251,8 +251,19 @@ jobs:
             exit 1
           fi
 
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright system packages (${{ matrix.browser }})
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/vivarium-pw-apt
+          key: pw-apt-${{ runner.os }}-${{ env.ImageOS }}-${{ matrix.browser }}-${{ steps.playwright.outputs.version }}
+          restore-keys: pw-apt-${{ runner.os }}-${{ env.ImageOS }}-${{ matrix.browser }}-
+
       - name: Install Playwright browser (${{ matrix.browser }})
-        run: bunx playwright install --with-deps ${{ matrix.browser }}
+        run: bash "$GITHUB_WORKSPACE/scripts/install-playwright-browser.sh" ${{ matrix.browser }}
 
       - name: Run Playwright regression suite (${{ matrix.browser }})
         run: bun run test -- --project=${{ matrix.browser }}
