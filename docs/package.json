@@ -21,7 +21,7 @@
     "generate-repro-pages": "bun run scripts/generate-repro-pages.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.15",
+    "@biomejs/biome": "^2.6.2",
     "@playwright/test": "^1.64.1",
     "@rspress/core": "^2.0.23",
     "@types/bun": "^1.4.3",
