@@ -29,7 +29,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "jszip": "^3.10.2",
-    "node-html-parser": "^9.0.4",
+    "node-html-parser": "^9.0.5",
     "release-please": "17.6.0"
   },
   "dependencies": {
