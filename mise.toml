@@ -11,7 +11,7 @@ shellcheck = "latest"
 actionlint = "latest"
 jq = "latest"
 jsonschema = "latest"
-rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
+rust = { version = "latest", components = "rustfmt,clippy", targets = "wasm32-wasip1" }
 
 [settings]
 experimental = true
