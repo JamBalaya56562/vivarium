@@ -908,7 +908,12 @@ describe('checkSite (NFR6.4, S4, S9)', () => {
     const site = path.join(root, 'site-accepted');
     const guests = path.join(site, 'repro', 'demo', 'guests', 'baseline');
     await mkdir(guests, { recursive: true });
-    expect(await checkSite(site)).toMatchObject({ bundles: 0 });
+    expect(await checkSite(site)).toMatchObject({ bundles: 0, largest: null });
+    await writeFile(path.join(guests, 'biome'), 'elf-bytes');
+    expect(await checkSite(site)).toMatchObject({
+      largest: { path: 'repro/demo/guests/baseline/biome', bytes: 9 },
+    });
+    rmSync(path.join(guests, 'biome'));
     await writeFile(path.join(guests, 'accepted.json'), '{}');
     const error = await stageError(() => checkSite(site));
     expect(error.code).toBe('VERIFY_FAILED');

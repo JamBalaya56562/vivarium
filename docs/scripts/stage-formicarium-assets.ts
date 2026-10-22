@@ -990,6 +990,8 @@ async function stageInto(
 
 export interface SiteReport {
   bytes: number;
+  // GitHub Pages states no per-file limit; the largest file is recorded per build.
+  largest: { path: string; bytes: number } | null;
   coiCopies: number;
   bundles: number;
   hiddenFiles: string[];
@@ -1070,6 +1072,7 @@ export async function checkSite(
   if (!existsSync(siteDir)) fail('INVALID_INPUT', `${siteDir} does not exist`);
   const report: SiteReport = {
     bytes: 0,
+    largest: null,
     coiCopies: 0,
     bundles: 0,
     hiddenFiles: [],
@@ -1083,6 +1086,8 @@ export async function checkSite(
       `site ${siteDir}`,
     );
     const rel = relative(siteDir, path);
+    if (!report.largest || size > report.largest.bytes)
+      report.largest = { path: rel.split(sep).join('/'), bytes: size };
     // The local-staging copy of an accepted build must never be published.
     const parts = rel.split(sep);
     if (parts.at(-1) === LOCAL_ACCEPTED_ASSET && parts.at(-3) === 'guests')
@@ -1140,7 +1145,7 @@ export async function checkSite(
   if (summaryPath)
     await appendFile(
       summaryPath,
-      `### site size\n\n${report.bytes} bytes of ${PAGES_SITE_LIMIT_BYTES}; ${report.coiCopies} coi-serviceworker copies and ${report.bundles} formicarium bundles verified. Hidden files kept by the upload: ${report.hiddenFiles.length === 0 ? 'none' : report.hiddenFiles.map((rel) => `\`${rel}\``).join(', ')}.\n`,
+      `### site size\n\n${report.bytes} bytes of ${PAGES_SITE_LIMIT_BYTES}; largest file ${report.largest ? `\`${report.largest.path}\` ${report.largest.bytes} bytes` : 'none'}; ${report.coiCopies} coi-serviceworker copies and ${report.bundles} formicarium bundles verified. Hidden files kept by the upload: ${report.hiddenFiles.length === 0 ? 'none' : report.hiddenFiles.map((rel) => `\`${rel}\``).join(', ')}.\n`,
     );
   return report;
 }
@@ -1163,7 +1168,7 @@ async function main(): Promise<void> {
       summaryPath,
     );
     console.error(
-      `Site: ${report.bytes} bytes, ${report.coiCopies} coi-serviceworker copies, ${report.bundles} formicarium bundles.`,
+      `Site: ${report.bytes} bytes, largest file ${report.largest ? `${report.largest.path} ${report.largest.bytes} bytes` : 'none'}, ${report.coiCopies} coi-serviceworker copies, ${report.bundles} formicarium bundles.`,
     );
     console.error(
       `Hidden files: ${report.hiddenFiles.length === 0 ? 'none' : report.hiddenFiles.join(', ')}.`,
