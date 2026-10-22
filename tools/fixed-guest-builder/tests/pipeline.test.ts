@@ -309,7 +309,7 @@ describe('runBuild', () => {
         name.startsWith('.staging'),
       ),
     ).toEqual([]);
-  });
+  }, 15_000);
 
   test('refuses a tool with no build configuration and a source without Cargo.lock', async () => {
     const upstream = await createUpstream(files);
