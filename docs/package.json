@@ -33,6 +33,6 @@
     "release-please": "17.6.0"
   },
   "dependencies": {
-    "lucide-react": "^1.59.0"
+    "lucide-react": "^1.60.0"
   }
 }
