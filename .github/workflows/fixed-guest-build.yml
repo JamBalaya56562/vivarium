@@ -136,3 +136,5 @@ jobs:
     uses: ./.github/workflows/fixed-guest-release.yml
     with:
       build_run_id: ${{ github.run_id }}
+    secrets:
+      BOT_PRIVATE_KEY: ${{ secrets.BOT_PRIVATE_KEY }}

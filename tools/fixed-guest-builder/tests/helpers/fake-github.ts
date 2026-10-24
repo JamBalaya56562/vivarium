@@ -85,12 +85,6 @@ export class FakeGitHub implements GitHubApi {
     this.releases = this.releases.filter((item) => item.id !== release.id);
   }
 
-  reviewers = 1;
-
-  async environmentReviewers() {
-    return this.reviewers;
-  }
-
   runsByWorkflow = new Map<string, WorkflowRun[]>();
 
   async activeRuns(workflowFile: string) {

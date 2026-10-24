@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { acceptBuild, parsePublishedBuild } from './accept.ts';
 import { bumpGuest } from './bump.ts';
 import { checkNotBusy, isBuildJob } from './busy.ts';
 import { parseAllowlist } from './declaration.ts';
@@ -9,7 +10,7 @@ import type { Fetcher } from './http.ts';
 import { type BuildDeps, runBuild } from './pipeline.ts';
 import { deriveSet, preparePlan, renderSummary } from './prepare.ts';
 import { runProcess } from './process.ts';
-import { checkApprovalGate, publishSet } from './release.ts';
+import { publishSet } from './release.ts';
 import { type TurnTiming, waitForPublishTurn } from './turn.ts';
 
 export interface CliIo {
@@ -189,7 +190,6 @@ async function command(
     case 'release': {
       const github = api();
       const currentRunId = runId(environment(io, 'GITHUB_RUN_ID'));
-      await checkApprovalGate(github);
       const prepared = await deriveFrom(
         flags,
         github,
@@ -210,6 +210,15 @@ async function command(
         status: outcome.status,
         tag: outcome.tag,
         elfSha256: outcome.verified.elfSha256,
+        build: {
+          tool: prepared.identity.tool,
+          repository: prepared.identity.repository,
+          commit: prepared.identity.commit,
+          versionOrName: outcome.verified.buildInfo.versionOrName,
+          buildKey: prepared.identity.key,
+          elfSha256: outcome.verified.elfSha256,
+          buildInfoSha256: outcome.verified.buildInfoSha256,
+        },
       }));
     }
     case 'bump': {
@@ -231,10 +240,20 @@ async function command(
       });
       return { changed: record !== null, record };
     }
+    case 'accept': {
+      const published = (await readJson(required(flags, 'published'))) as {
+        build?: unknown;
+      };
+      const changes = await acceptBuild({
+        layer1Directory: resolve(required(flags, 'layer1')),
+        build: parsePublishedBuild(published.build),
+      });
+      return { changed: changes.length > 0, changes };
+    }
     default:
       throw new BuildError(
         'INVALID_INPUT',
-        'usage: cli.ts <build|prepare|publish-turn|release|bump> [--flag value]...',
+        'usage: cli.ts <build|prepare|publish-turn|release|bump|accept> [--flag value]...',
       );
   }
 }

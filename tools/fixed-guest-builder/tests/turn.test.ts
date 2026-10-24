@@ -36,7 +36,7 @@ function publishJob(gate: 'queued' | 'in_progress' | 'completed'): RunJob {
         conclusion: gate === 'completed' ? 'success' : null,
       },
       {
-        name: 'Publish under the approved plan',
+        name: 'Publish under the prepared plan',
         status: 'queued',
         conclusion: null,
       },

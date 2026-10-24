@@ -68,7 +68,6 @@ function digestsFor(
   };
 }
 
-// The person approves this plan's SHA256; approvalReference alone approves nothing.
 export function makePublishPlan(options: {
   identity: SetIdentity;
   verified: VerifiedGuestSet;
@@ -145,18 +144,6 @@ async function downloadSet(
     license: await api.downloadAsset(asset(LICENSE_ASSET), MAX_LICENSE_BYTES),
     notices: await api.downloadAsset(asset(NOTICES_ASSET), MAX_LICENSE_BYTES),
   };
-}
-
-export const RELEASE_ENVIRONMENT = 'fixed-guest-release';
-
-// GitHub creates a missing environment on first use with no reviewers, so a
-// job that reached this point may not have been approved by anyone.
-export async function checkApprovalGate(api: GitHubApi): Promise<void> {
-  if ((await api.environmentReviewers(RELEASE_ENVIRONMENT)) < 1)
-    fail(
-      'INVALID_INPUT',
-      `the ${RELEASE_ENVIRONMENT} environment has no required reviewers; nothing is written`,
-    );
 }
 
 export type PublishOutcome =

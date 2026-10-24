@@ -4,7 +4,6 @@ import { parseAllowlist } from '../src/declaration.ts';
 import { BuildError } from '../src/errors.ts';
 import { createGitHubApi } from '../src/github.ts';
 import {
-  checkApprovalGate,
   makePublishPlan,
   publishSet,
   type SetIdentity,
@@ -476,45 +475,5 @@ describe('createGitHubApi requests', () => {
     pages.artifacts = 101;
     expect(await errorCode(api.runJobs(9))).toBe('EXTERNAL');
     expect(await errorCode(api.runArtifacts(9))).toBe('EXTERNAL');
-  });
-});
-
-describe('checkApprovalGate', () => {
-  test('refuses when the environment has no required reviewers', async () => {
-    const api = new FakeGitHub();
-    api.reviewers = 0;
-    expect(await errorCode(checkApprovalGate(api))).toBe('INVALID_INPUT');
-    api.reviewers = 1;
-    await checkApprovalGate(api);
-  });
-
-  test('counts only required reviewers and treats a missing environment as none', async () => {
-    const answer =
-      (body: unknown, status = 200) =>
-      async () =>
-        status === 200 ? Response.json(body) : new Response('{}', { status });
-    const make = (fetcher: () => Promise<Response>) =>
-      createGitHubApi({
-        repository: 'a/b',
-        token: 'ghs_test_token_value',
-        fetcher,
-      });
-    expect(
-      await make(
-        answer({
-          protection_rules: [
-            { type: 'wait_timer' },
-            { type: 'required_reviewers', reviewers: [{}, {}] },
-          ],
-        }),
-      ).environmentReviewers('fixed-guest-release'),
-    ).toBe(2);
-    expect(
-      await make(answer({ protection_rules: [] })).environmentReviewers('x'),
-    ).toBe(0);
-    expect(await make(answer({}, 404)).environmentReviewers('x')).toBe(0);
-    expect(
-      await errorCode(make(answer({}, 500)).environmentReviewers('x')),
-    ).toBe('EXTERNAL');
   });
 });

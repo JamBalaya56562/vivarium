@@ -182,6 +182,41 @@ describe('main', () => {
     expect(JSON.parse(terminal.out.join('')).status).toBe('published');
   });
 
+  test('accept writes the published build into the recipes that declare its source', async () => {
+    const { set, directory, api } = await artifacts();
+    const prepared = await prepare(directory, api);
+    const sha = JSON.parse(prepared.terminal.out.join('')).planSha256 as string;
+    const released = await release(directory, api, prepared.paths.plan, sha);
+    const published = join(directory, 'published.json');
+    await writeFile(published, released.terminal.out.join(''));
+    const layer1 = join(directory, 'layer1');
+    await mkdir(join(layer1, 'recipe'), { recursive: true });
+    const recipe = join(layer1, 'recipe', 'recipe.json');
+    await writeFile(
+      recipe,
+      JSON.stringify({
+        guests: [{ role: 'fix', tool: 'biome', ...SOURCE, fixture: 'f' }],
+      }),
+    );
+    const terminal = io();
+    expect(
+      await main(
+        ['accept', '--published', published, '--layer1', layer1],
+        terminal,
+      ),
+    ).toBe(0);
+    expect(JSON.parse(terminal.out.join(''))).toMatchObject({
+      changed: true,
+      changes: [{ recipe: 'recipe', role: 'fix', previousBuildKey: null }],
+    });
+    const accepted = JSON.parse(await readFile(recipe, 'utf8')).guests[0]
+      .accepted;
+    expect(accepted).toMatchObject({
+      commit: SOURCE.commit,
+      buildKey: set.key,
+    });
+  });
+
   test('release writes nothing when the plan SHA256 is not the prepared one', async () => {
     const { directory, api } = await artifacts();
     const prepared = await prepare(directory, api);
@@ -369,7 +404,7 @@ describe('process wiring', () => {
   test('defaultApi builds a GitHub client without contacting GitHub', () => {
     const api = defaultApi('aletheia-works/vivarium', 'ghs_test_token_value');
     expect(typeof api.findRelease).toBe('function');
-    expect(typeof api.environmentReviewers).toBe('function');
+    expect(typeof api.workflowRun).toBe('function');
   });
 
   test('processIo writes to the process streams and passes the environment through', () => {

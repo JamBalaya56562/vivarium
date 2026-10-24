@@ -85,7 +85,7 @@ jobs:
           echo "branch=fixed-guest-bump/${slug}-${ROLE}" >> "${GITHUB_OUTPUT}"
           {
             echo "Moves the ${ROLE} guest in \`${RECIPE}\` to the tip of the branch its declaration names."
-            echo "Only its commit moves; its accepted build stays until a person accepts the new build."
+            echo "Only its commit moves; its accepted build stays until the build of the new commit is published and accepted."
             echo
             echo "The commit was resolved with \`git ls-remote\` against the declared repository and"
             echo "checked to be reachable from that repository's own refs. PR pages were not used."

@@ -14,6 +14,9 @@ on:
       build_run_id:
         required: true
         type: string
+    secrets:
+      BOT_PRIVATE_KEY:
+        required: true
 
 permissions: {}
 
@@ -85,13 +88,11 @@ jobs:
           retention-days: 7
 
   publish:
-    # Shown where the environment approval is given, next to the summary.
     name: publish ${{ needs.prepare.outputs.plan_sha256 }}
     needs: prepare
     if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: fixed-guest-release
     permissions:
       contents: write
       actions: read
@@ -135,14 +136,106 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: bun run src/cli.ts publish-turn
 
-      - name: Publish under the approved plan
+      - name: Publish under the prepared plan
         working-directory: tools/fixed-guest-builder
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/fgb-published"
           bun run src/cli.ts release \
             --build-run-id "${BUILD_RUN_ID}" \
             --artifacts "${RUNNER_TEMP}/fgb-in" \
             --plan "${RUNNER_TEMP}/fgb-plan/plan.json" \
-            --plan-sha256 "${PLAN_SHA256}"
+            --plan-sha256 "${PLAN_SHA256}" > "${RUNNER_TEMP}/fgb-published/published.json"
+          cat "${RUNNER_TEMP}/fgb-published/published.json"
+
+      - name: Keep the published build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fixed-guest-published
+          path: ${{ runner.temp }}/fgb-published/published.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  accept:
+    name: accept
+    needs: publish
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install the builder's locked dependencies
+        working-directory: tools/fixed-guest-builder
+        run: bun install --frozen-lockfile
+
+      - name: Fetch the published build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: fixed-guest-published
+          path: ${{ runner.temp }}/fgb-published
+
+      - name: Accept the build in the recipes that declare its source
+        id: accept
+        working-directory: tools/fixed-guest-builder
+        run: |
+          set -euo pipefail
+          bun run src/cli.ts accept \
+            --published "${RUNNER_TEMP}/fgb-published/published.json" \
+            --layer1 "${GITHUB_WORKSPACE}/src/layer1_wasm" > "${RUNNER_TEMP}/accept.json"
+          cat "${RUNNER_TEMP}/accept.json"
+          build=$(jq -c .build "${RUNNER_TEMP}/fgb-published/published.json")
+          tag=$(jq -r .tag "${RUNNER_TEMP}/fgb-published/published.json")
+          key=$(jq -r .build.buildKey "${RUNNER_TEMP}/fgb-published/published.json")
+          tool=$(jq -r .build.tool "${RUNNER_TEMP}/fgb-published/published.json")
+          {
+            echo "changed=$(jq -r .changed "${RUNNER_TEMP}/accept.json")"
+            echo "branch=fixed-guest-accept/${tool}-${key:0:12}"
+            echo "title=chore(layer1): accept the ${tool} build ${key:0:12}"
+          } >> "${GITHUB_OUTPUT}"
+          {
+            echo "Accepts the ${tool} build published as \`${tag}\` in every recipe guest that declares its tool, repository and commit."
+            echo
+            echo '```json'
+            echo "${build}"
+            jq .changes "${RUNNER_TEMP}/accept.json"
+            echo '```'
+            echo
+            echo "This pull request's own CI stages the accepted builds and re-runs the recipes, and the pull request merges itself once the required checks pass."
+          } > "${RUNNER_TEMP}/body.md"
+
+      - name: Get an aletheia-works-bot token
+        if: steps.accept.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open or update the pull request
+        if: steps.accept.outputs.changed == 'true'
+        uses: ./.github/actions/bot-pull-request
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: ${{ steps.accept.outputs.branch }}
+          title: ${{ steps.accept.outputs.title }}
+          body-path: ${{ runner.temp }}/body.md

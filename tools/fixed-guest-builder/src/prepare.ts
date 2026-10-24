@@ -16,7 +16,6 @@ import type { Fetcher } from './http.ts';
 import {
   type ExternalOperation,
   makePublishPlan,
-  RELEASE_ENVIRONMENT,
   type SetIdentity,
 } from './release.ts';
 import {
@@ -292,7 +291,7 @@ export async function deriveSet(options: {
 }
 
 export function approvalReference(currentRunId: number): string {
-  return `environment ${RELEASE_ENVIRONMENT} approval in run ${buildRunUrl(currentRunId)}`;
+  return `published without approval by run ${buildRunUrl(currentRunId)}`;
 }
 
 export function preparePlan(
@@ -317,7 +316,7 @@ export function renderSummary(
   return [
     '### fixed-guest-release plan',
     '',
-    `Approve the \`${RELEASE_ENVIRONMENT}\` environment only for this plan.`,
+    'The publish job writes the Release only if its plan SHA256 is this one.',
     '',
     '| Item | Value |',
     '|---|---|',

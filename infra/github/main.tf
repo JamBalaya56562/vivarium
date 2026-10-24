@@ -92,29 +92,6 @@ resource "github_repository_ruleset" "main" {
   }
 }
 
-resource "github_repository_environment" "fixed_guest_release" {
-  count               = length(var.fixed_guest_release_reviewer_ids) > 0 ? 1 : 0
-  repository          = github_repository.this.name
-  environment         = "fixed-guest-release"
-  prevent_self_review = false
-
-  reviewers {
-    users = var.fixed_guest_release_reviewer_ids
-  }
-
-  deployment_branch_policy {
-    protected_branches     = false
-    custom_branch_policies = true
-  }
-}
-
-resource "github_repository_environment_deployment_policy" "fixed_guest_release_main" {
-  count          = length(var.fixed_guest_release_reviewer_ids) > 0 ? 1 : 0
-  repository     = github_repository.this.name
-  environment    = github_repository_environment.fixed_guest_release[0].environment
-  branch_pattern = "main"
-}
-
 locals {
   labels = {
     "type: bug" = {

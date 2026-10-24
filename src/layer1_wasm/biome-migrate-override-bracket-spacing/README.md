@@ -19,8 +19,9 @@ because that pull request links to this page.
 | fix | [JamBalaya56562/biome](https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-override-bracket-spacing) | `a5bd0ce883a22980be20dfc87ba62006a43c3de8` | `fix/migrate-prettier-override-bracket-spacing` |
 
 `recipe.json` declares both as `guests`. `commit` is what the fixed-guest
-builder builds and what `fixed-guest-bump` moves; `accepted` is the build a
-maintainer accepted from its Release, and only `accepted` runs on the site.
+builder builds and what `fixed-guest-bump` moves; `accepted` is the build
+published as its Release, written by the release run's `accept` job, and
+only `accepted` runs on the site.
 
 | Role | Accepted Release | ELF SHA256 |
 | --- | --- | --- |

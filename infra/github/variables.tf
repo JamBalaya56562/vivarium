@@ -46,9 +46,3 @@ variable "create_phase_milestones" {
   type        = bool
   default     = false
 }
-
-variable "fixed_guest_release_reviewer_ids" {
-  description = "GitHub user IDs who must approve each fixed guest Release write. The environment is not created while this is empty."
-  type        = list(number)
-  default     = []
-}

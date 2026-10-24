@@ -47,12 +47,12 @@ and free disk are in the run's receipt.
 
 ## Publishing a set
 
-Publishing needs a person's approval of one operation plan. A person only
-starts the build and approves the environment; nothing else is typed in.
+Publishing needs no approval. A person only starts the build; the release
+and the acceptance follow from it.
 
 1. When the build job succeeds, the same run calls **fixed-guest-release**
    with its own run ID.
-2. The `prepare` job (read-only token, no environment) checks through the
+2. The `prepare` job (read-only token) checks through the
    GitHub API that the run is a `workflow_dispatch` of
    `fixed-guest-build.yml` on `main` in this repository, that its build job
    succeeded, and that it holds the artifact `fixed-guest-<run id>`. It then
@@ -61,22 +61,24 @@ starts the build and approves the environment; nothing else is typed in.
    `tools.json`, which gives the binary. Any disagreement stops the run. It
    writes the plan and shows the plan JSON, its SHA256, the tag and every
    digest in the job summary.
-3. The job waiting for approval is named `publish <plan SHA256>`. Before
-   approving, the approver checks that this SHA256 is the one in the
-   summary, reads the plan, and approves the `fixed-guest-release`
-   environment only for that plan.
-4. The `publish` job waits for its turn (below), takes the plan file, checks
-   that its SHA256 equals the one `prepare` reported and that it still
-   matches the set, checks that the repository is still in
-   `allowlist.json`, and publishes. It refuses to write anything while that
-   environment has no required reviewers.
+3. The `publish <plan SHA256>` job waits for its turn (below), takes the
+   plan file, checks that its SHA256 equals the one `prepare` reported and
+   that it still matches the set, checks that the repository is still in
+   `allowlist.json`, and publishes.
+4. The `accept` job writes the published build as `accepted` into every
+   guest under `src/layer1_wasm/*/recipe.json` whose `tool`, `repository`
+   and `commit` are the build's. When that changes a recipe, it opens a pull
+   request as `aletheia-works-bot` on `fixed-guest-accept/<tool>-<key>` that
+   merges itself once the required checks pass; that pull request's CI
+   stages the accepted builds and re-runs the recipes. A guest whose commit
+   is not on `main` yet, such as one in an open recipe pull request, is not
+   touched; give it its `accepted` block in that pull request.
 
 To release a build later, or to try again, start **fixed-guest-release**
 with only the build run ID.
 
-Release runs are not queued in a concurrency group, so a release waiting
-for approval is never cancelled by a later one and does not hold any other
-release back. After approval, a publish job waits while another run's
+Release runs are not queued in a concurrency group, so a release is never
+cancelled by a later one. A publish job waits while another run's
 publish job is writing, whether that run is a release run or a build run
 that called the release. When two wait at once, the smaller run ID goes
 first. A job checks again with a growing delay (5 s up to 60 s) and, if it
@@ -99,10 +101,10 @@ Start **fixed-guest-bump** with the recipe path and the guest's role
 `main` of the upstream for the baseline, the fix branch of the fork for the
 fix. The branch tip is read with `git ls-remote`; PR pages are never used.
 Only the guest's `commit` moves; its `accepted` build stays, so the site keeps
-running it until a person accepts the build of the new commit. The run opens
-a pull request on `fixed-guest-bump/<recipe>-<role>` that merges itself once
-the required checks pass, and the fixed build of the new key runs
-separately.
+running it until the build of the new commit is published and accepted. The
+run opens a pull request on `fixed-guest-bump/<recipe>-<role>` that merges
+itself once the required checks pass; start the fixed build of the new
+commit after it merges, so the acceptance finds the commit on `main`.
 
 ## Changing what may be built
 

@@ -59,7 +59,7 @@ const PERMISSIONS: Record<
   },
   'fixed-guest-release.yml': {
     workflow: {},
-    jobs: { prepare: READ, publish: WRITE },
+    jobs: { prepare: READ, publish: WRITE, accept: READ },
   },
   'fixed-guest-bump.yml': { workflow: READ, jobs: { bump: undefined } },
 };
@@ -108,7 +108,7 @@ describe('builder workflows', () => {
     });
   });
 
-  test('show the plan SHA256 in the name of the job waiting for approval', async () => {
+  test('show the plan SHA256 in the name of the publish job', async () => {
     const { flow } = await load('fixed-guest-release.yml');
     const { publish } = flow.jobs;
     // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
@@ -178,11 +178,12 @@ describe('builder workflows', () => {
     ]);
   });
 
-  test('plan without write access and write the Release only behind the approval environment', async () => {
+  test('plan without write access and write the Release under that plan, with no approval environment', async () => {
     const { flow } = await load('fixed-guest-release.yml');
     const { prepare, publish } = flow.jobs;
-    expect(Object.keys(flow.jobs)).toEqual(['prepare', 'publish']);
-    expect(prepare?.environment).toBeUndefined();
+    expect(Object.keys(flow.jobs)).toEqual(['prepare', 'publish', 'accept']);
+    for (const job of Object.values(flow.jobs))
+      expect(job.environment).toBeUndefined();
     const plan = prepare?.steps?.find((step) => step.name === 'Make the plan');
     expect(plan?.run).toContain('src/cli.ts prepare');
     // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
@@ -192,7 +193,6 @@ describe('builder workflows', () => {
       'steps.plan.outputs.plan_sha256',
     );
     expect(publish?.needs).toBe('prepare');
-    expect(publish?.environment).toBe('fixed-guest-release');
     expect(publish?.env?.PLAN_SHA256).toContain(
       'needs.prepare.outputs.plan_sha256',
     );
@@ -210,6 +210,35 @@ describe('builder workflows', () => {
     expect(fetched?.map((step) => step.with?.name)).toContain(
       uploaded?.with?.name,
     );
+  });
+
+  test('accept the published build through a bot pull request, only when a recipe changed', async () => {
+    const { flow } = await load('fixed-guest-release.yml');
+    const { publish, accept } = flow.jobs;
+    expect(accept?.needs).toBe('publish');
+    const checkout = accept?.steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout?.with?.ref).toBe('main');
+    const kept = publish?.steps?.find((step) =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    const fetched = accept?.steps?.find((step) =>
+      step.uses?.startsWith('actions/download-artifact@'),
+    );
+    expect(fetched?.with?.name).toBe(kept?.with?.name);
+    const run = accept?.steps?.find((step) =>
+      step.run?.includes('src/cli.ts accept'),
+    );
+    expect(run?.run).toContain('src/layer1_wasm');
+    const pr = accept?.steps?.find(
+      (step) => step.uses === './.github/actions/bot-pull-request',
+    );
+    expect(pr?.if).toBe("steps.accept.outputs.changed == 'true'");
+    const on = flow.on as Record<string, { secrets?: Record<string, unknown> }>;
+    expect(Object.keys(on.workflow_call?.secrets ?? {})).toEqual([
+      'BOT_PRIVATE_KEY',
+    ]);
   });
 
   test('the build calls the release after a successful build of its own run', async () => {

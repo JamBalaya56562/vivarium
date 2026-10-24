@@ -406,8 +406,11 @@ PRs 180 / 189 / 192.
   `fix_candidate`. `commit` is what the builder builds and
   `fixed-guest-bump` moves; `accepted` (`commit`, `versionOrName`,
   `buildKey`, `elfSha256`, `buildInfoSha256` — all five or none) is the
-  build a person accepted from its `guest-<tool>-<buildKey>` Release, and
-  only `accepted` runs. Until every guest is accepted and
+  build published as its `guest-<tool>-<buildKey>` Release, and only
+  `accepted` runs. The release run publishes without approval and its
+  `accept` job opens a self-merging pull request that writes `accepted`
+  into every guest on `main` declaring that tool, repository and commit; a
+  guest still in an open pull request gets it by hand. Until every guest is accepted and
   `src/layer1_wasm/formicarium.pin.json` pins the npm package, the recipe
   is **pending**: `generate-recipes-index.ts` leaves it out of
   `recipes.json`, so it is not on the site and not in the regression

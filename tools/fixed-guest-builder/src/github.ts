@@ -61,7 +61,6 @@ export interface GitHubApi {
   publish(release: Release): Promise<void>;
   deleteDraft(release: Release): Promise<void>;
   activeRuns(workflowFile: string): Promise<WorkflowRun[]>;
-  environmentReviewers(name: string): Promise<number>;
   workflowRun(id: number): Promise<WorkflowRunDetail>;
   runJobs(id: number): Promise<RunJob[]>;
   runArtifacts(id: number): Promise<RunArtifact[]>;
@@ -204,20 +203,6 @@ export function createGitHubApi(options: {
           runs.push({ id: run.id, status: run.status });
       }
       return runs;
-    },
-    async environmentReviewers(name) {
-      const response = await call(
-        `${api}/environments/${encodeURIComponent(name)}`,
-      );
-      if (response.status === 404) return 0;
-      if (!response.ok)
-        fail('EXTERNAL', `environment lookup returned HTTP ${response.status}`);
-      const environment = (await response.json()) as {
-        protection_rules?: { type?: string; reviewers?: unknown[] }[];
-      };
-      return (environment.protection_rules ?? [])
-        .filter((rule) => rule.type === 'required_reviewers')
-        .reduce((total, rule) => total + (rule.reviewers?.length ?? 0), 0);
     },
     async workflowRun(id) {
       const run = await json<{
