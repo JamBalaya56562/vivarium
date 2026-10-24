@@ -73,7 +73,8 @@ async function observe(page: Page): Promise<Observed> {
           status:
             terminal.querySelector('.vh-progress__label')?.textContent ?? '',
           transcript:
-            terminal.querySelector('.vh-terminal__output')?.textContent ?? '',
+            (terminal as HTMLElement & { transcript?: string }).transcript ??
+            '',
         }),
       ),
     };
@@ -106,7 +107,7 @@ async function settle(
       resolve(COVERAGE_DIR, `${coverageName}.json`),
       JSON.stringify(
         entries.filter((entry) =>
-          /\/(_shared\/formicarium_terminal|biome\/migrate-override-bracket-spacing\/)/.test(
+          /\/(_shared\/(formicarium_|xterm_loader)|biome\/migrate-override-bracket-spacing\/)/.test(
             entry.url,
           ),
         ),
@@ -197,4 +198,58 @@ test('en: a changed ELF is not run and the page says why', async ({
   } finally {
     writeFileSync(elf, original);
   }
+});
+
+test('en: a visitor types a command into the terminal', async ({
+  page,
+  browserName,
+}) => {
+  test.setTimeout(180_000);
+  await settle(page, PAGES.en, `${browserName}-typed`);
+  const baseline = page.locator('#output-baseline formicarium-terminal');
+  const rows = baseline.locator('.xterm-rows > div');
+  await expect(rows.filter({ hasText: /^\$\s*$/ })).toHaveCount(1, {
+    timeout: 30_000,
+  });
+  await baseline.locator('.xterm-screen').click();
+  await page.keyboard.type('lsx');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(() =>
+      baseline.evaluate(
+        (terminal) => (terminal as HTMLElement & { transcript: string }).transcript,
+      ),
+    )
+    .toMatch(/\$ ls\n\.prettierrc\nbiome\.json\n$/);
+  await expect(rows.filter({ hasText: /^\$ ls\s*$/ })).toHaveCount(1);
+  await page.keyboard.press('ArrowUp');
+  await expect(rows.filter({ hasText: /^\$ ls\s*$/ })).toHaveCount(2);
+});
+
+test('en: without xterm.js the terminal falls back to text and an input', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName !== 'chromium',
+    'only Chromium lets Playwright route the requests the coi service worker makes',
+  );
+  test.setTimeout(180_000);
+  await page
+    .context()
+    .route('https://cdn.jsdelivr.net/npm/@xterm/**', (route) => route.abort());
+  await settle(page, PAGES.en, `${browserName}-plain`);
+  const baseline = page.locator('#output-baseline formicarium-terminal');
+  await expect(baseline.locator('.xterm')).toHaveCount(0);
+  await expect(baseline.locator('.vh-terminal__plain')).toContainText(
+    '$ cat biome.json',
+  );
+  const input = baseline.locator('.vh-terminal__plain-input');
+  await expect(input).toBeEnabled({ timeout: 30_000 });
+  await input.fill('ls');
+  await input.press('Enter');
+  await expect(baseline.locator('.vh-terminal__plain')).toContainText(
+    '$ ls\n.prettierrc\nbiome.json',
+  );
 });

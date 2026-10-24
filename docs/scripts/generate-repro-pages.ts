@@ -110,6 +110,7 @@ export function runtimeShells(): Record<string, RuntimeShell> {
     },
     formicarium: {
       preconnect: [
+        CDN_PRECONNECT,
         '    <script>',
         '      window.coi = { coepCredentialless: () => false };',
         '    </script>',

@@ -1577,13 +1577,34 @@ body.vh-drawer-open:has(#path-a-mount) {
   transition: opacity 0.45s ease;
 }
 
-.vh-terminal__output {
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 0.75rem;
+.vh-terminal__screen {
+  flex: 1 1 0;
+  min-height: 0;
   overflow: auto;
+}
+
+.vh-terminal__screen .xterm {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 0.5rem 0 0.5rem 0.75rem;
+}
+
+.vh-terminal__plain {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.vh-terminal__plain-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-top: 1px solid var(--vh-terminal-border);
+  background: transparent;
+  color: inherit;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -1594,17 +1615,6 @@ body.vh-drawer-open:has(#path-a-mount) {
 
 .vh-terminal__notice:empty {
   display: none;
-}
-
-.vh-terminal__input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 0;
-  border-top: 1px solid var(--vh-terminal-border);
-  background: transparent;
-  color: inherit;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 .vh-main__col--output.vh-output-multi {

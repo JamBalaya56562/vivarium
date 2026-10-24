@@ -436,7 +436,11 @@ PRs 180 / 189 / 192.
   The driver mounts one `<formicarium-terminal>` per guest with
   `createFormicariumTerminal` from `_shared/formicarium_terminal_element.ts`;
   each terminal checks its ELF and build-info against `accepted` before it
-  runs anything. The tool uses threads, so the page has to be cross-origin
+  runs anything. It draws with xterm.js, loaded from jsdelivr at the
+  versions `_shared/xterm_loader.ts` pins (the weekly runtime bump moves
+  them), and a visitor types at its `$` prompt; the transcript the
+  verdict reads stays in the controller, not in the xterm screen. The
+  tool uses threads, so the page has to be cross-origin
   isolated: the recipe ships `coi-serviceworker.js` (0.1.7, digest-pinned in
   `docs/scripts/coi-serviceworker-pin.ts`) next to its page, and the runtime
   shell sets `window.coi = { coepCredentialless: () => false }` before

@@ -273,7 +273,8 @@ jobs:
             docs/scripts/__tests__/stageFormicariumAssets.test.ts \
             docs/scripts/__tests__/coiServiceWorkerPin.test.ts \
             src/layer1_wasm/biome-migrate-override-bracket-spacing/verdict.test.ts \
-            src/layer1_wasm/_shared/_test/formicarium_terminal.test.ts
+            src/layer1_wasm/_shared/_test/formicarium_terminal.test.ts \
+            src/layer1_wasm/_shared/_test/formicarium_line_editor.test.ts
           mkdir -p "${RUNNER_TEMP}/u6-coverage"
           cp "${RUNNER_TEMP}/u6-bun/lcov.info" "${RUNNER_TEMP}/u6-coverage/bun-lcov.info"
           bun src/layer1_wasm/scripts/u6-coverage.ts \
