@@ -322,7 +322,7 @@ go back to JSON:
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
 - **A CLI runs as a terminal session.**
-  `biome-migrate-override-bracket-spacing` runs Biome in formicarium
+  `biome-migrate-top-level-bracket-spacing` runs Biome in formicarium
   terminals, which are the panes themselves. The driver
   types each command and reads back the `output` and exit `code` that
   `terminal.run()` resolves with; that is the machine channel there,

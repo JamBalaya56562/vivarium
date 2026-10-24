@@ -9,8 +9,8 @@
     "src/layer1_wasm/_shared/formicarium_terminal.ts",
     "src/layer1_wasm/_shared/formicarium_terminal_element.ts",
     "src/layer1_wasm/_shared/xterm_loader.ts",
-    "src/layer1_wasm/biome-migrate-override-bracket-spacing/repro.ts",
-    "src/layer1_wasm/biome-migrate-override-bracket-spacing/verdict.ts"
+    "src/layer1_wasm/biome-migrate-top-level-bracket-spacing/repro.ts",
+    "src/layer1_wasm/biome-migrate-top-level-bracket-spacing/verdict.ts"
   ],
   "excluded": [
     {

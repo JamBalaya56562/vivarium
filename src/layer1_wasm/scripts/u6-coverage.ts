@@ -13,7 +13,7 @@ import { resolveReproFile } from '../../../docs/scripts/repro-dev-middleware';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..');
 const DENOMINATOR = resolve(import.meta.dirname, '..', 'u6-coverage.json');
-const RECIPE = 'biome-migrate-override-bracket-spacing';
+const RECIPE = 'biome-migrate-top-level-bracket-spacing';
 const STAGED = resolve(
   import.meta.dirname,
   '..',

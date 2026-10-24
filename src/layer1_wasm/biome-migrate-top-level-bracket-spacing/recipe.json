@@ -17,17 +17,17 @@
       "role": "baseline",
       "tool": "biome",
       "repository": "https://github.com/biomejs/biome",
-      "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
-      "fixture": "biome-migrate-prettier-override",
+      "commit": "343c8ca9cc718d76717b334338cc7eff94b0d426",
+      "fixture": "biome-migrate-prettier-bracket-spacing",
       "reference": {
         "branch": "main"
       },
       "accepted": {
-        "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
-        "versionOrName": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
-        "buildKey": "086287f859011917208c205bd00239373027ed52fffdc7d07f9526129268322c",
-        "elfSha256": "97c88a1cb957ecb557ddf9eb9299c8a515d4b7f2c0dd50c60ed91e19ffdeb7a6",
-        "buildInfoSha256": "80f07338112d59145fddaffae25f57b58692cf2710900a2dc6ced9345392f0d5"
+        "commit": "343c8ca9cc718d76717b334338cc7eff94b0d426",
+        "versionOrName": "343c8ca9cc718d76717b334338cc7eff94b0d426",
+        "buildKey": "84e80b0dc1e54667941329f70d9d75aeeeace31146af04e2f97bf204aa77cb73",
+        "elfSha256": "fcdb92c91396723bf19f0da12a71e7e7b1cf027cf5875915a225933aeb0ba7a3",
+        "buildInfoSha256": "2afd25a437b1f26cef58ae87e0471002f21b6ddb8b9ceaaae71a0136e5430cdd"
       }
     },
     {

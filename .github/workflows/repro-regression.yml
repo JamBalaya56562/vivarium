@@ -272,7 +272,7 @@ jobs:
             docs/scripts/__tests__/recipesIndex.test.ts \
             docs/scripts/__tests__/stageFormicariumAssets.test.ts \
             docs/scripts/__tests__/coiServiceWorkerPin.test.ts \
-            src/layer1_wasm/biome-migrate-override-bracket-spacing/verdict.test.ts \
+            src/layer1_wasm/biome-migrate-top-level-bracket-spacing/verdict.test.ts \
             src/layer1_wasm/_shared/_test/formicarium_terminal.test.ts \
             src/layer1_wasm/_shared/_test/formicarium_line_editor.test.ts
           mkdir -p "${RUNNER_TEMP}/u6-coverage"

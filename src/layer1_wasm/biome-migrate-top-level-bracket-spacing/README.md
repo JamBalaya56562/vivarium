@@ -13,7 +13,7 @@ behaviour.
 
 | Role | Repository | Commit | Followed branch |
 | --- | --- | --- | --- |
-| baseline | [biomejs/biome](https://github.com/biomejs/biome) | `ef61338b24b7125fbc3cb3d4792ec90fa005a86e` | `main` |
+| baseline | [biomejs/biome](https://github.com/biomejs/biome) | `343c8ca9cc718d76717b334338cc7eff94b0d426` | `main` |
 | fix | [JamBalaya56562/biome](https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-bracket-spacing) | `c023cb4bde6b7da703ec8f73fea1807501f6bf91` | `fix/migrate-prettier-bracket-spacing` |
 
 `recipe.json` declares both as `guests`. `commit` is what the fixed-guest
@@ -22,11 +22,11 @@ maintainer accepted from its Release, and only `accepted` runs on the site.
 
 | Role | Accepted Release | ELF SHA256 |
 | --- | --- | --- |
-| baseline | `guest-biome-086287f859011917208c205bd00239373027ed52fffdc7d07f9526129268322c` | `97c88a1cb957ecb557ddf9eb9299c8a515d4b7f2c0dd50c60ed91e19ffdeb7a6` |
+| baseline | `guest-biome-84e80b0dc1e54667941329f70d9d75aeeeace31146af04e2f97bf204aa77cb73` | `fcdb92c91396723bf19f0da12a71e7e7b1cf027cf5875915a225933aeb0ba7a3` |
 | fix | `guest-biome-999c685da090c053fe294038463adc16bb99d6f8a62cb61848060d0e8b6d8a36` | `bd96d98fe5b2e24c3bd5610ac4b848f90d54d54cb67dbabe06a8a3c0120a1a4c` |
 
-The baseline reuses the build `biome-migrate-override-bracket-spacing`
-accepted: the same commit has this bug too. Both guests are accepted, and
+The baseline is biome main at the merge of biomejs/biome#12649, which
+fixed the `overrides` case but not this one. Both guests are accepted, and
 `src/layer1_wasm/formicarium.pin.json` pins the formicarium package, so the
 recipe is **active**: it is on the site and in the regression suite.
 

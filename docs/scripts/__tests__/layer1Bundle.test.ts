@@ -14,7 +14,7 @@ import { servedByPages } from '../serve-repro';
 import { REPO_ROOT } from '../site-paths';
 
 const SCRIPT = path.join(REPO_ROOT, 'scripts', 'bundle-layer1-pages.sh');
-const SLUG = 'biome-migrate-override-bracket-spacing';
+const SLUG = 'biome-migrate-top-level-bracket-spacing';
 
 function put(root: string, rel: string, body = rel): void {
   const file = path.join(root, rel);
@@ -56,7 +56,7 @@ describe('.gitignore keeps staged formicarium assets out of the tree (P1)', () =
 });
 
 describe('serve-repro serves the deployed /ja/ shape (S8 candidate 2)', () => {
-  const ja = '/vivarium/ja/repro/biome/migrate-override-bracket-spacing/';
+  const ja = '/vivarium/ja/repro/biome/migrate-top-level-bracket-spacing/';
   test('serves the page, its service worker and its _formicarium copy', () => {
     expect(servedByPages(ja)).toBe(true);
     expect(servedByPages(`${ja}index.html`)).toBe(true);
@@ -127,7 +127,7 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
             layer: 1,
             project: 'biome',
             page_url:
-              'https://aletheia-works.github.io/vivarium/repro/biome/migrate-override-bracket-spacing/',
+              'https://aletheia-works.github.io/vivarium/repro/biome/migrate-top-level-bracket-spacing/',
           },
         ],
       }),
@@ -150,7 +150,7 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
   test('copies the recipe with its staged assets into the English dir', () => {
     const en = path.join(
       root,
-      'docs/doc_build/repro/biome/migrate-override-bracket-spacing',
+      'docs/doc_build/repro/biome/migrate-top-level-bracket-spacing',
     );
     expect(files(en)).toEqual([
       '_formicarium/0.4.0/assets/paludarium/paludarium.wasm',
@@ -168,7 +168,7 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
   test('gives the Japanese dir the page, the service worker and _formicarium only', () => {
     const ja = path.join(
       root,
-      'docs/doc_build/ja/repro/biome/migrate-override-bracket-spacing',
+      'docs/doc_build/ja/repro/biome/migrate-top-level-bracket-spacing',
     );
     expect(files(ja)).toEqual([
       '_formicarium/0.4.0/assets/paludarium/paludarium.wasm',
@@ -182,14 +182,14 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
   test('keeps each ELF in one place and no _formicarium outside the recipe', () => {
     const all = files(path.join(root, 'docs/doc_build'));
     expect(all.filter((f) => f.endsWith('/biome'))).toEqual([
-      'repro/biome/migrate-override-bracket-spacing/guests/baseline/biome',
-      'repro/biome/migrate-override-bracket-spacing/guests/fix/biome',
+      'repro/biome/migrate-top-level-bracket-spacing/guests/baseline/biome',
+      'repro/biome/migrate-top-level-bracket-spacing/guests/fix/biome',
     ]);
     expect(
       all.filter((f) => f.includes('_formicarium/assets.json')).sort(),
     ).toEqual([
-      'ja/repro/biome/migrate-override-bracket-spacing/_formicarium/assets.json',
-      'repro/biome/migrate-override-bracket-spacing/_formicarium/assets.json',
+      'ja/repro/biome/migrate-top-level-bracket-spacing/_formicarium/assets.json',
+      'repro/biome/migrate-top-level-bracket-spacing/_formicarium/assets.json',
     ]);
   });
 

@@ -139,7 +139,10 @@ describe('resolveReproFile — single-segment project routes', () => {
 });
 
 describe('resolveReproFile — staged formicarium assets (P1, S8 candidate 2)', () => {
-  const recipeDir = path.join(LAYER1, 'biome-migrate-override-bracket-spacing');
+  const recipeDir = path.join(
+    LAYER1,
+    'biome-migrate-top-level-bracket-spacing',
+  );
   const probe = `resolve-probe-${process.pid}.json`;
   const staged = [
     path.join(recipeDir, '_formicarium', probe),
@@ -161,13 +164,13 @@ describe('resolveReproFile — staged formicarium assets (P1, S8 candidate 2)', 
   });
 
   test('maps the recipe’s _formicarium/ and guests/ to the staged files', () => {
-    const url = 'biome/migrate-override-bracket-spacing';
+    const url = 'biome/migrate-top-level-bracket-spacing';
     expect(resolveReproFile(`${url}/_formicarium/${probe}`)).toBe(staged[0]);
     expect(resolveReproFile(`${url}/guests/baseline/${probe}`)).toBe(staged[1]);
   });
 
   test('serves the same _formicarium file to the Japanese page', () => {
-    const url = 'biome/migrate-override-bracket-spacing';
+    const url = 'biome/migrate-top-level-bracket-spacing';
     expect(resolveReproFile(`${url}/_formicarium/${probe}`, 'ja')).toBe(
       staged[0],
     );
@@ -176,7 +179,7 @@ describe('resolveReproFile — staged formicarium assets (P1, S8 candidate 2)', 
   test('a missing staged file is null, not another recipe’s', () => {
     expect(
       resolveReproFile(
-        'biome/migrate-override-bracket-spacing/_formicarium/absent.json',
+        'biome/migrate-top-level-bracket-spacing/_formicarium/absent.json',
       ),
     ).toBe(null);
   });

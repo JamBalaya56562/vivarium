@@ -6,8 +6,8 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { DEPLOYED_SHAPE_BASE } from '../playwright.config';
 
-const SLUG = 'biome-migrate-override-bracket-spacing';
-const PAGE_PATH = 'repro/biome/migrate-override-bracket-spacing/';
+const SLUG = 'biome-migrate-top-level-bracket-spacing';
+const PAGE_PATH = 'repro/biome/migrate-top-level-bracket-spacing/';
 const PAGES = {
   en: `${DEPLOYED_SHAPE_BASE}/vivarium/${PAGE_PATH}`,
   ja: `${DEPLOYED_SHAPE_BASE}/vivarium/ja/${PAGE_PATH}`,
@@ -107,7 +107,7 @@ async function settle(
       resolve(COVERAGE_DIR, `${coverageName}.json`),
       JSON.stringify(
         entries.filter((entry) =>
-          /\/(_shared\/(formicarium_|xterm_loader)|biome\/migrate-override-bracket-spacing\/)/.test(
+          /\/(_shared\/(formicarium_|xterm_loader)|biome\/migrate-top-level-bracket-spacing\/)/.test(
             entry.url,
           ),
         ),

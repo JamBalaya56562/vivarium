@@ -997,7 +997,7 @@ describe('checkSite against the Pages upload of hidden files (Step 18a)', () => 
 
   test('a site with a fixture dotfile passes under the deploy-docs upload setting', async () => {
     const site = await siteWith([
-      'repro/biome/migrate-override-bracket-spacing/fixture/.prettierrc',
+      'repro/biome/migrate-top-level-bracket-spacing/fixture/.prettierrc',
     ]);
     const report = await checkSite(site, undefined, readUploadSettings());
     expect(report.hiddenFiles).toHaveLength(1);
