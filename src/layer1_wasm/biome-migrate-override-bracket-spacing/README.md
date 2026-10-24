@@ -26,7 +26,7 @@ maintainer accepted from its Release, and only `accepted` runs on the site.
 | fix | `guest-biome-dabb518b1731e82752bf6f26471df6ba9ad41947b7a31352cdc45638e746c24d` | `364ef17da79a6eadb508e93cceb3c1c33d7619e80a94bb9846db2cd57712ff84` |
 
 Both guests are accepted, and `src/layer1_wasm/formicarium.pin.json` pins
-formicarium 0.3.0, so the recipe is **active**: it is on the site and in the
+formicarium 0.4.0, so the recipe is **active**: it is on the site and in the
 regression suite.
 
 ## The input

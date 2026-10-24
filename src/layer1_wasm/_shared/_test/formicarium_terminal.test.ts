@@ -135,7 +135,7 @@ function loaded(api: FormicariumApi): LoadedFormicarium {
       workerURL: 'https://x/k',
       buildInfoURL: 'https://x/b',
     },
-    version: '0.3.0',
+    version: '0.4.0',
     packSha256: 'f'.repeat(64),
   };
 }
@@ -555,15 +555,15 @@ describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
 
   test('builds the formicarium URLs from the page itself, so the ja page uses its own copy', async () => {
     const manifest = {
-      version: '0.3.0',
+      version: '0.4.0',
       tarballSha256: 'f'.repeat(64),
       entries: {
-        public: '0.3.0/runtime/public.js',
-        browser: '0.3.0/runtime/web/api.js',
-        worker: '0.3.0/runtime/web/package-worker.bundle.js',
-        loader: '0.3.0/assets/blink.mjs',
-        wasm: '0.3.0/assets/blink.wasm',
-        buildInfo: '0.3.0/assets/build-info.json',
+        public: '0.4.0/runtime/public.js',
+        browser: '0.4.0/runtime/web/api.js',
+        worker: '0.4.0/runtime/web/package-worker.bundle.js',
+        loader: '0.4.0/assets/paludarium/index.mjs',
+        wasm: '0.4.0/assets/paludarium/paludarium.wasm',
+        buildInfo: '0.4.0/assets/paludarium/build-info.json',
       },
     };
     const { api } = fakeApi({});
@@ -581,11 +581,11 @@ describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
       },
     });
     expect(result.assets.workerURL).toBe(
-      `${page}_formicarium/0.3.0/runtime/web/package-worker.bundle.js`,
+      `${page}_formicarium/0.4.0/runtime/web/package-worker.bundle.js`,
     );
     expect(imported).toEqual([
-      `${page}_formicarium/0.3.0/runtime/public.js`,
-      `${page}_formicarium/0.3.0/runtime/web/api.js`,
+      `${page}_formicarium/0.4.0/runtime/public.js`,
+      `${page}_formicarium/0.4.0/runtime/web/api.js`,
     ]);
     await expect(
       loadFormicarium({

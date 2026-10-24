@@ -84,9 +84,9 @@ export const BUNDLE_ENTRIES = {
   public: 'runtime/public.js',
   browser: 'runtime/web/api.js',
   worker: 'runtime/web/package-worker.bundle.js',
-  loader: 'assets/blink.mjs',
-  wasm: 'assets/blink.wasm',
-  buildInfo: 'assets/build-info.json',
+  loader: 'assets/paludarium/index.mjs',
+  wasm: 'assets/paludarium/paludarium.wasm',
+  buildInfo: 'assets/paludarium/build-info.json',
   license: 'LICENSE',
   notices: 'THIRD_PARTY_NOTICES.md',
 } as const;
@@ -463,17 +463,29 @@ export function verifyArchiveAgainstPin(
   } catch {
     fail('VERIFY_FAILED', `${BUNDLE_ENTRIES.buildInfo} is not JSON`);
   }
-  const digests = isRecord(buildInfo) ? buildInfo.assetDigests : undefined;
+  const coreDir = dirname(BUNDLE_ENTRIES.buildInfo);
+  const digests = isRecord(buildInfo) ? buildInfo.files : undefined;
+  const coreFiles = [...byPath.keys()]
+    .filter(
+      (path) =>
+        dirname(path) === coreDir &&
+        path !== BUNDLE_ENTRIES.buildInfo &&
+        path !== `${coreDir}/LICENSE`,
+    )
+    .map((path) => path.slice(coreDir.length + 1))
+    .sort();
   if (
     !isRecord(digests) ||
-    digests.loaderSha256 !==
-      sha256Hex(byPath.get(BUNDLE_ENTRIES.loader) as Uint8Array) ||
-    digests.wasmSha256 !==
-      sha256Hex(byPath.get(BUNDLE_ENTRIES.wasm) as Uint8Array)
+    Object.keys(digests).sort().join() !== coreFiles.join() ||
+    coreFiles.some(
+      (name) =>
+        digests[name] !==
+        sha256Hex(byPath.get(`${coreDir}/${name}`) as Uint8Array),
+    )
   )
     fail(
       'VERIFY_FAILED',
-      `${BUNDLE_ENTRIES.buildInfo} does not describe the shipped blink.mjs and blink.wasm`,
+      `${BUNDLE_ENTRIES.buildInfo} does not describe the shipped core files`,
     );
   return byPath;
 }

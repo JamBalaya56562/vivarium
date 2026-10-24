@@ -41,7 +41,7 @@ describe('.gitignore keeps staged formicarium assets out of the tree (P1)', () =
       }).exitCode === 0;
     for (const rel of [
       `src/layer1_wasm/${SLUG}/_formicarium/assets.json`,
-      `src/layer1_wasm/${SLUG}/_formicarium/0.3.0/assets/blink.wasm`,
+      `src/layer1_wasm/${SLUG}/_formicarium/0.4.0/assets/paludarium/paludarium.wasm`,
       `src/layer1_wasm/${SLUG}/guests/baseline/biome`,
       `src/layer1_wasm/${SLUG}/guests/fix/build-info.json`,
     ])
@@ -64,7 +64,7 @@ describe('serve-repro serves the deployed /ja/ shape (S8 candidate 2)', () => {
     expect(servedByPages(`${ja}_formicarium/assets.json`)).toBe(true);
     expect(
       servedByPages(
-        `${ja}_formicarium/0.3.0/runtime/web/package-worker.bundle.js`,
+        `${ja}_formicarium/0.4.0/runtime/web/package-worker.bundle.js`,
       ),
     ).toBe(true);
   });
@@ -100,8 +100,8 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
       'coi-serviceworker.js',
       'repro.js',
       '_formicarium/assets.json',
-      '_formicarium/0.3.0/runtime/web/api.js',
-      '_formicarium/0.3.0/assets/blink.wasm',
+      '_formicarium/0.4.0/runtime/web/api.js',
+      '_formicarium/0.4.0/assets/paludarium/paludarium.wasm',
       'guests/baseline/biome',
       'guests/fix/biome',
     ])
@@ -153,8 +153,8 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
       'docs/doc_build/repro/biome/migrate-override-bracket-spacing',
     );
     expect(files(en)).toEqual([
-      '_formicarium/0.3.0/assets/blink.wasm',
-      '_formicarium/0.3.0/runtime/web/api.js',
+      '_formicarium/0.4.0/assets/paludarium/paludarium.wasm',
+      '_formicarium/0.4.0/runtime/web/api.js',
       '_formicarium/assets.json',
       'coi-serviceworker.js',
       'guests/baseline/biome',
@@ -171,8 +171,8 @@ describe('bundle-layer1-pages.sh (P1, S8 candidate 2)', () => {
       'docs/doc_build/ja/repro/biome/migrate-override-bracket-spacing',
     );
     expect(files(ja)).toEqual([
-      '_formicarium/0.3.0/assets/blink.wasm',
-      '_formicarium/0.3.0/runtime/web/api.js',
+      '_formicarium/0.4.0/assets/paludarium/paludarium.wasm',
+      '_formicarium/0.4.0/runtime/web/api.js',
       '_formicarium/assets.json',
       'coi-serviceworker.js',
       'index.html',

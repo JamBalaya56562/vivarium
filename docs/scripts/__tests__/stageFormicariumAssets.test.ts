@@ -35,7 +35,7 @@ const encoder = new TextEncoder();
 const COI_COPY = readFileSync(
   path.join(import.meta.dir, 'fixtures', COI_SERVICEWORKER_FILE),
 );
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const SOURCE_COMMIT = 'c'.repeat(40);
 const BASELINE = {
   repository: 'https://github.com/biomejs/biome',
@@ -134,17 +134,26 @@ function tgz(entries: Entry[], trailing?: Uint8Array): Uint8Array {
 }
 
 function packageFiles(): Map<string, Uint8Array> {
-  const loader = encoder.encode('export default function createBlink() {}\n');
+  const loader = encoder.encode(
+    'export async function createPaludarium() {}\n',
+  );
+  const coordinator = encoder.encode('self.onmessage = () => {};\n');
   const wasm = new Uint8Array([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]);
   const files: Record<string, Uint8Array | string> = {
     LICENSE: 'Apache License 2.0\n',
     'README.md': '# formicarium\n',
-    'THIRD_PARTY_NOTICES.md': 'blink: ISC\n',
-    'assets/blink.mjs': loader,
-    'assets/blink.wasm': wasm,
-    'assets/build-info.json': JSON.stringify({
-      assetDigests: { loaderSha256: sha(loader), wasmSha256: sha(wasm) },
+    'THIRD_PARTY_NOTICES.md': 'paludarium: Apache-2.0\n',
+    'assets/paludarium/LICENSE': 'Apache License 2.0\n',
+    'assets/paludarium/build-info.json': JSON.stringify({
+      files: {
+        'index.mjs': sha(loader),
+        'coordinator.mjs': sha(coordinator),
+        'paludarium.wasm': sha(wasm),
+      },
     }),
+    'assets/paludarium/coordinator.mjs': coordinator,
+    'assets/paludarium/index.mjs': loader,
+    'assets/paludarium/paludarium.wasm': wasm,
     'package.json': '{"name":"@aletheia-works/formicarium"}\n',
     'runtime/node/api.js': 'export {};\n',
     'runtime/public.js': 'export {};\n',
@@ -556,7 +565,10 @@ describe('pin and archive verification (BR2.1, NFR3.2)', () => {
       verifyArchiveAgainstPin(readNpmTarball(packageTarball(missing)), pin),
     ).toThrow('lacks: README.md');
     const stale = packageFiles();
-    stale.set('assets/build-info.json', encoder.encode('{"assetDigests":{}}'));
+    stale.set(
+      'assets/paludarium/build-info.json',
+      encoder.encode('{"files":{}}'),
+    );
     expect(() =>
       verifyArchiveAgainstPin(
         readNpmTarball(packageTarball(stale)),

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.3.0",
-  "tarballSha256": "29cb0656241daf224b32390f22cc2c1abd17f10dd8bcf37aed107463d711398b",
-  "sourceCommit": "0af7b2396eebd2444a6e6f1d9b8d9f6c376cc7e7",
+  "packageVersion": "0.4.0",
+  "tarballSha256": "d49295f146f940c23ea40d6815c365510abe76394b242461ce5394595a56a14c",
+  "sourceCommit": "dd904b873fbe0a33dee5bf647d9c57d152ef38fd",
   "files": [
     {
       "path": "LICENSE",
@@ -11,35 +11,59 @@
     },
     {
       "path": "README.md",
-      "sha256": "64c9a2913f0ad8d2db57fe61fc32684af11c7fcfb06d2d90b836760612ea485f"
+      "sha256": "67512c04be74cfaed1f3ca4e11057e3e5cfce93cfa9d68a0c1806fd824645bae"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "sha256": "d32c992ea64eceb5112ddb82669f57a2545dabe2b8e8fa0fe0ec1e7a1f14a840"
+      "sha256": "847f1e048b526d8ab49699dceec97acc558198d349fe7c27b3f731b59acdead7"
     },
     {
-      "path": "assets/blink.mjs",
-      "sha256": "b0ad291e35d9b36e0e3dce2402a70cbb84b7da6697d36d02ae2c39cc2a0fde53"
+      "path": "assets/paludarium/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
     },
     {
-      "path": "assets/blink.wasm",
-      "sha256": "fa19e28c9d1ae7dd8534c2f4b73796724013b9fc85997683809574d98a2457fc"
+      "path": "assets/paludarium/build-info.json",
+      "sha256": "c6b745085cb9963532caf6974219f797da9778b0ee1977eb1bc7337c5849855b"
     },
     {
-      "path": "assets/build-info.json",
-      "sha256": "8d904ed5b1a6400ef80147e1971037099be104e35b889c4945404f07b408cd1b"
+      "path": "assets/paludarium/coordinator.mjs",
+      "sha256": "41c01fd1bf51c7780c683d626f8e08b2f15cdf5c6aba6ac254439ac865ca5ad3"
+    },
+    {
+      "path": "assets/paludarium/execution.mjs",
+      "sha256": "e209c0c93ffe47ea12ea3271336453ca75314d338f4b8996f375022cf54a7973"
+    },
+    {
+      "path": "assets/paludarium/filesystem-snapshot.mjs",
+      "sha256": "e883c39acb7c68f59fb407fe17452f7b1b04e37e0b774e83f158a875c12c07fc"
+    },
+    {
+      "path": "assets/paludarium/index.mjs",
+      "sha256": "990923e43849b36c049982aa694f9fe550c80ea6d799debd8616cbd45679ed05"
+    },
+    {
+      "path": "assets/paludarium/jit-support.mjs",
+      "sha256": "d8fcd92a4b20c4d6aa0adb429065c1910ec31d5c00a761c4e1be9fc1aaf452d3"
+    },
+    {
+      "path": "assets/paludarium/paludarium.wasm",
+      "sha256": "f0f48dcbd419f6bed2612d8bf6edbb2f6339487aed02200b5f2899c583a8f687"
+    },
+    {
+      "path": "assets/paludarium/worker-support.mjs",
+      "sha256": "a96b75df2165deea4a3ce92852e579cbd2a6aa4febbd7dff004a817ee26f1d6c"
     },
     {
       "path": "package.json",
-      "sha256": "c343c6feefbfb537d3adebf1376127e359d6bbcecc340bad03d2d82b701f9a8a"
+      "sha256": "2385c3668ff1bbfbf2019d2b3abf8f5d6ae117f3106d3820f63ff1fc4833f238"
     },
     {
       "path": "runtime/command-parse.js",
-      "sha256": "21b77505efba3d19f90a04b4c5d57fb8e34acde29ccbd21c2477796a3c982f8d"
+      "sha256": "924c1da5d7f6ffaa412537cc8c4b302d12deabde5ba61f2f6802f53ecb70fd1d"
     },
     {
       "path": "runtime/command.js",
-      "sha256": "4873dbe6f0c148a1fce38e51aebf734aa44aeb86f306faf369fafc793092c403"
+      "sha256": "6e1add82c5d8ac00be0b2534cbe3514c015bc52255014071f348ae21b68d087b"
     },
     {
       "path": "runtime/contracts.js",
@@ -47,7 +71,7 @@
     },
     {
       "path": "runtime/core.js",
-      "sha256": "cd91c45957336a982ff075b7726c6acd6e955cad457e9a449dec60fc824b1eac"
+      "sha256": "739d28089bc05c974a83ac37c670dac4980db37b7f0201d08ff877be4ed09deb"
     },
     {
       "path": "runtime/errors.js",
@@ -55,7 +79,7 @@
     },
     {
       "path": "runtime/guest-io.js",
-      "sha256": "05667db5c3db93b906b1cdeb93a2545474585d97ee0d624d3a6ceaa446b4796d"
+      "sha256": "629cc48c1e7d15e1ce7561a5914b2ceb8763d9a10886fed2938481f955ad121d"
     },
     {
       "path": "runtime/guest-validation.js",
@@ -71,7 +95,7 @@
     },
     {
       "path": "runtime/install-lifecycle.js",
-      "sha256": "e63c4bbacafcd6af175a16a6f6d5899c13e4b4e350019da221e0536b039da1f9"
+      "sha256": "351d6a801ea057a8d8d87923e769b1a75d29e3af3d231c87defcdf1f716f97b1"
     },
     {
       "path": "runtime/install-transfer.js",
@@ -79,7 +103,7 @@
     },
     {
       "path": "runtime/install.js",
-      "sha256": "a4b919551b32f1fce2a1f61b071929ac1b21bd09835648ea8bcb7776cf83b995"
+      "sha256": "38ec59bd9ca35c9daadb68bad63c61f1b9356be7d98d59e957842524361c2a03"
     },
     {
       "path": "runtime/lifecycle.js",
@@ -87,11 +111,11 @@
     },
     {
       "path": "runtime/node/api.js",
-      "sha256": "39e18102fc201b9ddff1b6bad1aee14f78b67a6c0e78941498c68b1aeb949148"
+      "sha256": "ddd6a1d9ae947849b99467874cf468a823663278883a03d0d02e69c5c719aab7"
     },
     {
       "path": "runtime/node/package-worker.js",
-      "sha256": "9be11c0516949a98b62b74fe787f14aabe459a7a3011c18ba3d2c90bf8c925c1"
+      "sha256": "0511cbbf3fcbe7e00b66e72f1095a36277857d2c85d9ff541bd718fd991b131c"
     },
     {
       "path": "runtime/protocol.js",
@@ -115,19 +139,19 @@
     },
     {
       "path": "runtime/web/api.js",
-      "sha256": "0f5aa5de585584921b6bd16fdca3c630d0eb7c23699db1a67ace2f8f4aa5e2b1"
+      "sha256": "e7a35ef62f3c98083ff075cc158247bac627173bb0593690a99011c396a9561b"
     },
     {
       "path": "runtime/web/package-worker.bundle.js",
-      "sha256": "8cc5f46890d469bd8516ffbf9dd3f81bde91c38bb00f97e79d2c70c15772ee98"
+      "sha256": "f4f626ce3c72888712fa105e97c1ca8c3b1d5f3a79f4fd1b5e418208d58c1918"
     },
     {
       "path": "runtime/web/package-worker.js",
-      "sha256": "12e72d9ba65d12cde39922f1ebf38cad711efc4e42e053f0eb9851447ce540f3"
+      "sha256": "0dc3c700a54d9932e779cd28c900d075275a2a3a7c9ea1c98390d7dc950ba2a1"
     },
     {
       "path": "runtime/worker-execution.js",
-      "sha256": "53fbe0d3d45f9474db1f52168346920cbf8bb084c98d92b8e4de9bfc3d9d4be8"
+      "sha256": "43d4190ecd83a04edc3da44f6f84a7aab1334435c01bf2ad396d89519566cfaa"
     },
     {
       "path": "types/browser.d.ts",
@@ -135,7 +159,7 @@
     },
     {
       "path": "types/index.d.ts",
-      "sha256": "33238c8fc1407940675195913899eb58bac5896dad25955ae91f27b40214c5f1"
+      "sha256": "28aadfa52da02d3ee7717777e1ba43d6c979eef7959be509e7581c473a23d639"
     },
     {
       "path": "types/node.d.ts",
