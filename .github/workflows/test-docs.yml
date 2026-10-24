@@ -1,8 +1,7 @@
 name: Test docs (unit + build + E2E)
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_call:
   push:
     branches: [main]
   workflow_dispatch:

@@ -275,11 +275,19 @@ or release tags.
 
 ### 4.11 Pre-PR local validation
 
-**Run the matching CI checks locally before pushing.** Every PR runs
-the test workflows under `.github/workflows/` whatever it touches (only
-the Terraform workflows and the deploy keep a `paths:` filter), and
-the ruleset requires them; the matching tasks in
-[`mise.toml`](mise.toml) mirror them job-for-job:
+**Run the matching CI checks locally before pushing.** On a PR,
+`ci.yml` runs only the test workflows its changed files need:
+[`scripts/ci-changes.py`](scripts/ci-changes.py) maps each path to the
+docs, repro, MCP and fixed-guest-builder groups. An unknown path, a
+change to `ci.yml`, the classifier, `mise.toml` or `mise-tasks/`, and
+the release PR run every group; prose, `infra/` and `.claude/` run none.
+Polyglot lint runs on every PR. The ruleset requires `ci-required`,
+which passes only when each needed group passed and each other one was
+skipped, plus Polyglot lint and Commitlint. A push to `main` still runs
+`test-docs.yml` and `repro-regression.yml` in full. When you add a
+path, give it a rule and a self-test case in the classifier. The
+matching tasks in [`mise.toml`](mise.toml) mirror the workflows
+job-for-job:
 
 | Task                | Workflow                  |
 | ------------------- | ------------------------- |

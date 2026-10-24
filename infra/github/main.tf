@@ -40,14 +40,7 @@ locals {
   required_checks = [
     "check / Commitlint",
     "Polyglot lint",
-    "Unit (resolveReproFile)",
-    "E2E (chromium)",
-    "E2E (firefox)",
-    "E2E (webkit)",
-    "Test MCP server",
-    "regression (chromium)",
-    "regression (firefox)",
-    "regression (webkit)",
+    "ci-required",
   ]
 }
 

@@ -1,15 +1,10 @@
 name: Test MCP
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: test-mcp-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 jobs:
   test:

@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docs: ${{ steps.groups.outputs.docs }}
+      repro: ${{ steps.groups.outputs.repro }}
+      mcp: ${{ steps.groups.outputs.mcp }}
+      builder: ${{ steps.groups.outputs.builder }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - run: python3 scripts/ci-changes.py --self-test
+
+      - id: groups
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_REF" = release-please--branches--main--components--vivarium ]; then
+            python3 scripts/ci-changes.py --all
+          else
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" \
+              --jq '.[] | .filename, (.previous_filename // empty)' |
+              python3 scripts/ci-changes.py
+          fi
+
+  docs:
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    uses: ./.github/workflows/test-docs.yml
+
+  repro:
+    needs: changes
+    if: needs.changes.outputs.repro == 'true'
+    uses: ./.github/workflows/repro-regression.yml
+
+  mcp:
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true'
+    uses: ./.github/workflows/test-mcp.yml
+
+  builder:
+    needs: changes
+    if: needs.changes.outputs.builder == 'true'
+    uses: ./.github/workflows/test-fixed-guest-builder.yml
+
+  ci-required:
+    if: always()
+    needs: [changes, docs, repro, mcp, builder]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require each needed group to pass and each unneeded one to be skipped
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_NEEDED: ${{ needs.changes.outputs.docs }}
+          DOCS_RESULT: ${{ needs.docs.result }}
+          REPRO_NEEDED: ${{ needs.changes.outputs.repro }}
+          REPRO_RESULT: ${{ needs.repro.result }}
+          MCP_NEEDED: ${{ needs.changes.outputs.mcp }}
+          MCP_RESULT: ${{ needs.mcp.result }}
+          BUILDER_NEEDED: ${{ needs.changes.outputs.builder }}
+          BUILDER_RESULT: ${{ needs.builder.result }}
+        run: |
+          set -euo pipefail
+          gate() {
+            echo "$1: needed=$2 result=$3"
+            if [ "$2" = true ]; then
+              test "$3" = success
+            else
+              test "$2" = false
+              test "$3" = skipped
+            fi
+          }
+          test "$CHANGES_RESULT" = success
+          gate docs "$DOCS_NEEDED" "$DOCS_RESULT"
+          gate repro "$REPRO_NEEDED" "$REPRO_RESULT"
+          gate mcp "$MCP_NEEDED" "$MCP_RESULT"
+          gate builder "$BUILDER_NEEDED" "$BUILDER_RESULT"

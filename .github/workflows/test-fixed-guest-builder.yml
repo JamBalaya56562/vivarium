@@ -1,15 +1,10 @@
 name: Test fixed guest builder
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: test-fixed-guest-builder-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 jobs:
   test:
