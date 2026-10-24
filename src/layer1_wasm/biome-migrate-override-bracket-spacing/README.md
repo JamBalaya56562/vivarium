@@ -6,8 +6,10 @@ files is migrated by `biome migrate prettier --write` into a Biome
 override no longer turns bracket spacing off, so Biome formats those files
 with spaces inside braces.
 
-No upstream issue has a number yet, so the recipe is named after the
-behaviour. It moves to `biome-<issue>` once one is filed.
+Upstream issue: [biomejs/biome#12643](https://github.com/biomejs/biome/issues/12643).
+Fix: [biomejs/biome#12649](https://github.com/biomejs/biome/pull/12649),
+from the fix branch below. The recipe keeps its behaviour-named slug
+because that pull request links to this page.
 
 ## Sources
 

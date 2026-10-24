@@ -6,6 +6,7 @@
   "tags": ["biome", "prettier", "migration", "formatter", "overrides"],
   "expected_verdict": "reproduced",
   "expected_runtime": "formicarium",
+  "upstream_pr": "https://github.com/biomejs/biome/pull/12649",
   "guests": [
     {
       "role": "baseline",

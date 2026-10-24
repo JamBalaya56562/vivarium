@@ -25,8 +25,7 @@ import {
   settle,
 } from './verdict.js';
 
-const UPSTREAM_URL =
-  'https://github.com/JamBalaya56562/biome/tree/fix/migrate-prettier-override-bracket-spacing';
+const UPSTREAM_URL = 'https://github.com/biomejs/biome/issues/12643';
 const FIXTURE_FILES = ['.prettierrc', 'biome.json'] as const;
 const ROLES: readonly GuestRole[] = ['baseline', 'fix'];
 
