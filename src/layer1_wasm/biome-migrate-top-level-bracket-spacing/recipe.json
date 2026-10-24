@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "language": "shell",
+  "symptom": "migration-option-dropped",
+  "severity": "bug",
+  "tags": [
+    "biome",
+    "prettier",
+    "migration",
+    "formatter",
+    "json"
+  ],
+  "expected_verdict": "reproduced",
+  "expected_runtime": "formicarium",
+  "guests": [
+    {
+      "role": "baseline",
+      "tool": "biome",
+      "repository": "https://github.com/biomejs/biome",
+      "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+      "fixture": "biome-migrate-prettier-override",
+      "reference": {
+        "branch": "main"
+      },
+      "accepted": {
+        "commit": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+        "versionOrName": "ef61338b24b7125fbc3cb3d4792ec90fa005a86e",
+        "buildKey": "086287f859011917208c205bd00239373027ed52fffdc7d07f9526129268322c",
+        "elfSha256": "97c88a1cb957ecb557ddf9eb9299c8a515d4b7f2c0dd50c60ed91e19ffdeb7a6",
+        "buildInfoSha256": "80f07338112d59145fddaffae25f57b58692cf2710900a2dc6ced9345392f0d5"
+      }
+    },
+    {
+      "role": "fix",
+      "tool": "biome",
+      "repository": "https://github.com/jambalaya56562/biome",
+      "commit": "c023cb4bde6b7da703ec8f73fea1807501f6bf91",
+      "fixture": "biome-migrate-prettier-bracket-spacing",
+      "reference": {
+        "branch": "fix/migrate-prettier-bracket-spacing"
+      },
+      "accepted": {
+        "commit": "c023cb4bde6b7da703ec8f73fea1807501f6bf91",
+        "versionOrName": "c023cb4bde6b7da703ec8f73fea1807501f6bf91",
+        "buildKey": "999c685da090c053fe294038463adc16bb99d6f8a62cb61848060d0e8b6d8a36",
+        "elfSha256": "bd96d98fe5b2e24c3bd5610ac4b848f90d54d54cb67dbabe06a8a3c0120a1a4c",
+        "buildInfoSha256": "378d84741d0b3b15b34f29e1f3cbeddac125c7f562e31674bb5884c3e4c9ad1e"
+      }
+    }
+  ]
+}
