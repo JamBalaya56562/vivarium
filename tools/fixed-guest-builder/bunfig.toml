@@ -3,6 +3,7 @@ exact = false
 
 [test]
 root = "tests"
-coverageThreshold = { lines = 0.8 }
+# Bun 1.4.4 fails an object threshold that leaves out functions.
+coverageThreshold = { lines = 0.8, functions = 0.0 }
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = ["tests/**"]
