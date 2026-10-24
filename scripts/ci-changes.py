@@ -67,6 +67,8 @@ RULES = (
             "docs/rspress.config.ts",
         ),
     ),
+    # The MCP package bundles the recipes index and its tests read it.
+    ({"docs", "repro", "mcp"}, ("docs/site/public/api/recipes.json",)),
     (
         {"docs", "repro"},
         (
@@ -152,7 +154,8 @@ def self_test():
         ".gitignore": {"docs"},
         ".github/workflows/repro-regression.yml": {"docs", "repro"},
         "docs/scripts/stage-formicarium-assets.ts": {"docs", "repro"},
-        "docs/site/public/api/recipes.json": {"docs", "repro"},
+        "docs/site/public/api/recipes.json": {"docs", "repro", "mcp"},
+        "docs/site/public/api/projects.json": {"docs", "repro"},
         "src/layer1_wasm/_shared/style.css": {"docs", "repro"},
         "src/layer1_wasm/dateutil-1478/README.md": {"docs", "repro"},
         "src/layer2_docker/bash-local-shadows-exit/Dockerfile": {"docs", "repro"},
