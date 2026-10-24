@@ -92,7 +92,12 @@ workflow opens a pull request when the branch head moves past the pin.
 A formicarium guest moves by hand instead: `fixed-guest-bump` moves only its
 `commit`, and the page keeps running the `accepted` build until a person
 accepts the build of the new commit, so an unbuilt commit cannot become the
-guest the page runs.
+guest the page runs. The formicarium package itself follows its latest npm
+release: the daily `formicarium-bump` workflow regenerates
+[`formicarium.pin.json`](./formicarium.pin.json) with
+`mise run repro:formicarium:pin`, which reads every digest from the
+registry's tarball, and opens a pull request that merges itself once the
+required checks pass.
 
 A recipe whose fixing pull request is known retires itself: the daily
 `retire-merged` workflow checks `upstream_pr` (in `recipe.json`, or in

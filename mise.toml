@@ -128,6 +128,11 @@ description = "Move one Layer 1 pin (pass the slug, then upstream or fix): upstr
 dir = "src/layer1_wasm"
 run = "bun run scripts/bump-upstream.ts"
 
+[tasks."repro:formicarium:pin"]
+description = "Rebuild src/layer1_wasm/formicarium.pin.json for the latest formicarium release (or --version <v>); prints a Markdown summary when the pin changed"
+dir = "docs"
+run = "bun run scripts/generate-formicarium-pin.ts"
+
 [tasks."repro:test"]
 description = "Run Playwright contract-v1 regression suite for Layer 1"
 dir = "src/layer1_wasm"

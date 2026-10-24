@@ -414,7 +414,15 @@ PRs 180 / 189 / 192.
   suite, while its local page still renders for development.
   `docs/scripts/stage-formicarium-assets.ts` stages the pinned package
   (`_formicarium/`) and the accepted guests (`guests/<role>/`) into the
-  recipe directory after checking every digest; both are gitignored. Use
+  recipe directory after checking every digest; both are gitignored. The
+  pin is generated, never hand-edited: `mise run repro:formicarium:pin`
+  (`docs/scripts/generate-formicarium-pin.ts`, `--version <v>` for a
+  given release) rebuilds it from the npm tarball and the `v<version>`
+  tag, and the daily `formicarium-bump` workflow runs it and opens a
+  pull request as `aletheia-works-bot` that merges itself once the
+  required checks pass. A release that changes the package layout fails
+  that pull request's staging; adapt `BUNDLE_ENTRIES` and the driver on
+  its branch. Use
   `--mode local` with a local tarball and guest directories to work on a
   pending recipe. The page renders from
   `_shared/page.terminal.template.html` instead of the script template:
