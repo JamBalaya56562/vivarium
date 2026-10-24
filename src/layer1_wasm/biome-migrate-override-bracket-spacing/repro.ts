@@ -61,8 +61,6 @@ const STRINGS: TerminalStrings = pick(DEFAULT_STRINGS, {
   failed: '失敗',
   disconnected: '停止',
   empty: '(出力なし)',
-  progress: '{1} bytes 中 {0} bytes を取得',
-  unknown: '不明',
   dropped: '先頭の {0} bytes は表示していない',
   input: 'コマンド',
 });

@@ -13,7 +13,7 @@
     "page.h1": "{0} の再現",
     "chip.bugContext": "{0} bug の背景",
     "section.baseline.h2": "baseline · biomejs/biome main",
-    "output.pending": "(待機中)",
+    "output.pending": "待機中…",
     "section.fix.h2": "fix · JamBalaya56562/biome",
     "page.title": "Vivarium · Biome の Prettier 移行で *.js の override から bracketSpacing が落ちる不具合の再現",
     "verdict.pending": "formicarium を読み込み中…",
@@ -21,6 +21,6 @@
     "drawer.body.p2": "両方のターミナルは同じ fixture から始まる。{0} は override を持ち、{1} は {2}。両方で {3}、{4}、{5}、最後に {6} を実行する。",
     "drawer.body.p3": "ページは移行後の {0} の override を読む。その {2} か {3} に {1} があれば corrected、どちらにも無ければ reproduced。verdict は baseline のみを示し、fix は別に検証する。記録された command の後は自分でコマンドを入力できる。",
     "drawer.body.p4": "formicarium は、両方のコミットの受入済みの static musl ビルドを、ELF と build-info を受入済みの digest と照合してから、このタブで動かす。",
-    "output.fixPending": "(待機中)"
+    "output.fixPending": "待機中…"
   }
 }

@@ -71,7 +71,7 @@ async function observe(page: Page): Promise<Observed> {
         (terminal) => ({
           state: (terminal as HTMLElement).dataset['state'],
           status:
-            terminal.querySelector('.vh-terminal__status')?.textContent ?? '',
+            terminal.querySelector('.vh-progress__label')?.textContent ?? '',
           transcript:
             terminal.querySelector('.vh-terminal__output')?.textContent ?? '',
         }),
@@ -152,6 +152,8 @@ for (const lang of ['en', 'ja'] as const) {
     expect(observed.coepCredentialless).toBe(false);
     expect(observed.envelope?.runtime.name).toBe('formicarium');
     expect(observed.terminals.map((t) => t.state)).toEqual(['ready', 'ready']);
+    const ready = lang === 'ja' ? '準備完了' : 'Ready';
+    expect(observed.terminals.map((t) => t.status)).toEqual([ready, ready]);
     for (const terminal of observed.terminals)
       for (const command of COMMANDS)
         expect(terminal.transcript).toContain(`$ ${command}\n`);

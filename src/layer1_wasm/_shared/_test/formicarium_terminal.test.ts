@@ -11,6 +11,7 @@ import {
   MAX_TRANSCRIPT_BYTES,
   MAX_TRANSCRIPT_LINES,
   progressText,
+  catalogElfBytes,
   type RecipeGuest,
   TerminalController,
   type TerminalOptions,
@@ -72,7 +73,7 @@ function view(): Recorded & TerminalOptions['view'] {
       recorded.transcripts.push(text);
       recorded.notices.push(notice);
     },
-    setProgress(text) {
+    setProgress(_fraction, text) {
       recorded.progress.push(text);
     },
     setInputEnabled(enabled) {
@@ -517,10 +518,8 @@ describe('fetchBytes calls fetch unbound (regression: Illegal invocation)', () =
 
 describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
   test('tells an unknown size from a zero-byte one', async () => {
-    expect(progressText(DEFAULT_STRINGS, 0, null)).toBe(
-      'Downloaded 0 of unknown bytes',
-    );
-    expect(progressText(DEFAULT_STRINGS, 0, 0)).toBe('Downloaded 0 of 0 bytes');
+    expect(progressText(DEFAULT_STRINGS, 0, null)).toBe('0.0 MB / ? MB');
+    expect(progressText(DEFAULT_STRINGS, 0, 0)).toBe('0.0 MB / 0.0 MB');
     const seen: [number, number | null][] = [];
     await fetchBytes({
       fetch: (async () =>
@@ -533,6 +532,34 @@ describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
       onProgress: (processed, total) => seen.push([processed, total]),
     });
     expect(seen).toEqual([[0, 0]]);
+  });
+
+  test('ignores an encoded Content-Length and takes the expected size', async () => {
+    const respond = (async () =>
+      new Response(new Uint8Array(4), {
+        headers: { 'content-length': '2', 'content-encoding': 'gzip' },
+      })) as unknown as typeof fetch;
+    const totals: (number | null)[] = [];
+    const read = (expectedBytes?: number) =>
+      fetchBytes({
+        fetch: respond,
+        url: 'https://x/elf',
+        limitBytes: 10,
+        signal: new AbortController().signal,
+        ...(expectedBytes === undefined ? {} : { expectedBytes }),
+        onProgress: (_processed, total) => totals.push(total),
+      });
+    await read();
+    expect(totals.at(-1)).toBeNull();
+    await read(4);
+    expect(totals.at(-1)).toBe(4);
+    expect(
+      catalogElfBytes(
+        JSON.stringify({ entries: [{ tool: 'biome', elfBytes: 4 }] }),
+        'biome',
+      ),
+    ).toBe(4);
+    expect(catalogElfBytes('{}', 'biome')).toBeUndefined();
   });
 
   test('waits up to 15 s for isolation, then fails', async () => {

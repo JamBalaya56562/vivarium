@@ -19,8 +19,10 @@ export interface FormicariumTerminalElement extends HTMLElement {
 
 class FormicariumTerminal extends HTMLElement {
   #controller: TerminalController | null = null;
-  #status = document.createElement('p');
-  #progress = document.createElement('p');
+  #loading = document.createElement('div');
+  #fill = document.createElement('div');
+  #status = document.createElement('span');
+  #progress = document.createElement('span');
   #notice = document.createElement('p');
   #output = document.createElement('pre');
   #form = document.createElement('form');
@@ -28,10 +30,19 @@ class FormicariumTerminal extends HTMLElement {
 
   configure(options: TerminalElementOptions): void {
     const strings = options.strings ?? DEFAULT_STRINGS;
-    this.#status.className = 'vh-terminal__status';
+    const bar = document.createElement('div');
+    const row = document.createElement('div');
+    this.#loading.className = 'vh-progress vh-terminal__loading';
+    bar.className = 'vh-progress__bar';
+    this.#fill.className = 'vh-progress__fill';
+    row.className = 'vh-progress__row';
+    this.#status.className = 'vh-progress__label';
     this.#status.setAttribute('role', 'status');
     this.#status.setAttribute('aria-live', 'polite');
-    this.#progress.className = 'vh-terminal__progress';
+    this.#progress.className = 'vh-progress__bytes';
+    bar.append(this.#fill);
+    row.append(this.#status, this.#progress);
+    this.#loading.append(bar, row);
     this.#notice.className = 'vh-terminal__notice';
     this.#output.className = 'vh-terminal__output';
     this.#output.tabIndex = 0;
@@ -52,13 +63,19 @@ class FormicariumTerminal extends HTMLElement {
       setState: (state, text) => {
         this.dataset['state'] = state;
         this.#status.textContent = text;
+        if (state === 'ready' || state === 'running') {
+          this.#fill.style.width = '100%';
+          this.#loading.classList.add('is-done');
+        }
       },
       setTranscript: (text, notice) => {
         this.#output.textContent = text;
         this.#notice.textContent = notice;
         this.#output.scrollTop = this.#output.scrollHeight;
       },
-      setProgress: (text) => {
+      setProgress: (fraction, text) => {
+        if (fraction !== null)
+          this.#fill.style.width = `${Math.min(100, Math.max(5, fraction * 100))}%`;
         this.#progress.textContent = text;
       },
       setInputEnabled: (enabled) => {
@@ -87,8 +104,7 @@ class FormicariumTerminal extends HTMLElement {
   connectedCallback(): void {
     if (this.#controller === null) return;
     this.replaceChildren(
-      this.#status,
-      this.#progress,
+      this.#loading,
       this.#output,
       this.#notice,
       this.#form,

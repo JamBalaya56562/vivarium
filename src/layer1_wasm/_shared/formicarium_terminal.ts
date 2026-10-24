@@ -166,8 +166,8 @@ export const DEFAULT_STRINGS: TerminalStrings = {
   failed: 'Failed',
   disconnected: 'Stopped',
   empty: '(no output)',
-  progress: 'Downloaded {0} of {1} bytes',
-  unknown: 'unknown',
+  progress: '{0} MB / {1} MB',
+  unknown: '?',
   dropped: '{0} earlier bytes are no longer shown',
   input: 'Command',
 };
@@ -418,11 +418,28 @@ export function progressText(
   processed: number,
   total: number | null,
 ): string {
+  const mb = (bytes: number) => (bytes / 1_000_000).toFixed(1);
   return format(
     strings.progress,
-    processed,
-    total === null ? strings.unknown : total,
+    mb(processed),
+    total === null ? strings.unknown : mb(total),
   );
+}
+
+export function catalogElfBytes(
+  catalog: string,
+  tool: string,
+): number | undefined {
+  try {
+    const entries = (JSON.parse(catalog) as { entries?: unknown }).entries;
+    if (!Array.isArray(entries)) return undefined;
+    const bytes = entries.find(
+      (entry) => (entry as { tool?: unknown })?.tool === tool,
+    )?.elfBytes;
+    return Number.isSafeInteger(bytes) && bytes > 0 ? bytes : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function fetchBytes(options: {
@@ -430,6 +447,7 @@ export async function fetchBytes(options: {
   url: string;
   limitBytes: number;
   signal: AbortSignal;
+  expectedBytes?: number;
   onProgress?: (processed: number, total: number | null) => void;
 }): Promise<Uint8Array> {
   const doFetch = options.fetch;
@@ -443,10 +461,16 @@ export async function fetchBytes(options: {
       `${options.url} returned HTTP ${response.status}`,
     );
   const header = response.headers.get('content-length');
+  const encoding = response.headers.get('content-encoding');
+  // Content-Length counts the encoded body, not the bytes the reader yields.
   const declared =
-    header !== null && /^\d+$/.test(header) ? Number(header) : null;
-  const total =
-    declared !== null && declared <= options.limitBytes ? declared : null;
+    header !== null &&
+    /^\d+$/.test(header) &&
+    (encoding === null || encoding === 'identity')
+      ? Number(header)
+      : null;
+  const size = options.expectedBytes ?? declared;
+  const total = size !== null && size <= options.limitBytes ? size : null;
   options.onProgress?.(0, total);
   const chunks: Uint8Array[] = [];
   let processed = 0;
@@ -477,7 +501,7 @@ export async function fetchBytes(options: {
 export interface TerminalView {
   setState(state: TerminalState, text: string): void;
   setTranscript(text: string, notice: string): void;
-  setProgress(text: string): void;
+  setProgress(fraction: number | null, text: string): void;
   setInputEnabled(enabled: boolean): void;
 }
 
@@ -552,7 +576,7 @@ export class TerminalController {
     const role = guest.role;
     try {
       this.#setState('booting');
-      const get = (name: string, limitBytes: number) =>
+      const get = (name: string, limitBytes: number, expectedBytes?: number) =>
         fetchBytes({
           fetch: doFetch,
           url: new URL(name, this.#options.guestURL).href,
@@ -561,13 +585,21 @@ export class TerminalController {
             this.#abort.signal,
             timeoutSignal(FETCH_DEADLINE_MS),
           ]),
+          ...(expectedBytes === undefined ? {} : { expectedBytes }),
           onProgress: (processed, total) =>
-            view.setProgress(progressText(this.#strings, processed, total)),
+            view.setProgress(
+              total ? processed / total : null,
+              progressText(this.#strings, processed, total),
+            ),
         });
       mark(`fetch.${role}.start`);
       const infoBytes = await get('build-info.json', MAX_METADATA_BYTES);
       const catalogBytes = await get('catalog.json', MAX_CATALOG_BYTES);
-      const elf = await get(this.#options.binary, MAX_ELF_BYTES);
+      const elf = await get(
+        this.#options.binary,
+        MAX_ELF_BYTES,
+        catalogElfBytes(loaded.api.decodeUtf8(catalogBytes), guest.tool),
+      );
       mark(`fetch.${role}.end`, { bytes: elf.byteLength });
       this.#live();
       mark(`verify.${role}.start`);

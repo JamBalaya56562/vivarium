@@ -1534,9 +1534,15 @@ body.vh-drawer-open:has(#path-a-mount) {
   overflow-wrap: anywhere;
 }
 
-.vh-variant-output:has(> formicarium-terminal) {
+.vh-variant-output:has(> formicarium-terminal),
+.vh-variant-output:has(> .vh-progress) {
   padding: 0;
   overflow: hidden;
+}
+
+.vh-variant-output > .vh-progress {
+  height: 100%;
+  border: 0;
 }
 
 @media (min-width: 1024px) {
@@ -1559,6 +1565,16 @@ body.vh-drawer-open:has(#path-a-mount) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  color: #e0e6e3;
+  position: relative;
+}
+
+.vh-terminal__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  transition: opacity 0.45s ease;
 }
 
 .vh-terminal__output {
@@ -1571,14 +1587,11 @@ body.vh-drawer-open:has(#path-a-mount) {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-.vh-terminal__status,
-.vh-terminal__progress,
 .vh-terminal__notice {
   margin: 0;
   padding: 0.25rem 0.75rem;
 }
 
-.vh-terminal__progress:empty,
 .vh-terminal__notice:empty {
   display: none;
 }
@@ -1587,6 +1600,10 @@ body.vh-drawer-open:has(#path-a-mount) {
   box-sizing: border-box;
   width: 100%;
   padding: 0.5rem 0.75rem;
+  border: 0;
+  border-top: 1px solid var(--vh-terminal-border);
+  background: transparent;
+  color: inherit;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 

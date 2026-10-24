@@ -174,17 +174,19 @@ function injectChrome() {
   }
 }
 
+const PAGE_PROGRESS = '.vh-output-section > .vh-progress';
+
 function setProgress(pct, label, bytes) {
-  const fill = document.querySelector('.vh-progress__fill');
-  const lab = document.querySelector('.vh-progress__label');
-  const byt = document.querySelector('.vh-progress__bytes');
+  const fill = document.querySelector(`${PAGE_PROGRESS} .vh-progress__fill`);
+  const lab = document.querySelector(`${PAGE_PROGRESS} .vh-progress__label`);
+  const byt = document.querySelector(`${PAGE_PROGRESS} .vh-progress__bytes`);
   if (fill) fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
   if (lab && label) lab.textContent = label;
   if (byt && bytes != null) byt.textContent = bytes;
 }
 
 function hideProgress() {
-  const el = document.querySelector('.vh-progress');
+  const el = document.querySelector(PAGE_PROGRESS);
   const out = document.querySelector('.vh-output');
   if (el) {
     el.classList.add('is-done');
