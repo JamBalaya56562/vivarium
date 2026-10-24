@@ -228,7 +228,7 @@ run = [
 [tasks."ci:mcp"]
 description = "Local equivalent of test-mcp.yml"
 dir = "packages/mcp-server"
-run = "bun run test"
+run = ["bun run test", "bun run build", "bun run verify:package"]
 
 [tasks."ci:docs-unit"]
 description = "Local equivalent of test-docs.yml unit lane (resolveReproFile etc.)"

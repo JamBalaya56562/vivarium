@@ -30,7 +30,8 @@
     "build": "bun run check:version && bun run sync:bundled && tsc",
     "test": "bun run check:version && bun run sync:bundled && bun test",
     "prepublishOnly": "bun run build",
-    "check:version": "bun scripts/release.ts"
+    "check:version": "bun scripts/release.ts",
+    "verify:package": "bun scripts/verify-package.ts && bunx jsr@latest publish --dry-run --allow-dirty"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"

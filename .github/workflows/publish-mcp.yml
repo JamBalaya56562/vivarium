@@ -37,7 +37,7 @@ jobs:
           ref: refs/tags/${{ inputs.tag || github.ref_name }}
 
       - name: Setup mise (bun, node)
-        uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
         with:
           install: true
           cache: true
@@ -49,6 +49,9 @@ jobs:
           bun install --frozen-lockfile
           bun run build
           bun run test
+
+      - name: Verify the installed npm package and the JSR dry run
+        run: bun run verify:package
 
       - name: Validate release and check both registries
         id: release
