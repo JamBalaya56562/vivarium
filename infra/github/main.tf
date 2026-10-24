@@ -193,6 +193,10 @@ locals {
       color       = "b60205"
       description = "Auto-filed when Terraform Apply fails on main; auto-closed on recovery"
     }
+    "status: schedule-failure" = {
+      color       = "b60205"
+      description = "Auto-filed when a scheduled workflow fails or does not run; auto-closed on recovery"
+    }
 
     "autorelease: pending" = {
       color       = "ededed"

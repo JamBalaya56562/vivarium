@@ -1,0 +1,74 @@
+name: Schedule watch
+
+on:
+  schedule:
+    - cron: '17 18 * * *'
+  workflow_run:
+    workflows: [formicarium-bump, repro-regression, retire-merged, upstream-bump]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    name: check every scheduled workflow ran
+    if: >-
+      github.repository_owner == 'aletheia-works' &&
+      github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open, comment on or close the Issue
+        run: |
+          set -euo pipefail
+          python3 scripts/schedule-watch.py check --repo "$GITHUB_REPOSITORY" | tee "$RUNNER_TEMP/problems"
+          cat "$RUNNER_TEMP/problems" >> "$GITHUB_STEP_SUMMARY"
+          python3 scripts/schedule-watch.py report --repo "$GITHUB_REPOSITORY" \
+            --title "Scheduled workflows did not run" --run-url "$RUN_URL" < "$RUNNER_TEMP/problems"
+
+  report:
+    name: report ${{ github.event.workflow_run.name }}
+    if: >-
+      github.repository_owner == 'aletheia-works' &&
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event.workflow_run.event) &&
+      contains(fromJSON('["success", "failure"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NAME: ${{ github.event.workflow_run.name }}
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Open, comment on or close the Issue
+        run: |
+          set -euo pipefail
+          if [ "$CONCLUSION" = failure ]; then
+            echo "- \`$NAME\` failed: $RUN_URL" > "$RUNNER_TEMP/problems"
+          else
+            : > "$RUNNER_TEMP/problems"
+          fi
+          python3 scripts/schedule-watch.py report --repo "$GITHUB_REPOSITORY" \
+            --title "$NAME failed on schedule" --run-url "$RUN_URL" < "$RUNNER_TEMP/problems"
