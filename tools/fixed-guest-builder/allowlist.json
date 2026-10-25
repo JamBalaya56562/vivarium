@@ -1,7 +1,9 @@
 {
   "schemaVersion": 1,
   "repositories": [
+    "https://github.com/aubepkg/aube",
     "https://github.com/biomejs/biome",
+    "https://github.com/jambalaya56562/aube",
     "https://github.com/jambalaya56562/biome"
   ],
   "dependencyRepositories": ["https://github.com/react/react"]

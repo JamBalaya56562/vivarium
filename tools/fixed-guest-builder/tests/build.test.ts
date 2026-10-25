@@ -99,7 +99,16 @@ describe('toolchain', () => {
     );
   });
 
-  test('checkToolchain refuses an image whose Rust differs from the upstream pin', () => {
+  test('falls back to the tool channel only when the source pins none', async () => {
+    expect(await readToolchainChannel(await tempDir(), '1.98.1')).toBe(
+      '1.98.1',
+    );
+    const plain = await tempDir();
+    await writeFile(join(plain, 'rust-toolchain'), '1.97.0\n');
+    expect(await readToolchainChannel(plain, '1.98.1')).toBe('1.97.0');
+  });
+
+  test('checkToolchain refuses an image whose Rust differs from the build channel', () => {
     expect(() =>
       checkToolchain('rustc 1.98.1\nrelease: 1.98.1\n', '1.98.1'),
     ).not.toThrow();
@@ -473,6 +482,12 @@ describe('parseToolsConfig', () => {
       parseToolsConfig({
         ...shipped,
         tools: { x: { ...tool, binary: '../evil' } },
+      }),
+    ).toThrow(BuildError);
+    expect(() =>
+      parseToolsConfig({
+        ...shipped,
+        tools: { x: { ...tool, rustToolchain: '1.0.0' } },
       }),
     ).toThrow(BuildError);
   });

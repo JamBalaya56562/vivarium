@@ -22,10 +22,14 @@ if [ "$(cargo --version)" != "$expected_cargo" ]; then
   exit 90
 fi
 
+packages=
 for package in /dependency/apk/*.apk; do
-  [ -e "$package" ] || continue
-  apk --no-network add "$package" >/dev/null
+  if [ -e "$package" ]; then packages="$packages $package"; fi
 done
+if [ -n "$packages" ]; then
+  # shellcheck disable=SC2086
+  apk --no-network add $packages >/dev/null
+fi
 
 if [ -n "${FGB_MBX_ARCHIVE:-}" ]; then
   mkdir -p /tmp/mbx

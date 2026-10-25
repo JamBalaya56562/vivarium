@@ -25,7 +25,8 @@ The run checks, in order:
 1. The repository is in `allowlist.json` and the commit is 40 hex.
 2. The commit is reachable from the repository's own branches or tags.
    A commit that exists only in another fork of the network is refused.
-3. The source pins its Rust toolchain, and the pinned image in
+3. The source pins its Rust toolchain, or, when it pins none, the tool's
+   `rustToolchain` in `tools.json` names one; the pinned image in
    `tools.json` has exactly that Rust.
 4. `Cargo.lock` exists, and every source in it is crates.io or an
    allowlisted git repository pinned to a commit. Source replacement and
@@ -113,8 +114,10 @@ commit after it merges, so the acceptance finds the commit on `main`.
   must already be in `https://github.com/<owner>/<repo>` form, lowercase.
 - `tools.json`: the pinned image for each Rust version, the mbx and
   cargo-about archives, and each tool's package, binary, target,
-  environment and extra packages. Changing anything here changes the build
-  keys it affects.
+  environment, extra packages, and the Rust to use when its source pins
+  none (`rustToolchain`). Extra packages are installed in one `apk` call,
+  so a package's dependencies that the image lacks are listed beside it.
+  Changing anything here changes the build keys it affects.
 - `container/about.toml`: the licenses cargo-about accepts. Changing it,
   `container/notices.sh` or the cargo-about archive changes every key.
 

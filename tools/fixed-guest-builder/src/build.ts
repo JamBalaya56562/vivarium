@@ -29,6 +29,7 @@ export interface ToolConfig {
   target: string;
   environment: Record<string, string>;
   extraPackages: ExtraPackage[];
+  rustToolchain?: string;
 }
 
 export interface MbxConfig {
@@ -90,11 +91,22 @@ export function parseToolsConfig(value: unknown): ToolsConfig {
           'INVALID_INPUT',
           `tool ${name} extra package needs a safe name and a SHA256`,
         );
+    if (
+      tool.rustToolchain !== undefined &&
+      config.images?.[tool.rustToolchain] === undefined
+    )
+      fail(
+        'INVALID_INPUT',
+        `tool ${name} names Rust ${tool.rustToolchain}, which has no pinned image`,
+      );
   }
   return config;
 }
 
-export async function readToolchainChannel(directory: string): Promise<string> {
+export async function readToolchainChannel(
+  directory: string,
+  unpinned?: string,
+): Promise<string> {
   const toml = await readFile(
     join(directory, 'rust-toolchain.toml'),
     'utf8',
@@ -112,6 +124,7 @@ export async function readToolchainChannel(directory: string): Promise<string> {
     () => undefined,
   );
   if (plain !== undefined && plain.trim() !== '') return plain.trim();
+  if (unpinned !== undefined) return unpinned;
   fail('INVALID_INPUT', 'the source pins no Rust toolchain');
 }
 
@@ -197,7 +210,7 @@ export function checkToolchain(rustcVerbose: string, channel: string): void {
   if (release !== channel)
     fail(
       'VERIFY_FAILED',
-      `image has Rust ${release ?? 'unknown'}, the source pins ${channel}`,
+      `image has Rust ${release ?? 'unknown'}, expected ${channel}`,
     );
 }
 

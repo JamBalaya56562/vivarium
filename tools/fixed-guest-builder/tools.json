@@ -15,6 +15,87 @@
     "sha256": "9099a59e820c38a68b9d65f300662a567d56562f9a10f6aa4c7e86c17c2566af"
   },
   "tools": {
+    "aube": {
+      "package": "aube",
+      "binary": "aube",
+      "target": "x86_64-unknown-linux-musl",
+      "rustToolchain": "1.98.1",
+      "environment": {
+        "CARGO_INCREMENTAL": "0"
+      },
+      "extraPackages": [
+        {
+          "name": "acl-libs",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/acl-libs-2.3.2-r1.apk",
+          "sha256": "3f02851d586c25d97ba8b5b845615aacc209ae7eaeb6f7843eca76d85da2249d",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "8bac74716d06c84627ab02d101fd9d2bafd0a34c"
+        },
+        {
+          "name": "cmake",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/cmake-4.2.3-r0.apk",
+          "sha256": "960e712886a5453c2c2573364ecc98c28fc7e081270396c5d9a69756caa102c8",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "1eedad55aa2fbcfbaf5fe2ae36c2434b1244c167"
+        },
+        {
+          "name": "libarchive",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libarchive-3.8.10-r0.apk",
+          "sha256": "cbdf763a628f0c2cfbb77696ec08bc3c7e9e121c7bf9058a26b4045791c8af38",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "de01a507aba7d724ecdd690d25748acd5fb9e644"
+        },
+        {
+          "name": "libbz2",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libbz2-1.0.8-r6.apk",
+          "sha256": "2737e2b23ed08d4911ee62cd0163b5f4bf0379cacf4dc35b23a00209584c98fd",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "33283848034c9885d984c8e8697c645c57324938"
+        },
+        {
+          "name": "libexpat",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libexpat-2.9.0-r0.apk",
+          "sha256": "32b127f31e0a919110a18a7f0bb3780d8fb66ba4d8d61b2d301d633f0e319d0e",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "c10df79ce35862cf273f98f6eb78d52e4f064ac7"
+        },
+        {
+          "name": "libuv",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/libuv-1.52.1-r0.apk",
+          "sha256": "a0074b92335b4d8b16c001a9a580caced88aa5de0552a02dc32a9ee0ed5aaa03",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "8d19451845edceeab46dad1dbb903e55f5b918d5"
+        },
+        {
+          "name": "lz4-libs",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/lz4-libs-1.10.0-r1.apk",
+          "sha256": "3ad4912ab8ecf5f6236fdb751f88243006b3a8f152684e455b781e16284dd298",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "1f16962f34234a77fab0f4651459c4381b4a0cd6"
+        },
+        {
+          "name": "make",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/make-4.4.1-r4.apk",
+          "sha256": "a916626a876f64c6b6fb32a6bf0fa93351d09fae0aa7684135642390da647e60",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "9368161bd37f74fb11747ba79197f8480aaca7dc"
+        },
+        {
+          "name": "rhash-libs",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/rhash-libs-1.4.6-r0.apk",
+          "sha256": "7d14a70040f83f40ae5ea8829e3eb58d82f06d959478658b81b30033d390651f",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "7ad813e19a1603a21358315d6ed5dd5de6343ade"
+        },
+        {
+          "name": "xz-libs",
+          "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/xz-libs-5.8.4-r0.apk",
+          "sha256": "ab362dd515ead04c31a6c302163248da7aa4813e283c971e6dd3f789b453a1d9",
+          "repository": "https://gitlab.alpinelinux.org/alpine/aports",
+          "commit": "0c088d609f9fe69eedd6b4c7f4b99cdad847c20a"
+        }
+      ]
+    },
     "biome": {
       "package": "biome_cli",
       "binary": "biome",

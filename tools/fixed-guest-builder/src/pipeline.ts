@@ -212,7 +212,7 @@ export async function runBuild(
         }),
       );
       const sourceBytes = await directoryBytes([sourceDir]);
-      const channel = await readToolchainChannel(sourceDir);
+      const channel = await readToolchainChannel(sourceDir, tool.rustToolchain);
       const image = config.images[channel];
       if (image === undefined)
         fail('INVALID_INPUT', `no pinned image for Rust ${channel}`);
