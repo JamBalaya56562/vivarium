@@ -164,7 +164,9 @@ describe('shared release version', () => {
       (path) =>
         !path
           .split('/')
-          .some((part) => ['node_modules', 'doc_build', 'dist'].includes(part)),
+          .some((part) =>
+            ['node_modules', 'doc_build', 'dist'].includes(part),
+          ) && !/^src\/layer\d_[^/]+\/[^/]+\/fixture\//.test(path),
     );
     expect([...manifests].sort()).toEqual(discovered.sort());
     const version = JSON.parse(read('package.json')).version;
