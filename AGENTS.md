@@ -61,6 +61,14 @@ If unsure whether an action crosses the line, stop and ask.
 6. **Verify before asserting.** When citing a file path, function, or flag,
    confirm it exists in the current tree. Memory and training data both go
    stale.
+7. **The code wins over the text.** When the code and a document
+   (`docs/site/`, README.md, this file, `.claude/`) disagree, trust the
+   code. After the change, always tell the human about every mismatch you
+   found, whether you fixed it (in both `docs/site/en/` and
+   `docs/site/ja/` when the page has both) or left it, even if that makes
+   the final response longer. Agents that trusted a stale instruction file
+   over the code have broken working systems
+   ([arXiv:2605.30777](https://arxiv.org/abs/2605.30777)).
 
 ## 4. Repository conventions
 
