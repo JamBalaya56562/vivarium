@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.4.0",
-  "tarballSha256": "d49295f146f940c23ea40d6815c365510abe76394b242461ce5394595a56a14c",
-  "sourceCommit": "dd904b873fbe0a33dee5bf647d9c57d152ef38fd",
+  "packageVersion": "0.5.0",
+  "tarballSha256": "b9b5fa74d5a0152d0aad6e13e9cc3fdf614728f7719acd1f37e159eae3612285",
+  "sourceCommit": "f77731432ba6a74257472fc3fc6cb5ec3ae9a6d4",
   "files": [
     {
       "path": "LICENSE",
@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "67512c04be74cfaed1f3ca4e11057e3e5cfce93cfa9d68a0c1806fd824645bae"
+      "sha256": "2ebefa683ea34ab7d609a4cfc02139dbb5a8f382c574f02f775adb10cd410b7d"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -55,7 +55,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "2385c3668ff1bbfbf2019d2b3abf8f5d6ae117f3106d3820f63ff1fc4833f238"
+      "sha256": "7d00b9137d6bf2272e18b367d6fac6693d60c8ab114f114c3288e10c79f80354"
     },
     {
       "path": "runtime/command-parse.js",
