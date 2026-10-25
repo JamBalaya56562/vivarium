@@ -31,7 +31,7 @@ import {
 export const BUILD_WORKFLOW_PATH = '.github/workflows/fixed-guest-build.yml';
 export const RECEIPT_FILE = 'receipt.json';
 export const ROLLBACK_PLAN =
-  'Published Releases are never deleted or replaced. To undo, point the recipe back to the previous build key; the new Release stays.';
+  'A published Release is never replaced. To undo, point the recipe back to the previous build key; its Release is kept for 30 days after the key stopped being referenced.';
 
 const SHA256 = /^[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;

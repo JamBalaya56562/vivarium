@@ -10,6 +10,12 @@ import type { Fetcher } from './http.ts';
 import { type BuildDeps, runBuild } from './pipeline.ts';
 import { deriveSet, preparePlan, renderSummary } from './prepare.ts';
 import { runProcess } from './process.ts';
+import {
+  DEFAULT_GRACE_DAYS,
+  historyLookup,
+  pruneReleases,
+  renderPruneSummary,
+} from './prune.ts';
 import { publishSet } from './release.ts';
 import { type TurnTiming, waitForPublishTurn } from './turn.ts';
 
@@ -24,6 +30,7 @@ export interface CliDeps {
   build?: Partial<BuildDeps>;
   fetcher?: Fetcher;
   turnTiming?: TurnTiming;
+  now?: () => Date;
 }
 
 const PACKAGE_ROOT = resolve(import.meta.dir, '..');
@@ -250,10 +257,31 @@ async function command(
       });
       return { changed: changes.length > 0, changes };
     }
+    case 'prune': {
+      const dryRun = required(flags, 'dry-run');
+      if (dryRun !== 'true' && dryRun !== 'false')
+        throw new BuildError('INVALID_INPUT', '--dry-run is true or false');
+      const repositoryRoot = resolve(required(flags, 'repository-root'));
+      const result = await pruneReleases({
+        api: api(),
+        layer1Directory: join(repositoryRoot, 'src/layer1_wasm'),
+        lastReferencedAt: await historyLookup(runProcess, repositoryRoot),
+        now: (deps.now ?? (() => new Date()))(),
+        graceDays:
+          flags['grace-days'] === undefined
+            ? DEFAULT_GRACE_DAYS
+            : Number(flags['grace-days']),
+        dryRun: dryRun === 'true',
+      });
+      await writeFile(required(flags, 'summary'), renderPruneSummary(result), {
+        flag: 'a',
+      });
+      return result;
+    }
     default:
       throw new BuildError(
         'INVALID_INPUT',
-        'usage: cli.ts <build|prepare|publish-turn|release|bump|accept> [--flag value]...',
+        'usage: cli.ts <build|prepare|publish-turn|release|bump|accept|prune> [--flag value]...',
       );
   }
 }

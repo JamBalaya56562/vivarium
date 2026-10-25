@@ -1,6 +1,8 @@
 import { fail } from '../../src/errors.ts';
 import type {
   GitHubApi,
+  ListedRelease,
+  PullFile,
   Release,
   ReleaseAsset,
   RunArtifact,
@@ -83,6 +85,54 @@ export class FakeGitHub implements GitHubApi {
     if (!stored.draft) throw new Error('tried to delete a published release');
     this.writes.push(`delete ${release.tag}`);
     this.releases = this.releases.filter((item) => item.id !== release.id);
+  }
+
+  publishedAt = new Map<number, string>();
+  tags = new Set<string>();
+  pulls = new Map<
+    number,
+    { files: PullFile[]; contents: Record<string, string> }
+  >();
+
+  async listReleases(): Promise<ListedRelease[]> {
+    return this.releases.map((release) => ({
+      id: release.id,
+      tag: release.tag,
+      draft: release.draft,
+      publishedAt: release.draft
+        ? null
+        : (this.publishedAt.get(release.id) ?? null),
+    }));
+  }
+
+  async deletePublished(release: ListedRelease) {
+    const stored = this.releases.find((item) => item.id === release.id);
+    if (stored === undefined || stored.draft)
+      throw new Error('tried to delete a missing or draft release');
+    this.writes.push(`delete release ${stored.tag}`);
+    this.releases = this.releases.filter((item) => item.id !== release.id);
+  }
+
+  async deleteTag(tag: string) {
+    this.writes.push(`delete tag ${tag}`);
+    this.tags.delete(tag);
+  }
+
+  async guestTags() {
+    return [...this.tags].filter((tag) => tag.startsWith('guest-'));
+  }
+
+  async openPulls() {
+    return [...this.pulls.keys()];
+  }
+
+  async pullFiles(pull: number) {
+    return [...(this.pulls.get(pull)?.files ?? [])];
+  }
+
+  async fileAt(path: string, ref: string) {
+    const pull = Number(/^refs\/pull\/(\d+)\/head$/.exec(ref)?.[1]);
+    return this.pulls.get(pull)?.contents[path] ?? null;
   }
 
   runsByWorkflow = new Map<string, WorkflowRun[]>();

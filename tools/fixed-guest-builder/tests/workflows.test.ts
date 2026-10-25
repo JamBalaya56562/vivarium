@@ -6,6 +6,7 @@ const NAMES = [
   'fixed-guest-build.yml',
   'fixed-guest-release.yml',
   'fixed-guest-bump.yml',
+  'fixed-guest-prune.yml',
 ] as const;
 
 type Step = {
@@ -45,6 +46,7 @@ const TRIGGERS: Record<(typeof NAMES)[number], string[]> = {
   'fixed-guest-build.yml': ['workflow_dispatch'],
   'fixed-guest-release.yml': ['workflow_dispatch', 'workflow_call'],
   'fixed-guest-bump.yml': ['workflow_dispatch'],
+  'fixed-guest-prune.yml': ['schedule', 'workflow_dispatch'],
 };
 
 const READ = { contents: 'read', actions: 'read' };
@@ -62,10 +64,14 @@ const PERMISSIONS: Record<
     jobs: { prepare: READ, publish: WRITE, accept: READ },
   },
   'fixed-guest-bump.yml': { workflow: READ, jobs: { bump: undefined } },
+  'fixed-guest-prune.yml': {
+    workflow: {},
+    jobs: { prune: { contents: 'write', 'pull-requests': 'read' } },
+  },
 };
 
 describe('builder workflows', () => {
-  test('start only by hand or from the build, on main, in the upstream repository', async () => {
+  test('start only by hand, from the build or on a schedule, on main, in the upstream repository', async () => {
     for (const name of NAMES) {
       const { flow } = await load(name);
       expect(Object.keys(flow.on)).toEqual(TRIGGERS[name]);
@@ -314,5 +320,35 @@ describe('builder workflows', () => {
     expect(build.env?.MBX_CACHE_MATCHED_KEY).toContain(
       'steps.mbx-cache.outputs.cache-matched-key',
     );
+  });
+
+  test('prune from the full history, deleting on schedule and dry by default by hand', async () => {
+    const { flow } = await load('fixed-guest-prune.yml');
+    const inputs = (
+      flow.on.workflow_dispatch as {
+        inputs: Record<string, { type: string; default: unknown }>;
+      }
+    ).inputs;
+    expect(inputs).toEqual({
+      dry_run: expect.objectContaining({ type: 'boolean', default: true }),
+    });
+    const { prune } = flow.jobs;
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a GitHub expression, not a JS template
+    expect(prune?.env?.DRY_RUN).toBe("${{ inputs.dry_run || 'false' }}");
+    const checkout = prune?.steps?.find((step) =>
+      step.uses?.startsWith('actions/checkout@'),
+    );
+    expect(checkout?.with?.['fetch-depth']).toBe(0);
+    const run = prune?.steps?.find((step) =>
+      step.run?.includes('src/cli.ts prune'),
+    );
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+    expect(run?.run).toContain('--dry-run "${DRY_RUN}"');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: shell expansion in the workflow, not a JS template
+    expect(run?.run).toContain('--summary "${GITHUB_STEP_SUMMARY}"');
+    expect(flow.concurrency).toEqual({
+      group: 'fixed-guest-prune',
+      'cancel-in-progress': false,
+    });
   });
 });

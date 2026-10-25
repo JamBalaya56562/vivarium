@@ -13,6 +13,18 @@ export interface Release {
   assets: ReleaseAsset[];
 }
 
+export interface ListedRelease {
+  id: number;
+  tag: string;
+  draft: boolean;
+  publishedAt: string | null;
+}
+
+export interface PullFile {
+  filename: string;
+  status: string;
+}
+
 export interface WorkflowRun {
   id: number;
   status: string;
@@ -60,6 +72,13 @@ export interface GitHubApi {
   downloadAsset(asset: ReleaseAsset, limitBytes: number): Promise<Uint8Array>;
   publish(release: Release): Promise<void>;
   deleteDraft(release: Release): Promise<void>;
+  listReleases(): Promise<ListedRelease[]>;
+  deletePublished(release: ListedRelease): Promise<void>;
+  deleteTag(tag: string): Promise<void>;
+  guestTags(): Promise<string[]>;
+  openPulls(): Promise<number[]>;
+  pullFiles(pull: number): Promise<PullFile[]>;
+  fileAt(path: string, ref: string): Promise<string | null>;
   activeRuns(workflowFile: string): Promise<WorkflowRun[]>;
   workflowRun(id: number): Promise<WorkflowRunDetail>;
   runJobs(id: number): Promise<RunJob[]>;
@@ -190,6 +209,88 @@ export function createGitHubApi(options: {
       });
       if (response.status !== 204)
         fail('EXTERNAL', `draft delete returned HTTP ${response.status}`);
+    },
+    async listReleases() {
+      const listed: ListedRelease[] = [];
+      for (let page = 1; page <= 10; page += 1) {
+        const releases = await json<
+          {
+            id: number;
+            tag_name: string;
+            draft: boolean;
+            published_at: string | null;
+          }[]
+        >(`${api}/releases?per_page=100&page=${page}`);
+        for (const release of releases)
+          listed.push({
+            id: release.id,
+            tag: release.tag_name,
+            draft: release.draft,
+            publishedAt: release.published_at,
+          });
+        if (releases.length < 100) return listed;
+      }
+      fail('EXTERNAL', 'too many releases to list');
+    },
+    async deletePublished(release) {
+      if (release.draft)
+        fail('INVALID_INPUT', 'a draft Release belongs to its release run');
+      const response = await call(`${api}/releases/${release.id}`, {
+        method: 'DELETE',
+      });
+      if (response.status !== 204)
+        fail('EXTERNAL', `release delete returned HTTP ${response.status}`);
+    },
+    async deleteTag(tag) {
+      const response = await call(
+        `${api}/git/refs/tags/${encodeURIComponent(tag)}`,
+        { method: 'DELETE' },
+      );
+      if (response.status !== 204 && response.status !== 422)
+        fail('EXTERNAL', `tag delete returned HTTP ${response.status}`);
+    },
+    async guestTags() {
+      const refs = await json<{ ref: string }[]>(
+        `${api}/git/matching-refs/tags/guest-`,
+      );
+      return refs.map((item) => item.ref.replace(/^refs\/tags\//, ''));
+    },
+    async openPulls() {
+      const numbers: number[] = [];
+      for (let page = 1; page <= 10; page += 1) {
+        const pulls = await json<{ number: number }[]>(
+          `${api}/pulls?state=open&per_page=100&page=${page}`,
+        );
+        numbers.push(...pulls.map((pull) => pull.number));
+        if (pulls.length < 100) return numbers;
+      }
+      fail('EXTERNAL', 'too many open pull requests to list');
+    },
+    async pullFiles(pull) {
+      const files: PullFile[] = [];
+      for (let page = 1; page <= 30; page += 1) {
+        const listed = await json<PullFile[]>(
+          `${api}/pulls/${pull}/files?per_page=100&page=${page}`,
+        );
+        files.push(
+          ...listed.map((file) => ({
+            filename: file.filename,
+            status: file.status,
+          })),
+        );
+        if (listed.length < 100) return files;
+      }
+      fail('EXTERNAL', `pull request ${pull} has too many files to list`);
+    },
+    async fileAt(path, ref) {
+      const response = await call(
+        `${api}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(ref)}`,
+        { headers: { accept: 'application/vnd.github.raw+json' } },
+      );
+      if (response.status === 404) return null;
+      if (!response.ok)
+        fail('EXTERNAL', `GitHub API returned HTTP ${response.status}`);
+      return response.text();
     },
     async activeRuns(workflowFile) {
       const runs: WorkflowRun[] = [];

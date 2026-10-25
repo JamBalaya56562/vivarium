@@ -1,0 +1,57 @@
+name: fixed-guest-prune
+
+on:
+  schedule:
+    - cron: '15 2 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List what would be deleted without deleting it
+        required: true
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: fixed-guest-prune
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: prune
+    if: github.repository == 'aletheia-works/vivarium' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      DRY_RUN: ${{ inputs.dry_run || 'false' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup mise (bun)
+        uses: jdx/mise-action@82a612c5ab8bcda7cc5db6b7e81a8e7584c3dc6e # v5.2.3
+        with:
+          install: true
+          cache: true
+          experimental: true
+          install_args: bun
+
+      - name: Install the builder's locked dependencies
+        working-directory: tools/fixed-guest-builder
+        run: bun install --frozen-lockfile
+
+      - name: Delete guest Releases no recipe has accepted for the grace period
+        working-directory: tools/fixed-guest-builder
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          bun run src/cli.ts prune \
+            --repository-root "${GITHUB_WORKSPACE}" \
+            --dry-run "${DRY_RUN}" \
+            --summary "${GITHUB_STEP_SUMMARY}"

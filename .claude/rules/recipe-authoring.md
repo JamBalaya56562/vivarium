@@ -409,7 +409,10 @@ PRs 180 / 189 / 192.
   `accepted` runs. The release run publishes without approval and its
   `accept` job opens a self-merging pull request that writes `accepted`
   into every guest on `main` declaring that tool, repository and commit; a
-  guest still in an open pull request gets it by hand. Until every guest is accepted and
+  guest still in an open pull request gets it by hand. The daily
+  `fixed-guest-prune` workflow deletes a guest Release and its tag 30 days
+  after no `accepted.buildKey` on `main` or in an open pull request names
+  its key, so a rollback to an older key past that needs a rebuild. Until every guest is accepted and
   `src/layer1_wasm/formicarium.pin.json` pins the npm package, the recipe
   is **pending**: `generate-recipes-index.ts` leaves it out of
   `recipes.json`, so it is not on the site and not in the regression

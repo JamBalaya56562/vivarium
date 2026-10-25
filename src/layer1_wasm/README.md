@@ -102,7 +102,10 @@ required checks pass.
 A recipe whose fixing pull request is known retires itself: the daily
 `retire-merged` workflow checks `upstream_pr` (in `recipe.json`, or in
 `fix-candidate.json` for a fork wheel) and, once that pull request is
-merged, opens a pull request that removes the recipe.
+merged, opens a pull request that removes the recipe. Its guest builds go
+with it 30 days later: the daily `fixed-guest-prune` workflow deletes a
+`guest-<tool>-<buildKey>` Release once no recipe on `main` and no open pull
+request has accepted its key for that long.
 
 ## Verdict surface
 

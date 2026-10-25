@@ -91,9 +91,30 @@ run checks that Release and writes nothing.
 
 The release run uploads to a draft, downloads the files again and checks
 every digest, and only then publishes. A published Release is never
-replaced or deleted. If one already exists for the key, the run only
-verifies it; a different ELF for the same key is reported as
-`NOT_REPRODUCIBLE` and nothing is written.
+replaced. If one already exists for the key, the run only verifies it; a
+different ELF for the same key is reported as `NOT_REPRODUCIBLE` and
+nothing is written.
+
+## Deleting unreferenced sets
+
+The daily **fixed-guest-prune** run deletes a published
+`guest-<tool>-<buildKey>` Release, and its tag, 30 days after nothing
+accepts its key any more. A key is accepted while a
+`guests[].accepted.buildKey` names it in a `src/layer1_wasm/*/recipe.json`
+on `main`, or in one an open pull request carries at its head. Whether a
+recipe was retired or a guest moved to a newer build does not matter; only
+the reference does.
+
+The 30 days start at the `main` commit that last changed the key's
+references (the run reads the full history), or at the Release's
+publication when `main` never named the key. Drafts are left to their
+release run. A `guest-*` tag with no Release, such as one left by a run that
+deleted the Release but failed on the tag, is deleted on the next run unless
+its key is referenced. The job summary lists every guest Release as referenced (and
+by what), waiting (with the date it goes) or deleted.
+
+Start **fixed-guest-prune** by hand to see the list: `dry_run` is on by
+default and deletes nothing. The scheduled run deletes.
 
 ## Moving a guest to a newer commit
 
@@ -140,7 +161,11 @@ A limit value itself is accepted; one byte more is refused.
 ## Rolling back
 
 Revert the pull request that changed the builder. For a bad published set,
-point the recipe back to the previous key; published Releases stay.
+point the recipe back to the previous key. Its Release is kept for 30 days
+after the key stopped being referenced, and pointing back at it within that
+time keeps it. After that it is gone: build the previous commit again with
+**fixed-guest-build**, which publishes it under the current builder's key,
+and accept that build.
 
 ## Development
 
