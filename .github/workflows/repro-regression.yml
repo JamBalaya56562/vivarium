@@ -261,35 +261,6 @@ jobs:
         run: bun run test -- --project=${{ matrix.browser }}
         env:
           CI: 'true'
-          U6_COVERAGE_DIR: ${{ matrix.browser == 'chromium' && format('{0}/u6-v8', runner.temp) || '' }}
-
-      - name: U6 line coverage (bun + Chromium V8, fixed denominator)
-        if: matrix.browser == 'chromium'
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -euo pipefail
-          bun test --coverage --coverage-reporter=lcov --coverage-dir="${RUNNER_TEMP}/u6-bun" \
-            docs/scripts/__tests__/recipesIndex.test.ts \
-            docs/scripts/__tests__/stageFormicariumAssets.test.ts \
-            docs/scripts/__tests__/coiServiceWorkerPin.test.ts \
-            src/layer1_wasm/biome-migrate-top-level-bracket-spacing/verdict.test.ts \
-            src/layer1_wasm/_shared/_test/formicarium_terminal.test.ts \
-            src/layer1_wasm/_shared/_test/formicarium_line_editor.test.ts
-          mkdir -p "${RUNNER_TEMP}/u6-coverage"
-          cp "${RUNNER_TEMP}/u6-bun/lcov.info" "${RUNNER_TEMP}/u6-coverage/bun-lcov.info"
-          bun src/layer1_wasm/scripts/u6-coverage.ts \
-            --lcov "${RUNNER_TEMP}/u6-bun/lcov.info" \
-            --v8 "${RUNNER_TEMP}/u6-v8" \
-            --out "${RUNNER_TEMP}/u6-coverage"
-
-      - name: Upload U6 coverage
-        if: always() && matrix.browser == 'chromium'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: u6-coverage-${{ github.run_id }}
-          path: ${{ runner.temp }}/u6-coverage/
-          if-no-files-found: warn
-          retention-days: 30
 
       - name: Upload Playwright report on failure
         if: failure()

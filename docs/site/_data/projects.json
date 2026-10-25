@@ -99,15 +99,6 @@
       "description_ja": "既定の分離レベル下で文書化されてはいるが見落としやすい挙動を狙った Layer 2 の Docker 再現。",
       "homepage": "https://www.postgresql.org/",
       "github": "https://github.com/postgres/postgres"
-    },
-    "biome": {
-      "display_name": "Biome",
-      "tagline": "A toolchain for formatting and linting web projects.",
-      "tagline_ja": "Web プロジェクトのフォーマットと lint を行うツールチェーン。",
-      "description": "Side-by-side CLI reproductions run accepted static builds of unmodified Biome commits in formicarium, with the same fixture and the exact source commits recorded for both terminals.",
-      "description_ja": "変更を加えていない Biome のコミットの受入済みの静的ビルドを formicarium で並べて実行する。両方のターミナルで同じ fixture を使い、正確なソースコミットを記録する。",
-      "homepage": "https://biomejs.dev/",
-      "github": "https://github.com/biomejs/biome"
     }
   }
 }

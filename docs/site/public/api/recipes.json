@@ -3,28 +3,6 @@
   "contract": "v1",
   "recipes": [
     {
-      "slug": "biome-migrate-top-level-bracket-spacing",
-      "layer": 1,
-      "project": "biome",
-      "issue": 0,
-      "title": "biomejs/biome — Prettier migration leaves the top-level bracketSpacing on",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/biome/migrate-top-level-bracket-spacing/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer1_wasm/biome-migrate-top-level-bracket-spacing",
-      "language": "shell",
-      "tags": [
-        "biome",
-        "prettier",
-        "migration",
-        "formatter",
-        "json"
-      ],
-      "symptom": "migration-option-dropped",
-      "severity": "bug",
-      "expected_verdict": "reproduced",
-      "expected_runtime": "formicarium",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/biome/migrate-top-level-bracket-spacing/"
-    },
-    {
       "slug": "cpython-137205",
       "layer": 1,
       "project": "cpython",

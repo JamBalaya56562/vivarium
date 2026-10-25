@@ -313,7 +313,7 @@ of values it read back. The shape:
   file and mirror what it does back into the driver's string literal —
   otherwise the next autofix pass silently drifts the two apart.
 
-Two recipes cannot take the rule literally, and neither is a licence to
+Two shapes cannot take the rule literally, and neither is a licence to
 go back to JSON:
 
 - **The reproducing run never finishes.** `lark-1585`'s bug is an
@@ -321,12 +321,11 @@ go back to JSON:
   terminated. Its driver composes the pane text itself, using one
   layout for all three outcomes so the timeout and the fix-candidate
   panes read as a pair.
-- **A CLI runs as a terminal session.**
-  `biome-migrate-top-level-bracket-spacing` runs Biome in formicarium
-  terminals, which are the panes themselves. The driver
+- **A CLI runs as a terminal session.** A formicarium recipe runs the
+  tool in terminals, which are the panes themselves. The driver
   types each command and reads back the `output` and exit `code` that
   `terminal.run()` resolves with; that is the machine channel there,
-  the way a named global is under Pyodide.
+  the way a named global is under Pyodide. No recipe uses it today.
 
 Every other Layer 1 recipe follows the shape above. There is no
 remaining recipe to copy the old JSON-pane handling from.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { REPO_ROOT } from '../site-paths';
 
@@ -88,20 +88,7 @@ describe('deploy-docs stages formicarium assets in pin mode only (S2, NFR8.4)', 
     expectNoSecrets(steps[check] as Step);
   });
 
-  test('uploads the hidden files the site ships, such as the recipe fixture .prettierrc (Step 18a)', () => {
-    // The action drops every dot-named path unless include-hidden-files is
-    // true; the recipe's fixture/.prettierrc then 404s on Pages.
-    expect(
-      readdirSync(
-        path.join(
-          REPO_ROOT,
-          'src',
-          'layer1_wasm',
-          'biome-migrate-top-level-bracket-spacing',
-          'fixture',
-        ),
-      ),
-    ).toContain('.prettierrc');
+  test('uploads the hidden files the site ships (Step 18a)', () => {
     const upload = steps.find(
       (s) => s.uses?.startsWith('actions/upload-pages-artifact@') ?? false,
     );
@@ -131,7 +118,7 @@ describe('deploy-docs stages formicarium assets in pin mode only (S2, NFR8.4)', 
   });
 });
 
-describe('repro-regression stages before Playwright and measures U6 coverage (R-10, NFR2.2)', () => {
+describe('repro-regression stages before Playwright (R-10)', () => {
   const { text, flow } = load('repro-regression.yml');
   const job = flow.jobs.regression as Job;
   const steps = job.steps;
@@ -166,26 +153,6 @@ describe('repro-regression stages before Playwright and measures U6 coverage (R-
     expect(run).toContain('FORMICARIUM_LOCAL_TARBALL="$tarball"');
     expect(steps[types]?.['timeout-minutes']).toBe(5);
     expectNoSecrets(steps[types] as Step);
-  });
-
-  test('runs the coverage step on Chromium after Playwright and keeps its report', () => {
-    const playwright = index(
-      steps,
-      (s) => s.run?.startsWith('bun run test --') ?? false,
-    );
-    const coverage = index(
-      steps,
-      (s) => s.run?.includes('scripts/u6-coverage.ts') ?? false,
-    );
-    const upload = index(steps, (s) => s.name === 'Upload U6 coverage');
-    expect(coverage).toBe(playwright + 1);
-    expect(upload).toBe(coverage + 1);
-    expect(steps[coverage]?.if).toBe("matrix.browser == 'chromium'");
-    expect(steps[upload]?.with?.['retention-days']).toBe(30);
-    expect(steps[playwright]?.env?.U6_COVERAGE_DIR).toContain(
-      "matrix.browser == 'chromium'",
-    );
-    expectNoSecrets(steps[coverage] as Step);
   });
 
   test('keeps the job budget, the browsers and the read-only permission', () => {
