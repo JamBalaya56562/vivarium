@@ -192,8 +192,17 @@ description = "Initialise OpenTofu working directory for infra/github"
 dir = "infra/github"
 run = "tofu init"
 
-[tasks."infra:fmt"]
-description = "Auto-format all OpenTofu files (infra/)"
+[tasks."infra:check"]
+description = "OpenTofu — format check + validate infra/ (read-only, no state)"
+dir = "infra"
+run = [
+  "tofu fmt -check -recursive",
+  "tofu -chdir=github init -backend=false -input=false -lockfile=readonly",
+  "tofu -chdir=github validate",
+]
+
+[tasks."infra:check:fix"]
+description = "OpenTofu — apply format to infra/ (in-place)"
 dir = "infra"
 run = "tofu fmt -recursive"
 
@@ -285,8 +294,8 @@ description = "rumdl — apply Markdown autofix (in-place)"
 run = "rumdl fmt ."
 
 [tasks."lint:all"]
-description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint"
-depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check", "fixed-guest-builder:check"]
+description = "Run all formatters/linters (read-only) — Biome + Mago + Ruff + Tombi + rumdl + Rust + ShellCheck + actionlint + OpenTofu"
+depends = ["docs:check", "php:check", "python:check", "toml:check", "markdown:check", "rust:check", "shell:check", "actions:check", "fixed-guest-builder:check", "infra:check"]
 
 [tasks."lint:all:fix"]
 description = "Apply all autofixes (in-place) across every language"
@@ -298,4 +307,5 @@ depends = [
   "markdown:check:fix",
   "rust:check:fix",
   "fixed-guest-builder:check:fix",
+  "infra:check:fix",
 ]
