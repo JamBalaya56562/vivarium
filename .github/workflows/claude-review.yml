@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   review:
-    uses: aletheia-works/.github/.github/workflows/claude-review.yml@224ce9e9c0d5ddd599e9984958b2e4dd9568ccb6 # v1.3.0
+    uses: aletheia-works/.github/.github/workflows/claude-review.yml@b24ce77ad773bcca239d8140aeb373f295572521 # v1.3.1
     with:
       rules: >-
         AGENTS.md, .claude/rules/, the README.md nearest the changed code, and any spec page under docs/site/*/spec/
