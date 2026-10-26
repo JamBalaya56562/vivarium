@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.5.0",
-  "tarballSha256": "b9b5fa74d5a0152d0aad6e13e9cc3fdf614728f7719acd1f37e159eae3612285",
-  "sourceCommit": "f77731432ba6a74257472fc3fc6cb5ec3ae9a6d4",
+  "packageVersion": "0.6.0",
+  "tarballSha256": "cf42fc6ae648c8c37d21030b0c2e6064a9e4429178251ad62938c851a5187f9a",
+  "sourceCommit": "4a65bd375b5dbe54964a0bba7c1a676911dee720",
   "files": [
     {
       "path": "LICENSE",
@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "2ebefa683ea34ab7d609a4cfc02139dbb5a8f382c574f02f775adb10cd410b7d"
+      "sha256": "3fe5c85bbedff8950aa1436b2aeddb86005d0b28f6f009b7a5033c7d3d101389"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -55,7 +55,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "7d00b9137d6bf2272e18b367d6fac6693d60c8ab114f114c3288e10c79f80354"
+      "sha256": "ef045d20ae80ae253d1686878c01c9c0024005fd13741e00878cf05b97a1bfbe"
     },
     {
       "path": "runtime/command-parse.js",
@@ -63,7 +63,7 @@
     },
     {
       "path": "runtime/command.js",
-      "sha256": "6e1add82c5d8ac00be0b2534cbe3514c015bc52255014071f348ae21b68d087b"
+      "sha256": "b18ef57633d553c65c50fa107a465a9ae9882859489164771f52cc3a6b9b9639"
     },
     {
       "path": "runtime/contracts.js",
@@ -79,7 +79,7 @@
     },
     {
       "path": "runtime/guest-io.js",
-      "sha256": "629cc48c1e7d15e1ce7561a5914b2ceb8763d9a10886fed2938481f955ad121d"
+      "sha256": "12128d9b10c3220d27ff1933fe15944b6e41ea56a3a35f90e61cbd83a4b38a58"
     },
     {
       "path": "runtime/guest-validation.js",
@@ -107,19 +107,19 @@
     },
     {
       "path": "runtime/lifecycle.js",
-      "sha256": "623a8a04958b7731187418cd7d9175e96114bb35b0eaf4d63a18c5cd1eb81b7e"
+      "sha256": "621a3b9390f103a50b334cc98867b4ae08301c5c229742dad6d948a3263448fd"
     },
     {
       "path": "runtime/node/api.js",
-      "sha256": "ddd6a1d9ae947849b99467874cf468a823663278883a03d0d02e69c5c719aab7"
+      "sha256": "ecd19c37003c106a5056e3ab0b1971dc2332f1e5521d3ac16edb00313c5de0ce"
     },
     {
       "path": "runtime/node/package-worker.js",
-      "sha256": "0511cbbf3fcbe7e00b66e72f1095a36277857d2c85d9ff541bd718fd991b131c"
+      "sha256": "7fd3fd0c1b1ac47068279162d8e5efb666af72c8e34940d59871af36c6715e2e"
     },
     {
       "path": "runtime/protocol.js",
-      "sha256": "b27f34d8b2b09a445c5e0a90248ac685ca5fa273a6d396acc6363930f3817eca"
+      "sha256": "2401df6bd389fb7a0de55f779d61abb01ca45434a8543d190c766a251de88db6"
     },
     {
       "path": "runtime/public.js",
@@ -131,27 +131,27 @@
     },
     {
       "path": "runtime/state.js",
-      "sha256": "58e79c0e5077377675cb15cfe395a43e0ef541cf9d42e2ba44ecce3f738f2f08"
+      "sha256": "9f8dc8e1ecde95cf0dc7ec001a0417fdbfeca43ef099acb821cd61d2ef8b6672"
     },
     {
       "path": "runtime/validation.js",
-      "sha256": "c06e80d288d9c7552193764a158d59d5f97341fab03282daaea71bc46f745ba0"
+      "sha256": "c274ca410168db51d5284bcc163711e5a27b21738f98b1d3795e2b84689fe615"
     },
     {
       "path": "runtime/web/api.js",
-      "sha256": "e7a35ef62f3c98083ff075cc158247bac627173bb0593690a99011c396a9561b"
+      "sha256": "0f968671c91505319e05bca7b8652cb24c7686a83f38b7e1315e23fd5495c0cb"
     },
     {
       "path": "runtime/web/package-worker.bundle.js",
-      "sha256": "f4f626ce3c72888712fa105e97c1ca8c3b1d5f3a79f4fd1b5e418208d58c1918"
+      "sha256": "00f54e401c0600f655187e4cdb53e924e777f291b605d91384899b20d5b114d7"
     },
     {
       "path": "runtime/web/package-worker.js",
-      "sha256": "0dc3c700a54d9932e779cd28c900d075275a2a3a7c9ea1c98390d7dc950ba2a1"
+      "sha256": "6cd7a30715b331f4f6ef962d0c1e78d21626b10b3218f800e603c91aad34ba32"
     },
     {
       "path": "runtime/worker-execution.js",
-      "sha256": "43d4190ecd83a04edc3da44f6f84a7aab1334435c01bf2ad396d89519566cfaa"
+      "sha256": "3ab966f783ff7adeed3d5c539a0a535240ed0e46509f41d7547c1bdb9c6e9d98"
     },
     {
       "path": "types/browser.d.ts",
@@ -159,7 +159,7 @@
     },
     {
       "path": "types/index.d.ts",
-      "sha256": "28aadfa52da02d3ee7717777e1ba43d6c979eef7959be509e7581c473a23d639"
+      "sha256": "ea4b03653b37cde53cb382cf7df89bb0874b1df2e84dd644ecf96bdbca9304d2"
     },
     {
       "path": "types/node.d.ts",
