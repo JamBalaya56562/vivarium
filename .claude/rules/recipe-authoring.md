@@ -325,7 +325,7 @@ go back to JSON:
   tool in terminals, which are the panes themselves. The driver
   types each command and reads back the `output` and exit `code` that
   `terminal.run()` resolves with; that is the machine channel there,
-  the way a named global is under Pyodide; `aube-link-dep-bins` uses it.
+  the way a named global is under Pyodide. No recipe uses it today.
 
 Every other Layer 1 recipe follows the shape above. There is no
 remaining recipe to copy the old JSON-pane handling from.

@@ -84,7 +84,7 @@ How the pane gets filled is not prescribed. The following shapes are supported:
 | ----- | --------- | ------- |
 | Fork wheel | `fix-candidate.json` + [`_shared/fix-candidate.ts`](./_shared/fix-candidate.ts); CI builds the wheel from the pinned `source.commit` (or the `source.ref` head when none is pinned) and the page installs it | `dateutil-1478`, `lark-1585` |
 | Second artefact | a sibling crate compiled from the same source against a fixed dependency version or upstream commit, pinned in `recipe.json` `fix_candidate` | none today |
-| Second terminal | a second `<formicarium-terminal>` running the accepted fix guest declared in `recipe.json` `guests`, its ELF and build-info checked against `accepted` before execution | `aube-link-dep-bins` |
+| Second terminal | a second `<formicarium-terminal>` running the accepted fix guest declared in `recipe.json` `guests`, its ELF and build-info checked against `accepted` before execution | none today |
 | No runnable fix | a static note naming the upstream status | the rest |
 
 A pinned fix candidate follows its branch: the daily `upstream-bump`

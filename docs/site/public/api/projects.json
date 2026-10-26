@@ -2,21 +2,6 @@
   "index": "v1",
   "projects": [
     {
-      "project": "aube",
-      "display_name": "aube",
-      "recipe_count": 1,
-      "layers": [
-        1
-      ],
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/aube/",
-      "tagline": "A Node.js package manager written in Rust.",
-      "tagline_ja": "Rust で書かれた Node.js のパッケージマネージャ。",
-      "description": "CLI reproductions run fixed static Linux builds of aube in formicarium, as terminal sessions against a fixture project, with the baseline and the fix side by side.",
-      "description_ja": "aube の固定した静的 Linux ビルドを formicarium で、fixture のプロジェクトに対するターミナルのセッションとして動かす。baseline と fix を並べて実行する。",
-      "homepage": "https://aube.sh/",
-      "github": "https://github.com/aubepkg/aube"
-    },
-    {
       "project": "bash",
       "display_name": "bash",
       "recipe_count": 1,
