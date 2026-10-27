@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.6.0",
-  "tarballSha256": "cf42fc6ae648c8c37d21030b0c2e6064a9e4429178251ad62938c851a5187f9a",
-  "sourceCommit": "4a65bd375b5dbe54964a0bba7c1a676911dee720",
+  "packageVersion": "0.7.1",
+  "tarballSha256": "f410566160c96dc417aa4a2b94ae343e118464d59b05e445852b785fca9f24f2",
+  "sourceCommit": "afd7e4fe739ee7af5ae41fbf04e6afade47bde82",
   "files": [
     {
       "path": "LICENSE",
@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "3fe5c85bbedff8950aa1436b2aeddb86005d0b28f6f009b7a5033c7d3d101389"
+      "sha256": "3af8b38e2125d073884157705ca18dc739a48417b8b83a9e3b5ad6f75b29fa62"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -23,11 +23,11 @@
     },
     {
       "path": "assets/paludarium/build-info.json",
-      "sha256": "c6b745085cb9963532caf6974219f797da9778b0ee1977eb1bc7337c5849855b"
+      "sha256": "71e83bffd0b3d23772f5d64af3527b82c9217d34c511efa85ea0ddcd23f2a3b0"
     },
     {
       "path": "assets/paludarium/coordinator.mjs",
-      "sha256": "41c01fd1bf51c7780c683d626f8e08b2f15cdf5c6aba6ac254439ac865ca5ad3"
+      "sha256": "e211a9e5be2eac6d36812c28d3336b0d46bbd55e37a5d860bdee27bfae474dd1"
     },
     {
       "path": "assets/paludarium/execution.mjs",
@@ -39,7 +39,7 @@
     },
     {
       "path": "assets/paludarium/index.mjs",
-      "sha256": "990923e43849b36c049982aa694f9fe550c80ea6d799debd8616cbd45679ed05"
+      "sha256": "f2db7924691489d72ad21a3cf219e90aa9f1d264e94cafe8ba560c16f376c833"
     },
     {
       "path": "assets/paludarium/jit-support.mjs",
@@ -47,7 +47,7 @@
     },
     {
       "path": "assets/paludarium/paludarium.wasm",
-      "sha256": "f0f48dcbd419f6bed2612d8bf6edbb2f6339487aed02200b5f2899c583a8f687"
+      "sha256": "b8b00f06b2b567c0860d48119a7a268d35b8357e9f50f6237ac97e747309095c"
     },
     {
       "path": "assets/paludarium/worker-support.mjs",
@@ -55,7 +55,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "ef045d20ae80ae253d1686878c01c9c0024005fd13741e00878cf05b97a1bfbe"
+      "sha256": "966f14965de7e7a2c1381c642684e2d3127bffd3a70bfc1cfd718e89de2fa383"
     },
     {
       "path": "runtime/command-parse.js",
@@ -63,7 +63,7 @@
     },
     {
       "path": "runtime/command.js",
-      "sha256": "b18ef57633d553c65c50fa107a465a9ae9882859489164771f52cc3a6b9b9639"
+      "sha256": "a77b1338f4b1dd7609ece378432af6a71b063fea0d2eff55a28cdde2ef027da7"
     },
     {
       "path": "runtime/contracts.js",
@@ -79,7 +79,7 @@
     },
     {
       "path": "runtime/guest-io.js",
-      "sha256": "12128d9b10c3220d27ff1933fe15944b6e41ea56a3a35f90e61cbd83a4b38a58"
+      "sha256": "ff3e44214d5563d3c92f1eb711be2ee97e0da19a20b7452e6a9b1b9530943801"
     },
     {
       "path": "runtime/guest-validation.js",
@@ -143,7 +143,7 @@
     },
     {
       "path": "runtime/web/package-worker.bundle.js",
-      "sha256": "00f54e401c0600f655187e4cdb53e924e777f291b605d91384899b20d5b114d7"
+      "sha256": "0c907fb5aa83f90b6de7b7bde124301b4746b6a5b7ccf0af851e2d6946d74727"
     },
     {
       "path": "runtime/web/package-worker.js",
@@ -159,7 +159,7 @@
     },
     {
       "path": "types/index.d.ts",
-      "sha256": "ea4b03653b37cde53cb382cf7df89bb0874b1df2e84dd644ecf96bdbca9304d2"
+      "sha256": "e3380c15a14985fdabf05bc50ccfd6f7bd550ab85ad2fb8a6e8c4c2368e71cdb"
     },
     {
       "path": "types/node.d.ts",
