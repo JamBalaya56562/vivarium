@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.8.0",
-  "tarballSha256": "ae6a9241d79d723f4a636274144131acbe01d0960b609696a753b51dfcd91089",
-  "sourceCommit": "d3b7557609735f6a58f1a2e81506f9489b0084d6",
+  "packageVersion": "0.9.0",
+  "tarballSha256": "892a2c3c79e36b324e982bbd72655e545e508a7db16bd406b3a816b7540c703c",
+  "sourceCommit": "bb549abdec62c5b04a0000dab0fe6fdd9cfb327f",
   "files": [
     {
       "path": "LICENSE",
@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "1f665d6d3f3a4749c4a802be96001d87e18d3736f4a817577ad13cdd4ce5e8a1"
+      "sha256": "361e029427a3585f9438f089f62580f42d251697a5ba911fdae28e00fa9f12d9"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -23,15 +23,15 @@
     },
     {
       "path": "assets/paludarium/build-info.json",
-      "sha256": "71e83bffd0b3d23772f5d64af3527b82c9217d34c511efa85ea0ddcd23f2a3b0"
+      "sha256": "3969cb378e0753164bc8cc25e280a159376fde5b52476cf7bbedf15e1031750f"
     },
     {
       "path": "assets/paludarium/coordinator.mjs",
-      "sha256": "e211a9e5be2eac6d36812c28d3336b0d46bbd55e37a5d860bdee27bfae474dd1"
+      "sha256": "effb8f1b5f6615e9b19f6f4b4b822354dd9a9403c7614c9857099fe36074e0bb"
     },
     {
       "path": "assets/paludarium/execution.mjs",
-      "sha256": "e209c0c93ffe47ea12ea3271336453ca75314d338f4b8996f375022cf54a7973"
+      "sha256": "d7a6870b6faaab5d9cfa1964d41bad3157b1ef9f5b1497adbf51b10d047c4ade"
     },
     {
       "path": "assets/paludarium/filesystem-snapshot.mjs",
@@ -39,7 +39,7 @@
     },
     {
       "path": "assets/paludarium/index.mjs",
-      "sha256": "f2db7924691489d72ad21a3cf219e90aa9f1d264e94cafe8ba560c16f376c833"
+      "sha256": "29ed54c611cc12e3b919d7eb00ed041ce9583823ae0a217777a84e7b0e15b140"
     },
     {
       "path": "assets/paludarium/jit-support.mjs",
@@ -47,15 +47,19 @@
     },
     {
       "path": "assets/paludarium/paludarium.wasm",
-      "sha256": "b8b00f06b2b567c0860d48119a7a268d35b8357e9f50f6237ac97e747309095c"
+      "sha256": "a25f6800581b0b5b5a0d83e9004e0a970493b1b9f96aade8c343718c38fe6523"
+    },
+    {
+      "path": "assets/paludarium/relay-protocol.mjs",
+      "sha256": "d70eb9861b5e7d3de5f789b056f1443040d7ce2d9919f04dd2d2b38eabdaf996"
     },
     {
       "path": "assets/paludarium/worker-support.mjs",
-      "sha256": "a96b75df2165deea4a3ce92852e579cbd2a6aa4febbd7dff004a817ee26f1d6c"
+      "sha256": "b945da3a7590a6740640a73961a829aa14fa9195f994ef7edd13cde20b7ba380"
     },
     {
       "path": "package.json",
-      "sha256": "4849d03eb07c0ed029c85142434bf1c46e203b5d69127607285fb5e17b4368d1"
+      "sha256": "43894e4d34893405e8900b4d1be39a7d8a73cf2bdc0703c2cca291f6fe8307d0"
     },
     {
       "path": "runtime/command-parse.js",
@@ -63,23 +67,23 @@
     },
     {
       "path": "runtime/command.js",
-      "sha256": "a77b1338f4b1dd7609ece378432af6a71b063fea0d2eff55a28cdde2ef027da7"
+      "sha256": "d05f8ebcacd45a26a10696ffd374c3023dd341dcee4100590b3962132595b9f7"
     },
     {
       "path": "runtime/contracts.js",
-      "sha256": "058277d862583bd13442cba140123a8ba665af6ca041e69ff8a3a82843e27ec7"
+      "sha256": "2b01ed9c52a2bad25c6df2e07a0111b8b8e5742b9bac398be48c1afba974e6f8"
     },
     {
       "path": "runtime/core.js",
-      "sha256": "739d28089bc05c974a83ac37c670dac4980db37b7f0201d08ff877be4ed09deb"
+      "sha256": "ecdc16fefe07c51d8f6ba9c3173f688f853f60fed759bf2e699cbf6e010fe724"
     },
     {
       "path": "runtime/errors.js",
-      "sha256": "931dbc6f0567388505b81160402523928cd588588f5943687412e761c55822f9"
+      "sha256": "2806777c81120a9fa254a4fae2c5a58f29d592b3b468ee4494e4d15f1d70b839"
     },
     {
       "path": "runtime/guest-io.js",
-      "sha256": "ff3e44214d5563d3c92f1eb711be2ee97e0da19a20b7452e6a9b1b9530943801"
+      "sha256": "51af4ce9a1fc1f1bfe7c98d719b3d7c13c9bed9ef940eecd5b77d4bd98af4a42"
     },
     {
       "path": "runtime/guest-validation.js",
@@ -107,7 +111,7 @@
     },
     {
       "path": "runtime/lifecycle.js",
-      "sha256": "a87908bc530f42fc87f91a94fe86e87aca08ce4848bfc8dd9aeabe6a7f5b5eb6"
+      "sha256": "60b84e465e16a90d7b40c00d5543455240cd31fb81db766321c1ec97020f1665"
     },
     {
       "path": "runtime/node/api.js",
@@ -115,11 +119,11 @@
     },
     {
       "path": "runtime/node/package-worker.js",
-      "sha256": "7fd3fd0c1b1ac47068279162d8e5efb666af72c8e34940d59871af36c6715e2e"
+      "sha256": "270df365f86cca6d1a402949973714649f2f1b880776efb7b09d6c0161f751fb"
     },
     {
       "path": "runtime/protocol.js",
-      "sha256": "2401df6bd389fb7a0de55f779d61abb01ca45434a8543d190c766a251de88db6"
+      "sha256": "f217dbfc55a5485d9078b01be7d9a1f51b3087cd2b359186ee323e6a82815d1c"
     },
     {
       "path": "runtime/public.js",
@@ -135,23 +139,23 @@
     },
     {
       "path": "runtime/validation.js",
-      "sha256": "7236cafb23fc8548132cf57fdc5cdc768c83754a062ae4e9c49b662e932a8064"
+      "sha256": "95cd68177c8040837805b7a27afe313f2e514354f6033e11078a9019774d3020"
     },
     {
       "path": "runtime/web/api.js",
-      "sha256": "0f968671c91505319e05bca7b8652cb24c7686a83f38b7e1315e23fd5495c0cb"
+      "sha256": "b94a995ee94f2702a49ef41278cf97a375115facf9f14ef2767568949c8365fd"
     },
     {
       "path": "runtime/web/package-worker.bundle.js",
-      "sha256": "b6c5c3ff8107ee1e89db461a8a2dbb44a9c187f98cfed4f1d0f0d4598039a411"
+      "sha256": "aaf593a9f8977f9150065bc932ccf136e70ef7e53762aabc697310bd5bcdba72"
     },
     {
       "path": "runtime/web/package-worker.js",
-      "sha256": "6cd7a30715b331f4f6ef962d0c1e78d21626b10b3218f800e603c91aad34ba32"
+      "sha256": "eda48617c1d5983381e5b74ff55fe3919a0d33959679b586d349fd08bb49fc7b"
     },
     {
       "path": "runtime/worker-execution.js",
-      "sha256": "110b480db4c50a06ea11e2450bb0304e0614e3befda07e83b8495b5559e1e754"
+      "sha256": "68450051f43a7f9f7a74cdb4ca99f80cd2dabc22d81b81699eadb3a449b6787a"
     },
     {
       "path": "types/browser.d.ts",
@@ -159,7 +163,7 @@
     },
     {
       "path": "types/index.d.ts",
-      "sha256": "e4c9e0215e108639d47eb6f663005d8701aa80d3dda06fef69e4ac3f5e0895d7"
+      "sha256": "f9cfa66c37a47ec812e0d135c9ec1511fcf345ad59f1222cb444bddb3cb7c0de"
     },
     {
       "path": "types/node.d.ts",
