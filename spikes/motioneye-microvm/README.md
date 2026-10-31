@@ -29,9 +29,11 @@ docker run -d --name me-spike -p 18765:8765 -p 19000:9000 vivarium-spike/motione
 curl.exe -i http://127.0.0.1:19000/aws/lambda-microvms/runtime/v1/ready
 ```
 
-`pack.ps1` downloads the commit's source and writes `build/<commit>/` (the
+`pack.ps1` downloads the commit's tarball and writes `build/<commit>/` (the
 Docker build context) and `build/<commit>.zip` (the same files, the code
-artifact `create-microvm-image` takes).
+artifact `create-microvm-image` takes). The tarball goes in unextracted and
+the Dockerfile extracts it: a zip made on Windows carries no Unix modes, and
+Lambda's build then could not run motionEye's `extra/linux_init`.
 
 ## Run it on Lambda MicroVMs
 
@@ -45,8 +47,8 @@ by its ARN, since `get-microvm-image` refuses a bare name. Log in first with
 | Step | Creates or changes |
 |---|---|
 | `setup` | An S3 bucket (public access blocked), a log group kept 7 days, the build role |
-| `image <commit>` | Uploads `build/<commit>.zip`, builds an ARM_64 image of 1 GB baseline, with egress to the internet for the build |
-| `status`, `logs` | Nothing: the image state and the build log |
+| `image <commit>` | Uploads `build/<commit>.zip` and builds an ARM_64 image of 1 GB baseline, with egress to the internet for the build; when the image exists, builds a new version of it |
+| `status`, `version [n]`, `logs` | Nothing: the image state, one version's state and reason, and the build log |
 | `run` | One MicroVM: ingress only, suspends after 5 idle minutes, ends after an hour at most |
 | `token` | An auth token for ports 8765 and 9000, valid for an hour |
 | `check` | Nothing: `ready`, `/`, login and the four pictures through the endpoint, saved under `build/shots/` |
@@ -101,6 +103,12 @@ Step 3, the proxy, without AWS (2026-11-01):
   `/picture/1..4/current/` 200 `image/jpeg`, a 218 KB script 200. In a
   browser, logging in showed the settings and camera 1's moving frame.
   The image's motion is 4.7.1 (Debian trixie), not 4.5.1.
+
+Step 2, first Lambda build (2026-11-01): `CREATE_FAILED` in `motioneye_init`
+with `PermissionError` on `extra/linux_init`. Reproduced locally by building
+from the zip with every file at mode 0644; with the tarball inside, the same
+build passes, `linux_init` and `relayevent.sh` are 0755, and `ready` returns
+200.
 
 ## Open points for step 2
 

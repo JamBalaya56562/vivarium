@@ -98,8 +98,7 @@ function Step-Image([string] $Commit) {
     if (-not (Test-Path (Join-Path $Build "$Commit.zip"))) { throw "build\$Commit.zip is missing; run pack.ps1 first" }
     $bucket = Need BUCKET
     Invoke-Aws s3 cp "/build/$Commit.zip" "s3://$bucket/$Commit.zip" | Out-Null
-    $request = Write-Input 'create-image.json' @{
-        name                       = $Name
+    $spec = @{
         description                = "motionEye $Commit with fake cameras (vivarium spike)"
         baseImageArn               = $BaseImage
         buildRoleArn               = Need ROLE_ARN
@@ -114,16 +113,32 @@ function Step-Image([string] $Commit) {
             microvmImageHooks = @{ ready = 'ENABLED'; readyTimeoutInSeconds = 600; validate = 'ENABLED'; validateTimeoutInSeconds = 300 }
             microvmHooks      = @{ run = 'DISABLED'; resume = 'DISABLED'; suspend = 'DISABLED'; terminate = 'DISABLED' }
         }
-        tags                       = @{ Project = 'vivarium'; Purpose = 'spike' }
     }
-    $image = Invoke-Aws lambda-microvms create-microvm-image --cli-input-json $request
-    Write-Host "OK: image build started, state $($image.state)"
+    $existing = $null
+    try { $existing = Invoke-Aws lambda-microvms get-microvm-image --image-identifier (Image-Arn) } catch { }
+    if ($existing) {
+        $request = Write-Input 'update-image.json' ($spec + @{ imageIdentifier = Image-Arn })
+        $image = Invoke-Aws lambda-microvms update-microvm-image --cli-input-json $request
+        Write-Host "OK: new image version build started (was $($existing.state)), state $($image.state)"
+    } else {
+        $request = Write-Input 'create-image.json' ($spec + @{ name = $Name; tags = @{ Project = 'vivarium'; Purpose = 'spike' } })
+        $image = Invoke-Aws lambda-microvms create-microvm-image --cli-input-json $request
+        Write-Host "OK: image build started, state $($image.state)"
+    }
 }
 
 function Step-Status {
     $image = Invoke-Aws lambda-microvms get-microvm-image --image-identifier (Image-Arn)
     $image | ConvertTo-Json -Depth 10
     Write-Host "STATE: $($image.state)"
+}
+
+function Step-Version([string] $Version) {
+    $image = Invoke-Aws lambda-microvms get-microvm-image --image-identifier (Image-Arn)
+    $Version = $Version ? $Version : ($image.latestFailedImageVersion ?? $image.latestImageVersion ?? '1.0')
+    $answer = Invoke-Aws lambda-microvms get-microvm-image-version --image-identifier (Image-Arn) --image-version $Version
+    $answer | ConvertTo-Json -Depth 10
+    Write-Host "VERSION $Version STATE: $($answer.state) $($answer.stateReason)"
 }
 
 function Step-Run {
@@ -289,6 +304,7 @@ switch ($Command) {
     'setup' { Step-Setup }
     'image' { Step-Image $Argument }
     'status' { Step-Status }
+    'version' { Step-Version $Argument }
     'logs' { Step-Logs $LogGroup $Argument }
     'run' { Step-Run }
     'vm' { Step-Vm }
@@ -301,7 +317,7 @@ switch ($Command) {
     'proxy-logs' { Step-Logs $ProxyLogGroup $Argument }
     'cleanup' { Step-Cleanup }
     default {
-        Write-Host 'usage: aws.ps1 setup | image <commit> | status | logs [since] | run | vm | token | check | suspend | terminate | proxy | link | proxy-logs [since] | cleanup'
+        Write-Host 'usage: aws.ps1 setup | image <commit> | status | version [n] | logs [since] | run | vm | token | check | suspend | terminate | proxy | link | proxy-logs [since] | cleanup'
         exit 2
     }
 }
