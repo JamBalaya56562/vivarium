@@ -20,22 +20,27 @@ stage 1 rewrites it in OpenTofu under `infra/aws/`.
 
 ## Build and run locally
 
-```bash
-bash pack.sh motioneye-project/motioneye 8451b85d
+The scripts are PowerShell 7, run from this directory.
+
+```powershell
+./pack.ps1 motioneye-project/motioneye 8451b85d
 docker build -t vivarium-spike/motioneye-microvm:8451b85d build/8451b85d
 docker run -d --name me-spike -p 18765:8765 -p 19000:9000 vivarium-spike/motioneye-microvm:8451b85d
-curl -i http://127.0.0.1:19000/aws/lambda-microvms/runtime/v1/ready
+curl.exe -i http://127.0.0.1:19000/aws/lambda-microvms/runtime/v1/ready
 ```
 
-`pack.sh` downloads the commit's source and writes `build/<commit>/` (the
+`pack.ps1` downloads the commit's source and writes `build/<commit>/` (the
 Docker build context) and `build/<commit>.zip` (the same files, the code
 artifact `create-microvm-image` takes).
 
 ## Run it on Lambda MicroVMs
 
-`aws.sh` runs the AWS CLI through the `amazon/aws-cli:2.37.12` container
-with `~/.aws` mounted, in `ap-northeast-1`, and keeps what one step hands the
-next in `build/aws.env`. Each step is one subcommand:
+`aws.ps1 <step>` runs the AWS CLI through the `amazon/aws-cli:2.37.12`
+container with `~/.aws` mounted, in `ap-northeast-1`. It keeps what one step
+hands the next in `build/aws.json`, writes each request as a JSON file under
+`build/`, and ends each step with an `OK:` line. MicroVM calls name the image
+by its ARN, since `get-microvm-image` refuses a bare name. Log in first with
+`aws login --remote` in the same container. Each step:
 
 | Step | Creates or changes |
 |---|---|
