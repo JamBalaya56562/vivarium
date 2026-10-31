@@ -7,6 +7,8 @@ region=ap-northeast-1
 name=vivarium-spike-motioneye
 role=vivarium-spike-motioneye-build
 log_group=/aws/lambda-microvms/$name
+proxy=vivarium-spike-motioneye-proxy
+proxy_log_group=/aws/lambda/$proxy
 base_image=arn:aws:lambda:$region:aws:microvm-image:al2023-1
 connector=arn:aws:lambda:$region:aws:network-connector:aws-network-connector
 hook=/aws/lambda-microvms/runtime/v1
@@ -122,7 +124,7 @@ do_token() {
     --query endpoint --output text | tr -d '\r')
   auth=$(aws lambda-microvms create-microvm-auth-token --microvm-identifier "$MICROVM" \
     --expiration-in-minutes 60 --allowed-ports '[{"port": 8765}, {"port": 9000}]' \
-    --query authToken --output text | tr -d '\r')
+    --query 'authToken."X-aws-proxy-auth"' --output text | tr -d '\r')
   save ENDPOINT "$endpoint"
   save TOKEN "$auth"
   echo "token saved for $endpoint"
@@ -158,8 +160,73 @@ do_terminate() {
   aws lambda-microvms terminate-microvm --microvm-identifier "$MICROVM"
 }
 
+do_proxy() {
+  load
+  local image_arn url
+  image_arn=$(aws lambda-microvms get-microvm-image --image-identifier "$name"     --query imageArn --output text | tr -d '')
+  python3 -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1], "w").write(sys.argv[2], "index.mjs")'     "$here/build/proxy.zip" "$here/proxy/index.mjs"
+  if [ -z "${PROXY_ROLE_ARN:-}" ]; then
+    aws logs create-log-group --log-group-name "$proxy_log_group"
+    aws logs put-retention-policy --log-group-name "$proxy_log_group" --retention-in-days 7
+    aws iam create-role --role-name "$proxy" --query Role.Arn --output text       --assume-role-policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [{
+          "Effect": "Allow",
+          "Principal": {"Service": "lambda.amazonaws.com"},
+          "Action": "sts:AssumeRole"
+        }]
+      }'
+    save PROXY_ROLE_ARN "arn:aws:iam::$ACCOUNT:role/$proxy"
+    load
+  fi
+  aws iam put-role-policy --role-name "$proxy" --policy-name proxy --policy-document "{
+    \"Version\": \"2012-10-17\",
+    \"Statement\": [
+      {\"Effect\": \"Allow\",
+       \"Action\": [\"lambda:RunMicrovm\", \"lambda:GetMicrovm\", \"lambda:CreateMicrovmAuthToken\"],
+       \"Resource\": \"$image_arn\"},
+      {\"Effect\": \"Allow\", \"Action\": \"lambda:ListMicrovms\", \"Resource\": \"*\"},
+      {\"Effect\": \"Allow\", \"Action\": \"lambda:PassNetworkConnector\", \"Resource\": \"*\"},
+      {\"Effect\": \"Allow\", \"Action\": [\"logs:CreateLogStream\", \"logs:PutLogEvents\"],
+       \"Resource\": \"arn:aws:logs:$region:$ACCOUNT:log-group:$proxy_log_group:*\"}
+    ]
+  }"
+  if [ -z "${ACCESS_KEY:-}" ]; then
+    save ACCESS_KEY "$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+    load
+  fi
+  local environment="Variables={IMAGE_ARN=$image_arn,INGRESS_CONNECTOR=$connector:ALL_INGRESS,ACCESS_KEY=$ACCESS_KEY}"
+  if [ -z "${PROXY_URL:-}" ]; then
+    sleep 10
+    aws lambda create-function --function-name "$proxy" --runtime nodejs24.x       --architectures arm64 --handler index.handler --role "$PROXY_ROLE_ARN"       --zip-file fileb:///build/proxy.zip --memory-size 256 --timeout 60       --logging-config "LogFormat=Text,LogGroup=$proxy_log_group"       --environment "$environment" > /dev/null
+    aws lambda wait function-active-v2 --function-name "$proxy"
+    url=$(aws lambda create-function-url-config --function-name "$proxy"       --auth-type NONE --invoke-mode RESPONSE_STREAM --query FunctionUrl --output text | tr -d '')
+    aws lambda add-permission --function-name "$proxy" --statement-id public-function-url       --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE > /dev/null
+    aws lambda add-permission --function-name "$proxy" --statement-id public-function-url-invoke       --action lambda:InvokeFunction --principal '*' --invoked-via-function-url > /dev/null
+    save PROXY_URL "$url"
+  else
+    aws lambda update-function-code --function-name "$proxy"       --zip-file fileb:///build/proxy.zip > /dev/null
+    aws lambda wait function-updated-v2 --function-name "$proxy"
+    aws lambda update-function-configuration --function-name "$proxy"       --environment "$environment" > /dev/null
+  fi
+  do_link
+}
+
+do_link() {
+  load
+  echo "${PROXY_URL}?vivarium-key=$ACCESS_KEY"
+}
+
+do_proxy_logs() {
+  aws logs tail "$proxy_log_group" --since "${1:-1h}"
+}
+
 do_cleanup() {
   load
+  aws lambda delete-function --function-name "$proxy" || true
+  aws iam delete-role-policy --role-name "$proxy" --policy-name proxy || true
+  aws iam delete-role --role-name "$proxy" || true
+  aws logs delete-log-group --log-group-name "$proxy_log_group" || true
   aws lambda-microvms delete-microvm-image --image-identifier "$name" || true
   aws s3 rm "s3://$BUCKET" --recursive || true
   aws s3api delete-bucket --bucket "$BUCKET" || true
@@ -175,9 +242,10 @@ do_logs() {
 cmd=${1:-}
 shift || true
 case "$cmd" in
-  setup | image | status | run | vm | token | check | suspend | terminate | cleanup | logs) "do_$cmd" "$@" ;;
+  setup | image | status | run | vm | token | check | suspend | terminate | proxy | link | cleanup | logs) "do_$cmd" "$@" ;;
+  proxy-logs) do_proxy_logs "$@" ;;
   *)
-    echo "usage: aws.sh setup | image <commit> | status | logs [since] | run | vm | token | check | suspend | terminate | cleanup" >&2
+    echo "usage: aws.sh setup | image <commit> | status | logs [since] | run | vm | token | check | suspend | terminate | proxy | link | proxy-logs [since] | cleanup" >&2
     exit 2
     ;;
 esac

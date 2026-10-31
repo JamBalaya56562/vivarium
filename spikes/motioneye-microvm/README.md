@@ -46,11 +46,34 @@ next in `build/aws.env`. Each step is one subcommand:
 | `token` | An auth token for ports 8765 and 9000, valid for an hour |
 | `check` | Nothing: `ready`, `/`, login and the four pictures through the endpoint, saved under `build/shots/` |
 | `suspend`, `terminate` | Suspends or ends the MicroVM |
-| `cleanup` | Deletes the image, the bucket, the role and the log group |
+| `proxy` | The proxy function (Node.js 24, arm64) and its role, and a **public** function URL with `RESPONSE_STREAM`; a second run updates the code |
+| `link`, `proxy-logs` | Nothing: the URL with its key, and the proxy's log |
+| `cleanup` | Deletes the proxy, the image, the bucket, the roles and the log groups |
 
 The resume check is `suspend`, wait until `vm` reports it suspended, then
 `check` again: auto-resume should bring it back and the pictures should be
 new frames.
+
+## The proxy
+
+`proxy/index.mjs` is the function behind a Lambda function URL with
+`RESPONSE_STREAM`. It needs no SDK: like formicarium's relay-token it signs
+the MicroVMs REST calls itself.
+
+- `?vivarium-key=<ACCESS_KEY>` sets an `HttpOnly` cookie holding an HMAC of
+  the key, then redirects to the same path without it. Any other request
+  without that cookie gets 403, before any AWS call.
+- It reuses a live MicroVM of the image or starts one, takes a token for port
+  8765 only, and keeps it until a minute before it expires.
+- It forwards the method, path, query, body and headers, with motionEye's
+  cookies but not its own, adds `X-aws-proxy-auth` and `X-aws-proxy-port`,
+  and streams the answer back. `Set-Cookie` goes to the function URL's
+  cookie list. A failed fetch drops the connection and retries once; a
+  second failure is a 503.
+
+`node --test proxy/` runs its tests without AWS. `node proxy/local.mjs` runs
+the same code as a plain HTTP server on port 18080 in front of the local
+container, with a stand-in for the MicroVMs API.
 
 ## Results so far
 
@@ -64,6 +87,15 @@ Step 1, local Docker, motionEye `dev` at `8451b85d` (2026-10-31, amd64):
   all differed and `ready` returned 200 again. This freezes processes the way
   a suspend would, but it is not a Firecracker snapshot restore; step 2
   checks that on Lambda.
+
+Step 3, the proxy, without AWS (2026-11-01):
+
+- `node --test`: 12 tests pass.
+- Through `proxy/local.mjs` in front of the container: no cookie 403, the key
+  link 302 to `/` with the cookie, `/` 200 (`text/html`, 138 KB), login 200,
+  `/picture/1..4/current/` 200 `image/jpeg`, a 218 KB script 200. In a
+  browser, logging in showed the settings and camera 1's moving frame.
+  The image's motion is 4.7.1 (Debian trixie), not 4.5.1.
 
 ## Open points for step 2
 
