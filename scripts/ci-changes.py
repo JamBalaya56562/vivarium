@@ -85,6 +85,7 @@ RULES = (
         NONE,
         (
             "infra/",
+            "spikes/",
             ".claude/",
             ".github/",
             "*.md",
@@ -127,6 +128,7 @@ def self_test():
         "SECURITY.md": NONE,
         ".claude/rules/recipe-authoring.md": NONE,
         "infra/github/main.tf": NONE,
+        "spikes/motioneye-microvm/Dockerfile": NONE,
         ".github/labeler.yml": NONE,
         ".github/workflows/claude-review.yml": NONE,
         ".github/workflows/terraform-plan.yml": NONE,
