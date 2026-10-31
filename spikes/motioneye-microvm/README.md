@@ -31,6 +31,27 @@ curl -i http://127.0.0.1:19000/aws/lambda-microvms/runtime/v1/ready
 Docker build context) and `build/<commit>.zip` (the same files, the code
 artifact `create-microvm-image` takes).
 
+## Run it on Lambda MicroVMs
+
+`aws.sh` runs the AWS CLI through the `amazon/aws-cli:2.37.12` container
+with `~/.aws` mounted, in `ap-northeast-1`, and keeps what one step hands the
+next in `build/aws.env`. Each step is one subcommand:
+
+| Step | Creates or changes |
+|---|---|
+| `setup` | An S3 bucket (public access blocked), a log group kept 7 days, the build role |
+| `image <commit>` | Uploads `build/<commit>.zip`, builds an ARM_64 image of 1 GB baseline, with egress to the internet for the build |
+| `status`, `logs` | Nothing: the image state and the build log |
+| `run` | One MicroVM: ingress only, suspends after 5 idle minutes, ends after an hour at most |
+| `token` | An auth token for ports 8765 and 9000, valid for an hour |
+| `check` | Nothing: `ready`, `/`, login and the four pictures through the endpoint, saved under `build/shots/` |
+| `suspend`, `terminate` | Suspends or ends the MicroVM |
+| `cleanup` | Deletes the image, the bucket, the role and the log group |
+
+The resume check is `suspend`, wait until `vm` reports it suspended, then
+`check` again: auto-resume should bring it back and the pictures should be
+new frames.
+
 ## Results so far
 
 Step 1, local Docker, motionEye `dev` at `8451b85d` (2026-10-31, amd64):
