@@ -1,4 +1,5 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
+import * as fs from 'node:fs/promises';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { main } from '../src/cli.ts';
@@ -99,6 +100,24 @@ describe('references', () => {
     );
     await writeFile(join(directory, 'one', 'recipe.json'), '{');
     expect(await errorCode(referencesOnMain(directory))).toBe('INVALID_INPUT');
+  });
+
+  test('name the recipes in order whatever order the directory lists them', async () => {
+    const directory = await layer1({
+      one: recipe(KEY_A),
+      two: recipe(KEY_A),
+      three: recipe(KEY_A),
+    });
+    const listed = await fs.readdir(directory, { withFileTypes: true });
+    const readdir = spyOn(fs, 'readdir').mockImplementation((async () =>
+      listed.toReversed()) as unknown as typeof fs.readdir);
+    try {
+      expect(Object.fromEntries(await referencesOnMain(directory))).toEqual({
+        [KEY_A]: ['main:one', 'main:three', 'main:two'],
+      });
+    } finally {
+      readdir.mockRestore();
+    }
   });
 
   test('add the recipes an open pull request carries at its head', async () => {

@@ -64,6 +64,7 @@ export async function referencesOnMain(
   } catch {
     fail('INVALID_INPUT', `cannot list ${layer1Directory}`);
   }
+  entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
     let text: string;
