@@ -15,7 +15,8 @@ step by step in a spike first
 |---|---|
 | [iam.tf](iam.tf) | The CI roles for plan and apply and the permissions boundary, created by hand and imported |
 | [storage.tf](storage.tf) | The private, versioned S3 bucket for the images' code artifacts |
-| [previews.tf](previews.tf) | Per preview: the MicroVM image, the proxy function, its URL, key and log group. Shared: the build and proxy roles and the build log group |
+| [previews.tf](previews.tf) | Per preview: the MicroVM image, the proxy function, its URL and log group. Shared: the build and proxy roles and the build log group |
+| [auth.tf](auth.tf) | The GitHub sign-in shared by every preview: its function, URL, role and log group, the session key, and the list of previews and who gets into each |
 | [network.tf](network.tf) | The egress connector the proxy runs every preview MicroVM with: a VPC with no internet gateway, NAT or DNS resolver, two subnets, a security group with no rules, and the role Lambda uses for the connector's network interfaces |
 
 Each preview is a recipe under [`src/layer3_previews/`](../../src/layer3_previews/README.md):
@@ -33,8 +34,8 @@ and installs it, so the zip carries no file modes that matter. The image adds:
   time, so the preview needs no real camera.
 - `seed.py`: adds the four cameras to motionEye's configuration at build time,
   and sets the `admin` and `user` passwords to `password`. motionEye applies no
-  setting while either password is empty, and the preview's key already keeps
-  strangers out, so the passwords only spare the reviewer that step.
+  setting while either password is empty, and the GitHub sign-in already
+  keeps strangers out, so the passwords only spare the reviewer that step.
 - `hooks.py`: the lifecycle hooks on port 9000. `ready` and `validate` answer
   200 only once motionEye serves a picture from every camera and mailpit
   answers on its UI, on 1025 and over TLS on 1465, and the upload targets
@@ -69,9 +70,11 @@ The image is ARM_64 with 1 GB.
 [preview-proxy/index.mjs](preview-proxy/index.mjs) runs behind each preview's
 function URL with `RESPONSE_STREAM`.
 
-- **Access**: the link carries `?vivarium-key=<key>`. The proxy turns it into
-  an `HttpOnly` cookie and redirects to the same path without the key. A
-  request without the cookie gets 403, before any AWS call.
+- **Access**: a request without a valid session cookie is sent to the
+  sign-in below, before any AWS call. The sign-in comes back with
+  `?vivarium-ticket=<ticket>`, valid for a minute and for this preview only;
+  the proxy turns it into an `HttpOnly` session cookie for a day and
+  redirects to the same path without the ticket, and logs the GitHub login.
 - **The MicroVM**: the proxy reuses the image's live MicroVM, or starts one.
   The MicroVM suspends after 5 minutes without traffic, resumes on the next
   request, and ends after an hour suspended or 8 hours in all.
@@ -85,8 +88,37 @@ deletes or replaces ([preview-proxy/end-microvms.mjs](preview-proxy/end-microvms
 deleting an image failed while a MicroVM a reviewer had used was still
 suspended.
 
+### The sign-in
+
+[preview-proxy/auth.mjs](preview-proxy/auth.mjs) runs behind one function
+URL that every preview shares. A preview's link is
+`<sign-in URL>/<preview>/`, and the proxy sends a reviewer without a session
+there too, with the path they asked for.
+
+1. It sends the browser to GitHub's OAuth authorize page with no scope and a
+   signed state, bound to a cookie and good for ten minutes.
+2. On `/callback` it checks the state and its cookie, trades the code for a
+   token, and asks GitHub who signed in. It asks for the pull request's
+   author only when the login is not already listed.
+3. A login in the preview's list ([`src/layer3_previews/`](../../src/layer3_previews/README.md#who-gets-in))
+   or the author gets a ticket and is sent to the preview's own URL; anyone
+   else gets 403. The token is not kept.
+
+It reads the list from `preview-auth/previews.json` in the artifacts bucket,
+which OpenTofu writes with each preview's URL, so a change to who gets in
+needs no new function. The sign-in and every proxy sign their state, tickets
+and sessions with one key, `random_password.preview_session`; replacing it
+signs everyone out. The proxy checks only a session's signature, expiry and
+preview, not the list, so a login taken off the list keeps its session for up
+to a day; replacing the key is the way to end it sooner.
+
+The GitHub OAuth app belongs to the organisation. Its client ID is the
+`PREVIEW_GITHUB_CLIENT_ID` repository variable and its secret the
+`PREVIEW_GITHUB_CLIENT_SECRET` secret, which the plan and the apply pass to
+OpenTofu. Until both are set, a link answers 503.
+
 `mise run ci:previews` runs its tests without AWS, and CI runs them on a PR
-that changes the proxy. `mise run infra:aws:check` lints it with the docs
+that changes the proxy or the sign-in. `mise run infra:aws:check` lints them with the docs
 site's Biome settings.
 
 ### Cost
@@ -196,28 +228,24 @@ account では 1 度だけ手で作ります。
 `aws-apply` environment がまだ無いと失敗するので、そのときは infra/github の Apply が
 終わってから AWS Terraform Apply を `workflow_dispatch` で新しく実行してください。
 
-### 4. レビュアーに渡すリンク
+### 4. GitHub の OAuth App
 
-リンクにはキーが入っているので、state から本人の端末で取り出します。`$passphrase` は
-`TF_STATE_PASSPHRASE` の値です。
+サインインの URL は最初の Apply で決まります。Apply の summary に出る
+`Sign-in callback` の URL を使って、organization の OAuth App を 1 つ作ります。
 
-```powershell
-$run = gh variable get LATEST_AWS_APPLY_RUN_ID --repo aletheia-works/vivarium
-gh run download $run --repo aletheia-works/vivarium --name terraform-state-aws --dir .
-$env:TF_ENCRYPTION = @"
-key_provider "pbkdf2" "state" {
-  passphrase = "$passphrase"
-}
-method "aes_gcm" "state" {
-  keys = key_provider.pbkdf2.state
-}
-state {
-  method = method.aes_gcm.state
-}
-"@
-tofu init
-tofu output -json preview_links
-```
+1. aletheia-works の Settings → Developer settings → OAuth Apps → New OAuth App
+2. Homepage URL は `https://aletheia-works.github.io/vivarium/`、
+   Authorization callback URL は summary の `Sign-in callback`
+3. Client ID を repository variable の `PREVIEW_GITHUB_CLIENT_ID` に、作った
+   Client secret を secret の `PREVIEW_GITHUB_CLIENT_SECRET` に登録する
+4. AWS Terraform Apply を `workflow_dispatch` で新しく実行する
+
+それまでは、リンクを開くと 503 になります。
+
+### 5. レビュアーに渡すリンク
+
+リンクに秘密は入っていません。Apply の summary の `Preview links` に、プレビューごとに
+出ます。
 
 ### CI の role と boundary を変えるとき
 

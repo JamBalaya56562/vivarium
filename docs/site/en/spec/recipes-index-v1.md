@@ -56,7 +56,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `issue` | integer | ✅ | Upstream issue number; `0` if no upstream tracker entry. For a Layer 3 preview, the issue its pull request fixes. |
 | `pull` | integer | ⏳ | Optional. Layer 3 only — the upstream pull request the preview runs. |
 | `title` | string | ✅ | Human-readable title, from the recipe README's first H1. |
-| `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2: docker-run instructions page; Layer 3: a page describing the preview and how to check it — the preview's own link carries a key and is shared on the pull request). |
+| `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2: docker-run instructions page; Layer 3: a page describing the preview and how to check it — the preview's own link is shared on the pull request). |
 | `page_url_ja` | URI | ⏳ | Optional. The Japanese rendering of the same page, under the site's `/ja/` tree. Present **only when the recipe ships a translation** (`src/layer*/<slug>/i18n.ja.json`); its absence means no Japanese page exists. Do not derive this URL by inserting `/ja/` into `page_url` — an untranslated recipe would 404. Added 2026-09-02. |
 | `verdict_url` | URI | ⏳ | Layer 2 only — deployed `verdict.json` snapshot. Layer 1 verdicts are produced live in-page and have no static snapshot. |
 | `source_url` | URI | ✅ | GitHub link to the recipe directory. |

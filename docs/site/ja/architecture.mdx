@@ -77,7 +77,7 @@ import { LiveExamples } from '../_components/LiveExamples';
             アプリケーションに効果が現れない変更。読み手が自分のマシンで再現できるバグ。
           </>,
           <>
-            プルリクエストごとの Lambda MicroVM イメージ。キー付きの function URL の奥で動き、OpenTofu で管理。
+            プルリクエストごとの Lambda MicroVM イメージ。GitHub へのサインインを求める function URL の奥で動き、OpenTofu で管理。
           </>,
         ],
       },
@@ -173,7 +173,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     eyebrow="// 03 · LAYER 3"
     heading="プルリクエストのアプリケーション全体を、ブラウザで。"
     intro={
-      <p>レビュアーが<strong>使ってみて</strong>確かめる変更のための層です。上流のプルリクエストを 1 つのコミットで、バックエンドも含めて Lambda MicroVM のイメージにビルドし、キー付きのリンクで開きます。最初のプレビューは、4 台の偽カメラを付けた motionEye でした。</p>
+      <p>レビュアーが<strong>使ってみて</strong>確かめる変更のための層です。上流のプルリクエストを 1 つのコミットで、バックエンドも含めて Lambda MicroVM のイメージにビルドし、GitHub へのサインインを求めるリンクで開きます。最初のプレビューは、4 台の偽カメラを付けた motionEye でした。</p>
     }
     cellLabels={{
       fits: '向く変更',
@@ -191,7 +191,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     startup={
       <ul>
         <li>MicroVM は最初のリクエストで起動し、5 分間通信が無いと一時停止し、次のリクエストで数秒で再開します。</li>
-        <li>リンクのキーが無いリクエストは 403 になります。リンクはギャラリーではなく、上流のプルリクエストで共有します。</li>
+        <li>リンクは GitHub へのサインインを求め、プルリクエストの作成者、Vivarium がそのプロジェクトについて登録しているメンテナー、レシピが追加した人だけを通します。リンクはギャラリーではなく、上流のプルリクエストで共有します。</li>
         <li>読み手に要るのはブラウザだけです。Linux/x86_64 と PMU の露出を要求した <code>rr</code> の record-replay が通れなかった基準を満たします。</li>
       </ul>
     }
@@ -204,7 +204,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     runtimes={
       <ul>
         <li><code>src/layer3_previews/</code> の下に、プルリクエストごとに 1 つのディレクトリを置き、リポジトリ、プルリクエスト、コミットを書いた <code>preview.json</code> を入れます。置けばプレビューができ、消せばプレビューも消えます。</li>
-        <li>各プレビューはギャラリーに Layer 3 のエントリとして載り、そのページに変更の確かめ方を書きます。プレビュー自体のリンクはキーを含むので、プルリクエスト上で共有します。</li>
+        <li>各プレビューはギャラリーに Layer 3 のエントリとして載り、そのページに変更の確かめ方を書きます。プレビュー自体のリンクは、プルリクエスト上で共有します。</li>
       </ul>
     }
   />

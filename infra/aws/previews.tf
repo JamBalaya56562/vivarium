@@ -141,6 +141,10 @@ data "archive_file" "preview_proxy" {
     filename = "index.mjs"
     content  = file("${path.module}/preview-proxy/index.mjs")
   }
+  source {
+    filename = "session.mjs"
+    content  = file("${path.module}/preview-proxy/session.mjs")
+  }
 }
 
 resource "aws_cloudwatch_log_group" "preview_proxy" {
@@ -193,12 +197,6 @@ resource "aws_iam_role_policy" "preview_proxy" {
   })
 }
 
-resource "random_password" "preview_key" {
-  for_each = local.previews
-  length   = 32
-  special  = false
-}
-
 resource "aws_lambda_function" "preview" {
   for_each         = local.previews
   function_name    = "vivarium-preview-${each.key}"
@@ -220,7 +218,9 @@ resource "aws_lambda_function" "preview" {
       IMAGE_ARN         = awscc_lambda_microvm_image.preview[each.key].image_arn
       INGRESS_CONNECTOR = "${local.connector}:ALL_INGRESS"
       EGRESS_CONNECTOR  = aws_lambdacore_network_connector.preview.arn
-      ACCESS_KEY        = random_password.preview_key[each.key].result
+      PREVIEW           = each.key
+      AUTH_URL          = aws_lambda_function_url.preview_auth.function_url
+      SESSION_KEY       = random_password.preview_session.result
     }
   }
 
@@ -253,7 +253,6 @@ resource "aws_lambda_permission" "preview_invoke" {
 }
 
 output "preview_links" {
-  description = "Each preview's link with its key, for the reviewer"
-  value       = { for name, url in aws_lambda_function_url.preview : name => "${url.function_url}?vivarium-key=${random_password.preview_key[name].result}" }
-  sensitive   = true
+  description = "Each preview's link, which signs the reviewer in with GitHub"
+  value       = { for name in keys(local.previews) : name => "${aws_lambda_function_url.preview_auth.function_url}${name}/" }
 }

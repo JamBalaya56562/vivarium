@@ -40,7 +40,7 @@ import siteStats from '../_generated/site-stats.json';
     <ul>
       <li><strong>Layer 1 — in-browser WebAssembly</strong>. Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1). No account, no install — open the page and it runs.</li>
       <li><strong>Layer 2 — Docker catalogue</strong>. Pinned Dockerfile + GHCR-published image. Visitor reproduces locally with one <code>docker run</code>.</li>
-      <li><strong>Layer 3 — live previews</strong>. An upstream pull request's whole application, backend included, built at one commit into a Lambda MicroVM image and opened through a keyed link. A preview is removed once its pull request merges.</li>
+      <li><strong>Layer 3 — live previews</strong>. An upstream pull request's whole application, backend included, built at one commit into a Lambda MicroVM image and opened through a link that asks for a GitHub sign-in. A preview is removed once its pull request merges.</li>
     </ul>
 
     <h3>Reproduction catalogue</h3>

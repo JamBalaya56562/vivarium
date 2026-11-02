@@ -77,7 +77,7 @@ import { LiveExamples } from '../_components/LiveExamples';
             Changes whose effect does not show through the application; bugs the reader can reproduce on their own machine.
           </>,
           <>
-            Lambda MicroVM image per pull request, behind a keyed function URL, managed with OpenTofu.
+            Lambda MicroVM image per pull request, behind a function URL that asks for a GitHub sign-in, managed with OpenTofu.
           </>,
         ],
       },
@@ -173,7 +173,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     eyebrow="// 03 · LAYER 3"
     heading="A pull request's whole application, in your browser."
     intro={
-      <p>For changes a reviewer checks by <strong>using</strong> them. Each preview builds an upstream pull request at one commit, backend included, into a Lambda MicroVM image, and opens it through a link with a key. The first one ran motionEye with four fake cameras.</p>
+      <p>For changes a reviewer checks by <strong>using</strong> them. Each preview builds an upstream pull request at one commit, backend included, into a Lambda MicroVM image, and opens it through a link that asks for a GitHub sign-in. The first one ran motionEye with four fake cameras.</p>
     }
     cellLabels={{
       fits: 'Changes this layer fits',
@@ -191,7 +191,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     startup={
       <ul>
         <li>The MicroVM starts on the first request, suspends after five minutes without traffic, and resumes in seconds on the next one.</li>
-        <li>A request without the link's key gets 403. The links go to the upstream pull request, not to the gallery.</li>
+        <li>The link asks for a GitHub sign-in and lets in only the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. The links go to the upstream pull request, not to the gallery.</li>
         <li>A reader needs only a browser — the bar <code>rr</code> record-replay failed, since it ran only on Linux/x86_64 with an exposed PMU.</li>
       </ul>
     }
@@ -204,7 +204,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     runtimes={
       <ul>
         <li>One directory per pull request under <code>src/layer3_previews/</code>, with a <code>preview.json</code> naming the repository, pull request and commit. Adding one adds a preview; removing it removes the preview.</li>
-        <li>Each preview is a Layer 3 entry in the gallery, whose page says how to check the change. The preview's own link carries a key and is shared on the pull request.</li>
+        <li>Each preview is a Layer 3 entry in the gallery, whose page says how to check the change. The preview's own link is shared on the pull request.</li>
       </ul>
     }
   />

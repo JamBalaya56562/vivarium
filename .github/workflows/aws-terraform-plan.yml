@@ -117,6 +117,9 @@ jobs:
 
       - name: Tofu Plan
         id: plan
+        env:
+          TF_VAR_preview_github_client_id: ${{ vars.PREVIEW_GITHUB_CLIENT_ID }}
+          TF_VAR_preview_github_client_secret: ${{ secrets.PREVIEW_GITHUB_CLIENT_SECRET }}
         run: |
           set +e
           tofu plan -input=false -no-color -lock=false > plan_output.txt 2>&1

@@ -13,13 +13,16 @@ import {
   sign,
   upstreamRequest,
 } from './index.mjs';
+import { seal } from './session.mjs';
 
 const CONFIG = {
   region: 'ap-northeast-1',
   imageArn: 'arn:aws:lambda:ap-northeast-1:123456789012:microvm-image:preview',
   ingressConnector: 'arn:ingress',
   egressConnector: 'arn:egress',
-  accessKey: 'open-sesame',
+  preview: 'motioneye-1',
+  authUrl: 'https://auth.example',
+  sessionKey: 'open-sesame',
   tokenMinutes: 60,
   idlePolicy: {
     autoResumeEnabled: true,
@@ -76,10 +79,23 @@ function sink() {
   return { sent, from };
 }
 
+const NOW = Date.parse('2026-11-01T09:00:00Z');
+
+const ticket = (overrides = {}) =>
+  seal('open-sesame', {
+    type: 'ticket',
+    preview: 'motioneye-1',
+    login: 'octocat',
+    expires: NOW + 60_000,
+    ...overrides,
+  });
+
 function admitted(overrides = {}) {
-  const cookie = admit(CONFIG, {
-    rawQueryString: 'vivarium-key=open-sesame',
-  }).cookie.split(';')[0];
+  const cookie = admit(
+    CONFIG,
+    { rawQueryString: `vivarium-ticket=${encodeURIComponent(ticket())}` },
+    NOW,
+  ).cookie.split(';')[0];
   return {
     rawPath: '/',
     rawQueryString: '',
@@ -109,40 +125,79 @@ test('sign still matches the get-vanilla test vector', () => {
   );
 });
 
-test('settings refuses a missing access key', () => {
+test('settings refuses a missing session key', () => {
   assert.throws(
     () =>
       settings({
         IMAGE_ARN: 'a',
         INGRESS_CONNECTOR: 'b',
         EGRESS_CONNECTOR: 'c',
+        PREVIEW: 'd',
+        AUTH_URL: 'e',
       }),
-    /ACCESS_KEY is not set/,
+    /SESSION_KEY is not set/,
   );
 });
 
-test('the key link sets the cookie and redirects without the key', () => {
-  const admission = admit(CONFIG, {
-    rawPath: '/config',
-    rawQueryString: 'a=1&vivarium-key=open-sesame',
-  });
+test('a ticket sets the session cookie and redirects without the ticket', () => {
+  const admission = admit(
+    CONFIG,
+    {
+      rawPath: '/config',
+      rawQueryString: `a=1&vivarium-ticket=${encodeURIComponent(ticket())}`,
+    },
+    NOW,
+  );
   assert.equal(admission.status, 302);
   assert.equal(admission.location, '/config?a=1');
+  assert.equal(admission.login, 'octocat');
   assert.match(
     admission.cookie,
-    /^vivarium-preview=[0-9a-f]{64}; .*HttpOnly; Secure/,
+    /^vivarium-preview=[\w-]+\.[\w-]+; Path=\/; Max-Age=86400; HttpOnly; Secure/,
   );
   assert.doesNotMatch(admission.cookie, /open-sesame/);
 });
 
-test('a wrong key, a wrong cookie and no cookie are refused', () => {
+test('an expired, forged or other preview ticket is refused', () => {
+  const refused = (token) =>
+    admit(
+      CONFIG,
+      { rawQueryString: `vivarium-ticket=${encodeURIComponent(token)}` },
+      NOW,
+    ).status;
+  assert.equal(refused(ticket({ expires: NOW })), 403);
+  assert.equal(refused(ticket({ preview: 'motioneye-2' })), 403);
+  assert.equal(refused(ticket({ type: 'session' })), 403);
+  assert.equal(refused(`${ticket().split('.')[0]}.forged`), 403);
   assert.equal(
-    admit(CONFIG, { rawQueryString: 'vivarium-key=nope' }).status,
+    refused(
+      seal('another-key', {
+        type: 'ticket',
+        preview: 'motioneye-1',
+        login: 'octocat',
+        expires: NOW + 60_000,
+      }),
+    ),
     403,
   );
-  assert.equal(admit(CONFIG, { cookies: ['vivarium-preview=00'] }).status, 403);
-  assert.equal(admit(CONFIG, {}).status, 403);
-  assert.equal(admit(CONFIG, admitted()).status, 200);
+});
+
+test('without a valid session the request goes to the sign-in, path and query kept', () => {
+  const session = admitted().cookies[0];
+  assert.equal(admit(CONFIG, admitted(), NOW).status, 200);
+  assert.equal(admit(CONFIG, admitted(), NOW + 86_400_000).status, 302);
+  assert.deepEqual(
+    admit(CONFIG, { rawPath: '//evil.example/x', rawQueryString: 'a=1' }, NOW),
+    {
+      status: 302,
+      location: 'https://auth.example/motioneye-1/evil.example/x?a=1',
+    },
+  );
+  assert.equal(
+    admit({ ...CONFIG, preview: 'motioneye-2' }, { cookies: [session] }, NOW)
+      .location,
+    'https://auth.example/motioneye-2/',
+  );
 });
 
 test('a live MicroVM is reused and none is started', async () => {
@@ -175,7 +230,14 @@ test('a started MicroVM sends its outbound traffic only through the egress conne
 
 test('settings refuses a missing egress connector', () => {
   assert.throws(
-    () => settings({ IMAGE_ARN: 'a', INGRESS_CONNECTOR: 'b', ACCESS_KEY: 'c' }),
+    () =>
+      settings({
+        IMAGE_ARN: 'a',
+        INGRESS_CONNECTOR: 'b',
+        PREVIEW: 'c',
+        AUTH_URL: 'd',
+        SESSION_KEY: 'e',
+      }),
     /EGRESS_CONNECTOR is not set/,
   );
 });
@@ -301,7 +363,7 @@ test('a failed fetch drops the connection and retries once with a new one', asyn
   assert.equal(await sent[0].body, 'ok');
 });
 
-test('the proxy refuses without the cookie and answers 503 when motionEye stays unreachable', async () => {
+test('the proxy sends a request without a session to the sign-in and answers 503 when motionEye stays unreachable', async () => {
   const api = fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }]);
   const { sent, from } = sink();
   const respond = createProxy({
@@ -311,20 +373,23 @@ test('the proxy refuses without the cookie and answers 503 when motionEye stays 
       throw new TypeError('fetch failed');
     },
     from,
-    now: () => 0,
+    now: () => NOW,
   });
   await respond(
     { rawPath: '/', requestContext: { http: { method: 'GET' } } },
     {},
   );
-  assert.equal(sent[0].metadata.statusCode, 403);
+  assert.equal(sent[0].metadata.statusCode, 302);
+  assert.equal(
+    sent[0].metadata.headers.location,
+    'https://auth.example/motioneye-1/',
+  );
   assert.deepEqual(api.calls, []);
   await respond(admitted(), {});
   assert.equal(sent[1].metadata.statusCode, 503);
-  assert.match(await sent[0].body, /needs the link/);
 });
 
-test('bodyless answers still send their status, the key redirect and an upstream 304', async () => {
+test('bodyless answers still send their status, the ticket redirect and an upstream 304', async () => {
   const api = fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }]);
   const { sent, from } = sink();
   const respond = createProxy({
@@ -332,28 +397,35 @@ test('bodyless answers still send their status, the key redirect and an upstream
     api,
     fetchImpl: async () => new Response(null, { status: 304 }),
     from,
-    now: () => 0,
+    now: () => NOW,
   });
   await respond(
-    { rawPath: '/', rawQueryString: 'vivarium-key=open-sesame' },
+    {
+      rawPath: '/',
+      rawQueryString: `vivarium-ticket=${encodeURIComponent(ticket())}`,
+    },
     {},
   );
   assert.equal(sent[0].metadata.statusCode, 302);
   assert.equal(sent[0].metadata.headers.location, '/');
+  assert.equal(sent[0].metadata.cookies.length, 1);
   await respond(admitted(), {});
   assert.equal(sent[1].metadata.statusCode, 304);
 });
 
-test('the key redirect stays on the preview host', () => {
-  const admission = admit(CONFIG, {
-    rawPath: '//evil.example/x',
-    rawQueryString: 'vivarium-key=open-sesame',
-  });
+test('the ticket redirect stays on the preview host', () => {
+  const query = `vivarium-ticket=${encodeURIComponent(ticket())}`;
+  const admission = admit(
+    CONFIG,
+    { rawPath: '//evil.example/x', rawQueryString: query },
+    NOW,
+  );
   assert.equal(admission.location, '/evil.example/x');
-  const backslashed = admit(CONFIG, {
-    rawPath: '/\\evil.example/x',
-    rawQueryString: 'vivarium-key=open-sesame',
-  });
+  const backslashed = admit(
+    CONFIG,
+    { rawPath: '/\\evil.example/x', rawQueryString: query },
+    NOW,
+  );
   assert.equal(backslashed.location, '/evil.example/x');
 });
 

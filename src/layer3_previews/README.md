@@ -25,11 +25,12 @@ a preview lets the reviewer try it.
 
 Each preview is a [Lambda MicroVM](https://docs.aws.amazon.com/lambda/latest/dg/microvms-launching.html)
 image built from the pull request's commit, behind a public function URL.
-The link carries a key; without it the URL answers 403. The MicroVM starts
+Opening it signs the reviewer in with GitHub, and only the accounts in
+[Who gets in](#who-gets-in) are let through. The MicroVM starts
 on the first request, suspends after five minutes without traffic, and
 resumes on the next one. motionEye previews sign in as `admin` with the
 password `password`. [`infra/aws/`](../../infra/aws/README.md) has the
-details, the cost, and how to read a preview's link.
+details, the cost, and where a preview's link is listed.
 
 A reader needs only a browser, so a preview clears the bar this layer has
 always had: a reader on an ordinary machine can reproduce and check the
@@ -56,7 +57,7 @@ The image template is [`infra/aws/motioneye/`](../../infra/aws/motioneye/).
 
 | Direction | What is open |
 |---|---|
-| In | Only ports 8765, 8025 and 8030, through the preview's function URL and its key. The proxy sends paths under `/mailpit/` to mailpit on 8025, paths under `/uploads/` to the upload listing on 8030 and everything else to motionEye on 8765, and asks Lambda for a token limited to those three ports, so the hooks port, the fake cameras, SMTP, FTP, SFTP and SMB are not reachable from outside. |
+| In | Only ports 8765, 8025 and 8030, through the preview's function URL, once the reviewer has signed in. The proxy sends paths under `/mailpit/` to mailpit on 8025, paths under `/uploads/` to the upload listing on 8030 and everything else to motionEye on 8765, and asks Lambda for a token limited to those three ports, so the hooks port, the fake cameras, SMTP, FTP, SFTP and SMB are not reachable from outside. |
 | Out | Nothing. The proxy runs every preview MicroVM with the egress connector in [`infra/aws/network.tf`](../../infra/aws/network.tf). Its VPC has no internet gateway, no NAT and no DNS resolver, and its security group has no rules. The block sits outside the MicroVM, so commands run inside it cannot lift it. Only the image build uses `INTERNET_EGRESS`, to fetch the pull request and its packages. |
 
 So a feature that sends something out, such as a webhook or an upload to
@@ -64,8 +65,25 @@ Google Drive, Dropbox or Amazon S3, fails in a preview. E-mail works when it
 goes to mailpit: set motionEye's SMTP server to `127.0.0.1`, port 1025 (no
 TLS or STARTTLS) or 1465 (TLS), with any account, then read the message at
 `/mailpit/`. Uploads work when they go to the FTP, SFTP or SMB targets above;
-read the files at `/uploads/`. The sign-in is still
-shared, so share the link only on the pull request it previews.
+read the files at `/uploads/`. Everyone let in shares one MicroVM and
+motionEye's `admin` sign-in, so what one reviewer stores there, the others
+can see.
+
+## Who gets in
+
+The preview's link asks for a GitHub sign-in and lets in:
+
+- the accounts under `all_previews` in [`access.json`](access.json), for
+  every preview;
+- the accounts listed for the preview's `repository` under `repositories`
+  in the same file;
+- the accounts in the recipe's own `access`, for that preview only;
+- the pull request's author.
+
+Logins are compared without case. Anyone else gets 403 after signing in. The
+sign-in asks GitHub for no scope and keeps no token, and the preview's own
+log records who was let in. The list is checked only at sign-in: someone
+taken off it keeps their session until it ends, a day after they signed in.
 
 ## Recipes
 
@@ -74,7 +92,7 @@ One directory per pull request, named `<project>-<pull>`:
 ```text
 src/layer3_previews/
 └── <project>-<pull>/
-    ├── preview.json   # repository, pull, issue, commit
+    ├── preview.json   # repository, pull, issue, commit, optional access
     ├── recipe.json    # language, severity, tags, as in the other layers
     ├── page.en.html   # the gallery page's text: title, lede, check steps
     ├── i18n.ja.json   # the page's Japanese strings, as in the other layers
@@ -96,6 +114,9 @@ merged) had it:
 `services` is optional. `["s3"]` adds the S3 target above; no other value is
 accepted.
 
+`access` is optional: a list of GitHub logins let into this preview on top
+of those in [Who gets in](#who-gets-in).
+
 `commit` is a full SHA, so a preview shows exactly one state of the pull
 request. A new push to the pull request is a new commit here.
 
@@ -109,5 +130,5 @@ index lists each preview as a Layer 3 entry with that `issue` and the
 `pull`, and the gallery links to a page built from `page.en.html` and
 [`_layer3-shared/page.template.html`](_layer3-shared/page.template.html),
 with a Japanese page built from `i18n.ja.json`.
-The page leaves the preview's own link out: it carries the key, so it is
-shared on the pull request.
+The page does not list the preview's link yet; it is shared on the pull
+request.

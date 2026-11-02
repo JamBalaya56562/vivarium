@@ -79,6 +79,7 @@ RULES = (
     # The MCP package bundles the recipes index and its tests read it.
     ({"docs", "repro", "mcp"}, ("docs/site/public/api/recipes.json",)),
     (NONE, ("scripts/schedule-watch.py", ".github/workflows/schedule-watch.yml")),
+    (NONE, ("src/layer3_previews/access.json",)),
     (
         {"docs", "repro"},
         (
@@ -162,6 +163,8 @@ def self_test():
         ".github/workflows/test-mcp.yml": {"mcp"},
         "infra/aws/preview-proxy/index.mjs": {"previews"},
         "infra/aws/preview-proxy/end-microvms.mjs": {"previews"},
+        "infra/aws/preview-proxy/auth.mjs": {"previews"},
+        "infra/aws/auth.tf": NONE,
         "infra/aws/motioneye/uploads.py": {"previews"},
         "infra/aws/motioneye/s3bucket.py": {"previews"},
         "infra/aws/motioneye/Dockerfile.tftpl": {"previews"},
@@ -176,6 +179,7 @@ def self_test():
         "docs/site/public/api/recipes.json": {"docs", "repro", "mcp"},
         "docs/site/public/api/projects.json": {"docs", "repro"},
         "src/layer3_previews/motioneye-3506/preview.json": {"docs", "repro"},
+        "src/layer3_previews/access.json": NONE,
         "scripts/bundle-layer3-pages.sh": {"docs", "repro"},
         "src/layer1_wasm/_shared/style.css": {"docs", "repro"},
         "src/layer1_wasm/dateutil-1478/README.md": {"docs", "repro"},

@@ -73,7 +73,7 @@
         "page_url": {
           "type": "string",
           "format": "uri",
-          "description": "Live reproduction page URL on GitHub Pages. Layer 1: a WASM-in-browser page that produces a verdict client-side. Layer 2: a docker-run instructions page that loads the verdict.json snapshot. Layer 3: a page describing the preview and how to check it; the preview's own link carries a key and is shared on the upstream pull request, not here."
+          "description": "Live reproduction page URL on GitHub Pages. Layer 1: a WASM-in-browser page that produces a verdict client-side. Layer 2: a docker-run instructions page that loads the verdict.json snapshot. Layer 3: a page describing the preview and how to check it; the preview's own link is shared on the upstream pull request, not here."
         },
         "page_url_ja": {
           "type": "string",

@@ -40,7 +40,7 @@ import siteStats from '../_generated/site-stats.json';
     <ul>
       <li><strong>Layer 1 — ブラウザ内 WebAssembly</strong>。Python (Pyodide) / Ruby.wasm / php-wasm / Rust (wasm32-wasip1)。アカウント不要、ページを開けば動く。</li>
       <li><strong>Layer 2 — Docker カタログ</strong>。ピン留めされた Dockerfile + GHCR 公開イメージ。訪問者の <code>docker run</code> でローカル再現。</li>
-      <li><strong>Layer 3 — ライブプレビュー</strong>。上流のプルリクエストのアプリケーション全体を、バックエンドも含めて 1 つのコミットで Lambda MicroVM のイメージにビルドし、キー付きのリンクで開く。プルリクエストがマージされたら、そのプレビューは消す。</li>
+      <li><strong>Layer 3 — ライブプレビュー</strong>。上流のプルリクエストのアプリケーション全体を、バックエンドも含めて 1 つのコミットで Lambda MicroVM のイメージにビルドし、GitHub へのサインインを求めるリンクで開く。プルリクエストがマージされたら、そのプレビューは消す。</li>
     </ul>
 
     <h3>再現カタログ</h3>

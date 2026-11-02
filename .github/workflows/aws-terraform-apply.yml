@@ -96,7 +96,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - run: tofu init -input=false -lockfile=readonly
-      - run: tofu plan -input=false -no-color -out=tfplan
+      - name: Tofu Plan
+        env:
+          TF_VAR_preview_github_client_id: ${{ vars.PREVIEW_GITHUB_CLIENT_ID }}
+          TF_VAR_preview_github_client_secret: ${{ secrets.PREVIEW_GITHUB_CLIENT_SECRET }}
+        run: tofu plan -input=false -no-color -out=tfplan
 
       - name: End the MicroVMs of the images the plan deletes
         run: |
@@ -106,6 +110,16 @@ jobs:
             xargs node preview-proxy/end-microvms.mjs
 
       - run: tofu apply -input=false -no-color tfplan
+
+      - name: List the preview links
+        run: |
+          set -euo pipefail
+          {
+            echo '## Preview links'
+            tofu output -json preview_links | jq -r 'to_entries[] | "- \(.key): \(.value)"'
+            echo
+            echo "Sign-in callback: $(tofu output -raw preview_sign_in_callback)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload state artifact
         id: upload

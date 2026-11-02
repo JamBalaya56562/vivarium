@@ -54,7 +54,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。Layer 3 のプレビューでは、そのプルリクエストが直す Issue。 |
 | `pull` | 整数 | ⏳ | オプション。Layer 3 のみ——プレビューが動かす上流のプルリクエスト。 |
 | `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
-| `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ。Layer 3: プレビューと確かめ方を説明するページ——プレビュー自体のリンクはキーを含むので、プルリクエスト上で共有する）。 |
+| `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ。Layer 3: プレビューと確かめ方を説明するページ——プレビュー自体のリンクは、プルリクエスト上で共有する）。 |
 | `page_url_ja` | URI | ⏳ | オプション。同じページの日本語版で、サイトの `/ja/` ツリー配下にある。**レシピが翻訳（`src/layer*/<slug>/i18n.ja.json`）を持つ場合のみ**出力され、無い場合は日本語ページが存在しないことを意味する。`page_url` に `/ja/` を挿入して導出してはならない——未翻訳のレシピでは 404 になる。2026-09-02 に追加。 |
 | `verdict_url` | URI | ⏳ | Layer 2 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |

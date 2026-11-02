@@ -1,6 +1,8 @@
-import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+
+import { localPath, seal, unseal } from './session.mjs';
 
 const API_VERSION = '2025-09-09';
 const MOTIONEYE_PORT = 8765;
@@ -13,8 +15,9 @@ const START_TIMEOUT_MS = 30_000;
 const POLL_MS = 1_000;
 const TOKEN_MARGIN_MS = 60_000;
 const COOKIE = 'vivarium-preview';
+const SESSION_SECONDS = 86_400;
 const REPEATABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const KEY_PARAM = 'vivarium-key';
+const TICKET_PARAM = 'vivarium-ticket';
 const DROPPED_REQUEST_HEADERS = new Set([
   'host',
   'cookie',
@@ -37,7 +40,9 @@ export function settings(env = process.env) {
     'IMAGE_ARN',
     'INGRESS_CONNECTOR',
     'EGRESS_CONNECTOR',
-    'ACCESS_KEY',
+    'PREVIEW',
+    'AUTH_URL',
+    'SESSION_KEY',
   ])
     if (!env[name]) throw new Error(`${name} is not set`);
   return {
@@ -45,7 +50,9 @@ export function settings(env = process.env) {
     imageArn: env.IMAGE_ARN,
     ingressConnector: env.INGRESS_CONNECTOR,
     egressConnector: env.EGRESS_CONNECTOR,
-    accessKey: env.ACCESS_KEY,
+    preview: env.PREVIEW,
+    authUrl: env.AUTH_URL.replace(/\/+$/, ''),
+    sessionKey: env.SESSION_KEY,
     tokenMinutes: Number(env.TOKEN_MINUTES ?? 60),
     idlePolicy: {
       autoResumeEnabled: true,
@@ -213,37 +220,44 @@ export async function connect(config, api, options = {}) {
   };
 }
 
-const cookieValue = (accessKey) =>
-  createHmac('sha256', accessKey).update(COOKIE).digest('hex');
-
-function sameSecret(a, b) {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-}
-
 function ownCookie(cookies = []) {
   const prefix = `${COOKIE}=`;
   return cookies.find((c) => c.startsWith(prefix))?.slice(prefix.length);
 }
 
-export function admit(config, event) {
+export function admit(config, event, now = Date.now()) {
   const query = new URLSearchParams(event.rawQueryString ?? '');
-  const key = query.get(KEY_PARAM);
-  if (key !== null) {
-    if (!sameSecret(key, config.accessKey)) return { status: 403 };
-    query.delete(KEY_PARAM);
+  const ticket = query.get(TICKET_PARAM);
+  if (ticket !== null) {
+    const pass = unseal(config.sessionKey, ticket, 'ticket', now);
+    if (!pass || pass.preview !== config.preview) return { status: 403 };
+    query.delete(TICKET_PARAM);
     const rest = query.toString();
+    const session = seal(config.sessionKey, {
+      type: 'session',
+      preview: config.preview,
+      login: pass.login,
+      expires: now + SESSION_SECONDS * 1000,
+    });
     return {
       status: 302,
-      location: `/${(event.rawPath ?? '').replace(/^[/\\]+/, '')}${rest ? `?${rest}` : ''}`,
-      cookie: `${COOKIE}=${cookieValue(config.accessKey)}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`,
+      login: pass.login,
+      location: `${localPath(event.rawPath)}${rest ? `?${rest}` : ''}`,
+      cookie: `${COOKIE}=${session}; Path=/; Max-Age=${SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`,
     };
   }
-  const cookie = ownCookie(event.cookies);
-  if (cookie && sameSecret(cookie, cookieValue(config.accessKey)))
-    return { status: 200 };
-  return { status: 403 };
+  const session = unseal(
+    config.sessionKey,
+    ownCookie(event.cookies),
+    'session',
+    now,
+  );
+  if (session?.preview === config.preview) return { status: 200 };
+  const search = event.rawQueryString ? `?${event.rawQueryString}` : '';
+  return {
+    status: 302,
+    location: `${config.authUrl}/${config.preview}${localPath(event.rawPath)}${search}`,
+  };
 }
 
 function upstreamPort(path) {
@@ -320,19 +334,22 @@ export function createProxy({
     return connection;
   }
   return async function respond(event, responseStream) {
-    const admission = admit(config, event);
+    const admission = admit(config, event, now());
     if (admission.status === 403)
       return plain(
         responseStream,
         from,
         403,
-        'This preview needs the link with its key.\n',
+        'This sign-in link has expired. Open the preview link again.\n',
       );
-    if (admission.status === 302)
+    if (admission.status === 302) {
+      if (admission.login)
+        console.log(`admitted ${admission.login} to ${config.preview}`);
       return plain(responseStream, from, 302, '', {
         headers: { location: admission.location, 'cache-control': 'no-store' },
-        cookies: [admission.cookie],
+        ...(admission.cookie ? { cookies: [admission.cookie] } : {}),
       });
+    }
     let response;
     const method = event.requestContext?.http?.method ?? 'GET';
     const attempts = REPEATABLE_METHODS.has(method) ? 2 : 1;
