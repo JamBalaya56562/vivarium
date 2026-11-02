@@ -272,43 +272,6 @@
       "verdict_url": "https://aletheia-works.github.io/vivarium/repro/postgres/lost-update/verdict.json"
     },
     {
-      "slug": "motioneye-3512",
-      "layer": 3,
-      "project": "motioneye",
-      "issue": 2516,
-      "pull": 3512,
-      "title": "motionEye #3512 — the Google key through a loopback redirect",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/motioneye/3512/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-3512",
-      "language": "python",
-      "tags": [
-        "motioneye",
-        "upload",
-        "google-drive",
-        "oauth"
-      ],
-      "severity": "bug",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/motioneye/3512/"
-    },
-    {
-      "slug": "motioneye-3513",
-      "layer": 3,
-      "project": "motioneye",
-      "issue": 0,
-      "pull": 3513,
-      "title": "motionEye #3513 — the 0.45.0b1 beta",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/motioneye/3513/",
-      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-3513",
-      "language": "python",
-      "tags": [
-        "motioneye",
-        "beta",
-        "release"
-      ],
-      "severity": "release",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/motioneye/3513/"
-    },
-    {
       "slug": "motioneye-3515",
       "layer": 3,
       "project": "motioneye",
