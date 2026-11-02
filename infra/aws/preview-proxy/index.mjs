@@ -5,11 +5,6 @@ import { pipeline } from 'node:stream/promises';
 import { localPath, seal, unseal } from './session.mjs';
 
 const API_VERSION = '2025-09-09';
-const MOTIONEYE_PORT = 8765;
-const ROUTES = [
-  { path: '/mailpit', port: 8025 },
-  { path: '/uploads', port: 8030 },
-];
 const LIVE_STATES = new Set(['PENDING', 'RUNNING', 'SUSPENDING', 'SUSPENDED']);
 const START_TIMEOUT_MS = 30_000;
 const POLL_MS = 1_000;
@@ -43,8 +38,12 @@ export function settings(env = process.env) {
     'PREVIEW',
     'AUTH_URL',
     'SESSION_KEY',
+    'ROUTES',
   ])
     if (!env[name]) throw new Error(`${name} is not set`);
+  const routes = JSON.parse(env.ROUTES);
+  if (!Number.isInteger(routes['/']))
+    throw new Error('ROUTES has no port for /');
   return {
     region: env.AWS_REGION,
     imageArn: env.IMAGE_ARN,
@@ -53,6 +52,7 @@ export function settings(env = process.env) {
     preview: env.PREVIEW,
     authUrl: env.AUTH_URL.replace(/\/+$/, ''),
     sessionKey: env.SESSION_KEY,
+    routes,
     tokenMinutes: Number(env.TOKEN_MINUTES ?? 60),
     idlePolicy: {
       autoResumeEnabled: true,
@@ -205,11 +205,9 @@ export async function connect(config, api, options = {}) {
     throw new Error(`the preview MicroVM is ${microvm.state}`);
   const { authToken } = await api.token(microvm.microvmId, {
     expirationInMinutes: config.tokenMinutes,
-    allowedPorts: [MOTIONEYE_PORT, ...ROUTES.map((r) => r.port)].map(
-      (port) => ({
-        port,
-      }),
-    ),
+    allowedPorts: [...new Set(Object.values(config.routes))].map((port) => ({
+      port,
+    })),
   });
   const token = authToken?.['X-aws-proxy-auth'];
   if (!token) throw new Error('Lambda returned no token');
@@ -260,14 +258,14 @@ export function admit(config, event, now = Date.now()) {
   };
 }
 
-function upstreamPort(path) {
-  const route = ROUTES.find(
-    (r) => path === r.path || path.startsWith(`${r.path}/`),
-  );
-  return route ? route.port : MOTIONEYE_PORT;
+function upstreamPort(routes, path) {
+  const prefix = Object.keys(routes)
+    .filter((p) => p !== '/' && (path === p || path.startsWith(`${p}/`)))
+    .sort((a, b) => b.length - a.length)[0];
+  return routes[prefix ?? '/'];
 }
 
-export function upstreamRequest(event, connection) {
+export function upstreamRequest(event, connection, routes) {
   const headers = {};
   for (const [name, value] of Object.entries(event.headers ?? {}))
     if (!DROPPED_REQUEST_HEADERS.has(name) && !name.startsWith('x-amzn-'))
@@ -277,7 +275,9 @@ export function upstreamRequest(event, connection) {
   );
   if (cookies.length) headers.cookie = cookies.join('; ');
   headers['x-aws-proxy-auth'] = connection.token;
-  headers['x-aws-proxy-port'] = String(upstreamPort(event.rawPath || '/'));
+  headers['x-aws-proxy-port'] = String(
+    upstreamPort(routes, event.rawPath || '/'),
+  );
   const method = event.requestContext?.http?.method ?? 'GET';
   const body =
     event.body === undefined || event.body === null || method === 'GET'
@@ -355,7 +355,11 @@ export function createProxy({
     const attempts = REPEATABLE_METHODS.has(method) ? 2 : 1;
     for (let attempt = 0; attempt < attempts && !response; attempt++) {
       try {
-        const { url, init } = upstreamRequest(event, await current());
+        const { url, init } = upstreamRequest(
+          event,
+          await current(),
+          config.routes,
+        );
         response = await fetchImpl(url, init);
       } catch (error) {
         console.error(error);

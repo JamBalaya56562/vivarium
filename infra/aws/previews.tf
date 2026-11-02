@@ -221,6 +221,7 @@ resource "aws_lambda_function" "preview" {
       PREVIEW           = each.key
       AUTH_URL          = aws_lambda_function_url.preview_auth.function_url
       SESSION_KEY       = random_password.preview_session.result
+      ROUTES            = jsonencode(jsondecode(file("${path.module}/motioneye/routes.json")))
     }
   }
 

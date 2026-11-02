@@ -168,6 +168,7 @@ def self_test():
         "infra/aws/motioneye/uploads.py": {"previews"},
         "infra/aws/motioneye/s3bucket.py": {"previews"},
         "infra/aws/motioneye/Dockerfile.tftpl": {"previews"},
+        "infra/aws/motioneye/routes.json": {"previews"},
         ".github/workflows/test-previews.yml": {"previews"},
         "docs/site/en/roadmap.mdx": {"docs"},
         "docs/site/_components/LiveExamples.tsx": {"docs"},

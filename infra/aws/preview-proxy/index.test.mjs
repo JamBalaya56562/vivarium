@@ -23,6 +23,7 @@ const CONFIG = {
   preview: 'motioneye-1',
   authUrl: 'https://auth.example',
   sessionKey: 'open-sesame',
+  routes: { '/': 8765, '/mailpit': 8025, '/uploads': 8030 },
   tokenMinutes: 60,
   idlePolicy: {
     autoResumeEnabled: true,
@@ -139,6 +140,26 @@ test('settings refuses a missing session key', () => {
   );
 });
 
+test('settings reads the routes and refuses them without a port for /', () => {
+  const env = {
+    IMAGE_ARN: 'a',
+    INGRESS_CONNECTOR: 'b',
+    EGRESS_CONNECTOR: 'c',
+    PREVIEW: 'd',
+    AUTH_URL: 'e',
+    SESSION_KEY: 'f',
+  };
+  assert.deepEqual(
+    settings({ ...env, ROUTES: '{"/":8080,"/admin":9090}' }).routes,
+    { '/': 8080, '/admin': 9090 },
+  );
+  assert.throws(
+    () => settings({ ...env, ROUTES: '{"/admin":9090}' }),
+    /ROUTES has no port for \//,
+  );
+  assert.throws(() => settings(env), /ROUTES is not set/);
+});
+
 test('a ticket sets the session cookie and redirects without the ticket', () => {
   const admission = admit(
     CONFIG,
@@ -237,12 +258,13 @@ test('settings refuses a missing egress connector', () => {
         PREVIEW: 'c',
         AUTH_URL: 'd',
         SESSION_KEY: 'e',
+        ROUTES: '{"/":1}',
       }),
     /EGRESS_CONNECTOR is not set/,
   );
 });
 
-test('connect asks for a token to the motionEye, mailpit and uploads ports only', async () => {
+test("connect asks for a token to the routes' ports only", async () => {
   const api = fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }]);
   const connection = await connect(CONFIG, api, { now: () => 1000 });
   assert.equal(connection.endpoint, 'mvm-live.example');
@@ -265,10 +287,11 @@ test('the upstream request carries the token, the port and only motionEye cookie
     body: Buffer.from('{"a":1}').toString('base64'),
     isBase64Encoded: true,
   });
-  const { url, init } = upstreamRequest(event, {
-    endpoint: 'mvm.example',
-    token: 'jwe',
-  });
+  const { url, init } = upstreamRequest(
+    event,
+    { endpoint: 'mvm.example', token: 'jwe' },
+    CONFIG.routes,
+  );
   assert.equal(url, 'https://mvm.example/config/1/set/?_=1');
   assert.deepEqual(init.headers, {
     'content-type': 'application/json',
@@ -280,12 +303,13 @@ test('the upstream request carries the token, the port and only motionEye cookie
   assert.equal(init.redirect, 'manual');
 });
 
-test('paths under /mailpit/ go to the mailpit port and the rest to motionEye', () => {
-  const port = (rawPath) =>
-    upstreamRequest(admitted({ rawPath }), {
-      endpoint: 'mvm.example',
-      token: 'jwe',
-    }).init.headers['x-aws-proxy-port'];
+test('a path goes to the port of its longest route prefix, or to the port for /', () => {
+  const port = (rawPath, routes = CONFIG.routes) =>
+    upstreamRequest(
+      admitted({ rawPath }),
+      { endpoint: 'mvm.example', token: 'jwe' },
+      routes,
+    ).init.headers['x-aws-proxy-port'];
   assert.equal(port('/mailpit/'), '8025');
   assert.equal(port('/mailpit/api/v1/messages'), '8025');
   assert.equal(port('/mailpit'), '8025');
@@ -294,6 +318,10 @@ test('paths under /mailpit/ go to the mailpit port and the rest to motionEye', (
   assert.equal(port('/uploads/files/ftp/a.jpg'), '8030');
   assert.equal(port('/uploadsx'), '8765');
   assert.equal(port('/picture/1/current/'), '8765');
+  const nested = { '/': 1, '/a': 2, '/a/b': 3 };
+  assert.equal(port('/a/b/c', nested), '3');
+  assert.equal(port('/a/c', nested), '2');
+  assert.equal(port('/b', nested), '1');
 });
 
 test('response cookies go to the cookies list and encoding headers are dropped', () => {

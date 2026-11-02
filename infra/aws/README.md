@@ -78,10 +78,13 @@ function URL with `RESPONSE_STREAM`.
 - **The MicroVM**: the proxy reuses the image's live MicroVM, or starts one.
   The MicroVM suspends after 5 minutes without traffic, resumes on the next
   request, and ends after an hour suspended or 8 hours in all.
-- **Forwarding**: the proxy sends paths under `/mailpit/` to mailpit on port
-  8025, paths under `/uploads/` to the upload listing on 8030 and everything
-  else to motionEye on 8765, and streams the answers back to the browser. Its
-  MicroVM token allows only those three ports.
+- **Forwarding**: the proxy reads its routes from the image template's
+  `routes.json`, a map of path prefixes to ports, and sends each path to the
+  port of its longest matching prefix, or to the port for `/`. For motionEye
+  ([motioneye/routes.json](motioneye/routes.json)) that is `/mailpit/` to
+  mailpit on 8025, `/uploads/` to the upload listing on 8030 and everything
+  else to motionEye on 8765. It streams the answers back to the browser, and
+  its MicroVM token allows only the ports in `routes.json`.
 
 Before applying, the apply workflow ends the MicroVMs of every image the plan
 deletes or replaces ([preview-proxy/end-microvms.mjs](preview-proxy/end-microvms.mjs)):
