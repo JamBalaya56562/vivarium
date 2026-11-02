@@ -393,7 +393,8 @@ conflate "which layer does this problem fit" with "which library do we use."
   behaviour. Startup: s–min.
 - **Layer 3 — Live previews.** An upstream pull request's whole
   application, backend included, built at its commit into a Lambda MicroVM
-  image and opened through a keyed link (`infra/aws/`). Target: changes a
+  image and opened through a link that asks for a GitHub sign-in
+  (`infra/aws/`). Target: changes a
   reviewer checks by using the running application. Startup: s on resume,
   min to build.
 

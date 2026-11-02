@@ -66,7 +66,7 @@ export async function lookupVerdict(
       slug,
       page_url: recipe.page_url,
       note:
-        'Layer 3 recipes are live previews of an upstream pull request with no verdict; the page says how to check the change, and the keyed link to the running preview is shared on the pull request.',
+        'Layer 3 recipes are live previews of an upstream pull request with no verdict; the page says how to check the change and links to the running preview, which asks for a GitHub sign-in.',
     };
   }
 

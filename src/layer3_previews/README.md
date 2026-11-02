@@ -130,5 +130,6 @@ index lists each preview as a Layer 3 entry with that `issue` and the
 `pull`, and the gallery links to a page built from `page.en.html` and
 [`_layer3-shared/page.template.html`](_layer3-shared/page.template.html),
 with a Japanese page built from `i18n.ja.json`.
-The page does not list the preview's link yet; it is shared on the pull
-request.
+The page links to the preview through the sign-in,
+`<sign-in URL>/<project>-<pull>/`; the sign-in URL is written in the
+template and changes only if the sign-in function is made again.
