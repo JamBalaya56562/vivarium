@@ -1,10 +1,20 @@
 #!/usr/bin/env bun
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'node-html-parser';
 import { pageTemplateFor } from '../../src/layer1_wasm/scripts/page-templates';
 import { extractReproSource } from '../../src/layer1_wasm/scripts/repro-source';
+import {
+  COI_SERVICEWORKER_FILE,
+  COI_SERVICEWORKER_SOURCE,
+} from './coi-serviceworker-pin';
 import { pendingRecipeEntries } from './generate-recipes-index';
 import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
@@ -111,10 +121,7 @@ export function runtimeShells(): Record<string, RuntimeShell> {
     formicarium: {
       preconnect: [
         CDN_PRECONNECT,
-        '    <script>',
-        '      window.coi = { coepCredentialless: () => false };',
-        '    </script>',
-        '    <script src="./coi-serviceworker.js"></script>',
+        `    <script src="./${COI_SERVICEWORKER_FILE}"></script>`,
       ].join('\n'),
       preload: '',
       kicker: 'L1 · formicarium',
@@ -335,6 +342,8 @@ function renderLayer1(): void {
       EXTRA_SECTIONS: slots.sections ? `\n${indent(slots.sections, 6)}\n` : '',
     });
     writeFileSync(join(dir, 'index.html'), page, 'utf-8');
+    if (runtime === 'formicarium')
+      copyFileSync(COI_SERVICEWORKER_SOURCE, join(dir, COI_SERVICEWORKER_FILE));
     written += 1;
   }
 }

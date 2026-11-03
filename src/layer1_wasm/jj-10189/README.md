@@ -62,10 +62,12 @@ accepted Release builds next to the page after checking every digest, and
 each terminal checks the ELF and its build-info against `accepted` again
 before running it.
 
-The page needs cross-origin isolation, which `coi-serviceworker.js` (0.1.7)
-provides. The page sets `coepCredentialless` to `false`, so the service worker
-answers with `Cross-Origin-Embedder-Policy: require-corp`; WebKit does not
-isolate the Worker under `credentialless`. A cross-origin request without a
+The page needs cross-origin isolation, which `coi-serviceworker.js` from
+[`@aletheia-works/coi-serviceworker`](https://github.com/aletheia-works/coi-serviceworker)
+provides; `generate-repro-pages` copies it from `docs/node_modules` next to
+the page. The service worker always answers with
+`Cross-Origin-Embedder-Policy: require-corp`; WebKit does not isolate the
+Worker under `credentialless`. A cross-origin request without a
 `Cross-Origin-Resource-Policy` header therefore fails on this page.
 
 formicarium's `LICENSE` and `THIRD_PARTY_NOTICES.md` are staged with it in

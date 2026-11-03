@@ -76,13 +76,10 @@ test('formicarium preloads nothing, because its version comes from the staged as
   expect(runtimeShells().formicarium?.preload).toBe('');
 });
 
-test('formicarium pins require-corp before coi-serviceworker loads', () => {
+test('formicarium loads coi-serviceworker with no window.coi configuration', () => {
   const head = runtimeShells().formicarium?.preconnect ?? '';
-  const coi = head.indexOf('window.coi = { coepCredentialless: () => false };');
-  expect(coi).toBeGreaterThan(-1);
-  expect(
-    head.indexOf('<script src="./coi-serviceworker.js"></script>'),
-  ).toBeGreaterThan(coi);
+  expect(head).toContain('<script src="./coi-serviceworker.js"></script>');
+  expect(head).not.toContain('window.coi');
 });
 
 test('every runtime loaded in the page preloads at least one module', () => {

@@ -34,7 +34,7 @@ function files(dir: string): string[] {
 }
 
 describe('.gitignore keeps staged formicarium assets out of the tree (P1)', () => {
-  test('ignores each recipe’s _formicarium/ and guests/ but not its sources', () => {
+  test('ignores each recipe’s _formicarium/, guests/ and coi-serviceworker.js but not its sources', () => {
     const ignored = (rel: string) =>
       Bun.spawnSync(['git', 'check-ignore', '-q', '--no-index', rel], {
         cwd: REPO_ROOT,
@@ -44,11 +44,11 @@ describe('.gitignore keeps staged formicarium assets out of the tree (P1)', () =
       `src/layer1_wasm/${SLUG}/_formicarium/0.4.0/assets/paludarium/paludarium.wasm`,
       `src/layer1_wasm/${SLUG}/guests/baseline/biome`,
       `src/layer1_wasm/${SLUG}/guests/fix/build-info.json`,
+      `src/layer1_wasm/${SLUG}/coi-serviceworker.js`,
     ])
       expect({ rel, ignored: ignored(rel) }).toEqual({ rel, ignored: true });
     for (const rel of [
       `src/layer1_wasm/${SLUG}/recipe.json`,
-      `src/layer1_wasm/${SLUG}/coi-serviceworker.js`,
       `src/layer1_wasm/${SLUG}/fixture/biome.json`,
     ])
       expect({ rel, ignored: ignored(rel) }).toEqual({ rel, ignored: false });

@@ -37,7 +37,7 @@ interface Observed {
   verdict: string | null;
   envelope: Envelope | undefined;
   isolated: boolean;
-  coepCredentialless: unknown;
+  serviceWorker: string | null;
   marks: { name: string; at: number; detail: Record<string, number> }[];
   terminals: {
     state: string | undefined;
@@ -62,7 +62,6 @@ async function observe(page: Page): Promise<Observed> {
     const store = globalThis as unknown as {
       __VIVARIUM_RESULT__?: Envelope;
       __VIVARIUM_FORMICARIUM_MARKS__?: Observed['marks'];
-      coi?: { coepCredentialless?: () => unknown };
     };
     return {
       verdict:
@@ -70,7 +69,7 @@ async function observe(page: Page): Promise<Observed> {
         null,
       envelope: store.__VIVARIUM_RESULT__,
       isolated: globalThis.crossOriginIsolated === true,
-      coepCredentialless: store.coi?.coepCredentialless?.(),
+      serviceWorker: navigator.serviceWorker.controller?.scriptURL ?? null,
       marks: store.__VIVARIUM_FORMICARIUM_MARKS__ ?? [],
       terminals: [...document.querySelectorAll('formicarium-terminal')].map(
         (terminal) => ({
@@ -128,7 +127,7 @@ test('en: both terminals start isolated, verify and run the recorded commands', 
     ),
   });
   expect(observed.isolated).toBe(true);
-  expect(observed.coepCredentialless).toBe(false);
+  expect(observed.serviceWorker).toMatch(/\/coi-serviceworker\.js$/);
   expect(observed.envelope?.runtime.name).toBe('formicarium');
   expect(observed.verdict).toBe('reproduced');
   expect(observed.envelope?.result.baseline_error).toBeNull();

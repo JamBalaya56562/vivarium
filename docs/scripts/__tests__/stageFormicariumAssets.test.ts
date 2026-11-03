@@ -13,7 +13,10 @@ import {
   buildKey,
   canonicalJson,
 } from '../../../tools/fixed-guest-builder/src/key.ts';
-import { COI_SERVICEWORKER_FILE } from '../coi-serviceworker-pin';
+import {
+  COI_SERVICEWORKER_FILE,
+  COI_SERVICEWORKER_SOURCE,
+} from '../coi-serviceworker-pin';
 import {
   type ArchiveLimits,
   checkSite,
@@ -32,9 +35,7 @@ import {
 } from '../stage-formicarium-assets';
 
 const encoder = new TextEncoder();
-const COI_COPY = readFileSync(
-  path.join(import.meta.dir, 'fixtures', COI_SERVICEWORKER_FILE),
-);
+const COI_COPY = readFileSync(COI_SERVICEWORKER_SOURCE);
 const VERSION = '0.4.0';
 const SOURCE_COMMIT = 'c'.repeat(40);
 const BASELINE = {
@@ -669,7 +670,7 @@ describe('stageAssets local mode (S5)', () => {
     changed[0] ^= 1;
     await writeRecipe('demo', { coi: changed });
     error = await stageError(async () => stageAssets(await localOptions()));
-    expect(error.message).toContain('is not coi-serviceworker 0.1.7');
+    expect(error.message).toContain('is not @aletheia-works/coi-serviceworker');
   });
 });
 
@@ -913,7 +914,7 @@ describe('checkSite (NFR6.4, S4, S9)', () => {
     expect(error.message).toContain('missing');
     await writeFile(path.join(ja, COI_SERVICEWORKER_FILE), 'x');
     error = await stageError(() => checkSite(site));
-    expect(error.message).toContain('is not coi-serviceworker');
+    expect(error.message).toContain('is not @aletheia-works/coi-serviceworker');
   });
 
   test('refuses a local-staging accepted.json in the site', async () => {

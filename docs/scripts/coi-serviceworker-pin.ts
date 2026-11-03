@@ -1,11 +1,21 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
+const PACKAGE = '@aletheia-works/coi-serviceworker';
+const require = createRequire(import.meta.url);
+
 export const COI_SERVICEWORKER_FILE = 'coi-serviceworker.js';
-export const COI_SERVICEWORKER_VERSION = '0.1.7';
-export const COI_SERVICEWORKER_SHA256 =
-  'd12bd536e27e39a773d7dc7adb1a1167d24002293e97ac81c995fb00cf8d4d5a';
+export const COI_SERVICEWORKER_SOURCE = require.resolve(
+  `${PACKAGE}/${COI_SERVICEWORKER_FILE}`,
+);
+export const COI_SERVICEWORKER_VERSION = (
+  require(`${PACKAGE}/package.json`) as { version: string }
+).version;
+export const COI_SERVICEWORKER_SHA256 = createHash('sha256')
+  .update(readFileSync(COI_SERVICEWORKER_SOURCE))
+  .digest('hex');
 
 const FORMICARIUM_RUNTIME = 'formicarium';
 
@@ -13,7 +23,7 @@ export function coiServiceWorkerProblem(path: string): string | null {
   if (!existsSync(path)) return `${path}: missing`;
   const digest = createHash('sha256').update(readFileSync(path)).digest('hex');
   if (digest !== COI_SERVICEWORKER_SHA256)
-    return `${path}: SHA256 ${digest} is not coi-serviceworker ${COI_SERVICEWORKER_VERSION} (${COI_SERVICEWORKER_SHA256})`;
+    return `${path}: SHA256 ${digest} is not ${PACKAGE} ${COI_SERVICEWORKER_VERSION} (${COI_SERVICEWORKER_SHA256})`;
   return null;
 }
 

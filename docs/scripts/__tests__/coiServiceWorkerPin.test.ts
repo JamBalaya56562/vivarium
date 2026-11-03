@@ -7,14 +7,14 @@ import path from 'node:path';
 import {
   COI_SERVICEWORKER_FILE,
   COI_SERVICEWORKER_SHA256,
+  COI_SERVICEWORKER_SOURCE,
   COI_SERVICEWORKER_VERSION,
   coiServiceWorkerProblem,
   findCoiServiceWorkerProblems,
 } from '../coi-serviceworker-pin';
 import { REPO_ROOT } from '../site-paths';
 
-const FIXTURE = path.join(import.meta.dir, 'fixtures', COI_SERVICEWORKER_FILE);
-const pinned = readFileSync(FIXTURE);
+const pinned = readFileSync(COI_SERVICEWORKER_SOURCE);
 
 let dir: string | undefined;
 afterEach(() => {
@@ -44,16 +44,18 @@ async function layer1(
 }
 
 describe('coi-serviceworker pin (BR2.4, NFR3.5)', () => {
-  test('pins 0.1.7 and the fixture copied from its npm tarball matches', () => {
-    expect(COI_SERVICEWORKER_VERSION).toBe('0.1.7');
-    expect(COI_SERVICEWORKER_SHA256).toMatch(/^[0-9a-f]{64}$/);
-    expect(createHash('sha256').update(pinned).digest('hex')).toBe(
-      COI_SERVICEWORKER_SHA256,
+  test('pins the installed @aletheia-works/coi-serviceworker, the version docs/package.json asks for', () => {
+    const wanted = JSON.parse(
+      readFileSync(path.join(REPO_ROOT, 'docs', 'package.json'), 'utf-8'),
+    ).devDependencies['@aletheia-works/coi-serviceworker'] as string;
+    expect(wanted).toBe(`^${COI_SERVICEWORKER_VERSION}`);
+    expect(COI_SERVICEWORKER_SHA256).toBe(
+      createHash('sha256').update(pinned).digest('hex'),
     );
     expect(pinned.toString('utf-8').split('\n')[0]).toContain(
-      'coi-serviceworker v0.1.7',
+      '@aletheia-works/coi-serviceworker',
     );
-    expect(coiServiceWorkerProblem(FIXTURE)).toBeNull();
+    expect(coiServiceWorkerProblem(COI_SERVICEWORKER_SOURCE)).toBeNull();
   });
 
   test('refuses a copy that differs by one byte', async () => {
@@ -64,7 +66,9 @@ describe('coi-serviceworker pin (BR2.4, NFR3.5)', () => {
     });
     const problems = findCoiServiceWorkerProblems(root);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toContain('is not coi-serviceworker 0.1.7');
+    expect(problems[0]).toContain(
+      `is not @aletheia-works/coi-serviceworker ${COI_SERVICEWORKER_VERSION}`,
+    );
   });
 
   test('refuses a formicarium recipe, pending ones included, without its copy', async () => {
