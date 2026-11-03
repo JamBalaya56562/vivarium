@@ -9,8 +9,9 @@ interface RecipeEntry {
   project: string;
   issue: number;
   title: string;
-  page_url: string;
+  page_url?: string;
   page_url_ja?: string;
+  preview_url?: string;
   source_url: string;
   language: string;
   symptom?: string;

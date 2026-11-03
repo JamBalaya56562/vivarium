@@ -10,7 +10,6 @@ import { REPO_ROOT, SITE_API_DIR, SITE_DATA_DIR } from './site-paths';
 
 const LAYER1_DIR = join(REPO_ROOT, 'src', 'layer1_wasm');
 const LAYER2_DIR = join(REPO_ROOT, 'src', 'layer2_docker');
-const LAYER3_DIR = join(REPO_ROOT, 'src', 'layer3_previews');
 
 interface RecipeIndexEntry {
   slug: string;
@@ -364,40 +363,9 @@ function renderLayer2(): void {
   }
 }
 
-function renderLayer3(): void {
-  const template = readFileSync(
-    join(LAYER3_DIR, '_layer3-shared', 'page.template.html'),
-    'utf-8',
-  );
-  for (const slug of recipeSlugs(LAYER3_DIR)) {
-    const dir = join(LAYER3_DIR, slug);
-    const slots = readSlots(join(dir, 'page.en.html'));
-    const preview = JSON.parse(
-      readFileSync(join(dir, 'preview.json'), 'utf-8'),
-    ) as { repository: string; pull: number; issue?: number; commit: string };
-    const page = fill(template, {
-      TITLE: slots.title ?? '',
-      H1: slots.h1 ?? '',
-      LEDE: indent(slots.lede ?? '', 8),
-      CHECK: indent(slots.check ?? '', 8),
-      SLUG: slug,
-      REPOSITORY: preview.repository,
-      PULL: String(preview.pull),
-      FIXES: preview.issue
-        ? `, which fixes <a href="https://github.com/${preview.repository}/issues/${preview.issue}">#${preview.issue}</a>`
-        : '',
-      COMMIT: preview.commit,
-      COMMIT_SHORT: preview.commit.slice(0, 7),
-    });
-    writeFileSync(join(dir, 'index.html'), page, 'utf-8');
-    written += 1;
-  }
-}
-
 if (import.meta.main) {
   renderLayer1();
   renderLayer2();
-  renderLayer3();
 
   console.log(`[generate-repro-pages] wrote ${written} reproduction page(s).`);
   if (unhighlighted.length > 0) {

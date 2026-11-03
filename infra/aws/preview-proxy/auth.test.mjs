@@ -168,7 +168,9 @@ test("the pull request's author is admitted and anyone else refused", async () =
   const stranger = github({ login: 'stranger' });
   const refused = await signIn(auth(stranger.fetchImpl));
   assert.equal(refused.statusCode, 403);
-  assert.match(refused.body, /signed in to GitHub as stranger/);
+  assert.match(refused.body, /live preview of owner\/repo#1\./);
+  assert.match(refused.body, /signed in to GitHub as stranger, who is not/);
+  assert.match(refused.body, /https:\/\/github\.com\/owner\/repo\/pull\/1$/m);
   assert.equal(refused.headers.location, undefined);
 });
 

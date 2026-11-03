@@ -267,6 +267,11 @@ read (`<meta name="vivarium-contract">`, `manifest = "v1"`,
 `index = "v1"`). Revisions never touch that literal; consumers
 feature-detect new optional surface.
 
+While Vivarium has no known users, the human may let a breaking change
+stay in v1 instead of opening vN+1. The spec page then records it as a
+revision that says what breaks, including which published Vivarium MCP
+releases it affects; the MCP release that follows carries the fix.
+
 ### 4.10 Package distribution
 
 Runtime artefacts (Vivarium MCP today, future CLI / SDK) dual-

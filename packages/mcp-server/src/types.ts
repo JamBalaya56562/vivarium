@@ -1,15 +1,10 @@
 export type Layer = 1 | 2 | 3;
 
-export interface RecipeEntry {
+interface RecipeBase {
   slug: string;
-  layer: Layer;
   project: string;
   issue: number;
-  pull?: number;
   title: string;
-  page_url: string;
-  page_url_ja?: string;
-  verdict_url?: string;
   source_url: string;
   language?: string;
   symptom?: string;
@@ -18,6 +13,23 @@ export interface RecipeEntry {
   path_a?: boolean;
   roundtrip?: RoundtripState;
 }
+
+export interface PageRecipeEntry extends RecipeBase {
+  layer: 1 | 2;
+  page_url: string;
+  page_url_ja?: string;
+  verdict_url?: string;
+}
+
+export interface PreviewRecipeEntry extends RecipeBase {
+  layer: 3;
+  pull?: number;
+  pull_url?: string;
+  commit?: string;
+  preview_url: string;
+}
+
+export type RecipeEntry = PageRecipeEntry | PreviewRecipeEntry;
 
 export interface RecipesIndex {
   index: 'v1';

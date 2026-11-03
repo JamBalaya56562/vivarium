@@ -6,7 +6,6 @@ import { REPO_ROOT, SITE_BASE } from './site-paths';
 const REPRO_ROOTS = [
   path.join(REPO_ROOT, 'src', 'layer1_wasm'),
   path.join(REPO_ROOT, 'src', 'layer2_docker'),
-  path.join(REPO_ROOT, 'src', 'layer3_previews'),
 ];
 const REPRO_URL_RE = new RegExp(
   `^${escapeRegExp(SITE_BASE.replace(/\/$/, ''))}(?:/(ja))?/repro/([^?#]*)(?:[?#].*)?$`,

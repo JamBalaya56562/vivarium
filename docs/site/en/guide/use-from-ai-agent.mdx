@@ -115,9 +115,9 @@ bun run build
         returns <code>{`{ kind: "live", page_url, note }`}</code> (the
         verdict is computed in-browser at view time). Layer 2 returns{' '}
         <code>{`{ kind: "snapshot", snapshot: { verdict, exit_code, image_digest, stdout, stderr_tail, ... } }`}</code>.
-        A Layer 3 live preview has no verdict, so it also returns{' '}
-        <code>kind: "live"</code>, with the page that says how to check
-        the previewed pull request.
+        A Layer 3 live preview has no verdict, so it returns{' '}
+        <code>{`{ kind: "preview", preview_url, pull_url, note }`}</code>:
+        the running preview, which asks for a GitHub sign-in.
       </li>
       <li>
         <strong><code>match_error(text, limit?)</code></strong> — score

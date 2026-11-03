@@ -69,7 +69,7 @@ export type SnapshotFetcher = (slug: string) => Promise<VerdictSnapshot | null>;
 const defaultSnapshotFetcher: SnapshotFetcher = async (slug) => {
   const { recipes } = await getCatalogue();
   const recipe = recipes.find((r) => r.slug === slug);
-  if (!recipe || !recipe.verdict_url) return null;
+  if (!recipe || recipe.layer === 3 || !recipe.verdict_url) return null;
   return fetchVerdictSnapshot(recipe.verdict_url);
 };
 

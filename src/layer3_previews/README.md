@@ -94,8 +94,6 @@ src/layer3_previews/
 └── <project>-<pull>/
     ├── preview.json   # repository, pull, issue, commit, optional access
     ├── recipe.json    # language, severity, tags, as in the other layers
-    ├── page.en.html   # the gallery page's text: title, lede, check steps
-    ├── i18n.ja.json   # the page's Japanese strings, as in the other layers
     └── README.md      # what the pull request changes and how to check it
 ```
 
@@ -126,10 +124,11 @@ merging it applies the plan. Only motionEye has an image template today
 ([`infra/aws/motioneye/`](../../infra/aws/motioneye/)).
 
 `issue` is the upstream issue the pull request fixes, or 0. The recipes
-index lists each preview as a Layer 3 entry with that `issue` and the
-`pull`, and the gallery links to a page built from `page.en.html` and
-[`_layer3-shared/page.template.html`](_layer3-shared/page.template.html),
-with a Japanese page built from `i18n.ja.json`.
-The page links to the preview through the sign-in,
-`<sign-in URL>/<project>-<pull>/`; the sign-in URL is written in the
-template and changes only if the sign-in function is made again.
+index lists each preview as a Layer 3 entry with that `issue`, the `pull`,
+the `commit` and a `preview_url`, and the gallery card opens the preview
+directly: a preview has no page of its own on the site. The `preview_url`
+is `<sign-in URL>/<project>-<pull>/`; the sign-in URL is
+`PREVIEW_SIGN_IN_URL` in
+[`generate-recipes-index.ts`](../../docs/scripts/generate-recipes-index.ts)
+and changes only if the sign-in function is made again. The README's check
+steps are for the pull request, where reviewers read them.

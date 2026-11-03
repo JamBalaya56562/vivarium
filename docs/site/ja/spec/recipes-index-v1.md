@@ -53,9 +53,12 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `project` | 文字列 | ✅ | アップストリームプロジェクト名（例: `"pandas"`、`"bash"`）。 |
 | `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。Layer 3 のプレビューでは、そのプルリクエストが直す Issue。 |
 | `pull` | 整数 | ⏳ | オプション。Layer 3 のみ——プレビューが動かす上流のプルリクエスト。 |
+| `pull_url` | URI | ⏳ | Layer 3 のみ——上流のプルリクエストのページ。2026-11-03 に追加。 |
+| `commit` | 文字列 | ⏳ | Layer 3 のみ——プレビューが動かすプルリクエストのコミットの完全な SHA。2026-11-03 に追加。 |
 | `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
-| `page_url` | URI | ✅ | ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ。Layer 3: プレビューと確かめ方を説明するページ——そこから、GitHub へのサインインを求めるプレビューを開ける）。 |
+| `page_url` | URI | ⏳ | Layer 1 と Layer 2 のみで、そこでは必須——ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ）。Layer 3 のエントリは Vivarium のページを持たず、これを省略する。 |
 | `page_url_ja` | URI | ⏳ | オプション。同じページの日本語版で、サイトの `/ja/` ツリー配下にある。**レシピが翻訳（`src/layer*/<slug>/i18n.ja.json`）を持つ場合のみ**出力され、無い場合は日本語ページが存在しないことを意味する。`page_url` に `/ja/` を挿入して導出してはならない——未翻訳のレシピでは 404 になる。2026-09-02 に追加。 |
+| `preview_url` | URI | ⏳ | Layer 3 のみで、そこでは必須——動いているプレビュー。開くと GitHub へのサインインを求め、プルリクエストの作成者、Vivarium がそのプロジェクトについて登録しているメンテナー、レシピが追加した人だけを通す。2026-11-03 に追加。 |
 | `verdict_url` | URI | ⏳ | Layer 2 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |
 | `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。`src/layer*_*/<slug>/` 配下のレシピごとの [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) から供給される。2026-05-03 リビジョンで追加。2026-05-18 リビジョンで供給元を廃止された `docs/site/_data/recipe-facets.json` オーバーレイからレシピごとのファイルへ移行。 |
@@ -89,6 +92,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 2026-10-04 | `recipe.schema.json` にオプションの `fix_candidate` も追加。レシピの fix 候補ペインがソースからビルドするブランチと、固定したコミットで、同じワークフローが読む。これも index には出力しない。 |
 | 2026-10-06 | `recipe.schema.json` にオプションの `upstream_pr` を追加。レシピの bug を直す upstream の pull request で、毎日の retire-merged ワークフローが読み、その pull request がマージされるとレシピを削除する。index には出力しない。 |
 | 2026-11-01 | Layer 3 を上流のプルリクエストのライブプレビュー（`src/layer3_previews/`）とした。それまで Layer 3 のエントリは 1 件も無かった。オプションの `pull` を追加。Layer 3 のエントリの `issue` はそのプルリクエストが直す Issue で、`verdict_url` は持たないため、コンフォーマンス条項 4 は Layer 2 だけを対象にした。v1 のコンシューマーが見得たエントリについては後方互換。 |
+| 2026-11-03 | `page_url` を必須から外した。Layer 3 のエントリは Vivarium のページを持たなくなり、動いているプレビューを指す `preview_url` と、オプションの `pull_url`・`commit` を持つ。コンフォーマンス条項 5 を追加。すべてのエントリで `page_url` を読んでいたコンシューマーは壊れる。Vivarium MCP 0.9.0 以前もその一つで、Layer 3 のレシピに対して `lookup_verdict` と `verify_branch_fix` が空のページ URL を返す。Vivarium にはまだ既知の利用者がいないため v1 のままにした（AGENTS.md §4.9）。 |
 
 ## 生成方法
 
@@ -118,8 +122,9 @@ v1 では `project` フィールドは引き続き slug 由来のままにして
 2. `index === "v1"` かつ `contract === "v1"`。
 3. すべてのエントリの `slug` が `^[a-z0-9]+(-[a-z0-9]+)*$` に一致する。
 4. すべての Layer 2 エントリが `verdict_url` を含む。Layer 1 と Layer 3 のエントリはこれを省略する。
+5. すべての Layer 1 と Layer 2 のエントリが `page_url` を含む。すべての Layer 3 エントリは `preview_url` を含み、`page_url` を省略する。
 
-条項 1〜3 はスキーマバリデーションで機械的に強制できる。条項 4 はスキーマの `oneOf`
+条項 1〜3 と 5 はスキーマバリデーションで機械的に強制できる。条項 4 はスキーマの `oneOf`
 に意図的に組み込まれていない導出ルール制約だ（MCP サーバは Layer 2 エントリに
 `verdict_url` がない場合と、`verdict_url` が 404 を返す場合を同じように扱う——
 両方とも「スナップショットなし」としてコンシューマーに通知する）。

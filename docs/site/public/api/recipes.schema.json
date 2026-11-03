@@ -36,9 +36,30 @@
         "project",
         "issue",
         "title",
-        "page_url",
         "source_url"
       ],
+      "if": {
+        "properties": {
+          "layer": {
+            "const": 3
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "preview_url"
+        ],
+        "not": {
+          "required": [
+            "page_url"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "page_url"
+        ]
+      },
       "additionalProperties": false,
       "properties": {
         "slug": {
@@ -73,7 +94,7 @@
         "page_url": {
           "type": "string",
           "format": "uri",
-          "description": "Live reproduction page URL on GitHub Pages. Layer 1: a WASM-in-browser page that produces a verdict client-side. Layer 2: a docker-run instructions page that loads the verdict.json snapshot. Layer 3: a page describing the preview and how to check it, which links to the preview; opening it asks for a GitHub sign-in."
+          "description": "Layers 1 and 2 only: the live reproduction page URL on GitHub Pages. Layer 1: a WASM-in-browser page that produces a verdict client-side. Layer 2: a docker-run instructions page that loads the verdict.json snapshot. Layer 3 has no page here and carries preview_url instead; the 2026-11-03 revision made this field optional for that reason."
         },
         "page_url_ja": {
           "type": "string",
@@ -84,6 +105,21 @@
           "type": "integer",
           "minimum": 1,
           "description": "Optional. Layer 3 only: the upstream pull request the preview runs, from the recipe's preview.json. Added in the 2026-11-01 revision; v1 consumers ignore it."
+        },
+        "pull_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Layer 3 only: the upstream pull request's page, built from preview.json's repository and pull. Added in the 2026-11-03 revision."
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Layer 3 only: the pull request commit the preview runs, from preview.json. Added in the 2026-11-03 revision."
+        },
+        "preview_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Layer 3 only, and required there: the running preview's link. Opening it asks for a GitHub sign-in that lets in the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. Added in the 2026-11-03 revision."
         },
         "verdict_url": {
           "type": "string",

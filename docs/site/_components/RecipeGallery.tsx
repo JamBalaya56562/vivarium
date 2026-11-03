@@ -9,8 +9,12 @@ interface RecipeEntry {
   project: string;
   issue: number;
   title: string;
-  page_url: string;
+  pull?: number;
+  pull_url?: string;
+  commit?: string;
+  page_url?: string;
   page_url_ja?: string;
+  preview_url?: string;
   source_url: string;
   verdict_url?: string;
   language: string;
@@ -41,6 +45,7 @@ interface Strings {
   clearFilters: string;
   open: string;
   source: string;
+  signIn: string;
   layerName: (layer: 1 | 2 | 3) => string;
   unknownLanguage: string;
 }
@@ -58,6 +63,8 @@ const STRINGS: Record<Lang, Strings> = {
     clearFilters: 'clear filters',
     open: 'Open ↗',
     source: 'Source',
+    signIn:
+      "Opens the running preview after a GitHub sign-in, for the pull request's author and the maintainers Vivarium lists.",
     layerName: (layer) =>
       layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · Preview',
     unknownLanguage: 'unknown',
@@ -74,6 +81,8 @@ const STRINGS: Record<Lang, Strings> = {
     clearFilters: 'フィルタをクリア',
     open: '開く ↗',
     source: 'ソース',
+    signIn:
+      'GitHub へのサインインのあと、動いているプレビューを開く。pull request の作成者と Vivarium が登録したメンテナーだけが入れる。',
     layerName: (layer) =>
       layer === 1
         ? 'L1 · WASM'
@@ -183,10 +192,29 @@ function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
       </header>
       <h3 className="v-rg__title">
         {recipe.project}
-        {recipe.issue > 0 ? <span>#{recipe.issue}</span> : null}
+        {recipe.pull ? (
+          <span>#{recipe.pull}</span>
+        ) : recipe.issue > 0 ? (
+          <span>#{recipe.issue}</span>
+        ) : null}
       </h3>
       <p className="v-rg__lede">{recipe.title}</p>
+      {recipe.preview_url ? <p className="v-rg__note">{s.signIn}</p> : null}
       <div className="v-rg__meta">
+        {recipe.pull_url ? (
+          <span className="v-rg__meta-item">
+            <span className="v-rg__meta-key">pull</span>{' '}
+            <a href={recipe.pull_url} target="_blank" rel="noreferrer">
+              <code>#{recipe.pull}</code>
+            </a>
+          </span>
+        ) : null}
+        {recipe.commit ? (
+          <span className="v-rg__meta-item">
+            <span className="v-rg__meta-key">commit</span>{' '}
+            <code>{recipe.commit.slice(0, 7)}</code>
+          </span>
+        ) : null}
         <span className="v-rg__meta-item">
           <span className="v-rg__meta-key">lang</span>{' '}
           <code>{recipe.language || s.unknownLanguage}</code>

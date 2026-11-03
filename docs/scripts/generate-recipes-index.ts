@@ -282,6 +282,8 @@ const REPO_NAME = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vivarium';
 
 const PAGES_BASE = `https://${OWNER}.github.io/${REPO_NAME}`;
 const REPO_BASE = `https://github.com/${OWNER}/${REPO_NAME}`;
+export const PREVIEW_SIGN_IN_URL =
+  'https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws';
 
 type Layer = 1 | 2 | 3;
 
@@ -312,9 +314,12 @@ export interface RecipeEntry {
   project: string;
   issue: number;
   pull?: number;
+  pull_url?: string;
+  commit?: string;
   title: string;
-  page_url: string;
+  page_url?: string;
   page_url_ja?: string;
+  preview_url?: string;
   verdict_url?: string;
   source_url: string;
   language: string;
@@ -334,8 +339,10 @@ interface RecipesIndex {
 }
 
 interface PreviewRecipe {
+  repository: string;
   pull: number;
   issue?: number;
+  commit: string;
 }
 
 function readPreview(recipeDir: string): PreviewRecipe | undefined {
@@ -623,9 +630,17 @@ export async function buildEntry(
     layer,
     project,
     issue: preview ? (preview.issue ?? 0) : issue,
-    ...(preview ? { pull: preview.pull } : {}),
+    ...(preview
+      ? {
+          pull: preview.pull,
+          pull_url: `https://github.com/${preview.repository}/pull/${preview.pull}`,
+          commit: preview.commit,
+        }
+      : {}),
     title,
-    page_url: pageUrl,
+    ...(preview
+      ? { preview_url: `${PREVIEW_SIGN_IN_URL}/${slug}/` }
+      : { page_url: pageUrl }),
     source_url: sourceUrl,
     language: meta?.language ?? 'unknown',
     tags: meta?.tags ?? [],
@@ -635,7 +650,7 @@ export async function buildEntry(
   if (meta?.expected_verdict) entry.expected_verdict = meta.expected_verdict;
   if (meta?.expected_runtime) entry.expected_runtime = meta.expected_runtime;
   if (meta?.path_a) entry.path_a = true;
-  if (existsSync(join(recipeDir, 'i18n.ja.json'))) {
+  if (!preview && existsSync(join(recipeDir, 'i18n.ja.json'))) {
     entry.page_url_ja = `${PAGES_BASE}/ja/repro/${project}/${issuePath}/`;
   }
   if (layer === 2) {

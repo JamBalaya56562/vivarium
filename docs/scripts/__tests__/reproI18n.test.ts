@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { REPO_ROOT } from '../site-paths';
 
-const LAYERS = ['layer1_wasm', 'layer2_docker', 'layer3_previews'] as const;
+const LAYERS = ['layer1_wasm', 'layer2_docker'] as const;
 
 interface Recipe {
   label: string;

@@ -255,6 +255,13 @@ html.dark .v-rg__search-input {
   color: var(--vh-text-muted);
 }
 
+.v-rg__note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--vh-text-muted);
+}
+
 .v-rg__meta {
   display: flex;
   flex-wrap: wrap;

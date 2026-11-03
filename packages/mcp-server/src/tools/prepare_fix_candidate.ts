@@ -1,5 +1,5 @@
 import { getCatalogue } from '../catalogue.js';
-import type { RecipeEntry } from '../types.js';
+import type { PageRecipeEntry } from '../types.js';
 
 export interface PrepareFixCandidateArgs {
   slug?: string;
@@ -47,7 +47,7 @@ export type PrepareFixCandidateResult =
 
 const GITHUB_REPO_URL_REGEX = /^https?:\/\/github\.com\/[^/]+\/[^/]+\/?$/i;
 
-function recipePageUrl(entry: RecipeEntry): string {
+function recipePageUrl(entry: PageRecipeEntry): string {
   return entry.page_url;
 }
 

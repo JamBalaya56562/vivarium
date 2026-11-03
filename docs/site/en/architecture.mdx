@@ -191,7 +191,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     startup={
       <ul>
         <li>The MicroVM starts on the first request, suspends after five minutes without traffic, and resumes in seconds on the next one.</li>
-        <li>The link asks for a GitHub sign-in and lets in only the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. Each preview's page in the gallery links to it.</li>
+        <li>The link asks for a GitHub sign-in and lets in only the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. Its card in the gallery opens it.</li>
         <li>A reader needs only a browser — the bar <code>rr</code> record-replay failed, since it ran only on Linux/x86_64 with an exposed PMU.</li>
       </ul>
     }
@@ -204,7 +204,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     runtimes={
       <ul>
         <li>One directory per pull request under <code>src/layer3_previews/</code>, with a <code>preview.json</code> naming the repository, pull request and commit. Adding one adds a preview; removing it removes the preview.</li>
-        <li>Each preview is a Layer 3 entry in the gallery, whose page says how to check the change. The page links to the preview through the GitHub sign-in.</li>
+        <li>Each preview is a Layer 3 entry in the gallery, whose card opens the preview through the GitHub sign-in. The steps to check the change are on the pull request.</li>
       </ul>
     }
   />

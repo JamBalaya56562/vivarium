@@ -61,8 +61,6 @@ src/layer1_wasm/**/index.ja.html
 src/layer2_docker/**/index.ja.html
 src/layer1_wasm/**/index.html
 src/layer2_docker/**/index.html
-src/layer3_previews/**/index.ja.html
-src/layer3_previews/**/index.html
 !src/layer1_wasm/_assets/
 !src/layer1_wasm/_assets/**
 !src/layer1_wasm/*/coi-serviceworker.js

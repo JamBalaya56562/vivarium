@@ -86,7 +86,8 @@ const FIXTURE_INDEX = {
       issue: 800,
       pull: 3506,
       title: 'motioneye-project/motioneye#3506',
-      page_url: 'https://example.invalid/repro/motioneye/3506/',
+      pull_url: 'https://github.com/motioneye-project/motioneye/pull/3506',
+      preview_url: 'https://sign-in.example.invalid/motioneye-3506/',
       source_url: 'https://example.invalid/src/motioneye-3506',
       language: 'python',
       severity: 'bug',
@@ -200,12 +201,19 @@ describe('lookup_verdict', () => {
     }
   });
 
-  it('returns kind=live with the page for a Layer 3 preview', async () => {
+  it('returns kind=preview with the preview link for a Layer 3 preview', async () => {
     const r = await lookupVerdict({ slug: 'motioneye-3506' });
-    assert.equal(r.kind, 'live');
-    if (r.kind === 'live') {
-      assert.equal(r.page_url, 'https://example.invalid/repro/motioneye/3506/');
-      assert.match(r.note, /preview/);
+    assert.equal(r.kind, 'preview');
+    if (r.kind === 'preview') {
+      assert.equal(
+        r.preview_url,
+        'https://sign-in.example.invalid/motioneye-3506/',
+      );
+      assert.equal(
+        r.pull_url,
+        'https://github.com/motioneye-project/motioneye/pull/3506',
+      );
+      assert.match(r.note, /sign-in/);
     }
   });
 
@@ -446,7 +454,7 @@ describe('verify_branch_fix', () => {
     const r = await verifyBranchFix({ slug: 'motioneye-3506' });
     assert.equal(r.ok, false);
     if (!r.ok) {
-      assert.match(r.error, /preview/);
+      assert.match(r.error, /sign-in\.example\.invalid\/motioneye-3506\//);
     }
   });
 });

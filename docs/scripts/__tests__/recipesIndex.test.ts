@@ -9,6 +9,7 @@ import {
   buildEntry,
   listRecipeSlugs,
   loadGuestAllowlist,
+  PREVIEW_SIGN_IN_URL,
   RecipeDeclarationError,
   readFormicariumRecipe,
   recipeState,
@@ -367,7 +368,7 @@ describe('preview recipes', () => {
     dir = undefined;
   });
 
-  test('are listed with the issue and pull request from preview.json', async () => {
+  test('are listed with the pull request, commit and preview link instead of a page', async () => {
     dir = mkdtempSync(path.join(tmpdir(), 'vivarium-layer-'));
     const recipe = path.join(dir, 'motioneye-3506');
     await mkdir(recipe);
@@ -388,11 +389,13 @@ describe('preview recipes', () => {
       project: 'motioneye',
       issue: 800,
       pull: 3506,
+      pull_url: 'https://github.com/motioneye-project/motioneye/pull/3506',
+      commit: 'b1a4692397339c75a5d1ce93fa017612c0e80214',
       title: 'A manual pause lasts',
+      preview_url: `${PREVIEW_SIGN_IN_URL}/motioneye-3506/`,
     });
-    expect(new URL(entry.page_url).pathname).toEndWith(
-      '/repro/motioneye/3506/',
-    );
+    expect(entry.page_url).toBeUndefined();
+    expect(entry.page_url_ja).toBeUndefined();
     expect(entry.verdict_url).toBeUndefined();
   });
 });

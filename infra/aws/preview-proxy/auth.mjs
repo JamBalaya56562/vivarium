@@ -24,6 +24,17 @@ export function settings(env = process.env) {
   };
 }
 
+function refusal(preview, login) {
+  const pull = `https://github.com/${preview.repository}/pull/${preview.pull}`;
+  return [
+    `This is Vivarium's live preview of ${preview.repository}#${preview.pull}.`,
+    "It lets in the pull request's author, the maintainers Vivarium lists for the project and anyone added for this pull request.",
+    `You are signed in to GitHub as ${login}, who is not among them.`,
+    `To be added, ask on the pull request: ${pull}`,
+    '',
+  ].join('\n');
+}
+
 function answer(statusCode, text, extra = {}) {
   return {
     statusCode,
@@ -146,11 +157,7 @@ export function createAuth({
         );
     if (!admits(preview, login, author)) {
       console.log(`refused ${login} for ${state.preview}`);
-      return answer(
-        403,
-        `You are signed in to GitHub as ${login}, whom this preview does not admit. Ask on the pull request to be added.\n`,
-        { cookies: cleared },
-      );
+      return answer(403, refusal(preview, login), { cookies: cleared });
     }
     console.log(`admitted ${login} to ${state.preview}`);
     const ticket = seal(config.sessionKey, {

@@ -1,5 +1,5 @@
 import { getCatalogue } from '../catalogue.js';
-import type { Layer, RecipeEntry } from '../types.js';
+import type { Layer, PageRecipeEntry } from '../types.js';
 
 export interface VerifyBranchFixArgs {
   slug: string;
@@ -80,7 +80,7 @@ function deriveCompareBaseFromPageUrl(pageUrl: string): string {
 }
 
 interface InstructionInputs {
-  recipe: RecipeEntry;
+  recipe: PageRecipeEntry;
   path: 'A' | 'B';
   compareUrl: string;
   ghCommand?: string;
@@ -153,7 +153,7 @@ export async function verifyBranchFix(
   if (recipe.layer === 3) {
     return {
       ok: false,
-      error: `${recipe.slug} is a Layer 3 live preview of upstream pull request #${recipe.pull ?? '?'}, which is itself the fix; open ${recipe.page_url} to check it instead.`,
+      error: `${recipe.slug} is a Layer 3 live preview of upstream pull request #${recipe.pull ?? '?'}, which is itself the fix; open ${recipe.preview_url} to check it instead.`,
     };
   }
 

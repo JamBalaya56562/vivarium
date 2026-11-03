@@ -55,9 +55,12 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `project` | string | ✅ | Upstream project name (e.g. `"pandas"`, `"bash"`). |
 | `issue` | integer | ✅ | Upstream issue number; `0` if no upstream tracker entry. For a Layer 3 preview, the issue its pull request fixes. |
 | `pull` | integer | ⏳ | Optional. Layer 3 only — the upstream pull request the preview runs. |
+| `pull_url` | URI | ⏳ | Layer 3 only — the upstream pull request's page. Added 2026-11-03. |
+| `commit` | string | ⏳ | Layer 3 only — the full SHA of the pull request commit the preview runs. Added 2026-11-03. |
 | `title` | string | ✅ | Human-readable title, from the recipe README's first H1. |
-| `page_url` | URI | ✅ | Live reproduction page (Layer 1: WASM page; Layer 2: docker-run instructions page; Layer 3: a page describing the preview and how to check it — it links to the preview, which asks for a GitHub sign-in). |
+| `page_url` | URI | ⏳ | Layers 1 and 2 only, and required there — the live reproduction page (Layer 1: WASM page; Layer 2: docker-run instructions page). A Layer 3 entry has no Vivarium page and omits it. |
 | `page_url_ja` | URI | ⏳ | Optional. The Japanese rendering of the same page, under the site's `/ja/` tree. Present **only when the recipe ships a translation** (`src/layer*/<slug>/i18n.ja.json`); its absence means no Japanese page exists. Do not derive this URL by inserting `/ja/` into `page_url` — an untranslated recipe would 404. Added 2026-09-02. |
+| `preview_url` | URI | ⏳ | Layer 3 only, and required there — the running preview. Opening it asks for a GitHub sign-in that lets in the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. Added 2026-11-03. |
 | `verdict_url` | URI | ⏳ | Layer 2 only — deployed `verdict.json` snapshot. Layer 1 verdicts are produced live in-page and have no static snapshot. |
 | `source_url` | URI | ✅ | GitHub link to the recipe directory. |
 | `language` | string | ⏳ | Optional. Primary implementation language, lowercase (e.g. `"python"`, `"rust"`, `"shell"`). Sourced from the per-recipe [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) under `src/layer*_*/<slug>/`. Added in the 2026-05-03 revision; the 2026-05-18 revision moved the source from the retired `docs/site/_data/recipe-facets.json` overlay to the per-recipe file. |
@@ -91,6 +94,7 @@ There is no current v2.
 | 2026-10-04 | `recipe.schema.json` also gains optional `fix_candidate`, the branch and pinned commit a recipe's fix-candidate pane builds from source, read by the same workflow. Not exported to the index either. |
 | 2026-10-06 | `recipe.schema.json` gains optional `upstream_pr`, the upstream pull request that fixes the recipe's bug, read by the daily retire-merged workflow, which removes the recipe once that pull request is merged. Not exported to the index. |
 | 2026-11-01 | Layer 3 now means a live preview of an upstream pull request (`src/layer3_previews/`); no entry used Layer 3 before. Added optional `pull`. A Layer 3 entry's `issue` is the issue its pull request fixes, and it carries no `verdict_url`, so conformance clause 4 now covers Layer 2 only. Backwards-compatible for every entry a v1 consumer could have seen. |
+| 2026-11-03 | `page_url` is no longer required: a Layer 3 entry drops its Vivarium page and carries `preview_url`, the running preview, with optional `pull_url` and `commit`. Added conformance clause 5. This breaks a consumer that read `page_url` on every entry, Vivarium MCP 0.9.0 and earlier among them: their `lookup_verdict` and `verify_branch_fix` give an empty page URL for Layer 3 recipes. It stays v1 because Vivarium has no known users yet (AGENTS.md §4.9). |
 
 ## Generation
 
@@ -122,8 +126,9 @@ A `recipes.json` document conforms to v1 when:
 2. `index === "v1"` and `contract === "v1"`.
 3. Every entry's `slug` matches `^[a-z0-9]+(-[a-z0-9]+)*$`.
 4. Every Layer 2 entry includes `verdict_url`; Layer 1 and Layer 3 entries omit it.
+5. Every Layer 1 and Layer 2 entry includes `page_url`; every Layer 3 entry includes `preview_url` and omits `page_url`.
 
-Clauses 1–3 are mechanically enforceable via schema validation. Clause 4
+Clauses 1–3 and 5 are mechanically enforceable via schema validation. Clause 4
 is a derivation-rule constraint not encoded in the schema's `oneOf` (kept
 deliberately permissive: the MCP server treats a missing `verdict_url` on
 a Layer 2 entry the same as `verdict_url` pointing at a 404 — both

@@ -10,8 +10,12 @@ interface RecipeEntry {
   project: string;
   issue: number;
   title: string;
-  page_url: string;
+  pull?: number;
+  pull_url?: string;
+  commit?: string;
+  page_url?: string;
   page_url_ja?: string;
+  preview_url?: string;
   source_url: string;
   verdict_url?: string;
   language: string;
@@ -66,6 +70,7 @@ interface Strings {
   layerLabel: string;
   linkLabel: string;
   unfiledIssue: string;
+  signIn: (commit: string) => string;
 }
 
 const STRINGS: Record<Lang, Strings> = {
@@ -88,6 +93,8 @@ const STRINGS: Record<Lang, Strings> = {
     layerLabel: 'Layer',
     linkLabel: '',
     unfiledIssue: '(no upstream issue number)',
+    signIn: (commit) =>
+      `Preview at ${commit}; it asks for a GitHub sign-in and lets in the pull request's author and the maintainers Vivarium lists.`,
   },
   ja: {
     eyebrow: (project) => `// プロジェクト · ${project.toUpperCase()}`,
@@ -111,6 +118,8 @@ const STRINGS: Record<Lang, Strings> = {
     layerLabel: 'レイヤー',
     linkLabel: '',
     unfiledIssue: '（アップストリーム issue 番号なし）',
+    signIn: (commit) =>
+      `${commit} のプレビュー。GitHub へのサインインを求め、pull request の作成者と Vivarium が登録したメンテナーだけを通す。`,
   },
 };
 
@@ -124,6 +133,13 @@ function LayerPill({ lang, layer }: { lang: Lang; layer: 1 | 2 | 3 }) {
 }
 
 function IssueLabel({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
+  if (recipe.pull_url) {
+    return (
+      <a href={recipe.pull_url} target="_blank" rel="noreferrer">
+        <code>PR #{recipe.pull}</code>
+      </a>
+    );
+  }
   if (recipe.issue > 0) {
     return <code>#{recipe.issue}</code>;
   }
@@ -243,6 +259,11 @@ export function ProjectPage({
                   {recipe.symptom ? (
                     <span className="v-pp__row-symptom">
                       <code>{recipe.symptom}</code>
+                    </span>
+                  ) : null}
+                  {recipe.commit ? (
+                    <span className="v-pp__row-symptom">
+                      {s.signIn(recipe.commit.slice(0, 7))}
                     </span>
                   ) : null}
                 </td>

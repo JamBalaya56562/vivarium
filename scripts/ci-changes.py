@@ -181,7 +181,6 @@ def self_test():
         "docs/site/public/api/projects.json": {"docs", "repro"},
         "src/layer3_previews/motioneye-3506/preview.json": {"docs", "repro"},
         "src/layer3_previews/access.json": NONE,
-        "scripts/bundle-layer3-pages.sh": {"docs", "repro"},
         "src/layer1_wasm/_shared/style.css": {"docs", "repro"},
         "src/layer1_wasm/dateutil-1478/README.md": {"docs", "repro"},
         "src/layer2_docker/bash-local-shadows-exit/Dockerfile": {"docs", "repro"},

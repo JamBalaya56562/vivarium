@@ -106,10 +106,6 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/bundle-layer2-pages.sh
 
-      - name: Bundle Layer 3 preview pages alongside docs
-        working-directory: ${{ github.workspace }}
-        run: bash scripts/bundle-layer3-pages.sh
-
       - name: Check the site size, coi-serviceworker copies and formicarium bundles
         working-directory: ${{ github.workspace }}
         run: bun docs/scripts/stage-formicarium-assets.ts --mode check-site --site docs/doc_build

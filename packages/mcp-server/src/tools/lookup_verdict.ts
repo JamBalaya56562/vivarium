@@ -13,6 +13,13 @@ export type LookupVerdictResult =
       note: string;
     }
   | {
+      kind: 'preview';
+      slug: string;
+      preview_url: string;
+      pull_url?: string;
+      note: string;
+    }
+  | {
       kind: 'snapshot';
       slug: string;
       snapshot: VerdictSnapshot;
@@ -62,11 +69,12 @@ export async function lookupVerdict(
 
   if (recipe.layer === 3) {
     return {
-      kind: 'live',
+      kind: 'preview',
       slug,
-      page_url: recipe.page_url,
+      preview_url: recipe.preview_url,
+      ...(recipe.pull_url ? { pull_url: recipe.pull_url } : {}),
       note:
-        'Layer 3 recipes are live previews of an upstream pull request with no verdict; the page says how to check the change and links to the running preview, which asks for a GitHub sign-in.',
+        "Layer 3 recipes are live previews of an upstream pull request with no verdict. preview_url opens the running preview after a GitHub sign-in that lets in the pull request's author and the maintainers Vivarium lists; the recipe's README says how to check the change.",
     };
   }
 
@@ -93,7 +101,7 @@ export async function lookupVerdict(
 export const LOOKUP_VERDICT_TOOL = {
   name: 'lookup_verdict',
   description:
-    "Look up the latest verdict for a recipe by slug. Layer 1 recipes produce live in-browser verdicts and have no static snapshot — this returns kind='live' with the page URL and a note suggesting the agent open the page directly. Layer 3 recipes are live previews of an upstream pull request with no verdict; this returns kind='live' with the page describing how to check the change. Layer 2 recipes return kind='snapshot' with the deployed verdict.json contents (verdict, exit code, image digest, captured-at timestamp, stdout, stderr tail). Returns kind='unavailable' or kind='not_found' on failure.",
+    "Look up the latest verdict for a recipe by slug. Layer 1 recipes produce live in-browser verdicts and have no static snapshot — this returns kind='live' with the page URL and a note suggesting the agent open the page directly. Layer 3 recipes are live previews of an upstream pull request with no verdict; this returns kind='preview' with the preview's link, which asks for a GitHub sign-in. Layer 2 recipes return kind='snapshot' with the deployed verdict.json contents (verdict, exit code, image digest, captured-at timestamp, stdout, stderr tail). Returns kind='unavailable' or kind='not_found' on failure.",
   inputSchema: {
     type: 'object' as const,
     properties: {

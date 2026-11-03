@@ -277,8 +277,10 @@
       "project": "motioneye",
       "issue": 0,
       "pull": 3515,
+      "pull_url": "https://github.com/motioneye-project/motioneye/pull/3515",
+      "commit": "470fcbe88add941535d87efb14da00311d6df76a",
       "title": "motionEye #3515 — \"Remember me\" comes back to the login",
-      "page_url": "https://aletheia-works.github.io/vivarium/repro/motioneye/3515/",
+      "preview_url": "https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws/motioneye-3515/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-3515",
       "language": "python",
       "tags": [
@@ -286,8 +288,7 @@
         "login",
         "session"
       ],
-      "severity": "enhancement",
-      "page_url_ja": "https://aletheia-works.github.io/vivarium/ja/repro/motioneye/3515/"
+      "severity": "enhancement"
     }
   ]
 }

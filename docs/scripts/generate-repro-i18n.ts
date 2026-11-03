@@ -6,7 +6,7 @@ import { type HTMLElement, NodeType, parse } from 'node-html-parser';
 import { pendingRecipeEntries } from './generate-recipes-index';
 import { REPO_ROOT, SITE_API_DIR } from './site-paths';
 
-const LAYER_DIRS = ['layer1_wasm', 'layer2_docker', 'layer3_previews'] as const;
+const LAYER_DIRS = ['layer1_wasm', 'layer2_docker'] as const;
 
 export const SERVICE_WORKER = 'coi-serviceworker.js';
 
