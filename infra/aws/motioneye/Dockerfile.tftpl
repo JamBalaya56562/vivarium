@@ -4,7 +4,7 @@ RUN set -e; \
     apt-get -q update; \
     DEBIAN_FRONTEND='noninteractive' apt-get -qq -o 'Dpkg::Options::=--force-confnew' --no-install-recommends install ca-certificates curl openssl python3 fdisk; \
     mkdir /tmp/motioneye; \
-    curl -sSfL 'https://codeload.github.com/${repository}/tar.gz/${commit}' | tar -xz -C /tmp/motioneye --strip-components=1; \
+    curl -sSfL 'https://codeload.github.com/${source}/tar.gz/${commit}' | tar -xz -C /tmp/motioneye --strip-components=1; \
     printf '%s\n' '[global]' 'break-system-packages=true' 'no-cache-dir=true' 'root-user-action=ignore' > /etc/pip.conf; \
     curl -sSfO 'https://bootstrap.pypa.io/get-pip.py'; \
     python3 get-pip.py; \

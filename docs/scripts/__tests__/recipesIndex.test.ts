@@ -391,11 +391,41 @@ describe('preview recipes', () => {
       pull: 3506,
       pull_url: 'https://github.com/motioneye-project/motioneye/pull/3506',
       commit: 'b1a4692397339c75a5d1ce93fa017612c0e80214',
+      commit_url:
+        'https://github.com/motioneye-project/motioneye/commit/b1a4692397339c75a5d1ce93fa017612c0e80214',
       title: 'A manual pause lasts',
       preview_url: `${PREVIEW_SIGN_IN_URL}/motioneye-3506/`,
     });
     expect(entry.page_url).toBeUndefined();
     expect(entry.page_url_ja).toBeUndefined();
     expect(entry.verdict_url).toBeUndefined();
+  });
+
+  test('without a pull request are listed with the commit in its source repository', async () => {
+    dir = mkdtempSync(path.join(tmpdir(), 'vivarium-layer-'));
+    const recipe = path.join(dir, 'motioneye-pwa-samesite-lax');
+    await mkdir(recipe);
+    await writeFile(
+      path.join(recipe, 'preview.json'),
+      JSON.stringify({
+        repository: 'motioneye-project/motioneye',
+        source: 'JamBalaya56562/motioneye',
+        issue: 3364,
+        commit: '5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      }),
+    );
+    await writeFile(path.join(recipe, 'README.md'), '# SameSite=Lax\n');
+    const entry = await buildEntry(3, 'motioneye-pwa-samesite-lax', recipe);
+    expect(entry).toMatchObject({
+      layer: 3,
+      project: 'motioneye',
+      issue: 3364,
+      commit: '5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      commit_url:
+        'https://github.com/JamBalaya56562/motioneye/commit/5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      preview_url: `${PREVIEW_SIGN_IN_URL}/motioneye-pwa-samesite-lax/`,
+    });
+    expect(entry.pull).toBeUndefined();
+    expect(entry.pull_url).toBeUndefined();
   });
 });

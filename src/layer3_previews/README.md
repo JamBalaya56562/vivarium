@@ -2,6 +2,8 @@
 
 > A pull request's whole application, backend included, running in the
 > cloud at that pull request's commit, for a reviewer to use in a browser.
+> A commit that is not a pull request yet, such as a branch on a fork, can
+> be previewed the same way, to check it before opening one.
 
 ---
 
@@ -78,7 +80,7 @@ The preview's link asks for a GitHub sign-in and lets in:
 - the accounts listed for the preview's `repository` under `repositories`
   in the same file;
 - the accounts in the recipe's own `access`, for that preview only;
-- the pull request's author.
+- the pull request's author, when the preview has a `pull`.
 
 Logins are compared without case. Anyone else gets 403 after signing in. The
 sign-in asks GitHub for no scope and keeps no token, and the preview's own
@@ -87,12 +89,13 @@ taken off it keeps their session until it ends, a day after they signed in.
 
 ## Recipes
 
-One directory per pull request, named `<project>-<pull>`:
+One directory per pull request, named `<project>-<pull>`, or per commit
+that is not a pull request yet, named `<project>-<name>`:
 
 ```text
 src/layer3_previews/
 └── <project>-<pull>/
-    ├── preview.json   # repository, pull, issue, commit, optional access
+    ├── preview.json   # repository, pull, issue, commit, optional source, services, access
     ├── recipe.json    # language, severity, tags, as in the other layers
     └── README.md      # what the pull request changes and how to check it
 ```
@@ -115,6 +118,28 @@ accepted.
 `access` is optional: a list of GitHub logins let into this preview on top
 of those in [Who gets in](#who-gets-in).
 
+`pull` is optional. Leave it out to preview a commit before it becomes a pull
+request, for example to check a change on a device before proposing it. The
+directory is then `<project>-<name>`: lowercase letters, digits and dashes,
+at most 47 characters, and its last part is not only digits, so it cannot be
+read as a pull request number. Only the accounts in `access.json` and the
+recipe's `access` get in. Remove the directory once the check is done, as
+nothing else will.
+
+`source` is optional: the `owner/name` repository the commit is downloaded
+from, such as a fork, when it is not in `repository`. `repository` still
+names the upstream project, which picks the image template and who gets in.
+For example, a branch on a fork:
+
+```json
+{
+  "repository": "motioneye-project/motioneye",
+  "source": "JamBalaya56562/motioneye",
+  "issue": 3364,
+  "commit": "5ee7869c3710ce4135cf803e87338c1cd4ca8d85"
+}
+```
+
 `commit` is a full SHA, so a preview shows exactly one state of the pull
 request. A new push to the pull request is a new commit here.
 
@@ -124,10 +149,11 @@ merging it applies the plan. Only motionEye has an image template today
 ([`infra/aws/motioneye/`](../../infra/aws/motioneye/)).
 
 `issue` is the upstream issue the pull request fixes, or 0. The recipes
-index lists each preview as a Layer 3 entry with that `issue`, the `pull`,
-the `commit` and a `preview_url`, and the gallery card opens the preview
+index lists each preview as a Layer 3 entry with that `issue`, the `pull`
+when there is one, the `commit`, a `commit_url` in the `source` repository
+and a `preview_url`, and the gallery card opens the preview
 directly: a preview has no page of its own on the site. The `preview_url`
-is `<sign-in URL>/<project>-<pull>/`; the sign-in URL is
+is `<sign-in URL>/<directory>/`; the sign-in URL is
 `PREVIEW_SIGN_IN_URL` in
 [`generate-recipes-index.ts`](../../docs/scripts/generate-recipes-index.ts)
 and changes only if the sign-in function is made again. The README's check

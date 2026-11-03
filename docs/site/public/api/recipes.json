@@ -279,6 +279,7 @@
       "pull": 3515,
       "pull_url": "https://github.com/motioneye-project/motioneye/pull/3515",
       "commit": "470fcbe88add941535d87efb14da00311d6df76a",
+      "commit_url": "https://github.com/motioneye-project/motioneye/commit/470fcbe88add941535d87efb14da00311d6df76a",
       "title": "motionEye #3515 — \"Remember me\" comes back to the login",
       "preview_url": "https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws/motioneye-3515/",
       "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-3515",
@@ -289,6 +290,44 @@
         "session"
       ],
       "severity": "enhancement"
+    },
+    {
+      "slug": "motioneye-dev-7b7ab1c",
+      "layer": 3,
+      "project": "motioneye",
+      "issue": 3364,
+      "commit": "7b7ab1c97ff7c89e55f615826aec835a6269c7aa",
+      "commit_url": "https://github.com/motioneye-project/motioneye/commit/7b7ab1c97ff7c89e55f615826aec835a6269c7aa",
+      "title": "motionEye dev at 7b7ab1c — does the Android app keep its sign-in?",
+      "preview_url": "https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws/motioneye-dev-7b7ab1c/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-dev-7b7ab1c",
+      "language": "python",
+      "tags": [
+        "motioneye",
+        "login",
+        "session",
+        "pwa"
+      ],
+      "severity": "bug"
+    },
+    {
+      "slug": "motioneye-pwa-samesite-lax",
+      "layer": 3,
+      "project": "motioneye",
+      "issue": 3364,
+      "commit": "5ee7869c3710ce4135cf803e87338c1cd4ca8d85",
+      "commit_url": "https://github.com/JamBalaya56562/motioneye/commit/5ee7869c3710ce4135cf803e87338c1cd4ca8d85",
+      "title": "motionEye dev with a SameSite=Lax session cookie — does the Android app keep its sign-in?",
+      "preview_url": "https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws/motioneye-pwa-samesite-lax/",
+      "source_url": "https://github.com/aletheia-works/vivarium/tree/main/src/layer3_previews/motioneye-pwa-samesite-lax",
+      "language": "python",
+      "tags": [
+        "motioneye",
+        "login",
+        "session",
+        "pwa"
+      ],
+      "severity": "bug"
     }
   ]
 }

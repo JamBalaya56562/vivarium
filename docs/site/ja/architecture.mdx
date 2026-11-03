@@ -203,7 +203,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     }
     runtimes={
       <ul>
-        <li><code>src/layer3_previews/</code> の下に、プルリクエストごとに 1 つのディレクトリを置き、リポジトリ、プルリクエスト、コミットを書いた <code>preview.json</code> を入れます。置けばプレビューができ、消せばプレビューも消えます。</li>
+        <li><code>src/layer3_previews/</code> の下に、プルリクエストごとに 1 つのディレクトリを置き、リポジトリ、プルリクエスト、コミットを書いた <code>preview.json</code> を入れます。まだプルリクエストになっていないコミットなら、プルリクエストを省き、取得元の fork を <code>source</code> に書いたディレクトリを置きます。置けばプレビューができ、消せばプレビューも消えます。</li>
         <li>各プレビューはギャラリーに Layer 3 のエントリとして載り、そのカードから GitHub のサインインを経てプレビューを開けます。変更の確かめ方はプルリクエストに書きます。</li>
       </ul>
     }

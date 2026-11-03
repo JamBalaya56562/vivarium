@@ -93,6 +93,20 @@ const FIXTURE_INDEX = {
       severity: 'bug',
       tags: ['motion-detection', 'schedule'],
     },
+    {
+      slug: 'motioneye-pwa-samesite-lax',
+      layer: 3,
+      project: 'motioneye',
+      issue: 3364,
+      commit: '5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      commit_url:
+        'https://github.com/JamBalaya56562/motioneye/commit/5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      title: 'motionEye with a SameSite=Lax session cookie',
+      preview_url: 'https://sign-in.example.invalid/motioneye-pwa-samesite-lax/',
+      source_url: 'https://example.invalid/src/motioneye-pwa-samesite-lax',
+      language: 'python',
+      tags: ['login'],
+    },
   ],
 };
 
@@ -138,7 +152,7 @@ afterEach(() => {
 describe('list_recipes', () => {
   it('returns all when no filters', async () => {
     const r = await listRecipes({});
-    assert.equal(r.count, 4);
+    assert.equal(r.count, 5);
   });
 
   it('filters by layer', async () => {
@@ -149,8 +163,10 @@ describe('list_recipes', () => {
 
   it('filters by project (case-insensitive)', async () => {
     const r = await listRecipes({ project: 'MOTIONEYE' });
-    assert.equal(r.count, 1);
-    assert.equal(r.recipes[0]!.slug, 'motioneye-3506');
+    assert.deepEqual(
+      r.recipes.map((recipe) => recipe.slug),
+      ['motioneye-3506', 'motioneye-pwa-samesite-lax'],
+    );
   });
 
   it('filters by free-text q across slug/project/title', async () => {
@@ -214,6 +230,18 @@ describe('lookup_verdict', () => {
         'https://github.com/motioneye-project/motioneye/pull/3506',
       );
       assert.match(r.note, /sign-in/);
+    }
+  });
+
+  it('returns kind=preview with the commit link for a preview without a pull request', async () => {
+    const r = await lookupVerdict({ slug: 'motioneye-pwa-samesite-lax' });
+    assert.equal(r.kind, 'preview');
+    if (r.kind === 'preview') {
+      assert.equal(r.pull_url, undefined);
+      assert.equal(
+        r.commit_url,
+        'https://github.com/JamBalaya56562/motioneye/commit/5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
+      );
     }
   });
 
@@ -455,6 +483,15 @@ describe('verify_branch_fix', () => {
     assert.equal(r.ok, false);
     if (!r.ok) {
       assert.match(r.error, /sign-in\.example\.invalid\/motioneye-3506\//);
+    }
+  });
+
+  it('Layer 3 → rejected: a preview without a pull request names its commit', async () => {
+    const r = await verifyBranchFix({ slug: 'motioneye-pwa-samesite-lax' });
+    assert.equal(r.ok, false);
+    if (!r.ok) {
+      assert.match(r.error, /JamBalaya56562\/motioneye\/commit\/5ee7869c/);
+      assert.doesNotMatch(r.error, /#\?/);
     }
   });
 });

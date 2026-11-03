@@ -25,6 +25,14 @@ export function settings(env = process.env) {
 }
 
 function refusal(preview, login) {
+  if (!preview.pull)
+    return [
+      `This is Vivarium's live preview of ${preview.repository} at ${preview.commit}.`,
+      'It lets in the maintainers Vivarium lists for the project and anyone added for this preview.',
+      `You are signed in to GitHub as ${login}, who is not among them.`,
+      'To be added, ask whoever shared this link with you.',
+      '',
+    ].join('\n');
   const pull = `https://github.com/${preview.repository}/pull/${preview.pull}`;
   return [
     `This is Vivarium's live preview of ${preview.repository}#${preview.pull}.`,
@@ -146,15 +154,16 @@ export function createAuth({
       return answer(404, `There is no preview named ${state.preview}.\n`, {
         cookies: cleared,
       });
-    const author = admits(preview, login)
-      ? undefined
-      : await github(
-          `https://api.github.com/repos/${preview.repository}/pulls/${preview.pull}`,
-          token,
-        ).then(
-          (pull) => pull.user?.login,
-          (error) => console.error(error),
-        );
+    const author =
+      admits(preview, login) || !preview.pull
+        ? undefined
+        : await github(
+            `https://api.github.com/repos/${preview.repository}/pulls/${preview.pull}`,
+            token,
+          ).then(
+            (pull) => pull.user?.login,
+            (error) => console.error(error),
+          );
     if (!admits(preview, login, author)) {
       console.log(`refused ${login} for ${state.preview}`);
       return answer(403, refusal(preview, login), { cookies: cleared });

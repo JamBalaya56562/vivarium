@@ -26,6 +26,7 @@ export interface PreviewRecipeEntry extends RecipeBase {
   pull?: number;
   pull_url?: string;
   commit?: string;
+  commit_url?: string;
   preview_url: string;
 }
 

@@ -12,6 +12,7 @@ interface RecipeEntry {
   pull?: number;
   pull_url?: string;
   commit?: string;
+  commit_url?: string;
   page_url?: string;
   page_url_ja?: string;
   preview_url?: string;
@@ -46,6 +47,7 @@ interface Strings {
   open: string;
   source: string;
   signIn: string;
+  signInListed: string;
   layerName: (layer: 1 | 2 | 3) => string;
   unknownLanguage: string;
 }
@@ -65,6 +67,8 @@ const STRINGS: Record<Lang, Strings> = {
     source: 'Source',
     signIn:
       "Opens the running preview after a GitHub sign-in, for the pull request's author and the maintainers Vivarium lists.",
+    signInListed:
+      'Opens the running preview after a GitHub sign-in, for the maintainers Vivarium lists and anyone added to this preview.',
     layerName: (layer) =>
       layer === 1 ? 'L1 · WASM' : layer === 2 ? 'L2 · Docker' : 'L3 · Preview',
     unknownLanguage: 'unknown',
@@ -83,6 +87,8 @@ const STRINGS: Record<Lang, Strings> = {
     source: 'ソース',
     signIn:
       'GitHub へのサインインのあと、動いているプレビューを開く。pull request の作成者と Vivarium が登録したメンテナーだけが入れる。',
+    signInListed:
+      'GitHub へのサインインのあと、動いているプレビューを開く。Vivarium が登録したメンテナーと、このプレビューに追加された人だけが入れる。',
     layerName: (layer) =>
       layer === 1
         ? 'L1 · WASM'
@@ -199,7 +205,9 @@ function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
         ) : null}
       </h3>
       <p className="v-rg__lede">{recipe.title}</p>
-      {recipe.preview_url ? <p className="v-rg__note">{s.signIn}</p> : null}
+      {recipe.preview_url ? (
+        <p className="v-rg__note">{recipe.pull ? s.signIn : s.signInListed}</p>
+      ) : null}
       <div className="v-rg__meta">
         {recipe.pull_url ? (
           <span className="v-rg__meta-item">
@@ -212,7 +220,13 @@ function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
         {recipe.commit ? (
           <span className="v-rg__meta-item">
             <span className="v-rg__meta-key">commit</span>{' '}
-            <code>{recipe.commit.slice(0, 7)}</code>
+            {recipe.commit_url ? (
+              <a href={recipe.commit_url} target="_blank" rel="noreferrer">
+                <code>{recipe.commit.slice(0, 7)}</code>
+              </a>
+            ) : (
+              <code>{recipe.commit.slice(0, 7)}</code>
+            )}
           </span>
         ) : null}
         <span className="v-rg__meta-item">

@@ -17,6 +17,7 @@ resource "aws_s3_object" "preview_auth_previews" {
       url        = aws_lambda_function_url.preview[name].function_url
       repository = preview.repository
       pull       = preview.pull
+      commit     = preview.commit
       allowed = distinct(concat(
         local.access.all_previews,
         try(local.access.repositories[preview.repository], []),

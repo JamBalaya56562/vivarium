@@ -111,7 +111,7 @@ vivarium/
 ├── src/
 │   ├── layer1_wasm/       # Layer 1 reproductions (Pyodide, Ruby.wasm, php-wasm, Rust wasm32-wasip1)
 │   ├── layer2_docker/     # Layer 2 reproductions (Docker images, GHCR-published)
-│   ├── layer3_previews/   # Layer 3 live previews — one preview.json per upstream PR
+│   ├── layer3_previews/   # Layer 3 live previews — one preview.json per upstream PR or pre-PR commit
 │   └── external_examples/ # reference Manifest v1 fixtures, one per shipping layer
 └── tools/
     └── fixed-guest-builder/ # Bun/TypeScript builder the fixed-guest-* workflows run (CI only, not published)
@@ -397,7 +397,8 @@ conflate "which layer does this problem fit" with "which library do we use."
   exploration. Target: arbitrary projects, complex dependencies, network
   behaviour. Startup: s–min.
 - **Layer 3 — Live previews.** An upstream pull request's whole
-  application, backend included, built at its commit into a Lambda MicroVM
+  application, backend included, or that of a commit checked before it
+  becomes a pull request, built at its commit into a Lambda MicroVM
   image and opened through a link that asks for a GitHub sign-in
   (`infra/aws/`). Target: changes a
   reviewer checks by using the running application. Startup: s on resume,

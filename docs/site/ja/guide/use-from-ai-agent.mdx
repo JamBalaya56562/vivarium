@@ -111,8 +111,9 @@ bun run build
         <code>{`{ kind: "live", page_url, note }`}</code>（verdict はブラウザ実行時に出る）、
         Layer 2 は <code>{`{ kind: "snapshot", snapshot: { verdict, exit_code, image_digest, stdout, stderr_tail, ... } }`}</code>。
         Layer 3 のライブプレビューには verdict がないので、{' '}
-        <code>{`{ kind: "preview", preview_url, pull_url, note }`}</code> で、
-        GitHub へのサインインを求める動いているプレビューを返す。
+        <code>{`{ kind: "preview", preview_url, pull_url, commit_url, note }`}</code> で、
+        GitHub へのサインインを求める動いているプレビューを返す。プルリクエストになる前のコミットの
+        プレビューでは `pull_url` は無い。
       </li>
       <li>
         <strong><code>match_error(text, limit?)</code></strong> — エラー文字列・スタックトレースから

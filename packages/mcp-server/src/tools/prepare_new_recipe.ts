@@ -116,7 +116,7 @@ export async function prepareNewRecipe(
     return {
       ok: false,
       error:
-        'Layer 3 recipes are live previews, one per upstream pull request rather than per issue; add src/layer3_previews/<project>-<pull>/ by hand as src/layer3_previews/README.md describes.',
+        'Layer 3 recipes are live previews, one per upstream pull request or commit rather than per issue; add src/layer3_previews/<project>-<pull>/ or <project>-<name>/ by hand as src/layer3_previews/README.md describes.',
     };
 
   const slug = `${project}-${issueNum}`;
@@ -280,7 +280,7 @@ export const PREPARE_NEW_RECIPE_TOOL = {
         enum: [1, 2, 3],
         default: 2,
         description:
-          'Vivarium layer: 1=WASM (in-browser), 2=Docker (default). 3=live preview is rejected: those recipes are one per upstream pull request and are written by hand. The commit scope, scaffold command, and next-steps tailor to the layer.',
+          'Vivarium layer: 1=WASM (in-browser), 2=Docker (default). 3=live preview is rejected: those recipes are one per upstream pull request or commit and are written by hand. The commit scope, scaffold command, and next-steps tailor to the layer.',
       },
     },
     required: ['project', 'issue', 'title'],

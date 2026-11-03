@@ -104,22 +104,27 @@
         "pull": {
           "type": "integer",
           "minimum": 1,
-          "description": "Optional. Layer 3 only: the upstream pull request the preview runs, from the recipe's preview.json. Added in the 2026-11-01 revision; v1 consumers ignore it."
+          "description": "Optional. Layer 3 only: the upstream pull request the preview runs, from the recipe's preview.json. Absent for a preview of a commit that is not a pull request yet. Added in the 2026-11-01 revision; v1 consumers ignore it."
         },
         "pull_url": {
           "type": "string",
           "format": "uri",
-          "description": "Layer 3 only: the upstream pull request's page, built from preview.json's repository and pull. Added in the 2026-11-03 revision."
+          "description": "Layer 3 only, present with pull: the upstream pull request's page, built from preview.json's repository and pull. Added in the 2026-11-03 revision."
         },
         "commit": {
           "type": "string",
           "pattern": "^[0-9a-f]{40}$",
-          "description": "Layer 3 only: the pull request commit the preview runs, from preview.json. Added in the 2026-11-03 revision."
+          "description": "Layer 3 only: the commit the preview runs, from preview.json. Added in the 2026-11-03 revision."
+        },
+        "commit_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Layer 3 only: the commit's page on GitHub, in preview.json's source repository, or its repository when there is no source. Added in the second 2026-11-03 revision."
         },
         "preview_url": {
           "type": "string",
           "format": "uri",
-          "description": "Layer 3 only, and required there: the running preview's link. Opening it asks for a GitHub sign-in that lets in the pull request's author, the maintainers Vivarium lists for the project and anyone the recipe adds. Added in the 2026-11-03 revision."
+          "description": "Layer 3 only, and required there: the running preview's link. Opening it asks for a GitHub sign-in that lets in the maintainers Vivarium lists for the project, anyone the recipe adds and, for a pull request, its author. Added in the 2026-11-03 revision."
         },
         "verdict_url": {
           "type": "string",

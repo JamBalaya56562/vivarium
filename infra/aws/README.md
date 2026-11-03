@@ -21,7 +21,8 @@ step by step in a spike first
 
 Each preview is a recipe under [`src/layer3_previews/`](../../src/layer3_previews/README.md):
 a `<project>-<pull>/preview.json` naming the repository, the pull request and
-the commit. `previews.tf` reads them, so adding a recipe adds a preview and
+the commit, or a `<project>-<name>/preview.json` without a pull request,
+optionally with the `source` repository the commit is downloaded from. `previews.tf` reads them, so adding a recipe adds a preview and
 removing it removes the preview.
 
 ### The image
@@ -102,7 +103,8 @@ there too, with the path they asked for.
    signed state, bound to a cookie and good for ten minutes.
 2. On `/callback` it checks the state and its cookie, trades the code for a
    token, and asks GitHub who signed in. It asks for the pull request's
-   author only when the login is not already listed.
+   author only when the login is not already listed and the preview has a
+   pull request.
 3. A login in the preview's list ([`src/layer3_previews/`](../../src/layer3_previews/README.md#who-gets-in))
    or the author gets a ticket and is sent to the preview's own URL; anyone
    else gets 403. The token is not kept.

@@ -153,7 +153,9 @@ export async function verifyBranchFix(
   if (recipe.layer === 3) {
     return {
       ok: false,
-      error: `${recipe.slug} is a Layer 3 live preview of upstream pull request #${recipe.pull ?? '?'}, which is itself the fix; open ${recipe.preview_url} to check it instead.`,
+      error: recipe.pull
+        ? `${recipe.slug} is a Layer 3 live preview of upstream pull request #${recipe.pull}, which is itself the fix; open ${recipe.preview_url} to check it instead.`
+        : `${recipe.slug} is a Layer 3 live preview of commit ${recipe.commit_url ?? recipe.commit ?? '?'}, which is itself the change; open ${recipe.preview_url} to check it instead.`,
     };
   }
 

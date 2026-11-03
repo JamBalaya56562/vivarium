@@ -203,7 +203,7 @@ import { LiveExamples } from '../_components/LiveExamples';
     }
     runtimes={
       <ul>
-        <li>One directory per pull request under <code>src/layer3_previews/</code>, with a <code>preview.json</code> naming the repository, pull request and commit. Adding one adds a preview; removing it removes the preview.</li>
+        <li>One directory per pull request under <code>src/layer3_previews/</code>, with a <code>preview.json</code> naming the repository, pull request and commit, or one per commit that is not a pull request yet, which leaves out the pull request and may name the fork it comes from as <code>source</code>. Adding one adds a preview; removing it removes the preview.</li>
         <li>Each preview is a Layer 3 entry in the gallery, whose card opens the preview through the GitHub sign-in. The steps to check the change are on the pull request.</li>
       </ul>
     }

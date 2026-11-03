@@ -27,7 +27,7 @@ export async function getRecipe(
 export const GET_RECIPE_TOOL = {
   name: 'get_recipe',
   description:
-    'Get full metadata for a single recipe by slug, including the live page URL, verdict snapshot URL (Layer 2), upstream pull request number (Layer 3), and GitHub source URL. Use `list_recipes` first to discover available slugs. Returns `found: false` with an error message if the slug is unknown.',
+    'Get full metadata for a single recipe by slug, including the live page URL, verdict snapshot URL (Layer 2), upstream pull request number and commit link (Layer 3), and GitHub source URL. Use `list_recipes` first to discover available slugs. Returns `found: false` with an error message if the slug is unknown.',
   inputSchema: {
     type: 'object' as const,
     properties: {

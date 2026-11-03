@@ -316,6 +316,7 @@ export interface RecipeEntry {
   pull?: number;
   pull_url?: string;
   commit?: string;
+  commit_url?: string;
   title: string;
   page_url?: string;
   page_url_ja?: string;
@@ -340,7 +341,8 @@ interface RecipesIndex {
 
 interface PreviewRecipe {
   repository: string;
-  pull: number;
+  source?: string;
+  pull?: number;
   issue?: number;
   commit: string;
 }
@@ -630,11 +632,16 @@ export async function buildEntry(
     layer,
     project,
     issue: preview ? (preview.issue ?? 0) : issue,
-    ...(preview
+    ...(preview?.pull
       ? {
           pull: preview.pull,
           pull_url: `https://github.com/${preview.repository}/pull/${preview.pull}`,
+        }
+      : {}),
+    ...(preview
+      ? {
           commit: preview.commit,
+          commit_url: `https://github.com/${preview.source ?? preview.repository}/commit/${preview.commit}`,
         }
       : {}),
     title,

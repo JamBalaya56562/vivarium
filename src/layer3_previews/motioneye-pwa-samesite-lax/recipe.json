@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "language": "python",
+  "severity": "bug",
+  "tags": [
+    "motioneye",
+    "login",
+    "session",
+    "pwa"
+  ]
+}

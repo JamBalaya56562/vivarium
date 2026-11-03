@@ -13,6 +13,7 @@ interface RecipeEntry {
   pull?: number;
   pull_url?: string;
   commit?: string;
+  commit_url?: string;
   page_url?: string;
   page_url_ja?: string;
   preview_url?: string;
@@ -71,6 +72,7 @@ interface Strings {
   linkLabel: string;
   unfiledIssue: string;
   signIn: (commit: string) => string;
+  signInListed: (commit: string) => string;
 }
 
 const STRINGS: Record<Lang, Strings> = {
@@ -95,6 +97,8 @@ const STRINGS: Record<Lang, Strings> = {
     unfiledIssue: '(no upstream issue number)',
     signIn: (commit) =>
       `Preview at ${commit}; it asks for a GitHub sign-in and lets in the pull request's author and the maintainers Vivarium lists.`,
+    signInListed: (commit) =>
+      `Preview at ${commit}, before any pull request; it asks for a GitHub sign-in and lets in the maintainers Vivarium lists and anyone added to it.`,
   },
   ja: {
     eyebrow: (project) => `// プロジェクト · ${project.toUpperCase()}`,
@@ -120,6 +124,8 @@ const STRINGS: Record<Lang, Strings> = {
     unfiledIssue: '（アップストリーム issue 番号なし）',
     signIn: (commit) =>
       `${commit} のプレビュー。GitHub へのサインインを求め、pull request の作成者と Vivarium が登録したメンテナーだけを通す。`,
+    signInListed: (commit) =>
+      `pull request になる前の ${commit} のプレビュー。GitHub へのサインインを求め、Vivarium が登録したメンテナーと、このプレビューに追加された人だけを通す。`,
   },
 };
 
@@ -263,7 +269,9 @@ export function ProjectPage({
                   ) : null}
                   {recipe.commit ? (
                     <span className="v-pp__row-symptom">
-                      {s.signIn(recipe.commit.slice(0, 7))}
+                      {(recipe.pull ? s.signIn : s.signInListed)(
+                        recipe.commit.slice(0, 7),
+                      )}
                     </span>
                   ) : null}
                 </td>

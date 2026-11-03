@@ -116,8 +116,9 @@ bun run build
         verdict is computed in-browser at view time). Layer 2 returns{' '}
         <code>{`{ kind: "snapshot", snapshot: { verdict, exit_code, image_digest, stdout, stderr_tail, ... } }`}</code>.
         A Layer 3 live preview has no verdict, so it returns{' '}
-        <code>{`{ kind: "preview", preview_url, pull_url, note }`}</code>:
-        the running preview, which asks for a GitHub sign-in.
+        <code>{`{ kind: "preview", preview_url, pull_url, commit_url, note }`}</code>:
+        the running preview, which asks for a GitHub sign-in. `pull_url` is
+        absent for a commit previewed before it becomes a pull request.
       </li>
       <li>
         <strong><code>match_error(text, limit?)</code></strong> — score

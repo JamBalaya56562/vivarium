@@ -49,16 +49,17 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | フィールド | 型 | 必須 | 注記 |
 |---|---|---|---|
 | `slug` | 文字列（ケバブケース） | ✅ | `src/layer{N}_*/` 以下のレシピディレクトリ名。Manifest v1 の `slug` と同じ規約。 |
-| `layer` | 整数（`1` \| `2` \| `3`） | ✅ | Layer 1 = ブラウザ内 WASM。Layer 2 = Docker。Layer 3 = 上流のプルリクエストのライブプレビュー。 |
+| `layer` | 整数（`1` \| `2` \| `3`） | ✅ | Layer 1 = ブラウザ内 WASM。Layer 2 = Docker。Layer 3 = 上流のプルリクエスト、またはプルリクエストになる前のコミットのライブプレビュー。 |
 | `project` | 文字列 | ✅ | アップストリームプロジェクト名（例: `"pandas"`、`"bash"`）。 |
-| `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。Layer 3 のプレビューでは、そのプルリクエストが直す Issue。 |
-| `pull` | 整数 | ⏳ | オプション。Layer 3 のみ——プレビューが動かす上流のプルリクエスト。 |
-| `pull_url` | URI | ⏳ | Layer 3 のみ——上流のプルリクエストのページ。2026-11-03 に追加。 |
-| `commit` | 文字列 | ⏳ | Layer 3 のみ——プレビューが動かすプルリクエストのコミットの完全な SHA。2026-11-03 に追加。 |
+| `issue` | 整数 | ✅ | アップストリーム Issue 番号。アップストリームトラッカーのエントリが存在しない場合は `0`。Layer 3 のプレビューでは、その変更が直す、または確かめる対象の Issue。 |
+| `pull` | 整数 | ⏳ | オプション。Layer 3 のみ——プレビューが動かす上流のプルリクエスト。まだプルリクエストになっていないコミットでは無い。 |
+| `pull_url` | URI | ⏳ | Layer 3 のみで、`pull` があるとき——上流のプルリクエストのページ。2026-11-03 に追加。 |
+| `commit` | 文字列 | ⏳ | Layer 3 のみ——プレビューが動かすコミットの完全な SHA。2026-11-03 に追加。 |
+| `commit_url` | URI | ⏳ | Layer 3 のみ——そのコミットの GitHub 上のページ。取得元のリポジトリ（まだプルリクエストになっていないブランチなら fork）のもの。2026-11-03 に追加（2 回目の改訂）。 |
 | `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
 | `page_url` | URI | ⏳ | Layer 1 と Layer 2 のみで、そこでは必須——ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ）。Layer 3 のエントリは Vivarium のページを持たず、これを省略する。 |
 | `page_url_ja` | URI | ⏳ | オプション。同じページの日本語版で、サイトの `/ja/` ツリー配下にある。**レシピが翻訳（`src/layer*/<slug>/i18n.ja.json`）を持つ場合のみ**出力され、無い場合は日本語ページが存在しないことを意味する。`page_url` に `/ja/` を挿入して導出してはならない——未翻訳のレシピでは 404 になる。2026-09-02 に追加。 |
-| `preview_url` | URI | ⏳ | Layer 3 のみで、そこでは必須——動いているプレビュー。開くと GitHub へのサインインを求め、プルリクエストの作成者、Vivarium がそのプロジェクトについて登録しているメンテナー、レシピが追加した人だけを通す。2026-11-03 に追加。 |
+| `preview_url` | URI | ⏳ | Layer 3 のみで、そこでは必須——動いているプレビュー。開くと GitHub へのサインインを求め、Vivarium がそのプロジェクトについて登録しているメンテナー、レシピが追加した人、プルリクエストならその作成者だけを通す。2026-11-03 に追加。 |
 | `verdict_url` | URI | ⏳ | Layer 2 のみ——デプロイ済みの `verdict.json` スナップショット。Layer 1 の verdict はページ内でライブ生成されるため静的スナップショットを持たない。 |
 | `source_url` | URI | ✅ | レシピディレクトリへの GitHub リンク。 |
 | `language` | 文字列 | ⏳ | オプション。主要な実装言語の小文字表記（例: `"python"`、`"rust"`、`"shell"`）。`src/layer*_*/<slug>/` 配下のレシピごとの [`recipe.json`](https://aletheia-works.github.io/vivarium/spec/recipe.schema.json) から供給される。2026-05-03 リビジョンで追加。2026-05-18 リビジョンで供給元を廃止された `docs/site/_data/recipe-facets.json` オーバーレイからレシピごとのファイルへ移行。 |
@@ -93,6 +94,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 2026-10-06 | `recipe.schema.json` にオプションの `upstream_pr` を追加。レシピの bug を直す upstream の pull request で、毎日の retire-merged ワークフローが読み、その pull request がマージされるとレシピを削除する。index には出力しない。 |
 | 2026-11-01 | Layer 3 を上流のプルリクエストのライブプレビュー（`src/layer3_previews/`）とした。それまで Layer 3 のエントリは 1 件も無かった。オプションの `pull` を追加。Layer 3 のエントリの `issue` はそのプルリクエストが直す Issue で、`verdict_url` は持たないため、コンフォーマンス条項 4 は Layer 2 だけを対象にした。v1 のコンシューマーが見得たエントリについては後方互換。 |
 | 2026-11-03 | `page_url` を必須から外した。Layer 3 のエントリは Vivarium のページを持たなくなり、動いているプレビューを指す `preview_url` と、オプションの `pull_url`・`commit` を持つ。コンフォーマンス条項 5 を追加。すべてのエントリで `page_url` を読んでいたコンシューマーは壊れる。Vivarium MCP 0.9.0 以前もその一つで、Layer 3 のレシピに対して `lookup_verdict` と `verify_branch_fix` が空のページ URL を返す。Vivarium にはまだ既知の利用者がいないため v1 のままにした（AGENTS.md §4.9）。 |
+| 2026-11-03 | Layer 3 のエントリが、fork のブランチのような、まだプルリクエストになっていないコミットのプレビューも表せるようにした。その場合 `pull` と `pull_url` は無い。すべての Layer 3 エントリにオプションの `commit_url` を追加。`pull` はもともとオプションなので後方互換。 |
 
 ## 生成方法
 
@@ -102,8 +104,8 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 スクリプトはレシピディレクトリを走査し、各レシピ README の最初の H1 からタイトルを取得し、
 slug パターン（末尾に Issue 番号を持つ slug の場合は `<project>-<digits>`。
 それ以外は最初のダッシュセグメント。形が異なるレシピには小さなオーバーライドマップ）から
-`project` / `issue` を導出する。Layer 3 のプレビューの slug はプルリクエスト番号で終わるので、
-その `issue` と `pull` はレシピの `preview.json` から取る。
+`project` / `issue` を導出する。Layer 3 のプレビューの slug はプルリクエスト番号で終わるか、プルリクエストの無いプレビューの名前なので、
+その `issue`・`pull`・`commit` はレシピの `preview.json` から取る。
 
 出力は git でトラッキングされるため、レシピを追加する PR の diff にインデックス更新も表示される。
 オプションのファセットフィールド（`language` / `symptom` / `severity` / `tags` /

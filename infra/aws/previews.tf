@@ -2,7 +2,14 @@ locals {
   recipes_dir = "${path.module}/../../src/layer3_previews"
   previews = {
     for recipe in fileset(local.recipes_dir, "*/preview.json") :
-    dirname(recipe) => jsondecode(file("${local.recipes_dir}/${recipe}"))
+    dirname(recipe) => merge(
+      { pull = null, source = null },
+      jsondecode(file("${local.recipes_dir}/${recipe}")),
+    )
+  }
+  preview_labels = {
+    for name, preview in local.previews :
+    name => preview.pull == null ? "${coalesce(preview.source, preview.repository)} at ${preview.commit}" : "${preview.repository}#${preview.pull} at ${preview.commit}"
   }
 
   account_id         = data.aws_caller_identity.current.account_id
@@ -19,7 +26,7 @@ data "archive_file" "preview" {
   output_path = "${path.module}/.build/${each.key}.zip"
   source {
     filename = "Dockerfile"
-    content  = templatefile("${path.module}/motioneye/Dockerfile.tftpl", merge(each.value, { s3 = contains(try(each.value.services, []), "s3") }))
+    content  = templatefile("${path.module}/motioneye/Dockerfile.tftpl", merge(each.value, { source = coalesce(each.value.source, each.value.repository), s3 = contains(try(each.value.services, []), "s3") }))
   }
   dynamic "source" {
     for_each = local.motioneye_files
@@ -79,7 +86,7 @@ resource "aws_iam_role_policy" "preview_build" {
 resource "awscc_lambda_microvm_image" "preview" {
   for_each           = local.previews
   name               = "vivarium-preview-${each.key}"
-  description        = "${each.value.repository}#${each.value.pull} at ${each.value.commit} with fake cameras"
+  description        = "${local.preview_labels[each.key]} with fake cameras"
   base_image_arn     = local.base_image_arn
   base_image_version = local.base_image_version
   build_role_arn     = aws_iam_role.preview_build.arn
@@ -124,8 +131,16 @@ resource "awscc_lambda_microvm_image" "preview" {
       error_message = "${each.key}: only motioneye-project/motioneye has an image template."
     }
     precondition {
-      condition     = can(regex("^[0-9a-f]{40}$", each.value.commit)) && each.key == "motioneye-${each.value.pull}"
-      error_message = "${each.key}: commit must be a full SHA and the directory must be motioneye-<pull>."
+      condition     = can(regex("^[0-9a-f]{40}$", each.value.commit))
+      error_message = "${each.key}: commit must be a full SHA."
+    }
+    precondition {
+      condition     = each.value.pull == null ? can(regex("^motioneye-([a-z0-9]+-)*[a-z0-9]*[a-z][a-z0-9]*$", each.key)) && length(each.key) <= 47 : each.key == "motioneye-${each.value.pull}"
+      error_message = "${each.key}: the directory must be motioneye-<pull>, or without a pull request motioneye-<name> of at most 47 characters whose last part is not only digits."
+    }
+    precondition {
+      condition     = each.value.source == null || can(regex("^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$", coalesce(each.value.source, "-")))
+      error_message = "${each.key}: source must be an owner/name GitHub repository."
     }
     precondition {
       condition     = alltrue([for service in try(each.value.services, []) : contains(["s3"], service)])
@@ -200,7 +215,7 @@ resource "aws_iam_role_policy" "preview_proxy" {
 resource "aws_lambda_function" "preview" {
   for_each         = local.previews
   function_name    = "vivarium-preview-${each.key}"
-  description      = "Forwards ${each.value.repository}#${each.value.pull} at ${each.value.commit} to its MicroVM."
+  description      = "Forwards ${local.preview_labels[each.key]} to its MicroVM."
   role             = aws_iam_role.preview_proxy.arn
   runtime          = "nodejs24.x"
   architectures    = ["arm64"]

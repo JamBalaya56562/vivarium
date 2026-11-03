@@ -174,6 +174,47 @@ test("the pull request's author is admitted and anyone else refused", async () =
   assert.equal(refused.headers.location, undefined);
 });
 
+test('a preview without a pull request admits only its list and never asks for an author', async () => {
+  const previews = {
+    'motioneye-dev': {
+      url: 'https://preview.example/',
+      repository: 'owner/repo',
+      pull: null,
+      commit: '7b7ab1c97ff7c89e55f615826aec835a6269c7aa',
+      allowed: ['Maintainer'],
+    },
+  };
+  const respond = (fetchImpl) =>
+    createAuth({
+      config: CONFIG,
+      loadPreviews: async () => previews,
+      fetchImpl,
+      now: () => NOW,
+      nonce: () => 'nonce-1',
+    });
+  const listed = github({ login: 'maintainer' });
+  assert.equal(
+    (await signIn(respond(listed.fetchImpl), '/motioneye-dev/')).statusCode,
+    302,
+  );
+  const stranger = github({ login: 'stranger' });
+  const refused = await signIn(respond(stranger.fetchImpl), '/motioneye-dev/');
+  assert.equal(refused.statusCode, 403);
+  assert.match(
+    refused.body,
+    /live preview of owner\/repo at 7b7ab1c97ff7c89e55f615826aec835a6269c7aa\./,
+  );
+  assert.match(refused.body, /signed in to GitHub as stranger, who is not/);
+  assert.doesNotMatch(refused.body, /pull/);
+  assert.deepEqual(
+    stranger.calls.map(([url]) => url),
+    [
+      'https://github.com/login/oauth/access_token',
+      'https://api.github.com/user',
+    ],
+  );
+});
+
 test('a callback without its cookie, with a forged or expired state is refused before GitHub is asked', async () => {
   const { calls, fetchImpl } = github();
   const respond = auth(fetchImpl);
