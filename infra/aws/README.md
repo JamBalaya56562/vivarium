@@ -71,11 +71,21 @@ The image is ARM_64 with 1 GB.
 [preview-proxy/index.mjs](preview-proxy/index.mjs) runs behind each preview's
 function URL with `RESPONSE_STREAM`.
 
-- **Access**: a request without a valid session cookie is sent to the
-  sign-in below, before any AWS call. The sign-in comes back with
-  `?vivarium-ticket=<ticket>`, valid for a minute and for this preview only;
+- **Access**: except for a `public` path (below), a request without a
+  valid session cookie is sent to the sign-in below, before any AWS call.
+  The sign-in comes back with `?vivarium-ticket=<ticket>`, valid for a
+  minute and for this preview only;
   the proxy turns it into an `HttpOnly` session cookie for a day and
   redirects to the same path without the ticket, and logs the GitHub login.
+  The paths a recipe lists as `public` in `preview.json` reach the proxy as
+  `PUBLIC_PATHS`, and a `GET` or `HEAD` to one of them needs no session. The
+  proxy then lists the image's MicroVMs and forwards the request only to
+  one that is `RUNNING`; otherwise it answers 503, and it never starts or
+  resumes a MicroVM for such a request. Such a request is traffic to a
+  running MicroVM, so polling a public path may keep a preview from
+  suspending, up to its 8 hours in all. That is accepted: only a
+  signed-in visitor can start or resume one, and the paths are meant to be
+  as harmless as motionEye's manifest and icon.
 - **The MicroVM**: the proxy reuses the image's live MicroVM, or starts one.
   The MicroVM suspends after 5 minutes without traffic, resumes on the next
   request, and ends after an hour suspended or 8 hours in all.

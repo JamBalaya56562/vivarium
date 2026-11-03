@@ -12,6 +12,7 @@ const TOKEN_MARGIN_MS = 60_000;
 const COOKIE = 'vivarium-preview';
 const SESSION_SECONDS = 86_400;
 const REPEATABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const PUBLIC_METHODS = new Set(['GET', 'HEAD']);
 const TICKET_PARAM = 'vivarium-ticket';
 const DROPPED_REQUEST_HEADERS = new Set([
   'host',
@@ -44,6 +45,12 @@ export function settings(env = process.env) {
   const routes = JSON.parse(env.ROUTES);
   if (!Number.isInteger(routes['/']))
     throw new Error('ROUTES has no port for /');
+  const publicPaths = JSON.parse(env.PUBLIC_PATHS ?? '[]');
+  if (
+    !Array.isArray(publicPaths) ||
+    !publicPaths.every((path) => typeof path === 'string')
+  )
+    throw new Error('PUBLIC_PATHS is not a list of paths');
   return {
     region: env.AWS_REGION,
     imageArn: env.IMAGE_ARN,
@@ -53,6 +60,7 @@ export function settings(env = process.env) {
     authUrl: env.AUTH_URL.replace(/\/+$/, ''),
     sessionKey: env.SESSION_KEY,
     routes,
+    publicPaths: new Set(publicPaths),
     tokenMinutes: Number(env.TOKEN_MINUTES ?? 60),
     idlePolicy: {
       autoResumeEnabled: true,
@@ -176,9 +184,16 @@ async function liveMicrovm(config, api) {
   } while (nextToken);
 }
 
-export async function previewMicrovm(config, api, { now = Date.now } = {}) {
+export async function previewMicrovm(
+  config,
+  api,
+  { now = Date.now, start = true } = {},
+) {
+  const live = await liveMicrovm(config, api);
+  if (!start && live?.state !== 'RUNNING')
+    throw new Error(`the preview MicroVM is ${live?.state ?? 'not running'}`);
   let microvm =
-    (await liveMicrovm(config, api)) ??
+    live ??
     (await api.run({
       imageIdentifier: config.imageArn,
       ingressNetworkConnectors: [config.ingressConnector],
@@ -251,6 +266,11 @@ export function admit(config, event, now = Date.now()) {
     now,
   );
   if (session?.preview === config.preview) return { status: 200 };
+  if (
+    config.publicPaths?.has(event.rawPath) &&
+    PUBLIC_METHODS.has(event.requestContext?.http?.method ?? 'GET')
+  )
+    return { status: 200, public: true };
   const search = event.rawQueryString ? `?${event.rawQueryString}` : '';
   return {
     status: 302,
@@ -328,9 +348,9 @@ export function createProxy({
   now = Date.now,
 }) {
   let connection;
-  async function current() {
+  async function current(start) {
     if (!connection || connection.expiresAt - TOKEN_MARGIN_MS < now())
-      connection = await connect(config, api, { now });
+      connection = await connect(config, api, { now, start });
     return connection;
   }
   return async function respond(event, responseStream) {
@@ -350,6 +370,16 @@ export function createProxy({
         ...(admission.cookie ? { cookies: [admission.cookie] } : {}),
       });
     }
+    if (
+      admission.public &&
+      (await liveMicrovm(config, api))?.state !== 'RUNNING'
+    )
+      return plain(
+        responseStream,
+        from,
+        503,
+        'The preview is not running. Open it with a sign-in first.\n',
+      );
     let response;
     const method = event.requestContext?.http?.method ?? 'GET';
     const attempts = REPEATABLE_METHODS.has(method) ? 2 : 1;
@@ -357,7 +387,7 @@ export function createProxy({
       try {
         const { url, init } = upstreamRequest(
           event,
-          await current(),
+          await current(!admission.public),
           config.routes,
         );
         response = await fetchImpl(url, init);

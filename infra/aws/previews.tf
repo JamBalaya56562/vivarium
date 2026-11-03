@@ -3,7 +3,7 @@ locals {
   previews = {
     for recipe in fileset(local.recipes_dir, "*/preview.json") :
     dirname(recipe) => merge(
-      { pull = null, source = null },
+      { pull = null, source = null, public = [] },
       jsondecode(file("${local.recipes_dir}/${recipe}")),
     )
   }
@@ -237,6 +237,7 @@ resource "aws_lambda_function" "preview" {
       AUTH_URL          = aws_lambda_function_url.preview_auth.function_url
       SESSION_KEY       = random_password.preview_session.result
       ROUTES            = jsonencode(jsondecode(file("${path.module}/motioneye/routes.json")))
+      PUBLIC_PATHS      = jsonencode(each.value.public)
     }
   }
 

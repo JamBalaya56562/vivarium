@@ -221,6 +221,47 @@ test('without a valid session the request goes to the sign-in, path and query ke
   );
 });
 
+test('a public path is answered without a session to GET and HEAD only', () => {
+  const config = {
+    ...CONFIG,
+    publicPaths: new Set(['/manifest.json', '/static/img/motioneye-icon.svg']),
+  };
+  const request = (rawPath, method = 'GET') =>
+    admit(
+      config,
+      { rawPath, rawQueryString: 'v=1', requestContext: { http: { method } } },
+      NOW,
+    ).status;
+  assert.equal(request('/manifest.json'), 200);
+  assert.equal(request('/manifest.json', 'HEAD'), 200);
+  assert.equal(request('/static/img/motioneye-icon.svg'), 200);
+  assert.equal(request('/manifest.json', 'POST'), 302);
+  assert.equal(request('/manifest.json/'), 302);
+  assert.equal(request('/config'), 302);
+  assert.equal(admit(CONFIG, { rawPath: '/manifest.json' }, NOW).status, 302);
+});
+
+test('settings reads the public paths, none by default', () => {
+  const env = {
+    IMAGE_ARN: 'a',
+    INGRESS_CONNECTOR: 'b',
+    EGRESS_CONNECTOR: 'c',
+    PREVIEW: 'd',
+    AUTH_URL: 'e',
+    SESSION_KEY: 'f',
+    ROUTES: '{"/":8080}',
+  };
+  assert.deepEqual([...settings(env).publicPaths], []);
+  assert.deepEqual(
+    [...settings({ ...env, PUBLIC_PATHS: '["/manifest.json"]' }).publicPaths],
+    ['/manifest.json'],
+  );
+  assert.throws(
+    () => settings({ ...env, PUBLIC_PATHS: '"/manifest.json"' }),
+    /PUBLIC_PATHS is not a list of paths/,
+  );
+});
+
 test('a live MicroVM is reused and none is started', async () => {
   const api = fakeApi([
     { microvmId: 'mvm-old', state: 'TERMINATED' },
@@ -367,6 +408,63 @@ test('the proxy streams motionEye back and reuses its connection', async () => {
   assert.equal(sent[0].metadata.statusCode, 200);
   assert.equal(await sent[1].body, 'jpeg bytes');
   assert.equal(api.calls.filter((c) => c.startsWith('token')).length, 1);
+});
+
+test('a public path reaches only a running MicroVM and never starts or resumes one', async () => {
+  const config = { ...CONFIG, publicPaths: new Set(['/manifest.json']) };
+  const manifest = { rawPath: '/manifest.json', rawQueryString: 'v=1' };
+  const answer = async (api) => {
+    const { sent, from } = sink();
+    const respond = createProxy({
+      config,
+      api,
+      fetchImpl: async () => new Response('{}'),
+      from,
+      now: () => 0,
+    });
+    await respond(manifest, {});
+    return sent[0].metadata.statusCode;
+  };
+  const none = fakeApi();
+  assert.equal(await answer(none), 503);
+  assert.deepEqual(none.calls, ['list']);
+  const suspended = fakeApi([{ microvmId: 'mvm-live', state: 'SUSPENDED' }]);
+  suspended.get = async (id) => ({
+    microvmId: id,
+    state: 'SUSPENDED',
+    endpoint: `${id}.example`,
+  });
+  assert.equal(await answer(suspended), 503);
+  assert.equal(
+    await answer(fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }])),
+    200,
+  );
+});
+
+test('a public request whose MicroVM ends before the retry does not start one', async () => {
+  const api = fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }]);
+  const list = api.list;
+  let lists = 0;
+  api.list = async (...args) => {
+    lists += 1;
+    return lists > 2 ? { items: [] } : list(...args);
+  };
+  const { sent, from } = sink();
+  const respond = createProxy({
+    config: { ...CONFIG, publicPaths: new Set(['/manifest.json']) },
+    api,
+    fetchImpl: async () => {
+      throw new TypeError('fetch failed');
+    },
+    from,
+    now: () => 0,
+  });
+  await respond({ rawPath: '/manifest.json' }, {});
+  assert.equal(sent[0].metadata.statusCode, 503);
+  assert.deepEqual(
+    api.calls.filter((c) => c.startsWith('run')),
+    [],
+  );
 });
 
 test('a failed fetch drops the connection and retries once with a new one', async () => {

@@ -95,7 +95,7 @@ that is not a pull request yet, named `<project>-<name>`:
 ```text
 src/layer3_previews/
 └── <project>-<pull>/
-    ├── preview.json   # repository, pull, issue, commit, optional source, services, access
+    ├── preview.json   # repository, pull, issue, commit, optional source, services, access, public
     ├── recipe.json    # language, severity, tags, as in the other layers
     └── README.md      # what the pull request changes and how to check it
 ```
@@ -138,6 +138,17 @@ For example, a branch on a fork:
   "issue": 3364,
   "commit": "5ee7869c3710ce4135cf803e87338c1cd4ca8d85"
 }
+```
+
+`public` is optional: the paths the preview answers to `GET` and `HEAD`
+without a sign-in, with any query. Every other path still needs one. Such
+a request only reaches a MicroVM that is already running: it never starts or
+resumes one, and gets a 503 instead, so the sign-in still decides when a
+preview runs. A browser fetches a web app manifest without cookies, so a preview checking
+installation as an app lists the manifest and its icons:
+
+```json
+"public": ["/manifest.json", "/static/img/motioneye-icon.svg"]
 ```
 
 `commit` is a full SHA, so a preview shows exactly one state of the pull
