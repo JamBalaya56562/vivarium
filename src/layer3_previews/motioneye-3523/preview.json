@@ -1,0 +1,8 @@
+{
+  "repository": "motioneye-project/motioneye",
+  "pull": 3523,
+  "issue": 0,
+  "commit": "d330b199d0adfb7a6a33aa076af7b307ef0fe7db",
+  "public": ["/manifest.json", "/static/img/motioneye-icon.svg"],
+  "access": ["hagaygo"]
+}

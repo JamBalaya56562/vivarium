@@ -6,8 +6,8 @@ with no pull request. It is the baseline for
 [#3364](https://github.com/motioneye-project/motioneye/issues/3364): opened
 from the home screen on Android as an installed app (PWA), motionEye asks for
 the login every time. Its `user` session cookie is `SameSite=Strict`.
-[`motioneye-pwa-samesite-lax`](../motioneye-pwa-samesite-lax/) is the same
-commit with `SameSite=Lax`, for comparison.
+[`motioneye-3523`](../motioneye-3523/) is the pull request that makes it
+`SameSite=Lax`, for comparison.
 
 ## Checking it in the preview
 
@@ -16,7 +16,7 @@ commit with `SameSite=Lax`, for comparison.
 3. Install it from Chrome's menu (**Add to home screen** or **Install app**).
 4. Close Chrome, then open motionEye from the home screen. Note whether it
    shows the cameras or the login dialog.
-5. Do the same with `motioneye-pwa-samesite-lax` and compare.
+5. Do the same with `motioneye-3523` and compare.
 
 The preview's own access cookie lasts a day and is `SameSite=Lax`; after a day
 the home-screen app is sent to the GitHub sign-in again, which is not the
