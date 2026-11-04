@@ -1,3 +1,6 @@
+/// <reference types="@aletheia-works/coi-serviceworker/globals" />
+import type { CoiSettled } from '@aletheia-works/coi-serviceworker/coi-serviceworker.js';
+
 export const ISOLATION_TIMEOUT_MS = 15_000;
 export const FETCH_DEADLINE_MS = 120_000;
 export const MAX_ELF_BYTES = 134_217_728;
@@ -202,27 +205,36 @@ export function recordMark(name: string, detail: Record<string, number> = {}) {
 
 export async function waitForIsolation(
   options: {
-    isolated?: () => boolean;
+    settled?: Promise<CoiSettled>;
     sleep?: (ms: number) => Promise<void>;
     timeoutMs?: number;
-    stepMs?: number;
   } = {},
 ): Promise<void> {
-  const isolated =
-    options.isolated ?? (() => globalThis.crossOriginIsolated === true);
+  const settled =
+    options.settled ?? globalThis.window?.coiServiceWorker?.settled;
+  if (!settled)
+    throw new TerminalError(
+      'UNSUPPORTED_ENV',
+      'the page is not cross-origin isolated: coi-serviceworker.js did not run',
+    );
   const sleep =
     options.sleep ??
     ((ms: number) => new Promise<void>((done) => setTimeout(done, ms)));
   const timeoutMs = options.timeoutMs ?? ISOLATION_TIMEOUT_MS;
-  const stepMs = options.stepMs ?? 250;
-  for (let waited = 0; !isolated(); waited += stepMs) {
-    if (waited >= timeoutMs)
-      throw new TerminalError(
-        'UNSUPPORTED_ENV',
-        `the page is not cross-origin isolated after ${timeoutMs} ms`,
-      );
-    await sleep(stepMs);
-  }
+  const state = await Promise.race([
+    settled,
+    sleep(timeoutMs).then(() => null),
+  ]);
+  if (state === null)
+    throw new TerminalError(
+      'UNSUPPORTED_ENV',
+      `the page is not cross-origin isolated after ${timeoutMs} ms`,
+    );
+  if (state.status !== 'isolated')
+    throw new TerminalError(
+      'UNSUPPORTED_ENV',
+      `the page is not cross-origin isolated: ${state.status === 'failed' ? state.reason : state.status}`,
+    );
 }
 
 function relativeEntry(path: unknown, label: string): string {

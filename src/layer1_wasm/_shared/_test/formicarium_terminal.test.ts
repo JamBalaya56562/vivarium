@@ -563,21 +563,46 @@ describe('progress, isolation and loading (NFR7.3, BR3.1, S8)', () => {
   });
 
   test('waits up to 15 s for isolation, then fails', async () => {
-    let now = 0;
+    let slept = 0;
     const sleep = async (ms: number) => {
-      now += ms;
+      slept = ms;
     };
     await expect(
-      waitForIsolation({ isolated: () => false, sleep }),
+      waitForIsolation({ settled: new Promise(() => {}), sleep }),
     ).rejects.toThrow('not cross-origin isolated after 15000 ms');
-    expect(now).toBe(15_000);
-    let calls = 0;
-    const isolated = () => {
-      calls += 1;
-      return calls > 3;
-    };
-    await waitForIsolation({ isolated, sleep });
-    expect(calls).toBe(4);
+    expect(slept).toBe(15_000);
+  });
+
+  test('resolves once coi-serviceworker reports the page isolated', async () => {
+    await waitForIsolation({
+      settled: Promise.resolve({ status: 'isolated' }),
+      sleep: () => new Promise(() => {}),
+    });
+  });
+
+  test('fails at once with the reason coi-serviceworker reports', async () => {
+    const sleep = () => new Promise<void>(() => {});
+    await expect(
+      waitForIsolation({
+        settled: Promise.resolve({
+          status: 'failed',
+          reason: 'no-service-worker',
+        }),
+        sleep,
+      }),
+    ).rejects.toThrow('not cross-origin isolated: no-service-worker');
+    await expect(
+      waitForIsolation({
+        settled: Promise.resolve({ status: 'unregistered' }),
+        sleep,
+      }),
+    ).rejects.toThrow('not cross-origin isolated: unregistered');
+  });
+
+  test('fails at once when coi-serviceworker.js did not run', async () => {
+    await expect(waitForIsolation()).rejects.toThrow(
+      'coi-serviceworker.js did not run',
+    );
   });
 
   test('builds the formicarium URLs from the page itself, so the ja page uses its own copy', async () => {

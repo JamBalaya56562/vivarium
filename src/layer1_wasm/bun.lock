@@ -5,6 +5,7 @@
     "": {
       "name": "@aletheia-works/vivarium-layer1",
       "devDependencies": {
+        "@aletheia-works/coi-serviceworker": "^0.2.0",
         "@playwright/test": "^1.64.1",
         "@types/node": "^26.6.6",
         "shiki": "^4.5.0",
@@ -13,6 +14,8 @@
     },
   },
   "packages": {
+    "@aletheia-works/coi-serviceworker": ["@aletheia-works/coi-serviceworker@0.2.0", "", {}, "sha512-KtEQ9FfwWGY81EqIXd45GRLeumqOcRuhau5+eWBTVNZAmslvOx6pDLq9L4/MCGcu3PiNqV+QFWOKEzBulwuAGw=="],
+
     "@playwright/test": ["@playwright/test@1.64.1", "", { "dependencies": { "playwright": "1.64.1" }, "bin": { "playwright": "cli.js" } }, "sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg=="],
 
     "@shikijs/core": ["@shikijs/core@4.5.0", "", { "dependencies": { "@shikijs/primitive": "4.5.0", "@shikijs/types": "4.5.0", "@shikijs/vscode-textmate": "^10.0.2", "@types/hast": "^3.0.5", "hast-util-to-html": "^9.0.5" } }, "sha512-6CIgwq+bt2JZ3OSjb/nBkkwEf/CfpHcbam+Mg5Pllco7HAGRQ2/EFhZrrJtbyNTgKwknfVS+llsXGygiDGwJWw=="],
