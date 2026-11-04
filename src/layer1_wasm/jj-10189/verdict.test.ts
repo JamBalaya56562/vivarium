@@ -200,7 +200,7 @@ describe('buildEnvelope', () => {
       baseline: baseline.ok ? baseline.session : null,
       fix: fix.ok ? fix.session : null,
       upstreamUrl: 'https://github.com/jj-vcs/jj/issues/10189',
-      packageVersion: '0.11.0',
+      packageVersion: '0.12.0',
       packSha256: 'a'.repeat(64),
       guests: {
         baseline: { commit: 'b'.repeat(40), buildKey: 'c'.repeat(64) },

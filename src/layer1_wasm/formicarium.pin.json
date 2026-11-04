@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "package": "@aletheia-works/formicarium",
-  "packageVersion": "0.11.0",
-  "tarballSha256": "fe749372695046febe0b191abe923a296e09c6b6d3b96e059eec4a10f9034661",
-  "sourceCommit": "a53cb83aca35efffeeecd5e4db46448d83ad3270",
+  "packageVersion": "0.12.0",
+  "tarballSha256": "29c7c6e778c999f8a941addbbecca8d408bb165ce30c5cf30668a4676342c143",
+  "sourceCommit": "206d7b9ebc113ba7cb78116c1295b882fc174635",
   "files": [
     {
       "path": "LICENSE",
@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "9eef38b0104660365af95bb5a864915286272ed469dc8fce93c2d3f8d88bd8f3"
+      "sha256": "aad39ba589c0daee04ac5f65f35e0cda9252184b89affbb594a0c255e17d7292"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -23,7 +23,7 @@
     },
     {
       "path": "assets/paludarium/build-info.json",
-      "sha256": "74f6ecc871bf909cb523e0d58b82004013c553534ec8f78a91e8d7e6d4c83adc"
+      "sha256": "ca9582974e9a71b912d3084128c1eda45b4bf1302e8698eb494478cef07f003f"
     },
     {
       "path": "assets/paludarium/coordinator.mjs",
@@ -47,7 +47,7 @@
     },
     {
       "path": "assets/paludarium/paludarium.wasm",
-      "sha256": "c804d4cfb8cbda7dc88381fee61b86d282f4ad4fa6bdc43f351c91ccfeb10585"
+      "sha256": "de04424cf856a11767aa3ac2818d3ceb30bdfaaff289b8c18a7c801ad4e0adac"
     },
     {
       "path": "assets/paludarium/relay-protocol.mjs",
@@ -59,7 +59,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "483b8d635d0f54687617a2a0ffbba7938e95c6017f2400bfd83e4133ecbec40f"
+      "sha256": "815505050e04feeaf430f37cc25cab3068fe699c2fe92965d7fe198f93ea0d2a"
     },
     {
       "path": "runtime/command-parse.js",
