@@ -17,7 +17,7 @@
     "@aletheia-works/coi-serviceworker": "^0.2.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
-    "shiki": "^4.5.0",
+    "shiki": "^4.6.0",
     "typescript": "^7.0.2"
   }
 }
