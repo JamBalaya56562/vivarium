@@ -109,7 +109,7 @@
     {
       "project": "motioneye",
       "display_name": "motionEye",
-      "recipe_count": 2,
+      "recipe_count": 3,
       "layers": [
         3
       ],
