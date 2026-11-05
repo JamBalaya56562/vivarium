@@ -357,6 +357,7 @@ function readPreview(recipeDir: string): PreviewRecipe | undefined {
 
 interface RecipeMeta {
   schema_version: 1;
+  title?: string;
   language: string;
   symptom?: string;
   severity?: string;
@@ -624,10 +625,11 @@ export async function buildEntry(
   recipeDir: string,
 ): Promise<RecipeEntry> {
   const { project, issue, issuePath } = parseSlug(slug);
-  const title = await readTitle(join(recipeDir, 'README.md'), slug);
   const pageUrl = `${PAGES_BASE}/repro/${project}/${issuePath}/`;
   const sourceUrl = `${REPO_BASE}/tree/main/src/${LAYER_DIRNAME[layer]}/${slug}`;
   const meta = await loadRecipeMeta(recipeDir);
+  const title =
+    meta?.title ?? (await readTitle(join(recipeDir, 'README.md'), slug));
   const preview = readPreview(recipeDir);
   const entry: RecipeEntry = {
     slug,

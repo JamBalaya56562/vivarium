@@ -381,7 +381,14 @@ describe('preview recipes', () => {
         commit: 'b1a4692397339c75a5d1ce93fa017612c0e80214',
       }),
     );
-    await writeFile(path.join(recipe, 'README.md'), '# A manual pause lasts\n');
+    await writeFile(
+      path.join(recipe, 'recipe.json'),
+      JSON.stringify({
+        schema_version: 1,
+        title: 'A manual pause lasts',
+        language: 'python',
+      }),
+    );
     expect(await listRecipeSlugs(dir)).toEqual(['motioneye-3506']);
     const entry = await buildEntry(3, 'motioneye-3506', recipe);
     expect(entry).toMatchObject({
@@ -414,7 +421,6 @@ describe('preview recipes', () => {
         commit: '5ee7869c3710ce4135cf803e87338c1cd4ca8d85',
       }),
     );
-    await writeFile(path.join(recipe, 'README.md'), '# SameSite=Lax\n');
     const entry = await buildEntry(3, 'motioneye-pwa-samesite-lax', recipe);
     expect(entry).toMatchObject({
       layer: 3,

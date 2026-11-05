@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "title": "motionEye dev at 7b7ab1c — does the Android app keep its sign-in?",
   "language": "python",
   "severity": "bug",
   "tags": [

@@ -14,6 +14,11 @@
       "const": 1,
       "description": "Schema version literal. Always 1 for files validating against this schema; breaking changes ship as a sibling schema (recipe.v2.schema.json) per ADR-0018."
     },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The recipe's title in the recipes index, in place of the first H1 of its README. For a recipe with no README, such as a Layer 3 preview."
+    },
     "language": {
       "type": "string",
       "minLength": 1,

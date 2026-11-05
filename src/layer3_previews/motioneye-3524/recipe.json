@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "title": "motionEye #3524 — API keys for scripts and integrations",
   "language": "python",
   "severity": "enhancement",
   "tags": [

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import './project-page.css';
 import projectsIndex from '../public/api/projects.json';
 import recipesIndex from '../public/api/recipes.json';
-import { recipeUrl } from './recipe-url';
+import { recipeSourceUrl, recipeUrl } from './recipe-url';
 
 interface RecipeEntry {
   slug: string;
@@ -286,7 +286,7 @@ export function ProjectPage({
                   </a>
                   <a
                     className="v-pp__btn v-pp__btn--ghost"
-                    href={recipe.source_url}
+                    href={recipeSourceUrl(recipe)}
                     target="_blank"
                     rel="noreferrer"
                   >

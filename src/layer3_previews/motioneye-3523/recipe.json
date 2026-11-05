@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "title": "motionEye #3523 — the session cookie is SameSite=Lax, for installed web apps",
   "language": "python",
   "severity": "bug",
   "tags": [

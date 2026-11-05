@@ -97,8 +97,7 @@ that is not a pull request yet, named `<project>-<name>`:
 src/layer3_previews/
 └── <project>-<pull>/
     ├── preview.json   # repository, pull, issue, commit, optional source, services, access, public
-    ├── recipe.json    # language, severity, tags, as in the other layers
-    └── README.md      # what the pull request changes and how to check it
+    └── recipe.json    # title, language, severity, tags, as in the other layers
 ```
 
 `preview.json`, as the first preview (motionEye #3506, removed once it
@@ -166,5 +165,7 @@ when there is one, the `commit`, a `commit_url` in the `source` repository
 and a `preview_url`, and the gallery card opens the preview
 directly: a preview has no page of its own on the site. The `preview_url`
 is `https://sign-in.<domain>/<directory>/`, with the domain from
-[`domain.json`](domain.json). The README's check
-steps are for the pull request, where reviewers read them.
+[`domain.json`](domain.json). A preview has no README of its own: what it
+changes and how to check it are on the pull request, where reviewers read
+them, and the card's source button goes there too, or to the commit when
+there is no pull request.

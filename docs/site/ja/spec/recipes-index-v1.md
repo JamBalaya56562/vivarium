@@ -56,7 +56,7 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | `pull_url` | URI | ⏳ | Layer 3 のみで、`pull` があるとき——上流のプルリクエストのページ。2026-11-03 に追加。 |
 | `commit` | 文字列 | ⏳ | Layer 3 のみ——プレビューが動かすコミットの完全な SHA。2026-11-03 に追加。 |
 | `commit_url` | URI | ⏳ | Layer 3 のみ——そのコミットの GitHub 上のページ。取得元のリポジトリ（まだプルリクエストになっていないブランチなら fork）のもの。2026-11-03 に追加（2 回目の改訂）。 |
-| `title` | 文字列 | ✅ | レシピ README の最初の H1 から取得した人間可読なタイトル。 |
+| `title` | 文字列 | ✅ | レシピの `recipe.json` の `title`、無ければレシピ README の最初の H1 から取得した人間可読なタイトル。 |
 | `page_url` | URI | ⏳ | Layer 1 と Layer 2 のみで、そこでは必須——ライブ再現ページ（Layer 1: WASM ページ。Layer 2: docker-run 手順ページ）。Layer 3 のエントリは Vivarium のページを持たず、これを省略する。 |
 | `page_url_ja` | URI | ⏳ | オプション。同じページの日本語版で、サイトの `/ja/` ツリー配下にある。**レシピが翻訳（`src/layer*/<slug>/i18n.ja.json`）を持つ場合のみ**出力され、無い場合は日本語ページが存在しないことを意味する。`page_url` に `/ja/` を挿入して導出してはならない——未翻訳のレシピでは 404 になる。2026-09-02 に追加。 |
 | `preview_url` | URI | ⏳ | Layer 3 のみで、そこでは必須——動いているプレビュー。開くと GitHub へのサインインを求め、Vivarium がそのプロジェクトについて登録しているメンテナー、レシピが追加した人、プルリクエストならその作成者だけを通す。2026-11-03 に追加。 |
@@ -95,13 +95,14 @@ URL: <https://aletheia-works.github.io/vivarium/api/recipes.json>
 | 2026-11-01 | Layer 3 を上流のプルリクエストのライブプレビュー（`src/layer3_previews/`）とした。それまで Layer 3 のエントリは 1 件も無かった。オプションの `pull` を追加。Layer 3 のエントリの `issue` はそのプルリクエストが直す Issue で、`verdict_url` は持たないため、コンフォーマンス条項 4 は Layer 2 だけを対象にした。v1 のコンシューマーが見得たエントリについては後方互換。 |
 | 2026-11-03 | `page_url` を必須から外した。Layer 3 のエントリは Vivarium のページを持たなくなり、動いているプレビューを指す `preview_url` と、オプションの `pull_url`・`commit` を持つ。コンフォーマンス条項 5 を追加。すべてのエントリで `page_url` を読んでいたコンシューマーは壊れる。Vivarium MCP 0.9.0 以前もその一つで、Layer 3 のレシピに対して `lookup_verdict` と `verify_branch_fix` が空のページ URL を返す。Vivarium にはまだ既知の利用者がいないため v1 のままにした（AGENTS.md §4.9）。 |
 | 2026-11-03 | Layer 3 のエントリが、fork のブランチのような、まだプルリクエストになっていないコミットのプレビューも表せるようにした。その場合 `pull` と `pull_url` は無い。すべての Layer 3 エントリにオプションの `commit_url` を追加。`pull` はもともとオプションなので後方互換。 |
+| 2026-11-06 | `recipe.schema.json` にオプションの `title` を追加。README の無いレシピが、README の最初の H1 の代わりに使う。Layer 3 のプレビューは README を持たなくなったので、その `source_url` はメタデータだけのディレクトリを指す。インデックスのフィールドに変更はない。 |
 
 ## 生成方法
 
 インデックスは
 [`docs/scripts/generate-recipes-index.ts`](https://github.com/aletheia-works/vivarium/blob/main/docs/scripts/generate-recipes-index.ts)
 によってビルドされ、`docs/package.json` の rspress `dev` と `build` スクリプトに組み込まれている。
-スクリプトはレシピディレクトリを走査し、各レシピ README の最初の H1 からタイトルを取得し、
+スクリプトはレシピディレクトリを走査し、各レシピのタイトルを `recipe.json`、無ければ README の最初の H1 から取得し、
 slug パターン（末尾に Issue 番号を持つ slug の場合は `<project>-<digits>`。
 それ以外は最初のダッシュセグメント。形が異なるレシピには小さなオーバーライドマップ）から
 `project` / `issue` を導出する。Layer 3 のプレビューの slug はプルリクエスト番号で終わるか、プルリクエストの無いプレビューの名前なので、

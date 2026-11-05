@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import './recipe-gallery.css';
 import recipesIndex from '../public/api/recipes.json';
-import { recipeUrl } from './recipe-url';
+import { recipeSourceUrl, recipeUrl } from './recipe-url';
 
 interface RecipeEntry {
   slug: string;
@@ -266,7 +266,7 @@ function RecipeCard({ lang, recipe }: { lang: Lang; recipe: RecipeEntry }) {
         </a>
         <a
           className="v-rg__btn v-rg__btn--ghost"
-          href={recipe.source_url}
+          href={recipeSourceUrl(recipe)}
           target="_blank"
           rel="noreferrer"
         >

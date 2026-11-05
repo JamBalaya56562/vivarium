@@ -6,6 +6,18 @@ export interface RecipeUrlFields {
   preview_url?: string;
 }
 
+export interface RecipeSourceFields {
+  preview_url?: string;
+  pull_url?: string;
+  commit_url?: string;
+  source_url: string;
+}
+
+export function recipeSourceUrl(recipe: RecipeSourceFields): string {
+  if (!recipe.preview_url) return recipe.source_url;
+  return recipe.pull_url ?? recipe.commit_url ?? recipe.source_url;
+}
+
 export function recipeUrl(recipe: RecipeUrlFields, lang: Lang = 'en'): string {
   if (recipe.preview_url) return recipe.preview_url;
   const url =
