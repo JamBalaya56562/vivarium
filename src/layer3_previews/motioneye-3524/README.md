@@ -33,7 +33,8 @@ adds named API keys that act as the admin or the surveillance user, sent as
    | `/apikey/list/` | 403 | 403 | 403 |
 
    A wrong key gets 403 even though the session cookie is sent with it, and a
-   key cannot manage keys.
+   key cannot manage keys. A wrong key has to start with `meye_`: any other
+   bearer token is not treated as a key, and the session answers instead.
 5. Reopen the list and check that it shows when each key was last used.
 6. Revoke a key, send it again, and confirm that it now gets 403.
 
