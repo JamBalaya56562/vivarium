@@ -271,7 +271,7 @@ run = "bun run typecheck && bun run test"
 [tasks."ci:previews"]
 description = "Local equivalent of test-previews.yml"
 run = [
-  "node --test infra/aws/preview-proxy/index.test.mjs infra/aws/preview-proxy/auth.test.mjs infra/aws/preview-proxy/end-microvms.test.mjs",
+  "node --test infra/aws/preview-proxy/index.test.mjs infra/aws/preview-proxy/auth.test.mjs infra/aws/preview-proxy/http.test.mjs infra/aws/preview-proxy/end-microvms.test.mjs",
   "uv run --no-project python -m unittest discover -s infra/aws/motioneye",
 ]
 

@@ -9,19 +9,15 @@ const CONFIG = {
   clientId: 'client-id',
   clientSecret: 'client-secret',
   sessionKey: 'open-sesame',
-  previewsBucket: 'bucket',
-  previewsKey: 'previews.json',
-};
-const PREVIEWS = {
-  'motioneye-1': {
-    url: 'https://preview.example/',
-    repository: 'owner/repo',
-    pull: 1,
-    allowed: ['Maintainer'],
+  signInUrl: 'https://sign-in.example',
+  previews: {
+    'motioneye-1': {
+      url: 'https://preview.example/',
+      repository: 'owner/repo',
+      pull: 1,
+      allowed: ['Maintainer'],
+    },
   },
-};
-const EVENT = {
-  requestContext: { domainName: 'auth.example' },
 };
 
 function github({ login = 'maintainer', author = 'someone' } = {}) {
@@ -41,7 +37,6 @@ function github({ login = 'maintainer', author = 'someone' } = {}) {
 function auth(fetchImpl, config = CONFIG) {
   return createAuth({
     config,
-    loadPreviews: async () => PREVIEWS,
     fetchImpl,
     now: () => NOW,
     nonce: () => 'nonce-1',
@@ -50,13 +45,11 @@ function auth(fetchImpl, config = CONFIG) {
 
 async function signIn(respond, path = '/motioneye-1/config', query = '') {
   const start = await respond({
-    ...EVENT,
     rawPath: path,
     rawQueryString: query,
   });
   const state = new URL(start.headers.location).searchParams.get('state');
   return respond({
-    ...EVENT,
     rawPath: '/callback',
     rawQueryString: `code=abc&state=${encodeURIComponent(state)}`,
     cookies: [start.cookies[0].split(';')[0]],
@@ -65,15 +58,24 @@ async function signIn(respond, path = '/motioneye-1/config', query = '') {
 
 test('settings refuses a missing session key', () => {
   assert.throws(
-    () => settings({ PREVIEWS_BUCKET: 'a', PREVIEWS_KEY: 'b' }),
+    () => settings({ PREVIEWS: '{}', SIGN_IN_URL: 'https://a' }),
     /SESSION_KEY is not set/,
   );
+});
+
+test('settings reads the previews and the sign-in URL', () => {
+  const config = settings({
+    SESSION_KEY: 'a',
+    PREVIEWS: '{"motioneye-1":{"allowed":[]}}',
+    SIGN_IN_URL: 'https://sign-in.example/',
+  });
+  assert.deepEqual(config.previews, { 'motioneye-1': { allowed: [] } });
+  assert.equal(config.signInUrl, 'https://sign-in.example');
 });
 
 test('opening a preview sends the browser to GitHub with a state bound to a cookie', async () => {
   const { calls, fetchImpl } = github();
   const response = await auth(fetchImpl)({
-    ...EVENT,
     rawPath: '/motioneye-1/config',
     rawQueryString: 'a=1',
   });
@@ -86,7 +88,7 @@ test('opening a preview sends the browser to GitHub with a state bound to a cook
   assert.equal(location.searchParams.get('client_id'), 'client-id');
   assert.equal(
     location.searchParams.get('redirect_uri'),
-    'https://auth.example/callback',
+    'https://sign-in.example/callback',
   );
   assert.equal(location.searchParams.get('allow_signup'), 'false');
   assert.equal(location.searchParams.get('scope'), null);
@@ -100,7 +102,7 @@ test('opening a preview sends the browser to GitHub with a state bound to a cook
   assert.equal(state.path, '/config?a=1');
   assert.match(
     response.cookies[0],
-    /^vivarium-auth-state=nonce-1; Path=\/callback; Max-Age=600; HttpOnly; Secure/,
+    /^__Host-vivarium-auth-state=nonce-1; Path=\/; Max-Age=600; HttpOnly; Secure/,
   );
   assert.deepEqual(calls, []);
 });
@@ -108,15 +110,11 @@ test('opening a preview sends the browser to GitHub with a state bound to a cook
 test('an unknown preview, the root and a missing client id get no sign-in', async () => {
   const { fetchImpl } = github();
   const respond = auth(fetchImpl);
-  assert.equal(
-    (await respond({ ...EVENT, rawPath: '/motioneye-9/' })).statusCode,
-    404,
-  );
-  assert.equal((await respond({ ...EVENT, rawPath: '/' })).statusCode, 404);
+  assert.equal((await respond({ rawPath: '/motioneye-9/' })).statusCode, 404);
+  assert.equal((await respond({ rawPath: '/' })).statusCode, 404);
   assert.equal(
     (
       await auth(fetchImpl, { ...CONFIG, clientId: '' })({
-        ...EVENT,
         rawPath: '/motioneye-1/',
       })
     ).statusCode,
@@ -146,7 +144,10 @@ test('a listed login gets a ticket for that preview, without asking for the pull
     login: 'MAINTAINER',
     expires: NOW + 60_000,
   });
-  assert.match(response.cookies[0], /^vivarium-auth-state=; .*Max-Age=0/);
+  assert.match(
+    response.cookies[0],
+    /^__Host-vivarium-auth-state=; .*Max-Age=0/,
+  );
   assert.deepEqual(
     calls.map(([url]) => url),
     [
@@ -186,8 +187,7 @@ test('a preview without a pull request admits only its list and never asks for a
   };
   const respond = (fetchImpl) =>
     createAuth({
-      config: CONFIG,
-      loadPreviews: async () => previews,
+      config: { ...CONFIG, previews },
       fetchImpl,
       now: () => NOW,
       nonce: () => 'nonce-1',
@@ -229,15 +229,14 @@ test('a callback without its cookie, with a forged or expired state is refused b
     });
   const callback = (token, cookies) =>
     respond({
-      ...EVENT,
       rawPath: '/callback',
       rawQueryString: `code=abc&state=${encodeURIComponent(token)}`,
       cookies,
     });
-  const cookie = ['vivarium-auth-state=nonce-1'];
+  const cookie = ['__Host-vivarium-auth-state=nonce-1'];
   assert.equal((await callback(state(), [])).statusCode, 400);
   assert.equal(
-    (await callback(state(), ['vivarium-auth-state=other'])).statusCode,
+    (await callback(state(), ['__Host-vivarium-auth-state=other'])).statusCode,
     400,
   );
   assert.equal(
@@ -275,7 +274,13 @@ test('a GitHub failure answers 502 and clears the state cookie', async () => {
 });
 
 test('admits compares logins without case', () => {
-  assert.equal(admits(PREVIEWS['motioneye-1'], 'maintainer'), true);
-  assert.equal(admits(PREVIEWS['motioneye-1'], 'author', 'AUTHOR'), true);
-  assert.equal(admits(PREVIEWS['motioneye-1'], 'other', 'author'), false);
+  assert.equal(admits(CONFIG.previews['motioneye-1'], 'maintainer'), true);
+  assert.equal(
+    admits(CONFIG.previews['motioneye-1'], 'author', 'AUTHOR'),
+    true,
+  );
+  assert.equal(
+    admits(CONFIG.previews['motioneye-1'], 'other', 'author'),
+    false,
+  );
 });

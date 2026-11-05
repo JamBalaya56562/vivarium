@@ -3,7 +3,8 @@
 OpenTofu configuration for running a project's backend, at a given commit, as
 a preview a reviewer opens in a browser. Each preview is a
 [Lambda MicroVM](https://docs.aws.amazon.com/lambda/latest/dg/microvms-launching.html)
-image built from that commit, and a public function URL in front of it.
+image built from that commit, reached at a host of its own through CloudFront
+and one Lambda Web Function.
 
 The first preview ran motionEye with four fake cameras. The approach was tried
 step by step in a spike first
@@ -14,9 +15,11 @@ step by step in a spike first
 | File | Resources |
 |---|---|
 | [iam.tf](iam.tf) | The CI roles for plan and apply and the permissions boundary, created by hand and imported |
-| [storage.tf](storage.tf) | The private, versioned S3 bucket for the images' code artifacts |
-| [previews.tf](previews.tf) | Per preview: the MicroVM image, the proxy function, its URL and log group. Shared: the build and proxy roles and the build log group |
-| [auth.tf](auth.tf) | The GitHub sign-in shared by every preview: its function, URL, role and log group, the session key, and the list of previews and who gets into each |
+| [storage.tf](storage.tf) | The private, versioned S3 bucket for the images' code artifacts and the Web Functions' code, with the policy that lets Lambda read the latter |
+| [previews.tf](previews.tf) | Per preview: the MicroVM image. Shared: the proxy Web Function, its revision, endpoint, role and log groups, and the build role and log group |
+| [auth.tf](auth.tf) | The GitHub sign-in shared by every preview: its Web Function, revision, endpoint, role and log groups, the session key, and the list of previews and who gets into each |
+| [cdn.tf](cdn.tf) | The two CloudFront distributions, the origin access control that keeps the Web Functions behind them, the cache policy and the function that passes on the viewer's host |
+| [dns.tf](dns.tf) | The wildcard ACM certificate and the DNS records, in the existing Route 53 hosted zone of the domain in [`src/layer3_previews/domain.json`](../../src/layer3_previews/domain.json) |
 | [network.tf](network.tf) | The egress connector the proxy runs every preview MicroVM with: a VPC with no internet gateway, NAT or DNS resolver, two subnets, a security group with no rules, and the role Lambda uses for the connector's network interfaces |
 
 Each preview is a recipe under [`src/layer3_previews/`](../../src/layer3_previews/README.md):
@@ -68,9 +71,21 @@ The image is ARM_64 with 1 GB.
 
 ### The proxy
 
-[preview-proxy/index.mjs](preview-proxy/index.mjs) runs behind each preview's
-function URL with `RESPONSE_STREAM`.
+[preview-proxy/index.mjs](preview-proxy/index.mjs) is one Web Function behind
+one distribution, `*.<domain>`. A CloudFront function copies the viewer's host
+into a header, which the proxy reads to pick the preview; any other host gets
+404.
 
+- **Reaching it**: the endpoint is `IamAuth`, and its resource policy allows
+  only this distribution, which signs its requests through origin access
+  control with `always-amz-auth`. So the endpoint's own domain answers 403, and
+  a preview's `POST` and `Authorization` header reach the application unchanged.
+  A function URL behind origin access control could do neither: it needs a hash
+  of the body from the browser, and takes `Authorization` for the signature.
+- **Cache**: the cache policy has a one-second ceiling and keys on the host,
+  every cookie, `Authorization` and the query, because CloudFront forwards
+  `Authorization` on a `GET` only when the policy names it, and a policy cannot
+  name headers with every TTL at zero.
 - **Access**: except for a `public` path (below), a request without a
   valid session cookie is sent to the sign-in below, before any AWS call.
   The sign-in comes back with `?vivarium-ticket=<ticket>`, valid for a
@@ -94,8 +109,12 @@ function URL with `RESPONSE_STREAM`.
   port of its longest matching prefix, or to the port for `/`. For motionEye
   ([motioneye/routes.json](motioneye/routes.json)) that is `/mailpit/` to
   mailpit on 8025, `/uploads/` to the upload listing on 8030 and everything
-  else to motionEye on 8765. It streams the answers back to the browser, and
-  its MicroVM token allows only the ports in `routes.json`.
+  else to motionEye on 8765. It streams the answers back to the browser for up
+  to 60 seconds, the revision's timeout, and buffers each request body in
+  memory, since the platform delivers no answer before it has the whole request.
+  A body over 64 MiB gets 413, because an execution environment has a fixed 2 GB
+  that concurrent requests share.
+  Its MicroVM token allows only the ports in `routes.json`.
 
 Before applying, the apply workflow ends the MicroVMs of every image the plan
 deletes or replaces ([preview-proxy/end-microvms.mjs](preview-proxy/end-microvms.mjs)):
@@ -104,9 +123,10 @@ suspended.
 
 ### The sign-in
 
-[preview-proxy/auth.mjs](preview-proxy/auth.mjs) runs behind one function
-URL that every preview shares. A preview's link is
-`<sign-in URL>/<preview>/`, and the proxy sends a reviewer without a session
+[preview-proxy/auth.mjs](preview-proxy/auth.mjs) is a second Web Function,
+behind its own distribution at `sign-in.<domain>`, kept apart so the proxy
+never holds the OAuth secret. A preview's link is
+`https://sign-in.<domain>/<preview>/`, and the proxy sends a reviewer without a session
 there too, with the path they asked for.
 
 1. It sends the browser to GitHub's OAuth authorize page with no scope and a
@@ -119,13 +139,23 @@ there too, with the path they asked for.
    or the author gets a ticket and is sent to the preview's own URL; anyone
    else gets 403. The token is not kept.
 
-It reads the list from `preview-auth/previews.json` in the artifacts bucket,
-which OpenTofu writes with each preview's URL, so a change to who gets in
-needs no new function. The sign-in and every proxy sign their state, tickets
+It reads the list from its `PREVIEWS` environment variable, which OpenTofu
+writes, so a change to who gets in makes a new revision. The sign-in and the proxy sign their state, tickets
 and sessions with one key, `random_password.preview_session`; replacing it
 signs everyone out. The proxy checks only a session's signature, expiry and
 preview, not the list, so a login taken off the list keeps its session for up
 to a day; replacing the key is the way to end it sooner.
+
+Every preview is a sibling host of the sign-in and runs a pull request's code,
+so the session and state cookies use the `__Host-` prefix: no sibling can set
+them, or read them from its own host.
+
+Siblings are same-site, so `SameSite`, even `Strict`, does not stop a preview's
+page from sending a request to another preview with the reviewer's session. The
+proxy stops it instead: it answers 403 to `Sec-Fetch-Site: same-site` unless the
+request is a top-level `GET` or `HEAD` navigation, the rule `SameSite=Lax` gave
+while previews were cross-site. A browser that sends no `Sec-Fetch-Site` is not
+stopped.
 
 The GitHub OAuth app belongs to the organisation. Its client ID is the
 `PREVIEW_GITHUB_CLIENT_ID` repository variable and its secret the
@@ -190,7 +220,7 @@ $docker = "C:\Program Files\Docker\Docker\resources\bin\docker.exe"
 
 ### 1. CI の role と permissions boundary を手で作る
 
-template の `${account_id}` と `${subject_prefix}` を置き換えて、`.build/bootstrap/` に
+template の `${account_id}` と `${subject_prefix}` と `${preview_domain}` を置き換えて、`.build/bootstrap/` に
 書き出してから作ります。tag は provider の `default_tags` と同じにします（違うと plan が
 tag の変更を出し、apply の role はこれらを変えられないので失敗します）。
 
@@ -198,8 +228,9 @@ tag の変更を出し、apply の role はこれらを変えられないので�
 $aws = { & $docker run --rm -v "$HOME\.aws:/root/.aws" -v "${PWD}\.build\bootstrap:/bootstrap" amazon/aws-cli:2.37.12 @args }
 $account = & $aws sts get-caller-identity --query Account --output text
 New-Item -ItemType Directory -Force .build\bootstrap | Out-Null
+$domain = (Get-Content ..\..\src\layer3_previews\domain.json -Raw | ConvertFrom-Json).domain
 foreach ($name in 'workload-boundary', 'trust-plan', 'trust-apply', 'read-policy', 'apply-policy') {
-  (Get-Content "bootstrap\$name.json.tftpl" -Raw).Replace('${account_id}', $account).Replace('${subject_prefix}', 'repo:aletheia-works/vivarium') |
+  (Get-Content "bootstrap\$name.json.tftpl" -Raw).Replace('${account_id}', $account).Replace('${subject_prefix}', 'repo:aletheia-works/vivarium').Replace('${preview_domain}', $domain) |
     Set-Content -NoNewline ".build\bootstrap\$name.json"
 }
 $tags = 'Key=Project,Value=vivarium', 'Key=ManagedBy,Value=opentofu'
@@ -245,7 +276,7 @@ account では 1 度だけ手で作ります。
 
 ### 4. GitHub の OAuth App
 
-サインインの URL は最初の Apply で決まります。Apply の summary に出る
+サインインの URL は `https://sign-in.<domain>` です。Apply の summary に出る
 `Sign-in callback` の URL を使って、organization の OAuth App を 1 つ作ります。
 
 1. aletheia-works の Settings → Developer settings → OAuth Apps → New OAuth App
@@ -261,6 +292,16 @@ account では 1 度だけ手で作ります。
 
 リンクに秘密は入っていません。Apply の summary の `Preview links` に、プレビューごとに
 出ます。
+
+### ドメインを変えるとき
+
+`src/layer3_previews/domain.json` の domain に対応する公開 hosted zone が Route 53 に
+既にある必要があります。OpenTofu は zone を読むだけで、作りません。registrar が
+Route 53 でなければ、その NS を registrar 側に設定します。変えるときは次の順です。
+
+1. `domain.json` を変えて、`docs` で `bun run generate-index` を実行する
+2. 次の節のとおり、`apply-policy` を手で更新する（`${preview_domain}` が入っています）
+3. マージしたら、OAuth App の callback URL を summary の `Sign-in callback` に変える
 
 ### CI の role と boundary を変えるとき
 

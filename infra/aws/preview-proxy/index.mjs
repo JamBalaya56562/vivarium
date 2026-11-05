@@ -9,10 +9,11 @@ const LIVE_STATES = new Set(['PENDING', 'RUNNING', 'SUSPENDING', 'SUSPENDED']);
 const START_TIMEOUT_MS = 30_000;
 const POLL_MS = 1_000;
 const TOKEN_MARGIN_MS = 60_000;
-const COOKIE = 'vivarium-preview';
+const COOKIE = '__Host-vivarium-preview';
+const HOST_HEADER = 'x-vivarium-host';
 const SESSION_SECONDS = 86_400;
 const REPEATABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const PUBLIC_METHODS = new Set(['GET', 'HEAD']);
+const SAFE_METHODS = new Set(['GET', 'HEAD']);
 const TICKET_PARAM = 'vivarium-ticket';
 const DROPPED_REQUEST_HEADERS = new Set([
   'host',
@@ -22,7 +23,9 @@ const DROPPED_REQUEST_HEADERS = new Set([
   'x-forwarded-for',
   'x-forwarded-proto',
   'x-forwarded-port',
+  HOST_HEADER,
 ]);
+const DROPPED_REQUEST_PREFIXES = ['x-amz-', 'x-amzn-', 'lambda-web-'];
 const DROPPED_RESPONSE_HEADERS = new Set([
   'set-cookie',
   'content-length',
@@ -33,34 +36,27 @@ const DROPPED_RESPONSE_HEADERS = new Set([
 
 export function settings(env = process.env) {
   for (const name of [
-    'IMAGE_ARN',
+    'PREVIEWS',
     'INGRESS_CONNECTOR',
     'EGRESS_CONNECTOR',
-    'PREVIEW',
+    'DOMAIN',
     'AUTH_URL',
     'SESSION_KEY',
     'ROUTES',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
   ])
     if (!env[name]) throw new Error(`${name} is not set`);
   const routes = JSON.parse(env.ROUTES);
   if (!Number.isInteger(routes['/']))
     throw new Error('ROUTES has no port for /');
-  const publicPaths = JSON.parse(env.PUBLIC_PATHS ?? '[]');
-  if (
-    !Array.isArray(publicPaths) ||
-    !publicPaths.every((path) => typeof path === 'string')
-  )
-    throw new Error('PUBLIC_PATHS is not a list of paths');
-  return {
+  const shared = {
     region: env.AWS_REGION,
-    imageArn: env.IMAGE_ARN,
     ingressConnector: env.INGRESS_CONNECTOR,
     egressConnector: env.EGRESS_CONNECTOR,
-    preview: env.PREVIEW,
     authUrl: env.AUTH_URL.replace(/\/+$/, ''),
     sessionKey: env.SESSION_KEY,
     routes,
-    publicPaths: new Set(publicPaths),
     tokenMinutes: Number(env.TOKEN_MINUTES ?? 60),
     idlePolicy: {
       autoResumeEnabled: true,
@@ -68,12 +64,36 @@ export function settings(env = process.env) {
       suspendedDurationSeconds: Number(env.SUSPENDED_SECONDS ?? 3600),
     },
     maximumDurationInSeconds: Number(env.MAX_SECONDS ?? 28_800),
-    credentials: {
+    credentials: () => ({
       accessKeyId: env.AWS_ACCESS_KEY_ID,
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
       sessionToken: env.AWS_SESSION_TOKEN,
-    },
+    }),
   };
+  const previews = {};
+  for (const [
+    preview,
+    { imageArn, public: publicPaths = [] },
+  ] of Object.entries(JSON.parse(env.PREVIEWS))) {
+    if (
+      !Array.isArray(publicPaths) ||
+      !publicPaths.every((path) => typeof path === 'string')
+    )
+      throw new Error(`${preview}: public is not a list of paths`);
+    previews[preview] = {
+      ...shared,
+      preview,
+      imageArn,
+      publicPaths: new Set(publicPaths),
+    };
+  }
+  return { domain: env.DOMAIN.toLowerCase(), previews };
+}
+
+export function previewName(domain, host) {
+  const name = host?.toLowerCase();
+  const suffix = `.${domain}`;
+  return name?.endsWith(suffix) ? name.slice(0, -suffix.length) : undefined;
 }
 
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
@@ -145,7 +165,7 @@ export function microvms(config, fetchImpl = fetch) {
       body: text,
       service: 'lambda',
       region: config.region,
-      credentials: config.credentials,
+      credentials: config.credentials(),
     });
     const search = new URLSearchParams(query).toString();
     const response = await fetchImpl(
@@ -238,6 +258,17 @@ function ownCookie(cookies = []) {
   return cookies.find((c) => c.startsWith(prefix))?.slice(prefix.length);
 }
 
+export function fromSibling(event) {
+  const headers = event.headers ?? {};
+  return (
+    headers['sec-fetch-site'] === 'same-site' &&
+    !(
+      SAFE_METHODS.has(event.requestContext?.http?.method ?? 'GET') &&
+      headers['sec-fetch-dest'] === 'document'
+    )
+  );
+}
+
 export function admit(config, event, now = Date.now()) {
   const query = new URLSearchParams(event.rawQueryString ?? '');
   const ticket = query.get(TICKET_PARAM);
@@ -268,7 +299,7 @@ export function admit(config, event, now = Date.now()) {
   if (session?.preview === config.preview) return { status: 200 };
   if (
     config.publicPaths?.has(event.rawPath) &&
-    PUBLIC_METHODS.has(event.requestContext?.http?.method ?? 'GET')
+    SAFE_METHODS.has(event.requestContext?.http?.method ?? 'GET')
   )
     return { status: 200, public: true };
   const search = event.rawQueryString ? `?${event.rawQueryString}` : '';
@@ -288,7 +319,10 @@ function upstreamPort(routes, path) {
 export function upstreamRequest(event, connection, routes) {
   const headers = {};
   for (const [name, value] of Object.entries(event.headers ?? {}))
-    if (!DROPPED_REQUEST_HEADERS.has(name) && !name.startsWith('x-amzn-'))
+    if (
+      !DROPPED_REQUEST_HEADERS.has(name) &&
+      !DROPPED_REQUEST_PREFIXES.some((prefix) => name.startsWith(prefix))
+    )
       headers[name] = value;
   const cookies = (event.cookies ?? []).filter(
     (c) => !c.startsWith(`${COOKIE}=`),
@@ -300,7 +334,7 @@ export function upstreamRequest(event, connection, routes) {
   );
   const method = event.requestContext?.http?.method ?? 'GET';
   const body =
-    event.body === undefined || event.body === null || method === 'GET'
+    event.body === undefined || event.body === null || SAFE_METHODS.has(method)
       ? undefined
       : Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8');
   const query = event.rawQueryString ? `?${event.rawQueryString}` : '';
@@ -354,6 +388,13 @@ export function createProxy({
     return connection;
   }
   return async function respond(event, responseStream) {
+    if (fromSibling(event))
+      return plain(
+        responseStream,
+        from,
+        403,
+        'A page on another preview cannot send requests to this one.\n',
+      );
     const admission = admit(config, event, now());
     if (admission.status === 403)
       return plain(
@@ -409,20 +450,18 @@ export function createProxy({
   };
 }
 
-export const handler = globalThis.awslambda?.streamifyResponse(
-  (() => {
-    let respond;
-    return (event, responseStream) => {
-      if (!respond) {
-        const config = settings();
-        respond = createProxy({
-          config,
-          api: microvms(config),
-          from: (stream, metadata) =>
-            globalThis.awslambda.HttpResponseStream.from(stream, metadata),
-        });
-      }
-      return respond(event, responseStream);
-    };
-  })(),
-);
+export function createRouter({ config, from, proxyFor }) {
+  const proxies = new Map(
+    Object.entries(config.previews).map(([name, preview]) => [
+      name,
+      proxyFor(preview),
+    ]),
+  );
+  return (event, responseStream) => {
+    const proxy = proxies.get(
+      previewName(config.domain, event.headers?.[HOST_HEADER]),
+    );
+    if (proxy) return proxy(event, responseStream);
+    plain(responseStream, from, 404, 'There is no such preview.\n');
+  };
+}

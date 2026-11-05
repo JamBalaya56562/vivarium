@@ -81,7 +81,7 @@ test('terminate sends DELETE to the MicroVM', async () => {
   const api = microvms(
     {
       region: 'ap-northeast-1',
-      credentials: { accessKeyId: 'AKID', secretAccessKey: 'secret' },
+      credentials: () => ({ accessKeyId: 'AKID', secretAccessKey: 'secret' }),
     },
     async (url, init) => {
       seen.push(`${init.method} ${url}`);

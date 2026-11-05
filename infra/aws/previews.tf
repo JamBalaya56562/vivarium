@@ -1,5 +1,7 @@
 locals {
-  recipes_dir = "${path.module}/../../src/layer3_previews"
+  recipes_dir    = "${path.module}/../../src/layer3_previews"
+  preview_domain = jsondecode(file("${local.recipes_dir}/domain.json")).domain
+  sign_in_host   = "sign-in.${local.preview_domain}"
   previews = {
     for recipe in fileset(local.recipes_dir, "*/preview.json") :
     dirname(recipe) => merge(
@@ -152,19 +154,29 @@ resource "awscc_lambda_microvm_image" "preview" {
 data "archive_file" "preview_proxy" {
   type        = "zip"
   output_path = "${path.module}/.build/preview-proxy.zip"
-  source {
-    filename = "index.mjs"
-    content  = file("${path.module}/preview-proxy/index.mjs")
-  }
-  source {
-    filename = "session.mjs"
-    content  = file("${path.module}/preview-proxy/session.mjs")
+  dynamic "source" {
+    for_each = ["proxy-server.mjs", "index.mjs", "http.mjs", "session.mjs"]
+    content {
+      filename = source.value
+      content  = file("${path.module}/preview-proxy/${source.value}")
+    }
   }
 }
 
+resource "aws_s3_object" "preview_proxy" {
+  bucket = aws_s3_bucket.artifacts.id
+  key    = "${local.web_function_artifacts}/proxy-${data.archive_file.preview_proxy.output_sha256}.zip"
+  source = data.archive_file.preview_proxy.output_path
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Lambda writes logs to the .local group first, then copies them to the other; it would create it with no retention.
 resource "aws_cloudwatch_log_group" "preview_proxy" {
-  for_each          = local.previews
-  name              = "/vivarium/preview/${each.key}"
+  for_each          = toset(["/vivarium/preview-proxy", "/vivarium/preview-proxy.local"])
+  name              = each.value
   retention_in_days = 30
 }
 
@@ -206,70 +218,84 @@ resource "aws_iam_role_policy" "preview_proxy" {
       {
         Effect   = "Allow"
         Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
-        Resource = "arn:aws:logs:${var.aws_region}:${local.account_id}:log-group:/vivarium/preview/*:*"
+        Resource = [for group in aws_cloudwatch_log_group.preview_proxy : "${group.arn}:*"]
       },
     ])
   })
 }
 
-resource "aws_lambda_function" "preview" {
-  for_each         = local.previews
-  function_name    = "vivarium-preview-${each.key}"
-  description      = "Forwards ${local.preview_labels[each.key]} to its MicroVM."
-  role             = aws_iam_role.preview_proxy.arn
-  runtime          = "nodejs24.x"
-  architectures    = ["arm64"]
-  handler          = "index.handler"
-  filename         = data.archive_file.preview_proxy.output_path
-  source_code_hash = data.archive_file.preview_proxy.output_base64sha256
-  memory_size      = 256
-  timeout          = 60
-  logging_config {
-    log_format = "Text"
-    log_group  = aws_cloudwatch_log_group.preview_proxy[each.key].name
-  }
-  environment {
-    variables = {
-      IMAGE_ARN         = awscc_lambda_microvm_image.preview[each.key].image_arn
-      INGRESS_CONNECTOR = "${local.connector}:ALL_INGRESS"
-      EGRESS_CONNECTOR  = aws_lambdacore_network_connector.preview.arn
-      PREVIEW           = each.key
-      AUTH_URL          = aws_lambda_function_url.preview_auth.function_url
-      SESSION_KEY       = random_password.preview_session.result
-      ROUTES            = jsonencode(jsondecode(file("${path.module}/motioneye/routes.json")))
-      PUBLIC_PATHS      = jsonencode(each.value.public)
+resource "aws_lambdaweb_function" "preview_proxy" {
+  function_name = "vivarium-preview-proxy"
+}
+
+resource "aws_lambdaweb_function_revision" "preview_proxy" {
+  function_name = aws_lambdaweb_function.preview_proxy.function_name
+  description   = "Forwards each preview to its MicroVM."
+
+  build_config {
+    runtime_config {
+      runtime = "nodejs24.x"
+    }
+    code_config {
+      s3_object {
+        bucket     = aws_s3_object.preview_proxy.bucket
+        key        = aws_s3_object.preview_proxy.key
+        version_id = aws_s3_object.preview_proxy.version_id
+      }
     }
   }
 
-  depends_on = [aws_iam_role_policy.preview_proxy]
+  service_config {
+    execution_role_arn = aws_iam_role.preview_proxy.arn
+    timeout_seconds    = 60
+    environment_variables = {
+      AWS_LAMBDA_NODEJS_ENTRYPOINT = "proxy-server.mjs"
+      INGRESS_CONNECTOR            = "${local.connector}:ALL_INGRESS"
+      EGRESS_CONNECTOR             = aws_lambdacore_network_connector.preview.arn
+      DOMAIN                       = local.preview_domain
+      AUTH_URL                     = "https://${local.sign_in_host}"
+      SESSION_KEY                  = random_password.preview_session.result
+      ROUTES                       = jsonencode(jsondecode(file("${path.module}/motioneye/routes.json")))
+      PREVIEWS = jsonencode({
+        for name, preview in local.previews : name => {
+          imageArn = awscc_lambda_microvm_image.preview[name].image_arn
+          public   = preview.public
+        }
+      })
+    }
+    telemetry_config {
+      logging_config {
+        log_group = aws_cloudwatch_log_group.preview_proxy["/vivarium/preview-proxy"].name
+      }
+    }
+  }
+
+  depends_on = [aws_iam_role_policy.preview_proxy, aws_s3_bucket_policy.artifacts]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
-resource "aws_lambda_function_url" "preview" {
-  for_each           = local.previews
-  function_name      = aws_lambda_function.preview[each.key].function_name
-  authorization_type = "NONE"
-  invoke_mode        = "RESPONSE_STREAM"
+resource "aws_lambdaweb_function_endpoint" "preview_proxy" {
+  function_name        = aws_lambdaweb_function.preview_proxy.function_name
+  endpoint_name        = "cloudfront"
+  endpoint_type        = "HomeRegion"
+  auth_type            = "IamAuth"
+  auto_deployment_mode = "Disabled"
+
+  revision_weight {
+    revision_id = aws_lambdaweb_function_revision.preview_proxy.revision_id
+    weight      = 100
+  }
 }
 
-resource "aws_lambda_permission" "preview_url" {
-  for_each               = local.previews
-  statement_id           = "public-function-url"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.preview[each.key].function_name
-  principal              = "*"
-  function_url_auth_type = "NONE"
-}
-
-resource "aws_lambda_permission" "preview_invoke" {
-  for_each                 = local.previews
-  statement_id             = "public-function-url-invoke"
-  action                   = "lambda:InvokeFunction"
-  function_name            = aws_lambda_function.preview[each.key].function_name
-  principal                = "*"
-  invoked_via_function_url = true
+resource "aws_lambdaweb_resource_policy" "preview_proxy" {
+  resource_arn = aws_lambdaweb_function.preview_proxy.arn
+  policy       = local.cloudfront_invoke_policies.proxy
 }
 
 output "preview_links" {
   description = "Each preview's link, which signs the reviewer in with GitHub"
-  value       = { for name in keys(local.previews) : name => "${aws_lambda_function_url.preview_auth.function_url}${name}/" }
+  value       = { for name in keys(local.previews) : name => "https://${local.sign_in_host}/${name}/" }
 }

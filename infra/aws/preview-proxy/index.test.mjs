@@ -7,7 +7,11 @@ import {
   admit,
   connect,
   createProxy,
+  createRouter,
+  fromSibling,
+  microvms,
   previewMicrovm,
+  previewName,
   responseMetadata,
   settings,
   sign,
@@ -126,38 +130,52 @@ test('sign still matches the get-vanilla test vector', () => {
   );
 });
 
-test('settings refuses a missing session key', () => {
-  assert.throws(
-    () =>
-      settings({
-        IMAGE_ARN: 'a',
-        INGRESS_CONNECTOR: 'b',
-        EGRESS_CONNECTOR: 'c',
-        PREVIEW: 'd',
-        AUTH_URL: 'e',
-      }),
-    /SESSION_KEY is not set/,
-  );
+const ENV = {
+  PREVIEWS: '{"motioneye-1":{"imageArn":"arn:image"}}',
+  INGRESS_CONNECTOR: 'b',
+  EGRESS_CONNECTOR: 'c',
+  DOMAIN: 'Previews.Example',
+  AUTH_URL: 'https://sign-in.previews.example/',
+  SESSION_KEY: 'f',
+  ROUTES: '{"/":8080,"/admin":9090}',
+  AWS_ACCESS_KEY_ID: 'g',
+  AWS_SECRET_ACCESS_KEY: 'h',
+};
+
+test('settings refuses a missing setting', () => {
+  for (const name of [
+    'PREVIEWS',
+    'INGRESS_CONNECTOR',
+    'EGRESS_CONNECTOR',
+    'DOMAIN',
+    'AUTH_URL',
+    'SESSION_KEY',
+    'ROUTES',
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+  ]) {
+    const { [name]: _, ...env } = ENV;
+    assert.throws(() => settings(env), new RegExp(`${name} is not set`));
+  }
 });
 
-test('settings reads the routes and refuses them without a port for /', () => {
-  const env = {
-    IMAGE_ARN: 'a',
-    INGRESS_CONNECTOR: 'b',
-    EGRESS_CONNECTOR: 'c',
-    PREVIEW: 'd',
-    AUTH_URL: 'e',
-    SESSION_KEY: 'f',
-  };
-  assert.deepEqual(
-    settings({ ...env, ROUTES: '{"/":8080,"/admin":9090}' }).routes,
-    { '/': 8080, '/admin': 9090 },
+test('settings gives each preview its image, routes and sign-in URL', () => {
+  const { domain, previews } = settings(ENV);
+  assert.equal(domain, 'previews.example');
+  assert.equal(previews['motioneye-1'].preview, 'motioneye-1');
+  assert.equal(previews['motioneye-1'].imageArn, 'arn:image');
+  assert.equal(
+    previews['motioneye-1'].authUrl,
+    'https://sign-in.previews.example',
   );
+  assert.deepEqual(previews['motioneye-1'].routes, {
+    '/': 8080,
+    '/admin': 9090,
+  });
   assert.throws(
-    () => settings({ ...env, ROUTES: '{"/admin":9090}' }),
+    () => settings({ ...ENV, ROUTES: '{"/admin":9090}' }),
     /ROUTES has no port for \//,
   );
-  assert.throws(() => settings(env), /ROUTES is not set/);
 });
 
 test('a ticket sets the session cookie and redirects without the ticket', () => {
@@ -174,7 +192,7 @@ test('a ticket sets the session cookie and redirects without the ticket', () => 
   assert.equal(admission.login, 'octocat');
   assert.match(
     admission.cookie,
-    /^vivarium-preview=[\w-]+\.[\w-]+; Path=\/; Max-Age=86400; HttpOnly; Secure/,
+    /^__Host-vivarium-preview=[\w-]+\.[\w-]+; Path=\/; Max-Age=86400; HttpOnly; Secure/,
   );
   assert.doesNotMatch(admission.cookie, /open-sesame/);
 });
@@ -242,24 +260,64 @@ test('a public path is answered without a session to GET and HEAD only', () => {
 });
 
 test('settings reads the public paths, none by default', () => {
-  const env = {
-    IMAGE_ARN: 'a',
-    INGRESS_CONNECTOR: 'b',
-    EGRESS_CONNECTOR: 'c',
-    PREVIEW: 'd',
-    AUTH_URL: 'e',
-    SESSION_KEY: 'f',
-    ROUTES: '{"/":8080}',
-  };
-  assert.deepEqual([...settings(env).publicPaths], []);
+  const paths = (preview) =>
+    settings({ ...ENV, PREVIEWS: JSON.stringify({ 'motioneye-1': preview }) })
+      .previews['motioneye-1'].publicPaths;
+  assert.deepEqual([...paths({ imageArn: 'a' })], []);
   assert.deepEqual(
-    [...settings({ ...env, PUBLIC_PATHS: '["/manifest.json"]' }).publicPaths],
+    [...paths({ imageArn: 'a', public: ['/manifest.json'] })],
     ['/manifest.json'],
   );
   assert.throws(
-    () => settings({ ...env, PUBLIC_PATHS: '"/manifest.json"' }),
-    /PUBLIC_PATHS is not a list of paths/,
+    () => paths({ imageArn: 'a', public: '/manifest.json' }),
+    /motioneye-1: public is not a list of paths/,
   );
+});
+
+test('a host names its preview only under the domain', () => {
+  assert.equal(
+    previewName('previews.example', 'Motioneye-1.Previews.Example'),
+    'motioneye-1',
+  );
+  assert.equal(previewName('previews.example', 'previews.example'), undefined);
+  assert.equal(
+    previewName('previews.example', 'motioneye-1.other.example'),
+    undefined,
+  );
+  assert.equal(previewName('previews.example', undefined), undefined);
+});
+
+test('the router sends a request to the proxy of its preview, and any other host to 404', async () => {
+  const seen = [];
+  const respond = createRouter({
+    config: {
+      domain: 'previews.example',
+      previews: { 'motioneye-1': { preview: 'motioneye-1' } },
+    },
+    from: (stream, metadata) => {
+      stream.metadata = metadata;
+      return stream;
+    },
+    proxyFor: (preview) => (event) =>
+      seen.push([preview.preview, event.rawPath]),
+  });
+  await respond(
+    {
+      rawPath: '/config',
+      headers: { 'x-vivarium-host': 'motioneye-1.previews.example' },
+    },
+    new PassThrough(),
+  );
+  assert.deepEqual(seen, [['motioneye-1', '/config']]);
+  for (const headers of [
+    { 'x-vivarium-host': 'motioneye-2.previews.example' },
+    {},
+  ]) {
+    const stream = new PassThrough();
+    await respond({ rawPath: '/', headers }, stream);
+    assert.equal(stream.metadata.statusCode, 404);
+  }
+  assert.equal(seen.length, 1);
 });
 
 test('a live MicroVM is reused and none is started', async () => {
@@ -290,21 +348,6 @@ test('a started MicroVM sends its outbound traffic only through the egress conne
   assert.deepEqual(api.runs[0].egressNetworkConnectors, ['arn:egress']);
 });
 
-test('settings refuses a missing egress connector', () => {
-  assert.throws(
-    () =>
-      settings({
-        IMAGE_ARN: 'a',
-        INGRESS_CONNECTOR: 'b',
-        PREVIEW: 'c',
-        AUTH_URL: 'd',
-        SESSION_KEY: 'e',
-        ROUTES: '{"/":1}',
-      }),
-    /EGRESS_CONNECTOR is not set/,
-  );
-});
-
 test("connect asks for a token to the routes' ports only", async () => {
   const api = fakeApi([{ microvmId: 'mvm-live', state: 'RUNNING' }]);
   const connection = await connect(CONFIG, api, { now: () => 1000 });
@@ -319,10 +362,14 @@ test('the upstream request carries the token, the port and only motionEye cookie
     rawQueryString: '_=1',
     cookies: [admitted().cookies[0], 'user=abc'],
     headers: {
-      host: 'url.lambda-url.on.aws',
+      host: 'endpoint.lambda-web.ap-northeast-1.on.aws',
+      authorization: 'Bearer meye_key',
       'content-type': 'application/json',
+      'lambda-web-request-id': 'request',
+      'x-amz-security-token': 'aws-token',
       'x-amzn-trace-id': 'Root=1',
       'x-forwarded-for': '1.2.3.4',
+      'x-vivarium-host': 'motioneye-1.previews.example',
     },
     requestContext: { http: { method: 'POST' } },
     body: Buffer.from('{"a":1}').toString('base64'),
@@ -335,6 +382,7 @@ test('the upstream request carries the token, the port and only motionEye cookie
   );
   assert.equal(url, 'https://mvm.example/config/1/set/?_=1');
   assert.deepEqual(init.headers, {
+    authorization: 'Bearer meye_key',
     'content-type': 'application/json',
     cookie: 'user=abc',
     'x-aws-proxy-auth': 'jwe',
@@ -588,4 +636,81 @@ test('a write is not sent twice after a failed fetch', async () => {
   );
   assert.equal(calls, 1);
   assert.equal(sent[0].metadata.statusCode, 503);
+});
+
+test('a request from a sibling host is refused unless it is a top-level navigation', () => {
+  const event = (method, site, dest) => ({
+    requestContext: { http: { method } },
+    headers: { 'sec-fetch-site': site, 'sec-fetch-dest': dest },
+  });
+  assert.equal(fromSibling(event('POST', 'same-site', 'empty')), true);
+  assert.equal(fromSibling(event('GET', 'same-site', 'empty')), true);
+  assert.equal(fromSibling(event('GET', 'same-site', 'iframe')), true);
+  assert.equal(fromSibling(event('POST', 'same-site', 'document')), true);
+  assert.equal(fromSibling(event('GET', 'same-site', 'document')), false);
+  assert.equal(fromSibling(event('HEAD', 'same-site', 'document')), false);
+  assert.equal(fromSibling(event('POST', 'same-origin', 'empty')), false);
+  assert.equal(fromSibling(event('GET', 'cross-site', 'document')), false);
+  assert.equal(fromSibling({}), false);
+});
+
+test('a sibling request with a valid session gets 403 and never reaches the MicroVM', async () => {
+  const api = fakeApi();
+  const { sent, from } = sink();
+  let fetched = false;
+  const respond = createProxy({
+    config: CONFIG,
+    api,
+    fetchImpl: async () => {
+      fetched = true;
+      return new Response('');
+    },
+    from,
+    now: () => NOW,
+  });
+  await respond(
+    admitted({
+      requestContext: { http: { method: 'POST' } },
+      headers: { 'sec-fetch-site': 'same-site', 'sec-fetch-dest': 'empty' },
+    }),
+    {},
+  );
+  assert.equal(sent[0].metadata.statusCode, 403);
+  assert.equal(sent[0].metadata.headers['cache-control'], 'no-store');
+  assert.equal(fetched, false);
+  assert.deepEqual(api.calls, []);
+});
+
+test('a HEAD request drops its body, as a GET does', () => {
+  for (const method of ['GET', 'HEAD']) {
+    const { init } = upstreamRequest(
+      {
+        rawPath: '/',
+        body: 'e30=',
+        isBase64Encoded: true,
+        requestContext: { http: { method } },
+      },
+      { endpoint: 'mvm.example', token: 'jwe' },
+      CONFIG.routes,
+    );
+    assert.equal(init.body, undefined);
+  }
+});
+
+test('each call signs with the credentials the environment holds at that moment', async () => {
+  const env = {
+    ...ENV,
+    AWS_REGION: 'ap-northeast-1',
+    AWS_ACCESS_KEY_ID: 'first',
+  };
+  const config = settings(env).previews['motioneye-1'];
+  const seen = [];
+  const api = microvms(config, async (_url, { headers }) => {
+    seen.push(headers.authorization.match(/Credential=([^/]+)/)[1]);
+    return Response.json({});
+  });
+  await api.get('a');
+  env.AWS_ACCESS_KEY_ID = 'second';
+  await api.get('a');
+  assert.deepEqual(seen, ['first', 'second']);
 });

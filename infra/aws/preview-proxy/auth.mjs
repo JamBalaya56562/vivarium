@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 import { localPath, seal, unseal } from './session.mjs';
 
-const STATE_COOKIE = 'vivarium-auth-state';
+const STATE_COOKIE = '__Host-vivarium-auth-state';
 const STATE_MS = 10 * 60_000;
 const TICKET_MS = 60_000;
 const TICKET_PARAM = 'vivarium-ticket';
@@ -13,14 +13,14 @@ const GITHUB_API = {
 };
 
 export function settings(env = process.env) {
-  for (const name of ['SESSION_KEY', 'PREVIEWS_BUCKET', 'PREVIEWS_KEY'])
+  for (const name of ['SESSION_KEY', 'PREVIEWS', 'SIGN_IN_URL'])
     if (!env[name]) throw new Error(`${name} is not set`);
   return {
     clientId: env.CLIENT_ID ?? '',
     clientSecret: env.CLIENT_SECRET ?? '',
     sessionKey: env.SESSION_KEY,
-    previewsBucket: env.PREVIEWS_BUCKET,
-    previewsKey: env.PREVIEWS_KEY,
+    previews: JSON.parse(env.PREVIEWS),
+    signInUrl: env.SIGN_IN_URL.replace(/\/+$/, ''),
   };
 }
 
@@ -60,7 +60,7 @@ const redirect = (location, cookies) =>
   answer(302, '', { headers: { location }, ...(cookies ? { cookies } : {}) });
 
 function stateCookie(nonce, maxAge) {
-  return `${STATE_COOKIE}=${nonce}; Path=/callback; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
+  return `${STATE_COOKIE}=${nonce}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 function ownCookie(cookies = []) {
@@ -77,7 +77,6 @@ export function admits(preview, login, author) {
 
 export function createAuth({
   config,
-  loadPreviews,
   fetchImpl = fetch,
   now = Date.now,
   nonce = () => randomBytes(16).toString('hex'),
@@ -91,7 +90,7 @@ export function createAuth({
   }
 
   async function start(event, name, rest) {
-    const preview = (await loadPreviews())[name];
+    const preview = config.previews[name];
     if (!preview) return answer(404, `There is no preview named ${name}.\n`);
     if (!config.clientId)
       return answer(503, 'Sign-in for the previews is not set up yet.\n');
@@ -107,7 +106,7 @@ export function createAuth({
     const authorize = new URL('https://github.com/login/oauth/authorize');
     authorize.search = new URLSearchParams({
       client_id: config.clientId,
-      redirect_uri: `https://${event.requestContext.domainName}/callback`,
+      redirect_uri: `${config.signInUrl}/callback`,
       state,
       allow_signup: 'false',
     }).toString();
@@ -137,7 +136,7 @@ export function createAuth({
           client_id: config.clientId,
           client_secret: config.clientSecret,
           code: query.get('code'),
-          redirect_uri: `https://${event.requestContext.domainName}/callback`,
+          redirect_uri: `${config.signInUrl}/callback`,
         }),
       },
     );
@@ -149,7 +148,7 @@ export function createAuth({
         cookies: cleared,
       });
     const { login } = await github('https://api.github.com/user', token);
-    const preview = (await loadPreviews())[state.preview];
+    const preview = config.previews[state.preview];
     if (!preview)
       return answer(404, `There is no preview named ${state.preview}.\n`, {
         cookies: cleared,
@@ -197,24 +196,4 @@ export function createAuth({
     if (!name) return answer(404, 'Open a preview from its recipe page.\n');
     return start(event, name, rest.join('/'));
   };
-}
-
-async function readPreviews(config) {
-  const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-  const object = await new S3Client({}).send(
-    new GetObjectCommand({
-      Bucket: config.previewsBucket,
-      Key: config.previewsKey,
-    }),
-  );
-  return JSON.parse(await object.Body.transformToString());
-}
-
-let respond;
-export async function handler(event) {
-  if (!respond) {
-    const config = settings();
-    respond = createAuth({ config, loadPreviews: () => readPreviews(config) });
-  }
-  return respond(event);
 }

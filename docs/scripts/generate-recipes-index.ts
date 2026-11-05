@@ -282,8 +282,10 @@ const REPO_NAME = process.env.GITHUB_REPOSITORY?.split('/')[1] ?? 'vivarium';
 
 const PAGES_BASE = `https://${OWNER}.github.io/${REPO_NAME}`;
 const REPO_BASE = `https://github.com/${OWNER}/${REPO_NAME}`;
-export const PREVIEW_SIGN_IN_URL =
-  'https://by3cncidquxt62qsas6sl4d6ue0pslrf.lambda-url.ap-northeast-1.on.aws';
+const PREVIEW_DOMAIN: string = JSON.parse(
+  readFileSync(join(REPO_ROOT, 'src/layer3_previews/domain.json'), 'utf8'),
+).domain;
+export const PREVIEW_SIGN_IN_URL = `https://sign-in.${PREVIEW_DOMAIN}`;
 
 type Layer = 1 | 2 | 3;
 

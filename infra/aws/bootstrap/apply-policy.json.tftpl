@@ -16,7 +16,9 @@
       "Action": "lambda:*",
       "Resource": [
         "arn:aws:lambda:*:${account_id}:function:vivarium-*",
-        "arn:aws:lambda:*:${account_id}:microvm-image:vivarium-*"
+        "arn:aws:lambda:*:${account_id}:microvm-image:vivarium-*",
+        "arn:aws:lambda:*:${account_id}:web-function/vivarium-*",
+        "arn:aws:lambda:*:${account_id}:web-function/vivarium-*/*"
       ]
     },
     {
@@ -156,6 +158,108 @@
           "iam:PassedToService": [
             "lambda.amazonaws.com",
             "network-connectors.lambda.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "CreatePreviewEdge",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateDistribution",
+        "cloudfront:CreateOriginAccessControl",
+        "cloudfront:CreateCachePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TagOwnDistributionsAtCreation",
+      "Effect": "Allow",
+      "Action": "cloudfront:TagResource",
+      "Resource": "arn:aws:cloudfront::${account_id}:distribution/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "vivarium"
+        }
+      }
+    },
+    {
+      "Sid": "ManageOwnDistributions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:UpdateDistribution",
+        "cloudfront:DeleteDistribution",
+        "cloudfront:TagResource",
+        "cloudfront:UntagResource"
+      ],
+      "Resource": "arn:aws:cloudfront::${account_id}:distribution/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "vivarium"
+        }
+      }
+    },
+    {
+      "Sid": "ManageOwnCloudFrontFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateFunction",
+        "cloudfront:UpdateFunction",
+        "cloudfront:PublishFunction",
+        "cloudfront:DeleteFunction"
+      ],
+      "Resource": "arn:aws:cloudfront::${account_id}:function/vivarium-*"
+    },
+    {
+      "Sid": "ManagePreviewEdgePolicies",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:UpdateOriginAccessControl",
+        "cloudfront:DeleteOriginAccessControl",
+        "cloudfront:UpdateCachePolicy",
+        "cloudfront:DeleteCachePolicy"
+      ],
+      "Resource": [
+        "arn:aws:cloudfront::${account_id}:origin-access-control/*",
+        "arn:aws:cloudfront::${account_id}:cache-policy/*"
+      ]
+    },
+    {
+      "Sid": "RequestOwnCertificates",
+      "Effect": "Allow",
+      "Action": ["acm:RequestCertificate", "acm:AddTagsToCertificate"],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "vivarium"
+        }
+      }
+    },
+    {
+      "Sid": "ManageOwnCertificates",
+      "Effect": "Allow",
+      "Action": [
+        "acm:DeleteCertificate",
+        "acm:UpdateCertificateOptions",
+        "acm:AddTagsToCertificate",
+        "acm:RemoveTagsFromCertificate"
+      ],
+      "Resource": "arn:aws:acm:us-east-1:${account_id}:certificate/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Project": "vivarium"
+        }
+      }
+    },
+    {
+      "Sid": "WritePreviewDomainRecords",
+      "Effect": "Allow",
+      "Action": "route53:ChangeResourceRecordSets",
+      "Resource": "arn:aws:route53:::hostedzone/*",
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+            "*.${preview_domain}"
           ]
         }
       }

@@ -19,7 +19,9 @@
       "Action": ["lambda:Get*", "lambda:List*"],
       "Resource": [
         "arn:aws:lambda:*:${account_id}:function:vivarium-*",
-        "arn:aws:lambda:*:${account_id}:microvm-image:vivarium-*"
+        "arn:aws:lambda:*:${account_id}:microvm-image:vivarium-*",
+        "arn:aws:lambda:*:${account_id}:web-function/vivarium-*",
+        "arn:aws:lambda:*:${account_id}:web-function/vivarium-*/*"
       ]
     },
     {
@@ -29,6 +31,8 @@
         "lambda:ListFunctions",
         "lambda:ListMicrovmImages",
         "lambda:ListMicrovms",
+        "lambda:ListWebFunctions",
+        "lambda:GetWebAccountSettings",
         "lambda:GetNetworkConnector*",
         "lambda:ListNetworkConnector*",
         "ec2:Describe*",
@@ -52,6 +56,27 @@
         "cloudformation:GetResource",
         "cloudformation:ListResources",
         "cloudformation:GetResourceRequestStatus"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadPreviewEdge",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:Get*",
+        "cloudfront:List*",
+        "cloudfront:DescribeFunction",
+        "acm:DescribeCertificate",
+        "acm:GetCertificate",
+        "acm:ListCertificates",
+        "acm:ListTagsForCertificate",
+        "route53:GetChange",
+        "route53:GetDNSSEC",
+        "route53:GetHostedZone",
+        "route53:ListHostedZones",
+        "route53:ListHostedZonesByName",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
       ],
       "Resource": "*"
     },

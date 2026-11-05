@@ -3,6 +3,7 @@ locals {
   bootstrap = {
     account_id     = local.account_id
     subject_prefix = local.subject_prefix
+    preview_domain = local.preview_domain
   }
 }
 

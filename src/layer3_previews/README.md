@@ -26,7 +26,8 @@ a preview lets the reviewer try it.
 ## How a preview runs
 
 Each preview is a [Lambda MicroVM](https://docs.aws.amazon.com/lambda/latest/dg/microvms-launching.html)
-image built from the pull request's commit, behind a public function URL.
+image built from the pull request's commit, at a host of its own under the
+domain in [`domain.json`](domain.json), served by CloudFront.
 Opening it signs the reviewer in with GitHub, and only the accounts in
 [Who gets in](#who-gets-in) are let through. The MicroVM starts
 on the first request, suspends after five minutes without traffic, and
@@ -59,7 +60,7 @@ The image template is [`infra/aws/motioneye/`](../../infra/aws/motioneye/).
 
 | Direction | What is open |
 |---|---|
-| In | Only ports 8765, 8025 and 8030, through the preview's function URL, once the reviewer has signed in. The proxy sends paths under `/mailpit/` to mailpit on 8025, paths under `/uploads/` to the upload listing on 8030 and everything else to motionEye on 8765, and asks Lambda for a token limited to those three ports, so the hooks port, the fake cameras, SMTP, FTP, SFTP and SMB are not reachable from outside. |
+| In | Only ports 8765, 8025 and 8030, through CloudFront at the preview's host, once the reviewer has signed in. The proxy sends paths under `/mailpit/` to mailpit on 8025, paths under `/uploads/` to the upload listing on 8030 and everything else to motionEye on 8765, and asks Lambda for a token limited to those three ports, so the hooks port, the fake cameras, SMTP, FTP, SFTP and SMB are not reachable from outside. |
 | Out | Nothing. The proxy runs every preview MicroVM with the egress connector in [`infra/aws/network.tf`](../../infra/aws/network.tf). Its VPC has no internet gateway, no NAT and no DNS resolver, and its security group has no rules. The block sits outside the MicroVM, so commands run inside it cannot lift it. Only the image build uses `INTERNET_EGRESS`, to fetch the pull request and its packages. |
 
 So a feature that sends something out, such as a webhook or an upload to
@@ -164,8 +165,6 @@ index lists each preview as a Layer 3 entry with that `issue`, the `pull`
 when there is one, the `commit`, a `commit_url` in the `source` repository
 and a `preview_url`, and the gallery card opens the preview
 directly: a preview has no page of its own on the site. The `preview_url`
-is `<sign-in URL>/<directory>/`; the sign-in URL is
-`PREVIEW_SIGN_IN_URL` in
-[`generate-recipes-index.ts`](../../docs/scripts/generate-recipes-index.ts)
-and changes only if the sign-in function is made again. The README's check
+is `https://sign-in.<domain>/<directory>/`, with the domain from
+[`domain.json`](domain.json). The README's check
 steps are for the pull request, where reviewers read them.
