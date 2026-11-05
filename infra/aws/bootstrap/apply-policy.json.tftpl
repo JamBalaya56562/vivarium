@@ -200,13 +200,25 @@
       }
     },
     {
+      "Sid": "CreateOwnCloudFrontFunctions",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateFunction",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Project": "vivarium"
+        }
+      }
+    },
+    {
       "Sid": "ManageOwnCloudFrontFunctions",
       "Effect": "Allow",
       "Action": [
-        "cloudfront:CreateFunction",
         "cloudfront:UpdateFunction",
         "cloudfront:PublishFunction",
-        "cloudfront:DeleteFunction"
+        "cloudfront:DeleteFunction",
+        "cloudfront:TagResource",
+        "cloudfront:UntagResource"
       ],
       "Resource": "arn:aws:cloudfront::${account_id}:function/vivarium-*"
     },
