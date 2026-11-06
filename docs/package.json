@@ -16,14 +16,14 @@
     "dev": "bun run generate && bun run prebuild-repro && rspress dev",
     "build": "bun run generate && rspress build",
     "preview": "rspress preview",
-    "test:e2e": "playwright test",
+    "test:e2e": "bun node_modules/@playwright/test/cli.js test",
     "test:unit": "bun run generate-validators && bun run generate-repro-pages && bun test scripts/__tests__",
     "generate-repro-pages": "bun run scripts/generate-repro-pages.ts"
   },
   "devDependencies": {
     "@aletheia-works/coi-serviceworker": "^0.2.0",
     "@biomejs/biome": "^2.6.4",
-    "@playwright/test": "^1.64.1",
+    "@playwright/test": "^1.65.0",
     "@rspress/core": "^2.0.23",
     "@types/bun": "^1.4.4",
     "@types/node": "^26.6.6",

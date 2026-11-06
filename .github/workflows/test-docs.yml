@@ -64,7 +64,7 @@ jobs:
         uses: aletheia-works/.github/actions/install-playwright@0ab4b956b12760b3926ac8f768e04432404a5182 # v1.3.4
         with:
           browsers: ${{ matrix.browser }}
-          command: bunx playwright
+          command: bunx --bun playwright
           working-directory: docs
 
       - name: Run Playwright suite (${{ matrix.browser }})

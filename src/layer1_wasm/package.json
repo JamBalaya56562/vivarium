@@ -11,11 +11,11 @@
     "watch": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tests/tsconfig.json",
     "sync-layer2-assets": "bun run scripts/sync-layer2-assets.ts",
-    "test": "bun run sync-layer2-assets && playwright test"
+    "test": "bun run sync-layer2-assets && bun node_modules/@playwright/test/cli.js test"
   },
   "devDependencies": {
     "@aletheia-works/coi-serviceworker": "^0.2.0",
-    "@playwright/test": "^1.64.1",
+    "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "shiki": "^4.6.0",
     "typescript": "^7.0.2"
