@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@aletheia-works/coi-serviceworker": "^0.2.0",
-    "@biomejs/biome": "^2.6.6",
+    "@biomejs/biome": "^2.6.7",
     "@playwright/test": "^1.65.0",
     "@types/node": "^26.6.6",
     "shiki": "^4.6.0",
